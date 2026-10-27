@@ -1,0 +1,50 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator HookEvent (SPEC §7.8)",
+	"type": "object",
+	"required": ["harness", "event", "trigger", "sessionId", "cwd"],
+	"additionalProperties": false,
+	"properties": {
+		"harness": { "type": "string", "minLength": 1 },
+		"event": { "type": "string", "minLength": 1 },
+		"trigger": { "type": "string", "minLength": 1 },
+		"sessionId": { "type": "string", "minLength": 1 },
+		"agentId": { "type": "string" },
+		"role": { "type": "string" },
+		"cwd": { "type": "string", "minLength": 1 },
+		"source": { "enum": ["startup", "resume", "clear", "compact"] },
+		"tool": {
+			"type": "object",
+			"required": ["kind", "name", "paths"],
+			"additionalProperties": false,
+			"properties": {
+				"kind": { "type": "string", "minLength": 1 },
+				"name": { "type": "string", "minLength": 1 },
+				"paths": { "type": "array", "items": { "type": "string" } },
+				"command": { "type": "string" },
+				"proposedContent": { "type": "string" },
+				"range": {
+					"type": "object",
+					"required": ["offset", "limit"],
+					"additionalProperties": false,
+					"properties": {
+						"offset": { "type": "integer", "minimum": 0 },
+						"limit": { "type": "integer", "minimum": 0 }
+					}
+				},
+				"query": { "type": "string" }
+			}
+		},
+		"usage": {
+			"type": "object",
+			"required": ["contextTokens", "contextWindow"],
+			"additionalProperties": false,
+			"properties": {
+				"contextTokens": { "type": "integer", "minimum": 0 },
+				"contextWindow": { "type": "integer", "minimum": 1 }
+			}
+		},
+		"transcriptPath": { "type": "string" },
+		"modelProvider": { "type": "string" }
+	}
+}

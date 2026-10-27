@@ -1,0 +1,13 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator HookDecision (SPEC §7.8)",
+	"type": "object",
+	"required": ["decision", "eventId"],
+	"additionalProperties": false,
+	"properties": {
+		"decision": { "enum": ["allow", "advise", "block", "escalate"] },
+		"message": { "type": "string" },
+		"additionalContext": { "type": "string" },
+		"eventId": { "type": "string", "minLength": 1 }
+	}
+}

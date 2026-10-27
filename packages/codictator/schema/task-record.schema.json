@@ -1,0 +1,49 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator task record (SPEC §7.11)",
+	"type": "object",
+	"required": [
+		"version",
+		"id",
+		"type",
+		"title",
+		"branch",
+		"phase",
+		"phases",
+		"spec",
+		"acceptanceCriteria",
+		"files"
+	],
+	"additionalProperties": false,
+	"properties": {
+		"version": { "const": 1 },
+		"id": { "type": "string", "minLength": 1 },
+		"type": { "type": "string", "minLength": 1 },
+		"title": { "type": "string", "minLength": 1 },
+		"branch": { "type": "string", "minLength": 1 },
+		"phase": { "type": "string", "minLength": 1 },
+		"phases": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["name", "enteredAt", "evidence"],
+				"additionalProperties": false,
+				"properties": {
+					"name": { "type": "string", "minLength": 1 },
+					"enteredAt": { "type": "string", "minLength": 1 },
+					"evidence": { "type": "string" }
+				}
+			}
+		},
+		"spec": { "type": "array", "items": { "type": "string" } },
+		"acceptanceCriteria": { "type": "array", "items": { "type": "string" } },
+		"files": {
+			"type": "object",
+			"required": ["allow"],
+			"additionalProperties": false,
+			"properties": {
+				"allow": { "type": "array", "items": { "type": "string" } }
+			}
+		}
+	}
+}

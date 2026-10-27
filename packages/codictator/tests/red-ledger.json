@@ -1,7 +1,4 @@
 {
 	"version": 1,
-	"red": [
-		"tests/architecture/architecture.test.ts::[§10.3 item 1] arch guard reports zero findings on its own src",
-		"tests/architecture/architecture.test.ts::[§10.3 item 5] every module folder has a §3.3 row and SPEC leaf"
-	]
+	"red": []
 }

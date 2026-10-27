@@ -1,0 +1,17 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator baseline.json (SPEC §7.6)",
+	"type": "object",
+	"required": ["version", "entries"],
+	"additionalProperties": false,
+	"properties": {
+		"version": { "const": 1 },
+		"entries": {
+			"type": "object",
+			"additionalProperties": {
+				"type": "object",
+				"additionalProperties": { "type": "integer", "minimum": 1 }
+			}
+		}
+	}
+}
