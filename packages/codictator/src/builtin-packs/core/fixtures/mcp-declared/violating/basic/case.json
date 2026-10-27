@@ -1,0 +1,10 @@
+{
+	"rule": "core/mcp-declared",
+	"section": "§5.1",
+	"expectation": "violating",
+	"trigger": "tool call to an undeclared MCP server",
+	"expectRules": ["core/mcp-declared"],
+	"files": {
+		"sample.txt": "tool: \"rogue-server\"\ndeclared: false\n"
+	}
+}

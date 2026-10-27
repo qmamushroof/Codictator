@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-skipped-tests",
+	"section": "§5.5",
+	"expectation": "violating",
+	"trigger": "skipped test marker in source",
+	"expectRules": ["core/no-skipped-tests"],
+	"files": {
+		"sample.txt": "test.skip(\"flaky case\", ...)\n"
+	}
+}

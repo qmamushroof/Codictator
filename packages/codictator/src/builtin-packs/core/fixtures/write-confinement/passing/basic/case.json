@@ -1,0 +1,10 @@
+{
+	"rule": "core/write-confinement",
+	"section": "§5.2",
+	"expectation": "passing",
+	"trigger": "write outside the repo root",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "write: ./src/out.txt\n"
+	}
+}

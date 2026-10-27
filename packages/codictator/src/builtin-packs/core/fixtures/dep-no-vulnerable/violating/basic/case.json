@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-no-vulnerable",
+	"section": "§5.3",
+	"expectation": "violating",
+	"trigger": "dependency with a known advisory",
+	"expectRules": ["core/dep-no-vulnerable"],
+	"files": {
+		"sample.txt": "dep: minimist@1.2.5\nadvisory: GHSA-x\n"
+	}
+}

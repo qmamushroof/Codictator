@@ -1,0 +1,10 @@
+{
+	"rule": "ts/security-patterns",
+	"section": "§6.1",
+	"expectation": "passing",
+	"trigger": "eval on user input",
+	"expectRules": [],
+	"files": {
+		"sample.ts": "JSON.parse(userInput);\n"
+	}
+}

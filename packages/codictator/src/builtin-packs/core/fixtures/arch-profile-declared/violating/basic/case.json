@@ -1,0 +1,10 @@
+{
+	"rule": "core/arch-profile-declared",
+	"section": "§5.7",
+	"expectation": "violating",
+	"trigger": "no architecture profile declared",
+	"expectRules": ["core/arch-profile-declared"],
+	"files": {
+		"sample.txt": "profile: none\n"
+	}
+}

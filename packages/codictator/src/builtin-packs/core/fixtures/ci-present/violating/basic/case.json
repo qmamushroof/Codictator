@@ -1,0 +1,10 @@
+{
+	"rule": "core/ci-present",
+	"section": "§5.12",
+	"expectation": "violating",
+	"trigger": "no CI workflow committed",
+	"expectRules": ["core/ci-present"],
+	"files": {
+		"sample.txt": "workflow: missing\n"
+	}
+}

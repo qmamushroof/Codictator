@@ -1,0 +1,10 @@
+{
+	"rule": "core/regression-test-for-fix",
+	"section": "§5.4",
+	"expectation": "passing",
+	"trigger": "fix shipped without a regression test",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "fix: null guard\nregression-test: added\n"
+	}
+}

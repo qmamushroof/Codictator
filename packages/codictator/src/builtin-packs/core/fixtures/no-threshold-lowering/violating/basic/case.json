@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-threshold-lowering",
+	"section": "§5.5",
+	"expectation": "violating",
+	"trigger": "coverage floor lowered 90 to 80",
+	"expectRules": ["core/no-threshold-lowering"],
+	"files": {
+		"sample.txt": "floor-lines: 90 -> 80\n"
+	}
+}

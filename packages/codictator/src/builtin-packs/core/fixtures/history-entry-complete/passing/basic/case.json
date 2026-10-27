@@ -1,0 +1,10 @@
+{
+	"rule": "core/history-entry-complete",
+	"section": "§5.8",
+	"expectation": "passing",
+	"trigger": "history entry missing its Spec field",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "entry: 0042\nspec: §4.3\n"
+	}
+}

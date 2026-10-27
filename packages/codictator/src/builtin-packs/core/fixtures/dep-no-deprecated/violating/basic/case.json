@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-no-deprecated",
+	"section": "§5.3",
+	"expectation": "violating",
+	"trigger": "dependency marked deprecated upstream",
+	"expectRules": ["core/dep-no-deprecated"],
+	"files": {
+		"sample.txt": "dep: request@2.88.2\nstatus: deprecated\n"
+	}
+}

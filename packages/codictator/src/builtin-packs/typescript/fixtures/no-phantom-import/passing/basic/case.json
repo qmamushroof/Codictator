@@ -1,0 +1,10 @@
+{
+	"rule": "ts/no-phantom-import",
+	"section": "§6.1",
+	"expectation": "passing",
+	"trigger": "import of an undeclared package",
+	"expectRules": [],
+	"files": {
+		"sample.ts": "import \"node:fs\";\n"
+	}
+}

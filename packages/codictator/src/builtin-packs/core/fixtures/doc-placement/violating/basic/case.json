@@ -1,0 +1,10 @@
+{
+	"rule": "core/doc-placement",
+	"section": "§5.10",
+	"expectation": "violating",
+	"trigger": "doc at the repo root outside the allowlist",
+	"expectRules": ["core/doc-placement"],
+	"files": {
+		"sample.txt": "path: ./NOTES.md\nallowlisted: false\n"
+	}
+}

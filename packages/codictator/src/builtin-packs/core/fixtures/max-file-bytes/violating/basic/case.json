@@ -1,0 +1,10 @@
+{
+	"rule": "core/max-file-bytes",
+	"section": "§5.6",
+	"expectation": "violating",
+	"trigger": "committed file of 2 MiB over a 1 MiB limit",
+	"expectRules": ["core/max-file-bytes"],
+	"files": {
+		"sample.txt": "bytes: 2097152\nlimit: 1048576\n"
+	}
+}

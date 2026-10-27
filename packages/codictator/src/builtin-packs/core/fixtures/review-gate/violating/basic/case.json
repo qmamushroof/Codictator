@@ -1,0 +1,10 @@
+{
+	"rule": "core/review-gate",
+	"section": "§5.9",
+	"expectation": "violating",
+	"trigger": "merge with no review record",
+	"expectRules": ["core/review-gate"],
+	"files": {
+		"sample.txt": "merge: yes\nreview: none\n"
+	}
+}

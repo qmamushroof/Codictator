@@ -1,0 +1,10 @@
+{
+	"rule": "core/arch-module-mapped",
+	"section": "§5.7",
+	"expectation": "passing",
+	"trigger": "source file mapped to no module",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "file: src/kernel/hash.ts\nmodule: kernel\n"
+	}
+}

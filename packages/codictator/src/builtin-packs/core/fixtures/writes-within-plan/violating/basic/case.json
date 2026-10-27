@@ -1,0 +1,10 @@
+{
+	"rule": "core/writes-within-plan",
+	"section": "§5.9",
+	"expectation": "violating",
+	"trigger": "write outside the approved plan scope",
+	"expectRules": ["core/writes-within-plan"],
+	"files": {
+		"sample.txt": "write: src/unplanned.ts\nplanned: false\n"
+	}
+}

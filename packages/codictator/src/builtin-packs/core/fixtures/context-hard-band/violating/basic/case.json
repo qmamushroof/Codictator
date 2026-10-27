@@ -1,0 +1,10 @@
+{
+	"rule": "core/context-hard-band",
+	"section": "§5.1",
+	"expectation": "violating",
+	"trigger": "context at 82% with no forced checkpoint",
+	"expectRules": ["core/context-hard-band"],
+	"files": {
+		"sample.txt": "context-used: 82%\ncheckpoint: none\n"
+	}
+}

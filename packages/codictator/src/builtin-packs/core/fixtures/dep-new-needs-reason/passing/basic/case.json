@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-new-needs-reason",
+	"section": "§5.3",
+	"expectation": "passing",
+	"trigger": "new dependency with no recorded reason",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "added: lodash\nreason: debounce for the resize handler\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/bug-registry",
+	"section": "§5.8",
+	"expectation": "violating",
+	"trigger": "fix shipped with no bug row",
+	"expectRules": ["core/bug-registry"],
+	"files": {
+		"sample.txt": "fix: null guard\nbug-row: none\n"
+	}
+}

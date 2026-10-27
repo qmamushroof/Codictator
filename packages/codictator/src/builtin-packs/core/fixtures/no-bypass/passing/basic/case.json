@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-bypass",
+	"section": "§5.11",
+	"expectation": "passing",
+	"trigger": "hook skipped with --no-verify",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "commit: hooks ran\n"
+	}
+}

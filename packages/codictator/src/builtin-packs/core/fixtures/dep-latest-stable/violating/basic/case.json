@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-latest-stable",
+	"section": "§5.3",
+	"expectation": "violating",
+	"trigger": "dependency lagging stable by 400 days",
+	"expectRules": ["core/dep-latest-stable"],
+	"files": {
+		"sample.txt": "dep: axios@0.21.1\nlag-days: 400\n"
+	}
+}

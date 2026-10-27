@@ -1,0 +1,10 @@
+{
+	"rule": "core/graph-before-scan",
+	"section": "§5.1",
+	"expectation": "violating",
+	"trigger": "full-repo scan with no knowledge graph",
+	"expectRules": ["core/graph-before-scan"],
+	"files": {
+		"sample.txt": "scan: full-repo grep\nknowledge-graph: absent\n"
+	}
+}

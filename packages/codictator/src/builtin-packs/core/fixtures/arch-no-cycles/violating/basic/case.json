@@ -1,0 +1,10 @@
+{
+	"rule": "core/arch-no-cycles",
+	"section": "§5.7",
+	"expectation": "violating",
+	"trigger": "import cycle between two modules",
+	"expectRules": ["core/arch-no-cycles"],
+	"files": {
+		"sample.txt": "edges: a -> b -> a\n"
+	}
+}

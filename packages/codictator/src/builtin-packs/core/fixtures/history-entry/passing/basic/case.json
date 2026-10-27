@@ -1,0 +1,10 @@
+{
+	"rule": "core/history-entry",
+	"section": "§5.8",
+	"expectation": "passing",
+	"trigger": "commit with no history entry",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "commit: abc123\nhistory: docs/HISTORY/0042.md\n"
+	}
+}

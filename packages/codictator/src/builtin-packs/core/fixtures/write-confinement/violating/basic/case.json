@@ -1,0 +1,10 @@
+{
+	"rule": "core/write-confinement",
+	"section": "§5.2",
+	"expectation": "violating",
+	"trigger": "write outside the repo root",
+	"expectRules": ["core/write-confinement"],
+	"files": {
+		"sample.txt": "write: /etc/hosts\n"
+	}
+}

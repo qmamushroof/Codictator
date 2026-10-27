@@ -1,0 +1,10 @@
+{
+	"rule": "core/perf-budgets",
+	"section": "§5.12",
+	"expectation": "violating",
+	"trigger": "hook p95 of 900ms over a 500ms budget",
+	"expectRules": ["core/perf-budgets"],
+	"files": {
+		"sample.txt": "hook-p95-ms: 900\nbudget-ms: 500\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-no-vulnerable",
+	"section": "§5.3",
+	"expectation": "passing",
+	"trigger": "dependency with a known advisory",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "dep: minimist@1.2.8\nadvisory: none\n"
+	}
+}

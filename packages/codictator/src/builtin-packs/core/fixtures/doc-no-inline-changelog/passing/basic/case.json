@@ -1,0 +1,10 @@
+{
+	"rule": "core/doc-no-inline-changelog",
+	"section": "§5.10",
+	"expectation": "passing",
+	"trigger": "inline changelog section in a doc",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "section: none\n"
+	}
+}

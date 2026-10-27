@@ -1,0 +1,10 @@
+{
+	"rule": "core/agent-assets-present",
+	"section": "§5.12",
+	"expectation": "violating",
+	"trigger": "required knowledge-graph helper missing",
+	"expectRules": ["core/agent-assets-present"],
+	"files": {
+		"sample.txt": "helpers: token-saver\n"
+	}
+}

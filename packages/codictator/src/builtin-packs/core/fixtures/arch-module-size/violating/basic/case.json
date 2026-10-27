@@ -1,0 +1,10 @@
+{
+	"rule": "core/arch-module-size",
+	"section": "§5.7",
+	"expectation": "violating",
+	"trigger": "module with 90 files and 9000 lines",
+	"expectRules": ["core/arch-module-size"],
+	"files": {
+		"sample.txt": "files: 90\nlines: 9000\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/ci-actions-pinned",
+	"section": "§5.12",
+	"expectation": "violating",
+	"trigger": "action pinned to a floating tag",
+	"expectRules": ["core/ci-actions-pinned"],
+	"files": {
+		"sample.txt": "uses: actions/checkout@v4\n"
+	}
+}

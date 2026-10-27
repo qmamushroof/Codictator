@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-assertion-loss",
+	"section": "§5.4",
+	"expectation": "passing",
+	"trigger": "change drops assertions 12 to 9",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "assertions: 12 -> 13\n"
+	}
+}

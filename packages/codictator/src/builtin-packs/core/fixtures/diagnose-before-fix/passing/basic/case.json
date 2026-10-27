@@ -1,0 +1,10 @@
+{
+	"rule": "core/diagnose-before-fix",
+	"section": "§5.8",
+	"expectation": "passing",
+	"trigger": "fix with no diagnosis record",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "fix: retry loop\ndiagnosis: recorded\n"
+	}
+}

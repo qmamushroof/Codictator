@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-lockfile",
+	"section": "§5.3",
+	"expectation": "passing",
+	"trigger": "no lockfile committed",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "lockfile: package-lock.json\nmanifest: package.json\n"
+	}
+}

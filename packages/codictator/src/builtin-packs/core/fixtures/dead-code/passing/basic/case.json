@@ -1,0 +1,10 @@
+{
+	"rule": "core/dead-code",
+	"section": "§5.6",
+	"expectation": "passing",
+	"trigger": "exported member with no importers",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "exported: formatDate\nimporters: 3\n"
+	}
+}

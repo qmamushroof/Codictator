@@ -1,0 +1,10 @@
+{
+	"rule": "core/graph-before-scan",
+	"section": "§5.1",
+	"expectation": "passing",
+	"trigger": "full-repo scan with no knowledge graph",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "scan: graph-guided\nknowledge-graph: present\n"
+	}
+}

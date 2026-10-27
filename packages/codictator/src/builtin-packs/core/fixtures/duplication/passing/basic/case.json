@@ -1,0 +1,10 @@
+{
+	"rule": "core/duplication",
+	"section": "§5.6",
+	"expectation": "passing",
+	"trigger": "duplicated token run of 80 over a 50 limit",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "duplicated-tokens: 12\nlimit: 50\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/review-round-cap",
+	"section": "§5.9",
+	"expectation": "violating",
+	"trigger": "review running 5 rounds over a 3 cap",
+	"expectRules": ["core/review-round-cap"],
+	"files": {
+		"sample.txt": "rounds: 5\ncap: 3\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/branch-protection",
+	"section": "§5.11",
+	"expectation": "violating",
+	"trigger": "direct push to main with no PR",
+	"expectRules": ["core/branch-protection"],
+	"files": {
+		"sample.txt": "push: main\ndirect: true\n"
+	}
+}

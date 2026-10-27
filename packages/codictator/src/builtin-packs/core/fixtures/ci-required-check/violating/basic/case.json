@@ -1,0 +1,10 @@
+{
+	"rule": "core/ci-required-check",
+	"section": "§5.12",
+	"expectation": "violating",
+	"trigger": "lint missing from required checks",
+	"expectRules": ["core/ci-required-check"],
+	"files": {
+		"sample.txt": "required: typecheck, test\n"
+	}
+}
