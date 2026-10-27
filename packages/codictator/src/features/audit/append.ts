@@ -33,6 +33,10 @@ export interface NewEvent {
 	readonly ruleIds: ReadonlyArray<string>;
 	readonly decision?: Decision;
 	readonly findings?: ReadonlyArray<Finding>;
+	// SPEC §4.3.4: ids of the waivers that changed a verdict.
+	readonly waivers?: ReadonlyArray<string>;
+	// SPEC §4.3.9 EC-15: set when now predates the previous event.
+	readonly clockSkew?: boolean;
 	readonly durationMs: number;
 	readonly configHash: string;
 	readonly packs: Readonly<Record<string, string>>;
@@ -54,11 +58,15 @@ function e801(action: string, detail: string): CdxError {
 }
 
 // SPEC §7.10: sortable id from now plus a content digest. The per-process
-// counter arrives with the engine sequence; the digest keeps E1 ids unique
-// without module-level mutable state.
-function makeEventId(now: string, canonical: string): string {
+// counter arrives with the engine sequence; without it the digest keeps E1
+// ids unique without module-level mutable state.
+function makeEventId(now: string, canonical: string, seq?: number): string {
 	const stamp = now.replace(/[-:.]/g, "");
-	return `${stamp}-${sha256Text(canonical).slice(0, 12)}`;
+	const digest = sha256Text(canonical).slice(0, 12);
+	if (seq === undefined) {
+		return `${stamp}-${digest}`;
+	}
+	return `${stamp}-${seq.toString().padStart(6, "0")}-${digest}`;
 }
 
 // SPEC §7.10: findings on the line carry rule, path, line and code only.
@@ -98,6 +106,8 @@ function withOptionals(
 		...(event.sessionId === undefined ? {} : { sessionId: event.sessionId }),
 		...(event.taskId === undefined ? {} : { taskId: event.taskId }),
 		...(event.decision === undefined ? {} : { decision: event.decision }),
+		...(event.waivers === undefined ? {} : { waivers: event.waivers }),
+		...(event.clockSkew === undefined ? {} : { clockSkew: event.clockSkew }),
 		...(event.findings === undefined
 			? {}
 			: { findings: event.findings.map(projectFinding) }),
@@ -217,11 +227,14 @@ async function rotateLog(
 }
 
 // SPEC §4.18.1: append one line-atomic event; writes recreate the log when it
-// was deleted mid-session; the log rotates past the size cap.
+// was deleted mid-session; the log rotates past the size cap. The optional
+// sequence carries the engine's per-process counter into the event id so a
+// verdict's eventId matches its log line (SPEC §7.10).
 export async function appendEvent(
 	ports: Ports,
 	repoRoot: string,
 	event: NewEvent,
+	seq?: number,
 ): Promise<Result<void>> {
 	const stripped = repoRoot.replace(/\/+$/, "");
 	const root = stripped === "" ? "." : stripped;
@@ -237,7 +250,7 @@ export async function appendEvent(
 		packs: event.packs,
 		message: event.message,
 	});
-	const fitted = fitLine(event, now, makeEventId(now, canonical));
+	const fitted = fitLine(event, now, makeEventId(now, canonical, seq));
 	if (!fitted.ok) {
 		return err(fitted.error);
 	}
