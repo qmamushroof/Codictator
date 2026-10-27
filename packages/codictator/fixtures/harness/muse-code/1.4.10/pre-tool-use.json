@@ -1,0 +1,19 @@
+{
+	"source": "muse-code",
+	"version": "1.4.10",
+	"event": "tool.pre.write",
+	"verified": false,
+	"provenance": "Unverified third-party live-probe shape summarised in SPEC §4.5.4; no first-party capture yet (§4.5.7).",
+	"payload": {
+		"session_id": "sess-0001",
+		"cwd": "/repo",
+		"hook_event_name": "PreToolUse",
+		"tool_name": "Write",
+		"tool_input": {
+			"file_path": "/repo/src/index.ts",
+			"content": "export const x = 1;\n"
+		},
+		"tool_use_id": "toolu-0001",
+		"transcript_path": "/tmp/transcript.jsonl"
+	}
+}

@@ -1,0 +1,19 @@
+{
+	"source": "opencode",
+	"version": "1.19.4",
+	"event": "tool.pre.write",
+	"verified": false,
+	"provenance": "Hook names from the plugin Hooks type at tag v1.19.4 per SPEC §4.5.4; input shape unverified until a first-party capture (§4.5.7).",
+	"payload": {
+		"event": "tool.execute.before",
+		"tool": "write",
+		"sessionID": "ses-0001",
+		"callID": "call-0001",
+		"args": {
+			"filePath": "/repo/src/index.ts",
+			"content": "export const x = 1;\n"
+		},
+		"cwd": "/repo",
+		"directory": "/repo"
+	}
+}

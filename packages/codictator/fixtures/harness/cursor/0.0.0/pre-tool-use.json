@@ -1,0 +1,15 @@
+{
+	"source": "cursor",
+	"version": "0.0.0",
+	"event": "tool.pre.write",
+	"verified": false,
+	"provenance": "P1 harness; generic hook-input shape per SPEC §4.5.4; vendor version unpinned (0.0.0 placeholder) until a first-party capture (§4.5.7).",
+	"payload": {
+		"hook": "preToolUse",
+		"cwd": "/repo",
+		"tool": {
+			"name": "write",
+			"filePath": "/repo/src/index.ts"
+		}
+	}
+}
