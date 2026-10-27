@@ -1,16 +1,37 @@
-// Step 1.7 writes the real architecture tests for every SPEC §10.3 item.
-// Items 1 and 5 wait for the arch module (phase 7) and the phase 2 contracts,
-// so these placeholders hold their ledger entries red until then.
+// Step 2.1 writes the architecture tests for every SPEC §10.3 item.
+// Item 1 runs the real arch contract on the §3.3 module map and asserts
+// zero findings; the contract still throws, so it fails red until phase 7.
+// Item 5 holds green: every module folder already has its §3.3 row and leaf.
 
 import { strict as assert } from "node:assert";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import type { ModuleNode } from "../../src/features/arch/index.ts";
+import { buildGraph, checkArch } from "../../src/features/arch/index.ts";
+import type { CheckContext } from "../../src/features/engine/index.ts";
+import { FIXED_INSTANT } from "../support/fake-clock.ts";
 
-test("[§10.3 item 1] arch guard reports zero findings on its own src", () => {
-	const guard = new URL("../../src/features/arch/index.ts", import.meta.url);
-	assert.equal(existsSync(guard), true);
+test("[§10.3 item 1] arch guard runs on own src with §3.3 map and reports zero findings", async () => {
+	// SPEC §10.3 item 1 with the §3.3 module map: the guard dogfoods its own
+	// src and must report zero findings. buildGraph/checkArch still throw
+	// "not implemented", so this executes and fails red until phase 7 lands.
+	const modules: Array<ModuleNode> = [
+		{ name: "kernel", path: "src/kernel/**", dependsOn: [] },
+		{ name: "config", path: "src/features/config/**", dependsOn: [] },
+		{ name: "engine", path: "src/features/engine/**", dependsOn: ["config"] },
+		{ name: "arch", path: "src/features/arch/**", dependsOn: [] },
+	];
+	const ctx: CheckContext = {
+		trigger: "pre-tool",
+		scope: { files: ["src/features/arch/index.ts"], sessionId: "session-1" },
+		now: FIXED_INSTANT,
+		configHash: "config-hash",
+	};
+	const edges = buildGraph(modules, []);
+	const findings = await checkArch(ctx, edges);
+	assert.deepEqual(findings, []);
 });
 
 test("[§10.3 item 5] every module folder has a §3.3 row and SPEC leaf", () => {

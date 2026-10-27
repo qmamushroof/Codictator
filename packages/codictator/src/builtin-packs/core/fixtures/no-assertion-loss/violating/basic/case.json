@@ -1,6 +1,6 @@
 {
 	"rule": "core/no-assertion-loss",
-	"section": "§5.4",
+	"section": "§5.5",
 	"expectation": "violating",
 	"trigger": "change drops assertions 12 to 9",
 	"expectRules": ["core/no-assertion-loss"],
