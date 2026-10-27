@@ -1,0 +1,10 @@
+{
+	"name": "codictator-vscode",
+	"publisher": "codictator",
+	"version": "0.0.0",
+	"type": "module",
+	"main": "dist/extension.cjs",
+	"engines": {
+		"vscode": "^1.105.0"
+	}
+}
