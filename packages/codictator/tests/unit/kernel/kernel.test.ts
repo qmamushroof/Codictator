@@ -80,9 +80,12 @@ test("[§4.1 EC-6] child ignoring SIGTERM on timeout", async () => {
 });
 
 test("[§4.1 EC-7] same JSON value written twice", () => {
-	// SPEC §4.1.3 EC-7: sorted keys, 2-space indent, trailing newline.
+	// SPEC §4.1.2 sorted keys + §4.10.4 integrity exception: the red suite
+	// recorded values in input order; the contract sorts keys with values
+	// following their keys, so the literal is corrected here and acknowledged
+	// at review rather than loosened.
 	const first = stableStringify({ b: 1, a: 2 });
-	assert.equal(first, '{\n  "a": 1,\n  "b": 2\n}\n');
+	assert.equal(first, '{\n  "a": 2,\n  "b": 1\n}\n');
 	assert.equal(stableStringify({ b: 1, a: 2 }), first);
 });
 

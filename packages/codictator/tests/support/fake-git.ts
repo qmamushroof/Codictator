@@ -2,6 +2,7 @@
 // seeded per test and never touches a real repo; unset text queries answer
 // empty. Kernel failures are simulated with failNext and a real SPEC §8 error.
 import type { CdxError, Git, Result } from "../../src/kernel/index.ts";
+import { makeError } from "../../src/kernel/index.ts";
 
 export class FakeGit implements Git {
 	private rootValue = "/repo";
@@ -13,6 +14,16 @@ export class FakeGit implements Git {
 	private readonly logs = new Map<string, string>();
 	private cleanValue = true;
 	private pending: CdxError | undefined;
+	private gitMissing = false;
+
+	// SPEC §4.1.3 EC-11: script a host with no git repo context, so the
+	// presence probe root() answers CDX-E703 like `rev-parse
+	// --show-toplevel` failing outside a repo. Other ops keep answering
+	// their recordings: the fake never shells out, so presence is scripted
+	// per test through this flag, not probed.
+	simulateGitMissing(): void {
+		this.gitMissing = true;
+	}
 
 	failNext(error: CdxError): void {
 		this.pending = error;
@@ -57,6 +68,16 @@ export class FakeGit implements Git {
 	}
 
 	root(): Promise<Result<string>> {
+		if (this.gitMissing) {
+			return Promise.resolve({
+				ok: false,
+				error: makeError(
+					"CDX-E703",
+					"git is missing or the directory is not a git repository",
+					"Install git and run inside a git repository with git on PATH.",
+				),
+			});
+		}
 		const failure = this.nextFailure();
 		if (failure !== undefined) {
 			return Promise.resolve(failure);
