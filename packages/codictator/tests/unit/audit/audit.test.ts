@@ -1,6 +1,8 @@
 // SPEC §4.18.6: one red test per audit EC row. Log rows assert summarize;
-// lookup rows assert explain. Both still throw "not implemented", so all
-// seven fail red until Phase 9 lands.
+// lookup rows assert explain. EC-1..3 pass on the minimal Phase-4 summarize
+// (one entry per requested slot, gap entries where nothing is observed);
+// EC-4..7 still fail red until Phase 9 lands explain, truncation and
+// usage rollups.
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import { explain, summarize } from "../../../src/features/audit/index.ts";

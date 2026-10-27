@@ -50,11 +50,15 @@ async function errorCodeOf(call: () => unknown): Promise<string> {
 }
 
 test("[§4.2 EC-1] missing config with a manifest blocks everything", async () => {
-	const { fs } = createFakePorts();
-	fs.seedText("package.json", '{"name": "repo"}');
+	// Integrity exception (CONVENTIONS tests): the prior body seeded the
+	// fake fs but never passed its ports, so loadConfig read the live
+	// filesystem; SPEC §10.2 requires unit tests on fake ports. Passing the
+	// bundle exercises the manifest branch deterministically.
+	const { ports, fs } = createFakePorts();
+	fs.seedText("repo-with-manifest/package.json", '{"name": "repo"}');
 	// SPEC §4.2.4 EC-1: CDX-E101; every layer blocks; fix codictator init --repair.
 	assert.equal(
-		await errorCodeOf(() => loadConfig("repo-with-manifest")),
+		await errorCodeOf(() => loadConfig("repo-with-manifest", ports)),
 		"CDX-E101",
 	);
 });
@@ -65,10 +69,14 @@ test("[§4.2 EC-2] missing config without a manifest is not a repo", async () =>
 });
 
 test("[§4.2 EC-3] tunable equal to the pack default", () => {
+	// Integrity exception (CONVENTIONS tests): the prior body tuned
+	// maxBytes, which core/file-size does not declare (SPEC §5.6 gives it
+	// maxLines, default 300), so validation failed CDX-E101 instead of
+	// accepting. Tuning maxLines at the default exercises the accept path.
 	// SPEC §4.2.4 EC-3: accepted.
 	const effective = validateConfig({
 		...baseConfig(),
-		tunables: { "core/file-size": { params: { maxBytes: 65536 } } },
+		tunables: { "core/file-size": { params: { maxLines: 300 } } },
 	});
 	assert.equal(typeof effective.configHash, "string");
 	assert.ok(effective.configHash.length > 0);
@@ -85,12 +93,16 @@ test("[§4.2 EC-4] tunable stricter than sensible stays accepted", () => {
 });
 
 test("[§4.2 EC-5] looser tunable belongs in a waiver", async () => {
+	// Integrity exception (CONVENTIONS tests): the prior body tuned
+	// maxBytes, which core/file-size does not declare, so validation failed
+	// CDX-E101 instead of the loosening error; maxLines 999 is looser than
+	// the default 300.
 	// SPEC §4.2.4 EC-5: CDX-E102 is version drift; looser-in-tunables is CDX-E104.
 	assert.equal(
 		await errorCodeOf(() =>
 			validateConfig({
 				...baseConfig(),
-				tunables: { "core/file-size": { params: { maxBytes: 999999999 } } },
+				tunables: { "core/file-size": { params: { maxLines: 999 } } },
 			}),
 		),
 		"CDX-E104",
@@ -124,11 +136,14 @@ test("[§4.2 EC-7] duplicate pack id at two versions", async () => {
 });
 
 test("[§4.2 EC-8] config edit beside a baseline raise", () => {
+	// Integrity exception (CONVENTIONS tests): the prior body tuned
+	// maxBytes, which core/file-size does not declare, so validation failed
+	// CDX-E101; maxLines 250 tightens the default 300, so the config loads.
 	// SPEC §4.2.4 EC-8: both changes are reported; the raise still fails
 	// per §4.3.5. The config itself loads here.
 	const effective = validateConfig({
 		...baseConfig(),
-		tunables: { "core/file-size": { params: { maxBytes: 4096 } } },
+		tunables: { "core/file-size": { params: { maxLines: 250 } } },
 	});
 	assert.equal(typeof effective.configHash, "string");
 	assert.ok(effective.configHash.length > 0);
@@ -148,12 +163,15 @@ test("[§4.2 EC-9] rule id from an unloaded pack", async () => {
 });
 
 test("[§4.2 EC-10] human-only command under an agent marker", async () => {
-	const { env } = createFakePorts({
+	// Integrity exception (CONVENTIONS tests): the prior body built the
+	// marked env but never passed its ports, so loadConfig read the live
+	// environment; passing the bundle exercises the CDX-E107 refusal.
+	const { ports, env } = createFakePorts({
 		env: { CODICTATOR_HOOK: "1" },
 	});
 	assert.equal(env.get("CODICTATOR_HOOK"), "1");
 	// SPEC §4.2.4 EC-10: a TTY is required; hooks and CI get CDX-E107.
-	assert.equal(await errorCodeOf(() => loadConfig("repo")), "CDX-E107");
+	assert.equal(await errorCodeOf(() => loadConfig("repo", ports)), "CDX-E107");
 });
 
 test("[§4.2 EC-11] engine upgraded without bumping config", async () => {
