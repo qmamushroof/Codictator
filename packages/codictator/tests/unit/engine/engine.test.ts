@@ -13,7 +13,7 @@ import {
 	createEngine,
 	isWaived,
 } from "../../../src/features/engine/index.ts";
-import { stableStringify } from "../../../src/kernel/index.ts";
+import { err, stableStringify } from "../../../src/kernel/index.ts";
 import { FakeClock, FIXED_INSTANT } from "../../support/fake-clock.ts";
 
 function checkCtx(files: ReadonlyArray<string> = []): CheckContext {
@@ -64,9 +64,15 @@ test("[§4.3 EC-3] enforcer exceeds budget", async () => {
 			id: "core/x",
 			kinds: ["startup"],
 			budgetMs: 1,
-			check: async (): Promise<Array<Finding>> => [],
+			check: (): Promise<Array<Finding>> =>
+				new Promise<Array<Finding>>(() => {}),
 		},
 	]);
+	// Integrity exception (CONVENTIONS tests): the prior body resolved
+	// instantly, so microtasks beat the 1 ms timer and E902 never fired; it
+	// contradicted the SPEC §4.3 budget intent (a hanging enforcer must block
+	// CDX-E902). The never-settling promise exercises the timer path
+	// deterministically.
 	// SPEC §4.3.9 EC-3: block CDX-E902.
 	const verdict = await engine.evaluate(
 		"startup",
@@ -79,7 +85,20 @@ test("[§4.3 EC-3] enforcer exceeds budget", async () => {
 });
 
 test("[§4.3 EC-4] event log unwritable", async () => {
-	const engine = createEngine([]);
+	const engine = createEngine([], {
+		append: () =>
+			Promise.resolve(
+				err({
+					code: "CDX-E801",
+					message: "disk full",
+					remediation: "Free disk space and retry.",
+				}),
+			),
+	});
+	// Integrity exception (CONVENTIONS tests): the prior body used the default
+	// in-memory append, which cannot fail, so the E801 path was unreachable;
+	// it contradicted SPEC §4.3.3 step 6 (append failure blocks CDX-E801).
+	// The injected failing append exercises that path.
 	// SPEC §4.3.9 EC-4: block CDX-E801; the append happens before the return.
 	const verdict = await engine.evaluate(
 		"startup",

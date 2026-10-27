@@ -42,6 +42,8 @@ export interface EventLogLine {
 	readonly ruleIds: ReadonlyArray<string>;
 	readonly decision?: Decision;
 	readonly findings?: ReadonlyArray<EventFinding>;
+	readonly waivers?: ReadonlyArray<string>;
+	readonly clockSkew?: boolean;
 	readonly durationMs: number;
 	readonly configHash: string;
 	readonly packs: Readonly<Record<string, string>>;
