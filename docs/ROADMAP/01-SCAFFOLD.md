@@ -11,14 +11,14 @@
 
 ## Steps
 
-- [ ] **1.1** The repo root holds only files allowed by `core/repo-hygiene` and `core/doc-placement`. Verify: list the root against SPEC §4.9.2 and §5.11.
-- [ ] **1.2** `.gitignore` (`node_modules`, `dist`, `coverage`, `.codictator/state/`, `.codictator/cache/`, `.codictator/tool/node_modules/`) beside the `.gitattributes` of the first commit (`* text=auto eol=lf`). Verify: `git check-ignore` on each path; `git ls-files --eol` shows no CRLF in the index.
-- [ ] **1.3** `.nvmrc` and root `package.json`: private, npm workspaces, `packageManager`, the SPEC §2.2 dev dependencies at exact pins re-checked against the registry, and the scripts of VALIDATION. `package-lock.json` committed. Verify: `npm ci --ignore-scripts` from a clean clone.
-- [ ] **1.4** `tsconfig.base.json` per SPEC §3.5 and one `tsconfig.json` per package; `biome.json` enforcing the CONVENTIONS lint rules (no `any`, no non-null assertion, no default export, kebab-case file names). Verify: `npm run typecheck`, `npm run lint`.
-- [ ] **1.5** Package manifests: `packages/codictator` (name, `bin`, `type: module`, `engines`, zero dependencies, `files` allowlist of SPEC §9.2) and `packages/vscode` (shape of SPEC §4.20.1). Verify: `npm pack --dry-run -w codictator` lists only allowlisted paths.
-- [ ] **1.6** Red-ledger runner and `npm run ledger`, written test-first. Its tests prove each failure mode of SPEC §10.7: a listed test passing, an unlisted test failing, a listed test absent, a pre-existing test newly listed. Verify: `npm test`.
-- [ ] **1.7** Architecture tests for every SPEC §10.3 item under `tests/architecture/`. Item 1 waits for the arch module (phase 7) and item 5 for the phase 2 contracts; both enter the ledger red. Verify: `npm test`.
-- [ ] **1.8** `.github/workflows/test.yml`: `pull_request` and `push` to `main`; permissions `contents: read`; checkout with `persist-credentials: false` and full history; matrix of the three OSes; Node from `.nvmrc`; the VALIDATION always-set plus the ledger base comparison. Every `uses:` pinned to a full commit SHA found by lookup (`core/ci-actions-pinned`). Verify: CI green on the PR.
+- [x] **1.1** The repo root holds only files allowed by `core/repo-hygiene` and `core/doc-placement`. Verify: list the root against SPEC §4.9.2 and §5.11.
+- [x] **1.2** `.gitignore` (`node_modules`, `dist`, `coverage`, `.codictator/state/`, `.codictator/cache/`, `.codictator/tool/node_modules/`) beside the `.gitattributes` of the first commit (`* text=auto eol=lf`). Verify: `git check-ignore` on each path; `git ls-files --eol` shows no CRLF in the index.
+- [x] **1.3** `.nvmrc` and root `package.json`: private, npm workspaces, `packageManager`, the SPEC §2.2 dev dependencies at exact pins re-checked against the registry, and the scripts of VALIDATION. `package-lock.json` committed. Verify: `npm ci --ignore-scripts` from a clean clone.
+- [x] **1.4** `tsconfig.base.json` per SPEC §3.5 and one `tsconfig.json` per package; `biome.json` enforcing the CONVENTIONS lint rules (no `any`, no non-null assertion, no default export, kebab-case file names). Verify: `npm run typecheck`, `npm run lint`.
+- [x] **1.5** Package manifests: `packages/codictator` (name, `bin`, `type: module`, `engines`, zero dependencies, `files` allowlist of SPEC §9.2) and `packages/vscode` (shape of SPEC §4.20.1). Verify: `npm pack --dry-run -w codictator` lists only allowlisted paths.
+- [x] **1.6** Red-ledger runner and `npm run ledger`, written test-first. Its tests prove each failure mode of SPEC §10.7: a listed test passing, an unlisted test failing, a listed test absent, a pre-existing test newly listed. Verify: `npm test`.
+- [x] **1.7** Architecture tests for every SPEC §10.3 item under `tests/architecture/`. Item 1 waits for the arch module (phase 7) and item 5 for the phase 2 contracts; both enter the ledger red. Verify: `npm test`.
+- [x] **1.8** `.github/workflows/test.yml`: `pull_request` and `push` to `main`; permissions `contents: read`; checkout with `persist-credentials: false` and full history; matrix of the three OSes; Node from `.nvmrc`; the VALIDATION always-set plus the ledger base comparison. Every `uses:` pinned to a full commit SHA found by lookup (`core/ci-actions-pinned`). Verify: CI green on the PR.
 - [ ] **1.9** Human: protect `main` with the workflow's check required, force-push and deletion blocked, and squash merging disabled (`core/branch-protection`, SPEC §11 S33). Verify: the repo's ruleset settings page.
 
 ## Exit gate
