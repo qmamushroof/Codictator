@@ -1,0 +1,10 @@
+{
+	"rule": "core/file-naming",
+	"section": "§5.11",
+	"expectation": "passing",
+	"trigger": "source file outside kebab-case",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "file: my-util.ts\n"
+	}
+}

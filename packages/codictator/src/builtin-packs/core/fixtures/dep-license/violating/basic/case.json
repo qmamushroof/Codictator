@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-license",
+	"section": "§5.3",
+	"expectation": "violating",
+	"trigger": "dependency outside the allowed license list",
+	"expectRules": ["core/dep-license"],
+	"files": {
+		"sample.txt": "dep: some-gpl-lib\nlicense: GPL-3.0\n"
+	}
+}

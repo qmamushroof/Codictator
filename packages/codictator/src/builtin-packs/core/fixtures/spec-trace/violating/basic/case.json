@@ -1,0 +1,10 @@
+{
+	"rule": "core/spec-trace",
+	"section": "§5.4",
+	"expectation": "violating",
+	"trigger": "test title with no SPEC reference",
+	"expectRules": ["core/spec-trace"],
+	"files": {
+		"sample.txt": "test(\"adds two numbers\", ...)\n"
+	}
+}

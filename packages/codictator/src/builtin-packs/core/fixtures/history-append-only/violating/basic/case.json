@@ -1,0 +1,10 @@
+{
+	"rule": "core/history-append-only",
+	"section": "§5.8",
+	"expectation": "violating",
+	"trigger": "past history entry edited in place",
+	"expectRules": ["core/history-append-only"],
+	"files": {
+		"sample.txt": "edited: docs/HISTORY/0039.md\n"
+	}
+}

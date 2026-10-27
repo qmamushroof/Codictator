@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-skipped-tests",
+	"section": "§5.5",
+	"expectation": "passing",
+	"trigger": "skipped test marker in source",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "test(\"steady case\", ...)\n"
+	}
+}

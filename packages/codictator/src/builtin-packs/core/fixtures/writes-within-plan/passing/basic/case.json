@@ -1,0 +1,10 @@
+{
+	"rule": "core/writes-within-plan",
+	"section": "§5.9",
+	"expectation": "passing",
+	"trigger": "write outside the approved plan scope",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "write: src/planned.ts\nplanned: true\n"
+	}
+}

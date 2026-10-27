@@ -1,0 +1,10 @@
+{
+	"rule": "core/history-entry",
+	"section": "§5.8",
+	"expectation": "violating",
+	"trigger": "commit with no history entry",
+	"expectRules": ["core/history-entry"],
+	"files": {
+		"sample.txt": "commit: abc123\nhistory: none\n"
+	}
+}

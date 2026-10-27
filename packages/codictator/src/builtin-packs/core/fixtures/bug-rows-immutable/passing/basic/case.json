@@ -1,0 +1,10 @@
+{
+	"rule": "core/bug-rows-immutable",
+	"section": "§5.8",
+	"expectation": "passing",
+	"trigger": "closed bug row edited",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "appended-note: row 0012\n"
+	}
+}

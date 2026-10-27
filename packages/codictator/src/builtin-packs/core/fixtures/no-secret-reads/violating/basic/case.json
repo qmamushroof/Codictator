@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-secret-reads",
+	"section": "§5.2",
+	"expectation": "violating",
+	"trigger": "agent tool reading .env directly",
+	"expectRules": ["core/no-secret-reads"],
+	"files": {
+		"sample.txt": "read: .env\nby: agent-tool\n"
+	}
+}

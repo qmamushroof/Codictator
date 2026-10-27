@@ -1,0 +1,10 @@
+{
+	"rule": "core/doc-size",
+	"section": "§5.10",
+	"expectation": "passing",
+	"trigger": "doc with 70000 bytes over a 40000 limit",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "bytes: 12000\nlines: 200\n"
+	}
+}

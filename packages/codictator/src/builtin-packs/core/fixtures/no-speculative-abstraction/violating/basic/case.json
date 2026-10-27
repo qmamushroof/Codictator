@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-speculative-abstraction",
+	"section": "§5.6",
+	"expectation": "violating",
+	"trigger": "interface with a single implementation",
+	"expectRules": ["core/no-speculative-abstraction"],
+	"files": {
+		"sample.txt": "interface: Store\nimplementations: 1\n"
+	}
+}

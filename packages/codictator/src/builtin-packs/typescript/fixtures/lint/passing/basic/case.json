@@ -1,0 +1,10 @@
+{
+	"rule": "ts/lint",
+	"section": "§6.1",
+	"expectation": "passing",
+	"trigger": "unused var binding failing the linter",
+	"expectRules": [],
+	"files": {
+		"sample.ts": "const used = 1;\nconsole.log(used);\n"
+	}
+}

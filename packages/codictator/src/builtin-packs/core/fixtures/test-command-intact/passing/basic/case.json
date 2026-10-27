@@ -1,0 +1,10 @@
+{
+	"rule": "core/test-command-intact",
+	"section": "§5.5",
+	"expectation": "passing",
+	"trigger": "test command narrowed to one file",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "test: npm test\n"
+	}
+}

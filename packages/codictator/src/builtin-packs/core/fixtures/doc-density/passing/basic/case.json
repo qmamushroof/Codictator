@@ -1,0 +1,10 @@
+{
+	"rule": "core/doc-density",
+	"section": "§5.10",
+	"expectation": "passing",
+	"trigger": "sentence with 70 words over a 40 limit",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "sentence-words: 18\nparagraph-sentences: 4\n"
+	}
+}

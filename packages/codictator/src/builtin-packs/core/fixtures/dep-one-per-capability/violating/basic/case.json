@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-one-per-capability",
+	"section": "§5.3",
+	"expectation": "violating",
+	"trigger": "two HTTP clients for one capability",
+	"expectRules": ["core/dep-one-per-capability"],
+	"files": {
+		"sample.txt": "http: axios + got\n"
+	}
+}

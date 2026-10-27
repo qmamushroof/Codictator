@@ -1,0 +1,10 @@
+{
+	"rule": "core/session-tool-call-limit",
+	"section": "§5.1",
+	"expectation": "violating",
+	"trigger": "320 tool calls against a 300 limit",
+	"expectRules": ["core/session-tool-call-limit"],
+	"files": {
+		"sample.txt": "tool-calls: 320\nlimit: 300\n"
+	}
+}

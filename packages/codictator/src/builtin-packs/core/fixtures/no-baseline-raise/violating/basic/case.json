@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-baseline-raise",
+	"section": "§5.5",
+	"expectation": "violating",
+	"trigger": "baseline violations raised 12 to 15",
+	"expectRules": ["core/no-baseline-raise"],
+	"files": {
+		"sample.txt": "baseline: 12 -> 15\n"
+	}
+}

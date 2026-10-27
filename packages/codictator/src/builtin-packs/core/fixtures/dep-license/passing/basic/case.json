@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-license",
+	"section": "§5.3",
+	"expectation": "passing",
+	"trigger": "dependency outside the allowed license list",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "dep: some-mit-lib\nlicense: MIT\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/remediation-step-size",
+	"section": "§5.6",
+	"expectation": "passing",
+	"trigger": "remediation touching 14 files and 900 lines",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "files: 4\nchanged-lines: 180\n"
+	}
+}

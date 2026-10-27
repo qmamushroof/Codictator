@@ -1,0 +1,10 @@
+{
+	"rule": "core/read-dedupe",
+	"section": "§5.1",
+	"expectation": "violating",
+	"trigger": "same file read twice in one session",
+	"expectRules": ["core/read-dedupe"],
+	"files": {
+		"sample.txt": "reads:\n  - src/a.ts\n  - src/a.ts\n"
+	}
+}

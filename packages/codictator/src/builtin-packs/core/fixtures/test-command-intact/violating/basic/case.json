@@ -1,0 +1,10 @@
+{
+	"rule": "core/test-command-intact",
+	"section": "§5.5",
+	"expectation": "violating",
+	"trigger": "test command narrowed to one file",
+	"expectRules": ["core/test-command-intact"],
+	"files": {
+		"sample.txt": "test: node --test one-file.ts\n"
+	}
+}

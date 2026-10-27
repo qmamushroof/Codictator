@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-new-suppressions",
+	"section": "§5.5",
+	"expectation": "passing",
+	"trigger": "new lint suppression added",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "added: none\n"
+	}
+}

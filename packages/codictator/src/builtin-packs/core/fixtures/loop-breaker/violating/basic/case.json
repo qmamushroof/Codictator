@@ -1,0 +1,10 @@
+{
+	"rule": "core/loop-breaker",
+	"section": "§5.9",
+	"expectation": "violating",
+	"trigger": "agent repeats 5 times over a 3 limit",
+	"expectRules": ["core/loop-breaker"],
+	"files": {
+		"sample.txt": "repeats: 5\nlimit: 3\n"
+	}
+}

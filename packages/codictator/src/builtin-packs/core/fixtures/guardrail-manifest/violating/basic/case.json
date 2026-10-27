@@ -1,0 +1,10 @@
+{
+	"rule": "core/guardrail-manifest",
+	"section": "§5.12",
+	"expectation": "violating",
+	"trigger": "guardrail manifest missing",
+	"expectRules": ["core/guardrail-manifest"],
+	"files": {
+		"sample.txt": "manifest: missing\n"
+	}
+}

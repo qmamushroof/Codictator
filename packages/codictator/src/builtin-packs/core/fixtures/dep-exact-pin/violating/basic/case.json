@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-exact-pin",
+	"section": "§5.3",
+	"expectation": "violating",
+	"trigger": "caret range instead of an exact pin",
+	"expectRules": ["core/dep-exact-pin"],
+	"files": {
+		"package.json": "{\n  \"dependencies\": {\n    \"left-pad\": \"^1.3.0\"\n  }\n}\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/dangerous-shell",
+	"section": "§5.2",
+	"expectation": "passing",
+	"trigger": "piped remote script over http",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "run: npm ci --ignore-scripts\n"
+	}
+}

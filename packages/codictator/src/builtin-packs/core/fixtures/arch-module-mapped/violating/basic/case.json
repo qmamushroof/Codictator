@@ -1,0 +1,10 @@
+{
+	"rule": "core/arch-module-mapped",
+	"section": "§5.7",
+	"expectation": "violating",
+	"trigger": "source file mapped to no module",
+	"expectRules": ["core/arch-module-mapped"],
+	"files": {
+		"sample.txt": "file: src/orphan.ts\nmodule: unmapped\n"
+	}
+}

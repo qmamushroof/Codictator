@@ -1,0 +1,10 @@
+{
+	"rule": "core/doc-one-level",
+	"section": "§5.10",
+	"expectation": "violating",
+	"trigger": "docs nested three levels deep",
+	"expectRules": ["core/doc-one-level"],
+	"files": {
+		"sample.txt": "path: docs/a/b/c.md\n"
+	}
+}

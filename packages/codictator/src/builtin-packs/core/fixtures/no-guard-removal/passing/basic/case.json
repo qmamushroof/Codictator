@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-guard-removal",
+	"section": "§5.6",
+	"expectation": "passing",
+	"trigger": "deleted throw line in a surviving function",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "removed: none\nguard: kept\n"
+	}
+}

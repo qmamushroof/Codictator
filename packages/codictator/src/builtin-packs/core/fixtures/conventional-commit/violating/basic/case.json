@@ -1,0 +1,10 @@
+{
+	"rule": "core/conventional-commit",
+	"section": "§5.11",
+	"expectation": "violating",
+	"trigger": "commit subject with no type prefix",
+	"expectRules": ["core/conventional-commit"],
+	"files": {
+		"commit.txt": "subject: fixed stuff\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/arch-public-entry",
+	"section": "§5.7",
+	"expectation": "passing",
+	"trigger": "deep import past the public entry",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "import: engine/index.js\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/function-size",
+	"section": "§5.6",
+	"expectation": "violating",
+	"trigger": "function with 95 lines over a 40 limit",
+	"expectRules": ["core/function-size"],
+	"files": {
+		"sample.txt": "function-lines: 95\nlimit: 40\n"
+	}
+}

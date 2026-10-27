@@ -1,0 +1,10 @@
+{
+	"rule": "core/doc-no-corpus-counts",
+	"section": "§5.10",
+	"expectation": "passing",
+	"trigger": "hardcoded corpus count in a doc",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "text: no counts\n"
+	}
+}

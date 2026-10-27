@@ -1,0 +1,10 @@
+{
+	"rule": "core/red-before-green",
+	"section": "§5.4",
+	"expectation": "violating",
+	"trigger": "test and fix landed together with no red proof",
+	"expectRules": ["core/red-before-green"],
+	"files": {
+		"sample.txt": "red-proof: none\nfix: same commit\n"
+	}
+}

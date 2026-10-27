@@ -1,0 +1,10 @@
+{
+	"rule": "core/conventional-commit",
+	"section": "§5.11",
+	"expectation": "passing",
+	"trigger": "commit subject with no type prefix",
+	"expectRules": [],
+	"files": {
+		"commit.txt": "subject: fix(core): drop dead export\n"
+	}
+}

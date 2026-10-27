@@ -1,0 +1,10 @@
+{
+	"rule": "ts/security-patterns",
+	"section": "§6.1",
+	"expectation": "violating",
+	"trigger": "eval on user input",
+	"expectRules": ["ts/security-patterns"],
+	"files": {
+		"sample.ts": "eval(userInput);\n"
+	}
+}

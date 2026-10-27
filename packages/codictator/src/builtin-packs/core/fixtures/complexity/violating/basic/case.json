@@ -1,0 +1,10 @@
+{
+	"rule": "core/complexity",
+	"section": "§5.6",
+	"expectation": "violating",
+	"trigger": "cyclomatic complexity 14 over a 10 limit",
+	"expectRules": ["core/complexity"],
+	"files": {
+		"sample.txt": "cyclomatic: 14\nlimit: 10\n"
+	}
+}

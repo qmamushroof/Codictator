@@ -1,0 +1,10 @@
+{
+	"rule": "core/arch-boundaries",
+	"section": "§5.7",
+	"expectation": "violating",
+	"trigger": "import along a forbidden edge",
+	"expectRules": ["core/arch-boundaries"],
+	"files": {
+		"sample.txt": "import: engine -> adapters\nallowed: false\n"
+	}
+}

@@ -1,0 +1,10 @@
+{
+	"rule": "core/dep-one-per-capability",
+	"section": "§5.3",
+	"expectation": "passing",
+	"trigger": "two HTTP clients for one capability",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "http: platform fetch\n"
+	}
+}

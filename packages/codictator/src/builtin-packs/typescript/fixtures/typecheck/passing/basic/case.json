@@ -1,0 +1,10 @@
+{
+	"rule": "ts/typecheck",
+	"section": "§6.1",
+	"expectation": "passing",
+	"trigger": "type error assigning string to number",
+	"expectRules": [],
+	"files": {
+		"sample.ts": "const x: number = 1;\n"
+	}
+}

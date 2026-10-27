@@ -1,0 +1,10 @@
+{
+	"rule": "core/repo-hygiene",
+	"section": "§5.11",
+	"expectation": "violating",
+	"trigger": "committed build output directory",
+	"expectRules": ["core/repo-hygiene"],
+	"files": {
+		"sample.txt": "committed: node_modules/\n"
+	}
+}

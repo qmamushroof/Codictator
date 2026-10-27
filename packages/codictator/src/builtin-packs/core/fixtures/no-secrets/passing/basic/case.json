@@ -1,0 +1,10 @@
+{
+	"rule": "core/no-secrets",
+	"section": "§5.2",
+	"expectation": "passing",
+	"trigger": "hardcoded AWS secret key in source",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "aws_secret_access_key = env(\"AWS_SECRET_ACCESS_KEY\")\n"
+	}
+}

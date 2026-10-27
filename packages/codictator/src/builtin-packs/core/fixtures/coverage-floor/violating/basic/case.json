@@ -1,0 +1,10 @@
+{
+	"rule": "core/coverage-floor",
+	"section": "§5.4",
+	"expectation": "violating",
+	"trigger": "coverage below the lines and branches floor",
+	"expectRules": ["core/coverage-floor"],
+	"files": {
+		"sample.txt": "lines: 82%\nbranches: 70%\n"
+	}
+}

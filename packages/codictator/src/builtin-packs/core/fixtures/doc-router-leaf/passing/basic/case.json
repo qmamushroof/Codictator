@@ -1,0 +1,10 @@
+{
+	"rule": "core/doc-router-leaf",
+	"section": "§5.10",
+	"expectation": "passing",
+	"trigger": "folder without its router leaf",
+	"expectRules": [],
+	"files": {
+		"sample.txt": "folder: GUIDE/\nrouter: GUIDE.md\n"
+	}
+}
