@@ -1,0 +1,63 @@
+# 4.11 arch
+
+**[◀ 4.10 testing](04-10-TESTING.md)** · [SPEC index](../SPEC.md) · **[4.12 workflow ▶](04-12-WORKFLOW.md)**
+
+Architecture profiles and their compiler-level gatekeepers (PRD §8 F7, §12 #25). One language-neutral graph engine fed by per-language import extractors (§6); compiler strictness is per pack (§6).
+
+## 4.11.1 Profiles
+
+| Profile | Module kinds | Default rules (floor) |
+|---|---|---|
+| `app` (default) — feature-based clean modular monolith | `feature`, `shared`, `kernel`, `composition` | Features import other features only if declared in `dependsOn`, and only through the target's public entry; `shared` and `kernel` never import features; `kernel` imports only `kernel`; `composition` (entry points, DI roots) may import anything but nothing imports it; no cycles |
+| `library` | `public`, `internal`, `kernel` | Consumers and tests import only `public` entries; `internal` never re-exported by path; no cycles |
+| `cli` | `command`, `feature`, `kernel`, `composition` | `app` rules plus: commands import features; features never import commands |
+| `service` | `transport`, `feature`, `shared`, `kernel`, `composition` | `app` rules plus: only `transport` handles requests and imports features; features never import `transport` |
+
+**Clean layers inside a module** (`architecture.layers`, on by default for `app` and `service`): `domain` imports only `domain` and `kernel`; `application` adds `domain`; `infrastructure` and `ui`/`api` add `application`. Folder names are configurable; the direction is not.
+
+## 4.11.2 Module map
+
+`config.architecture` (§7.2): `profile`, `modules[]` (`name`, `path` glob, `kind`, `entry`, `dependsOn[]`), `layers`, `deny[]`. Users may add `deny` rules and remove `dependsOn` edges freely (tightening). Adding a `dependsOn` edge is a design change, allowed only if the graph stays acyclic, and is recorded in the change history; there is no `allow` rule that overrides a profile rule (`CDX-E105` on attempt).
+
+`init` proposes a map from the folder structure (`src/features/*`, `src/modules/*`, `.csproj` per project, Python packages) and the user accepts it.
+
+## 4.11.3 Import graph
+
+| Step | Rule |
+|---|---|
+| Extract | Pack extractor lexes each source file (no compiler API): ES `import`/`export … from`/dynamic `import()`/`require()`; C# `ProjectReference` + `using`; Python `import`/`from … import`, relative levels |
+| Resolve | Relative paths; TS `paths`/`baseUrl` from the nearest tsconfig; package self-references; .NET project → namespace roots; Python `src/` layout and namespace packages. External packages become external nodes |
+| Assign | Each source file belongs to exactly one module (first matching `path`) |
+| Cache | `.codictator/cache/graph.json` keyed by file content hash, so L1 re-lexes only the edited file |
+
+## 4.11.4 Checks
+
+| Rule | Check | Layers |
+|---|---|---|
+| `core/arch-profile-declared` | `config.architecture.profile` set and every module kind valid for it | L4 |
+| `core/arch-module-mapped` | Every source file maps to a module | L1, L2, L4 |
+| `core/arch-boundaries` | Every edge allowed by profile, layers, `dependsOn` and `deny` | L1, L2, L3, L4 |
+| `core/arch-public-entry` | Cross-module imports target the module's `entry` only | L1, L2, L3, L4 |
+| `core/arch-no-cycles` | No cycle between modules (Tarjan SCC); L1 checks only cycles through new edges | L1, L4 |
+| `core/arch-module-size` | Files and lines per module (fitness function) | L4 |
+| `core/compiler-strict` | Pack's strict-compiler settings present (§6) | L3, L4 |
+
+L1 checks `tool.pre.write` when the adapter can compute the resulting file (full write, or edit applied to current content), so a boundary violation is blocked before it exists; otherwise it checks `tool.post.write`.
+
+## 4.11.5 Edge cases
+
+| EC | Case | Expected |
+|---|---|---|
+| EC-1 | `features/a` imports `features/b/internal/x` | Block `core/arch-public-entry`; remediation: import from `features/b` entry or move `x` |
+| EC-2 | `features/a` imports `features/b` without `dependsOn` | Block `core/arch-boundaries` |
+| EC-3 | New edge closes a cycle a → b → a | Block, message prints the cycle |
+| EC-4 | Type-only import across a forbidden edge | Block; type imports are edges |
+| EC-5 | Dynamic `import()` with a non-literal argument | Finding `unresolvable-dynamic-import`: block in `kernel`/`domain`, advise elsewhere (stated limit) |
+| EC-6 | Import through a re-exporting barrel inside the same module | Allowed |
+| EC-7 | `require` inside a string or comment | Ignored by the lexer |
+| EC-8 | Source file outside every module glob | Block `core/arch-module-mapped` |
+| EC-9 | tsconfig `paths` alias resolving into another module's internals | Block like a deep import |
+| EC-10 | Test file importing internals of the module it tests | Allowed for test files of that module only |
+| EC-11 | Generated code folder | Excluded only if every file in it carries a generated header (`@generated`, `<auto-generated`, `# Generated by`); a hand-written file there makes the folder count again |
+| EC-12 | Adding `dependsOn` that creates a cycle | `CDX-E105` at config validation |
+| EC-13 | Windows path separators in imports | Normalised before resolution |
