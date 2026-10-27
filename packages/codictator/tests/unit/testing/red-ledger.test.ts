@@ -1,7 +1,7 @@
 // SPEC §10.7: the red-ledger runner proves each failure mode. Green tests pin
-// the pure verdict logic; the four planning-titled tests stay red until the CI
-// base comparison lands in step 1.8, which is the only unimplemented path
-// they touch.
+// the pure verdict logic; the four planning-titled tests pin the base
+// comparison the CI workflow runs in step 1.8, which is the applied path they
+// touch.
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import type { TestOutcome } from "../../../src/testing/index.ts";

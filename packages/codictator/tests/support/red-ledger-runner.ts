@@ -11,10 +11,12 @@ import type { FailureMode, TestOutcome } from "../../src/testing/index.ts";
 import {
 	evaluateRun,
 	filterRedByCovers,
+	findNewlyListed,
 	formatRunReport,
 	parseCoverSpecifier,
 	parseLedgerFile,
 	parseTap,
+	splitTestId,
 } from "../../src/testing/index.ts";
 
 interface PackagePaths {
@@ -57,25 +59,143 @@ export interface BaseApplied {
 	}>;
 }
 
-export interface BaseDeferred {
-	readonly applied: false;
-	readonly exitCode: 2;
-	readonly remediation: string;
+// SPEC §10.7 Adding rule: exit 0 iff the head ledger verdict is clean and no
+// base test is newly listed; failures names every surviving mode.
+export function runBaseComparison(input: BaseRunInput): BaseApplied {
+	const verdict = evaluateRun(input.headRed, input.outcomes);
+	const failures: Array<{
+		readonly mode: FailureMode;
+		readonly testId: string;
+	}> = [...verdict.violations];
+	for (const testId of findNewlyListed(
+		input.baseRed,
+		input.headRed,
+		input.baseTestIds,
+	)) {
+		failures.push({ mode: "newly-listed", testId });
+	}
+	return {
+		applied: true,
+		exitCode: failures.length === 0 ? 0 : 1,
+		failures,
+	};
 }
 
-export type BaseRunResult = BaseApplied | BaseDeferred;
+function repoRoot(): string {
+	const here = path.dirname(fileURLToPath(import.meta.url));
+	return path.resolve(here, "..", "..", "..", "..");
+}
 
-// SPEC §10.7 Adding rule enforcement (git base resolution) lands with the CI
-// workflow in step 1.8. This contract is what 1.8 implements: applied true,
-// exit 0 iff the head ledger verdict is clean and no base test is newly
-// listed, failures naming each surviving mode.
-export function runBaseComparison(_input: BaseRunInput): BaseRunResult {
-	return {
-		applied: false,
-		exitCode: 2,
-		remediation:
-			"ledger base comparison lands with the CI workflow in step 1.8; re-run then",
-	};
+function gitShowFile(
+	root: string,
+	rev: string,
+	file: string,
+): string | undefined {
+	try {
+		return execFileSync("git", ["show", `${rev}:${file}`], {
+			cwd: root,
+			encoding: "utf8",
+			maxBuffer: 10 * 1024 * 1024,
+			stdio: ["ignore", "pipe", "ignore"],
+		});
+	} catch {
+		// SPEC §10.7 Adding rule: absence at the base is a defined
+		// non-violation, so only content the base revision has can be newly
+		// listed. The revision itself is verified up front instead.
+		return undefined;
+	}
+}
+
+function verifyBaseRef(root: string, baseRef: string): void {
+	try {
+		execFileSync("git", ["rev-parse", "--verify", baseRef], {
+			cwd: root,
+			stdio: "ignore",
+		});
+	} catch {
+		throw new Error(
+			`unknown base revision for the ledger comparison; fetch it before comparing`,
+		);
+	}
+}
+
+function baseTestIdsFor(
+	root: string,
+	packageName: string,
+	baseRef: string,
+	headRed: ReadonlyArray<string>,
+	baseRed: ReadonlyArray<string>,
+): Array<string> {
+	const listedBefore = new Set(baseRed);
+	const preExisting: Array<string> = [];
+	for (const entry of headRed) {
+		if (listedBefore.has(entry)) {
+			continue;
+		}
+		const split = splitTestId(entry);
+		if (split === undefined) {
+			continue;
+		}
+		const baseContent = gitShowFile(
+			root,
+			baseRef,
+			`packages/${packageName}/${split.file}`,
+		);
+		if (baseContent?.includes(split.title)) {
+			preExisting.push(entry);
+		}
+	}
+	return preExisting;
+}
+
+function runBaseCheck(baseRef: string): {
+	readonly output: string;
+	readonly exitCode: number;
+} {
+	const root = repoRoot();
+	verifyBaseRef(root, baseRef);
+	const lines: Array<string> = [];
+	let failed = false;
+	for (const pkg of packagePaths()) {
+		const ledger = loadLedger(pkg.testsDir, pkg.name);
+		const headRed: ReadonlyArray<string> = ledger.red;
+		const baseText = gitShowFile(
+			root,
+			baseRef,
+			`packages/${pkg.name}/tests/red-ledger.json`,
+		);
+		const baseRed: ReadonlyArray<string> =
+			baseText === undefined ? [] : parseLedgerFile(JSON.parse(baseText)).red;
+		const baseTestIds = baseTestIdsFor(
+			root,
+			pkg.name,
+			baseRef,
+			headRed,
+			baseRed,
+		);
+		const outcomes = collectOutcomes(pkg, discoverTestFiles(pkg.testsDir));
+		const compared = runBaseComparison({
+			outcomes,
+			headRed,
+			baseRed,
+			baseTestIds,
+			baseRef,
+		});
+		if (compared.exitCode !== 0) {
+			failed = true;
+			lines.push(`FAIL ${pkg.name} vs ${baseRef}`);
+			for (const failure of compared.failures) {
+				lines.push(`  ${failure.mode} ${failure.testId}`);
+			}
+		}
+	}
+	if (!failed) {
+		return {
+			output: `ledger base comparison clean vs ${baseRef}`,
+			exitCode: 0,
+		};
+	}
+	return { output: lines.join("\n"), exitCode: 1 };
 }
 
 function packagePaths(): Array<PackagePaths> {
@@ -320,21 +440,7 @@ function main(): void {
 		if (args.mode === "query") {
 			result = queryLedger(args.covers, args.packages);
 		} else if (args.mode === "base") {
-			const deferred = runBaseComparison({
-				outcomes: [],
-				headRed: [],
-				baseRed: [],
-				baseTestIds: [],
-				baseRef: args.baseRef,
-			});
-			if (deferred.applied) {
-				const failures = deferred.failures.map(
-					(failure) => `${failure.mode} ${failure.testId}`,
-				);
-				result = { output: failures.join("\n"), exitCode: deferred.exitCode };
-			} else {
-				result = { output: deferred.remediation, exitCode: deferred.exitCode };
-			}
+			result = runBaseCheck(args.baseRef);
 		} else {
 			result = runSuite();
 		}
