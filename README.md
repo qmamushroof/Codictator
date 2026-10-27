@@ -1,0 +1,2 @@
+# Codictator
+Code + dictator
