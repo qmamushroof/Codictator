@@ -1,0 +1,31 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator capability declaration (SPEC §7.9)",
+	"type": "object",
+	"required": [
+		"harness",
+		"adapterVersion",
+		"verifiedAgainst",
+		"layers",
+		"controls",
+		"gaps"
+	],
+	"additionalProperties": false,
+	"properties": {
+		"harness": { "type": "string", "minLength": 1 },
+		"adapterVersion": { "type": "string", "minLength": 1 },
+		"verifiedAgainst": {
+			"type": "object",
+			"required": ["version", "date", "source"],
+			"additionalProperties": false,
+			"properties": {
+				"version": { "type": "string", "minLength": 1 },
+				"date": { "type": "string", "minLength": 1 },
+				"source": { "type": "string", "minLength": 1 }
+			}
+		},
+		"layers": { "type": "object" },
+		"controls": { "type": "object" },
+		"gaps": { "type": "array", "items": { "type": "string" } }
+	}
+}

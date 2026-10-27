@@ -1,0 +1,25 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator review findings file (SPEC §7.16)",
+	"type": "object",
+	"required": ["version", "findings"],
+	"additionalProperties": false,
+	"properties": {
+		"version": { "const": 1 },
+		"findings": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": ["id", "severity", "path", "message"],
+				"additionalProperties": false,
+				"properties": {
+					"id": { "type": "string", "minLength": 1 },
+					"severity": { "type": "string", "minLength": 1 },
+					"path": { "type": "string", "minLength": 1 },
+					"line": { "type": "integer", "minimum": 1 },
+					"message": { "type": "string", "minLength": 1 }
+				}
+			}
+		}
+	}
+}

@@ -14,9 +14,83 @@ test("[§10.3 item 1] arch guard reports zero findings on its own src", () => {
 });
 
 test("[§10.3 item 5] every module folder has a §3.3 row and SPEC leaf", () => {
-	const features = new URL("../../src/features/", import.meta.url);
-	assert.equal(existsSync(features), true);
+	for (const mod of expectedModules) {
+		const dir = path.join(srcRoot(), ...mod.dir.split("/"));
+		assert.equal(existsSync(dir), true, `missing module folder src/${mod.dir}`);
+		assert.equal(
+			existsSync(path.join(dir, "index.ts")),
+			true,
+			`missing public entry src/${mod.dir}/index.ts`,
+		);
+		assert.equal(
+			existsSync(path.join(specDir(), mod.leaf)),
+			true,
+			`missing SPEC leaf docs/SPEC/${mod.leaf} for src/${mod.dir}`,
+		);
+	}
+	const expectedDirs = new Set(expectedModules.map((mod) => mod.dir));
+	const unexpected = collectIndexedDirs().filter(
+		(dir) => !expectedDirs.has(dir) && !EXCUSED_INDEXED_DIRS.has(dir),
+	);
+	assert.deepEqual(unexpected, []);
 });
+
+// Every SPEC §3.3 module row and the SPEC leaf that owns its contract. The
+// legacy src/testing/ runner predates these contracts and moves to
+// src/features/testing/ later; it is the only excused indexed dir.
+const expectedModules: ReadonlyArray<{
+	readonly dir: string;
+	readonly leaf: string;
+}> = [
+	{ dir: "kernel", leaf: "04-01-KERNEL.md" },
+	{ dir: "features/config", leaf: "04-02-CONFIG.md" },
+	{ dir: "features/engine", leaf: "04-03-ENGINE.md" },
+	{ dir: "features/packs", leaf: "04-04-PACKS.md" },
+	{ dir: "features/adapters", leaf: "04-05-ADAPTERS.md" },
+	{ dir: "features/steering", leaf: "04-06-STEERING.md" },
+	{ dir: "features/security", leaf: "04-07-SECURITY-GUARDS.md" },
+	{ dir: "features/deps", leaf: "04-08-DEPENDENCIES.md" },
+	{ dir: "features/records", leaf: "04-09-RECORDS.md" },
+	{ dir: "features/arch", leaf: "04-11-ARCHITECTURE-GUARDS.md" },
+	{ dir: "features/workflow", leaf: "04-12-WORKFLOW.md" },
+	{ dir: "features/remediation", leaf: "04-13-REMEDIATION.md" },
+	{ dir: "features/integrity", leaf: "04-14-INTEGRITY.md" },
+	{ dir: "features/ci", leaf: "04-15-CI.md" },
+	{ dir: "features/generator", leaf: "04-16-GENERATOR.md" },
+	{ dir: "features/llm", leaf: "04-17-LLM.md" },
+	{ dir: "features/audit", leaf: "04-18-AUDIT.md" },
+	{ dir: "cli", leaf: "04-19-CLI.md" },
+	{ dir: "builtin-packs/core", leaf: "05-CORE-RULES.md" },
+	{ dir: "builtin-packs/typescript", leaf: "06-LANGUAGE-PACKS.md" },
+	{ dir: "builtin-packs/dotnet", leaf: "06-LANGUAGE-PACKS.md" },
+	{ dir: "builtin-packs/python", leaf: "06-LANGUAGE-PACKS.md" },
+];
+
+const EXCUSED_INDEXED_DIRS: ReadonlySet<string> = new Set(["testing"]);
+
+function specDir(): string {
+	return path.resolve(srcRoot(), "..", "..", "..", "docs", "SPEC");
+}
+
+function collectIndexedDirs(): Array<string> {
+	const root = srcRoot();
+	const found: Array<string> = [];
+	const walk = (dir: string): void => {
+		const entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
+			a.name < b.name ? -1 : 1,
+		);
+		if (entries.some((entry) => entry.isFile() && entry.name === "index.ts")) {
+			found.push(toPosixPath(path.relative(root, dir)));
+		}
+		for (const entry of entries) {
+			if (entry.isDirectory()) {
+				walk(path.join(dir, entry.name));
+			}
+		}
+	};
+	walk(root);
+	return found.filter((dir) => dir !== "");
+}
 
 // Items 2, 3, 4 and 6 scan the staged src/ and hold green: only the
 // testing module exists so far, so no src file may import the LLM, touch

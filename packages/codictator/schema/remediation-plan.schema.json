@@ -1,0 +1,44 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator remediation plan (SPEC §7.13)",
+	"type": "object",
+	"required": ["version", "generatedFrom", "steps"],
+	"additionalProperties": false,
+	"properties": {
+		"version": { "const": 1 },
+		"generatedFrom": {
+			"type": "object",
+			"required": ["head", "baselineHash"],
+			"additionalProperties": false,
+			"properties": {
+				"head": { "type": "string", "minLength": 1 },
+				"baselineHash": { "type": "string", "minLength": 1 }
+			}
+		},
+		"steps": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": [
+					"id",
+					"kind",
+					"scope",
+					"executor",
+					"dependsOn",
+					"status",
+					"attempts"
+				],
+				"additionalProperties": false,
+				"properties": {
+					"id": { "type": "string", "minLength": 1 },
+					"kind": { "type": "string", "minLength": 1 },
+					"scope": { "type": "array", "items": { "type": "string" } },
+					"executor": { "type": "string", "minLength": 1 },
+					"dependsOn": { "type": "array", "items": { "type": "string" } },
+					"status": { "type": "string", "minLength": 1 },
+					"attempts": { "type": "integer", "minimum": 0 }
+				}
+			}
+		}
+	}
+}

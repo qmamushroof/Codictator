@@ -1,0 +1,41 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator registry snapshot (SPEC §7.12)",
+	"type": "object",
+	"required": ["version", "ecosystem", "fetchedAt", "packages", "advisories"],
+	"additionalProperties": false,
+	"properties": {
+		"version": { "const": 1 },
+		"ecosystem": { "type": "string", "minLength": 1 },
+		"fetchedAt": { "type": "string", "minLength": 1 },
+		"packages": {
+			"type": "object",
+			"additionalProperties": {
+				"type": "object",
+				"required": ["versions"],
+				"additionalProperties": false,
+				"properties": {
+					"versions": {
+						"type": "object",
+						"additionalProperties": {
+							"type": "object",
+							"required": ["published"],
+							"additionalProperties": false,
+							"properties": {
+								"published": { "type": "string", "minLength": 1 },
+								"deprecated": { "type": "boolean" },
+								"yanked": { "type": "boolean" },
+								"license": { "type": "string" },
+								"engines": { "type": "object" }
+							}
+						}
+					}
+				}
+			}
+		},
+		"advisories": {
+			"type": "object",
+			"additionalProperties": { "type": "array", "items": { "type": "string" } }
+		}
+	}
+}

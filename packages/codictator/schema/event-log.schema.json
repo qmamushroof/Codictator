@@ -1,0 +1,52 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"title": "Codictator event log line (SPEC §7.10)",
+	"type": "object",
+	"required": [
+		"v",
+		"id",
+		"ts",
+		"now",
+		"kind",
+		"layer",
+		"trigger",
+		"ruleIds",
+		"durationMs",
+		"configHash",
+		"packs"
+	],
+	"additionalProperties": false,
+	"properties": {
+		"v": { "const": 1 },
+		"id": { "type": "string", "minLength": 1 },
+		"ts": { "type": "string", "minLength": 1 },
+		"now": { "type": "string", "minLength": 1 },
+		"kind": {
+			"enum": [
+				"verdict",
+				"injection",
+				"escalation",
+				"waiver",
+				"upgrade",
+				"integrity",
+				"tool",
+				"install",
+				"remediation",
+				"review",
+				"session",
+				"llm"
+			]
+		},
+		"layer": { "type": "string", "minLength": 1 },
+		"trigger": { "type": "string", "minLength": 1 },
+		"harness": { "type": "string" },
+		"sessionId": { "type": "string" },
+		"taskId": { "type": "string" },
+		"ruleIds": { "type": "array", "items": { "type": "string" } },
+		"decision": { "enum": ["allow", "advise", "block", "escalate"] },
+		"durationMs": { "type": "number", "minimum": 0 },
+		"configHash": { "type": "string", "minLength": 1 },
+		"packs": { "type": "object", "additionalProperties": { "type": "string" } },
+		"message": { "type": "string" }
+	}
+}
