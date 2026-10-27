@@ -73,3 +73,10 @@ function sortedJson(value: unknown): unknown {
 export function stableStringify(value: unknown): string {
 	return `${JSON.stringify(sortedJson(value), undefined, 2)}\n`;
 }
+
+// SPEC §4.18.1: the event log needs canonical single-line JSON (one object
+// per line), while generated files use the pretty stableStringify (§4.1.2).
+// Keys sort identically, so both forms hash the same content.
+export function stableLineStringify(value: unknown): string {
+	return `${JSON.stringify(sortedJson(value))}\n`;
+}

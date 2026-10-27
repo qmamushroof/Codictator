@@ -1,6 +1,10 @@
 // SPEC §4.18: event log, explain, summaries. Owns the §7.10 event log
 // line format.
 import type { Decision, Trigger } from "../engine/index.ts";
+import { appendEvent, LOG_REL, type NewEvent } from "./append.ts";
+import { type ReadEvents, readEvents } from "./read.ts";
+
+export { appendEvent, LOG_REL, type NewEvent, type ReadEvents, readEvents };
 
 export type EventKind =
 	| "verdict"
@@ -16,6 +20,14 @@ export type EventKind =
 	| "session"
 	| "llm";
 
+// SPEC §7.10: findings on the line carry rule, path, line and code only.
+export interface EventFinding {
+	readonly ruleId: string;
+	readonly path?: string;
+	readonly line?: number;
+	readonly code?: string;
+}
+
 export interface EventLogLine {
 	readonly v: 1;
 	readonly id: string;
@@ -29,6 +41,7 @@ export interface EventLogLine {
 	readonly taskId?: string;
 	readonly ruleIds: ReadonlyArray<string>;
 	readonly decision?: Decision;
+	readonly findings?: ReadonlyArray<EventFinding>;
 	readonly durationMs: number;
 	readonly configHash: string;
 	readonly packs: Readonly<Record<string, string>>;

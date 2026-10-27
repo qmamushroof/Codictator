@@ -2,8 +2,10 @@
 // (explicit, CODICTATOR_ROOT, or .git find-up from cwd); a write whose real
 // path after symlink resolution leaves the repo root or the OS temp dir fails
 // CDX-E701 with nothing written. Writes are atomic (temp file + rename) and
-// never executable (§9.2). Text is UTF-8 with the BOM stripped; non-UTF-8
-// stays bytes and readText reports binary-or-unknown-encoding (EC-12).
+// never executable (§9.2); appends are a single O_APPEND appendFile so
+// concurrent hook processes never interleave lines (§4.18.1). Text is UTF-8
+// with the BOM stripped; non-UTF-8 stays bytes and readText reports
+// binary-or-unknown-encoding (EC-12).
 import { randomBytes } from "node:crypto";
 import { promises as fsp } from "node:fs";
 import { tmpdir } from "node:os";
@@ -156,21 +158,15 @@ export class NodeFs implements Fs {
 		if (isRootPath(confined.value.real, this.root, this.tempRoot)) {
 			return err(outsideError());
 		}
-		let prior: Uint8Array = new Uint8Array(0);
-		if (await pathExists(confined.value.real)) {
-			const loaded = await this.loadFile(
-				confined.value.real,
-				confined.value.rel,
-			);
-			if (!loaded.ok) {
-				return err(loaded.error);
-			}
-			prior = loaded.value;
+		// SPEC §4.18.1: one O_APPEND appendFile per call, never
+		// read-modify-write, so concurrent hook processes keep whole lines.
+		try {
+			await fsp.mkdir(path.dirname(confined.value.real), { recursive: true });
+			await fsp.appendFile(confined.value.real, content);
+			return ok(undefined);
+		} catch (cause) {
+			return err(ioError("append", confined.value.rel, cause));
 		}
-		const joined = new Uint8Array(prior.length + content.length);
-		joined.set(prior, 0);
-		joined.set(content, prior.length);
-		return this.writeAtomic(confined.value.real, confined.value.rel, joined);
 	}
 
 	async stat(input: string): Promise<Result<FsStat>> {
