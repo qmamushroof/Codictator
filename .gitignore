@@ -1,0 +1,11 @@
+.codictator/cache/
+.codictator/state/
+.codictator/tool/node_modules/
+.venv/
+__pycache__/
+bin/
+build/
+coverage/
+dist/
+node_modules/
+obj/
