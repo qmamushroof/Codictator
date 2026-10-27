@@ -6,12 +6,25 @@ import type { Result } from "./result.ts";
 export { readTomlKeys, readYamlKeys } from "./config-keys.ts";
 export type { CdxError } from "./errors.ts";
 export { makeError } from "./errors.ts";
+export type { NodeFsOptions } from "./fs.ts";
+export { NodeFs } from "./fs.ts";
+export type { ConfinedPath } from "./fs-confine.ts";
+export { confinePath } from "./fs-confine.ts";
+export {
+	encodingError,
+	ioError,
+	notFoundError,
+	outsideError,
+	readFailure,
+} from "./fs-errors.ts";
 export { globMatch } from "./glob.ts";
 export { normalizeText, sha256Hex, sha256Text } from "./hash.ts";
 export { parseJson, stableStringify } from "./json.ts";
 export { toRepoPath } from "./path.ts";
 export { checkPattern } from "./pattern.ts";
+export { buildProcEnv, NodeProc, PROC_ENV_ALLOWLIST } from "./proc.ts";
 export { redactSecrets } from "./redact.ts";
+export { pathExists, resolveRepoRoot } from "./repo-root.ts";
 export type { Result } from "./result.ts";
 export { err, ok } from "./result.ts";
 export { validateSchema } from "./schema.ts";
