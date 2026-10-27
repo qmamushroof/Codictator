@@ -44,7 +44,8 @@ export function entryMatchesCover(
 	filter: CoverFilter,
 ): boolean {
 	const title = titleOf(testId);
-	if (!title.includes(`§${filter.section}`)) {
+	const escaped = filter.section.replace(/\./g, "\\.");
+	if (new RegExp(`§${escaped}(?![0-9.])`).exec(title) === null) {
 		return false;
 	}
 	if (filter.firstEc === undefined || filter.lastEc === undefined) {

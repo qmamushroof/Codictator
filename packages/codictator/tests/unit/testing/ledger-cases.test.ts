@@ -137,3 +137,41 @@ test("[§10.7] parseTap closes nested subtests on a dedented result", () => {
 		{ title: "outer > dedented", passed: true },
 	]);
 });
+
+test("[§10.7] entryMatchesCover does not match a longer section prefix", () => {
+	const one = parseCoverSpecifier("§4.1");
+	const two = parseCoverSpecifier("§4.2");
+	assert.notEqual(one, undefined);
+	assert.notEqual(two, undefined);
+	if (one === undefined || two === undefined) {
+		return;
+	}
+	assert.equal(
+		entryMatchesCover("tests/a.test.ts::[§4.1 EC-1] kernel", one),
+		true,
+	);
+	assert.equal(
+		entryMatchesCover("tests/a.test.ts::[§4.10 EC-1] net", one),
+		false,
+	);
+	assert.equal(
+		entryMatchesCover("tests/a.test.ts::[§4.19 EC-1] meta", one),
+		false,
+	);
+	assert.equal(
+		entryMatchesCover("tests/a.test.ts::[§4.20 EC-1] other", two),
+		false,
+	);
+});
+
+test("[§10.7] entryMatchesCover still matches a section at end of title", () => {
+	const section = parseCoverSpecifier("§10.3");
+	assert.notEqual(section, undefined);
+	if (section === undefined) {
+		return;
+	}
+	assert.equal(
+		entryMatchesCover("tests/a.test.ts::[§10.3 item 1] arch guard", section),
+		true,
+	);
+});

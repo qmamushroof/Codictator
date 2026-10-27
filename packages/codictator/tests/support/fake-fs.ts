@@ -4,6 +4,7 @@
 // Unseeded reads are programmer errors and reject; kernel failures are
 // simulated with failNext carrying a real SPEC §8 error from the caller.
 import type { CdxError, Fs, FsStat, Result } from "../../src/kernel/index.ts";
+import { encodingError } from "../../src/kernel/index.ts";
 
 function normalizeKey(path: string): string {
 	const slashes = path.split("\\").join("/");
@@ -112,10 +113,19 @@ export class FakeFs implements Fs {
 		if (found === undefined) {
 			return this.missing(path);
 		}
-		return Promise.resolve<Result<string>>({
-			ok: true,
-			value: new TextDecoder().decode(found),
-		});
+		// SPEC §4.1.3 EC-12: non-UTF-8 stays bytes; readText reports
+		// binary-or-unknown-encoding like NodeFs, instead of replacing.
+		try {
+			return Promise.resolve<Result<string>>({
+				ok: true,
+				value: new TextDecoder("utf-8", { fatal: true }).decode(found),
+			});
+		} catch {
+			return Promise.resolve<Result<string>>({
+				ok: false,
+				error: encodingError(path),
+			});
+		}
 	}
 
 	write(path: string, content: Uint8Array): Promise<Result<void>> {

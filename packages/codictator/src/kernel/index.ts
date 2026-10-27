@@ -3,7 +3,9 @@
 // makes every other module testable without I/O.
 import type { Result } from "./result.ts";
 
+export { SystemClock } from "./clock.ts";
 export { readTomlKeys, readYamlKeys } from "./config-keys.ts";
+export { NodeEnv } from "./env.ts";
 export type { CdxError } from "./errors.ts";
 export { makeError } from "./errors.ts";
 export type { NodeFsOptions } from "./fs.ts";
@@ -17,9 +19,19 @@ export {
 	outsideError,
 	readFailure,
 } from "./fs-errors.ts";
+export { NodeGit } from "./git.ts";
 export { globMatch } from "./glob.ts";
 export { normalizeText, sha256Hex, sha256Text } from "./hash.ts";
 export { parseJson, stableStringify } from "./json.ts";
+export type { NodeNetOptions } from "./net.ts";
+export {
+	NET_ALLOWLIST,
+	NET_MAX_BODY_BYTES,
+	NET_MAX_REDIRECTS,
+	NodeNet,
+	netHostAllowed,
+	rejectNetUrl,
+} from "./net.ts";
 export { toRepoPath } from "./path.ts";
 export { checkPattern } from "./pattern.ts";
 export { buildProcEnv, NodeProc, PROC_ENV_ALLOWLIST } from "./proc.ts";
