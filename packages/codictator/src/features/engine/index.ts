@@ -121,9 +121,4 @@ export function matchWaivers(
 }
 
 // SPEC §4.3.5: ratchet comparison against the baseline.
-export function compareRatchet(
-	_baseline: Readonly<Record<string, number>>,
-	_current: Readonly<Record<string, number>>,
-): ReadonlyArray<string> {
-	throw new Error("not implemented: SPEC §4.3.5");
-}
+export { compareRatchet } from "./ratchet.ts";

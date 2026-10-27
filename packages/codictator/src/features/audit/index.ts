@@ -4,6 +4,7 @@ import type { Decision, Trigger } from "../engine/index.ts";
 import { appendEvent, LOG_REL, type NewEvent } from "./append.ts";
 import { type ReadEvents, readEvents } from "./read.ts";
 
+export { summarize } from "./summarize.ts";
 export { appendEvent, LOG_REL, type NewEvent, type ReadEvents, readEvents };
 
 export type EventKind =
@@ -53,9 +54,4 @@ export interface EventLogLine {
 // SPEC §4.18.2: human-readable explanation of an event id.
 export function explain(_eventId: string): Promise<string> {
 	throw new Error("not implemented: SPEC §4.18.2");
-}
-
-// SPEC §4.18.3: status summary over recent events.
-export function summarize(_since: string, _limit: number): Promise<string> {
-	throw new Error("not implemented: SPEC §4.18.3");
 }
