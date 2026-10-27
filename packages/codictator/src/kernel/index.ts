@@ -1,15 +1,22 @@
-// SPEC §4.1: the only module that touches the OS, network, clock or
-// randomness. Every other module receives these ports by injection.
-export interface CdxError {
-	readonly code: string;
-	readonly message: string;
-	readonly detail?: string;
-	readonly remediation: string;
-}
+// SPEC §4.1: the only module that touches the operating system, the network
+// or the clock (§3.3). Everything else receives ports by injection, which
+// makes every other module testable without I/O.
+import type { Result } from "./result.ts";
 
-export type Result<T> =
-	| { readonly ok: true; readonly value: T }
-	| { readonly ok: false; readonly error: CdxError };
+export { readTomlKeys, readYamlKeys } from "./config-keys.ts";
+export type { CdxError } from "./errors.ts";
+export { makeError } from "./errors.ts";
+export { globMatch } from "./glob.ts";
+export { normalizeText, sha256Hex, sha256Text } from "./hash.ts";
+export { parseJson, stableStringify } from "./json.ts";
+export { toRepoPath } from "./path.ts";
+export { checkPattern } from "./pattern.ts";
+export { redactSecrets } from "./redact.ts";
+export type { Result } from "./result.ts";
+export { err, ok } from "./result.ts";
+export { validateSchema } from "./schema.ts";
+export type { TestCaseResult } from "./test-report.ts";
+export { readTestReport } from "./test-report.ts";
 
 export type Instant = string;
 
@@ -20,7 +27,9 @@ export interface FsStat {
 }
 
 // SPEC §4.1.1: all paths resolve against the repo root; a write whose real
-// path leaves the repo root or the OS temp dir fails with CDX-E701.
+// path (after symlink resolution) leaves the repo root or the OS temp dir
+// fails with CDX-E701. Writes are atomic (temp file + rename). Text is read
+// as UTF-8; a BOM is stripped and reported to the caller.
 export interface Fs {
 	readonly read: (path: string) => Promise<Result<Uint8Array>>;
 	readonly readText: (path: string) => Promise<Result<string>>;
@@ -110,68 +119,4 @@ export interface Ports {
 	readonly clock: Clock;
 	readonly git: Git;
 	readonly env: Env;
-}
-
-// SPEC §4.1.2: the only JSON.parse call in the codebase.
-export function parseJson(_text: string): Result<unknown> {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-// SPEC §4.1.2: JSON Schema 2020-12 subset; unsupported keywords are a load
-// error (CDX-E201), never ignored.
-export function validateSchema(_schema: string, _value: unknown): Result<void> {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-export function sha256Hex(_bytes: Uint8Array): string {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-// SPEC §4.1.2: first 4 characters plus length; detectors live here so other
-// modules redact without importing security (§3.3).
-export function redactSecrets(_text: string): string {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-// SPEC §4.1.2: CRLF and CR become LF before hashing.
-export function normalizeText(_text: string): string {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-// SPEC §4.1.2: POSIX-separated, repo-relative; rejects .. escapes.
-export function toRepoPath(_path: string): Result<string> {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-export function globMatch(_pattern: string, _path: string): boolean {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-// SPEC §4.1.2: sorted keys, 2-space indent, trailing newline.
-export function stableStringify(_value: unknown): string {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-export function readTomlKeys(
-	_text: string,
-	_keys: ReadonlyArray<string>,
-): Result<Readonly<Record<string, string>>> {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-export function readYamlKeys(
-	_text: string,
-	_keys: ReadonlyArray<string>,
-): Result<Readonly<Record<string, string>>> {
-	throw new Error("not implemented: SPEC §4.1.2");
-}
-
-export interface TestCaseResult {
-	readonly id: string;
-	readonly title: string;
-	readonly outcome: "passed" | "failed" | "skipped";
-}
-
-export function readTestReport(_xml: string): Result<Array<TestCaseResult>> {
-	throw new Error("not implemented: SPEC §4.1.2");
 }
