@@ -11,7 +11,7 @@
 		"lint": "biome ci .",
 		"test": "node packages/codictator/tests/support/red-ledger-runner.ts",
 		"ledger": "node packages/codictator/tests/support/red-ledger-runner.ts --ledger",
-		"test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-branches=80 --test-coverage-exclude=\"**/tests/support/**\" \"packages/codictator/tests/**/*.test.ts\" \"packages/vscode/tests/**/*.test.ts\"",
+		"test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-branches=80 --test-coverage-exclude=\"**/tests/support/**\" --test-coverage-exclude=\"**/*.test.ts\" \"packages/codictator/tests/**/*.test.ts\" \"packages/vscode/tests/**/*.test.ts\"",
 		"test:stress": "node --test tests/stress/",
 		"build": "tsc -b packages/codictator packages/vscode",
 		"test:extension": "node -e \"console.error('extension-host runner lands with packages/vscode');process.exit(2)\"",
