@@ -1,0 +1,64 @@
+name: test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      # SPEC 10.7 query exits 1 while red entries remain; the gates are
+      # npm test and the base comparison below, so only real errors fail here.
+      - run: >
+          node -e "const r = require('node:child_process').spawnSync('npm', ['run', 'ledger', '--', '--covers', '§10.3'], { stdio: 'inherit', shell: true }); if (r.status !== 0 && r.status !== 1) { process.exit(r.status === null ? 1 : r.status); }"
+      # SPEC §10.6 thresholds are enforced by the test:coverage flags; the run
+      # itself exits 1 while red-ledger entries remain, so only a threshold
+      # breach or a crash fails this step. `npm test` above gates real
+      # failures, which it reports strictly.
+      - shell: bash
+        run: |
+          set +e
+          output="$(npm run test:coverage 2>&1)"
+          status=$?
+          echo "$output"
+          if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then exit "$status"; fi
+          printf '%s' "$output" | node -e 'let s = ""; process.stdin.on("data", (c) => { s += c; }).on("end", () => { const m = /all files\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/.exec(s); if (/does not meet threshold/.test(s) || m === null || Number(m[1]) < 90 || Number(m[2]) < 80) { process.exit(1); } })'
+      - run: npm run build
+      - run: npm run test:packaging
+      # SPEC §10.7 Adding rule: a test that existed at the base must not
+      # become listed. The runner resolves the base revision from git and
+      # fails on any newly listed pre-existing test.
+      - shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            echo "no base revision to compare against; skipping"
+            exit 0
+          fi
+          node packages/codictator/tests/support/red-ledger-runner.ts --base "$BASE"

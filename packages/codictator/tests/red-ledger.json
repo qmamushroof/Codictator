@@ -2,10 +2,6 @@
 	"version": 1,
 	"red": [
 		"tests/architecture/architecture.test.ts::[§10.3 item 1] arch guard reports zero findings on its own src",
-		"tests/architecture/architecture.test.ts::[§10.3 item 5] every module folder has a §3.3 row and SPEC leaf",
-		"tests/unit/testing/red-ledger.test.ts::[§10.7] listed test absent fails the run",
-		"tests/unit/testing/red-ledger.test.ts::[§10.7] listed test passing fails the run",
-		"tests/unit/testing/red-ledger.test.ts::[§10.7] pre-existing test newly listed fails base comparison",
-		"tests/unit/testing/red-ledger.test.ts::[§10.7] unlisted test failing fails the run"
+		"tests/architecture/architecture.test.ts::[§10.3 item 5] every module folder has a §3.3 row and SPEC leaf"
 	]
 }
