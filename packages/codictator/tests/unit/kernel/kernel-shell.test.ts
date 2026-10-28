@@ -60,7 +60,10 @@ test("[§4.7] shell words lex quotes redirections and heredocs", () => {
 	readShellQuoted('"x$(y)z"', 0, (inner) => seen.push(inner));
 	assert.deepEqual(seen, ["y"]);
 	assert.equal(readShellBalanced("(a(b)c)", 1, ")").value, "a(b)c");
-	assert.throws(() => readShellBalanced("`a(b)`", 1, "`"));
+	// Integrity exception (BUG-0003): the old assert.throws encoded the
+	// quote-vs-close shadowing that made a backtick close unreachable;
+	// SPEC §4.7.2 requires backtick descent, so a balanced pair must parse.
+	assert.equal(readShellBalanced("`a(b)`", 1, "`").value, "a(b)");
 	assert.throws(() => readShellBalanced("(unclosed", 1, ")"));
 	assert.throws(() => readShellQuoted("'unclosed", 0, noop));
 	assert.equal(readShellOperator("<<- x", 0, undefined)?.operator, "<<-");
@@ -210,6 +213,12 @@ test("[§4.7] shell analysis blocks pipes and secret inputs", () => {
 		assert.deepEqual(matchDangerousShell(clean.value), []);
 	}
 	assert.ok(!analyseShell("echo 'never ends").ok);
+	// Integrity exception (BUG-0003): the old assert.ok(!backtick.ok)
+	// encoded the same shadowing bug; SPEC §4.7.2 requires backtick
+	// descent, so a balanced backtick command must analyse clean.
 	const backtick = analyseShell("echo `date`");
-	assert.ok(!backtick.ok);
+	assert.ok(backtick.ok);
+	if (backtick.ok) {
+		assert.deepEqual(matchDangerousShell(backtick.value), []);
+	}
 });
