@@ -1,0 +1,32 @@
+{
+	"id": "extmaps",
+	"version": "0.0.0",
+	"description": "SPEC §4.4.8 EC-6 fixture: an external enforcer mapped to core/no-secrets outside its pack.",
+	"rules": [
+		{
+			"id": "extmaps/lint-rule",
+			"family": "F2",
+			"tier": "floor",
+			"statement": "Lint findings stay clean.",
+			"reason": "Lint findings name real defects.",
+			"remediation": "Fix the lint finding.",
+			"enforcer": "extmaps/lint",
+			"triggers": ["startup"],
+			"scope": [],
+			"params": {},
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		}
+	],
+	"enforcers": [
+		{
+			"id": "extmaps/lint",
+			"kind": "external",
+			"tool": "lint",
+			"ruleMap": { "L1": "core/no-secrets" },
+			"budgetMs": 1000,
+			"args": {}
+		}
+	],
+	"maxWaiverDays": 90
+}

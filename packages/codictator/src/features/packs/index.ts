@@ -64,8 +64,25 @@ export interface Pack {
 
 export type { AcceptPackOptions } from "./accept.ts";
 export { acceptPack } from "./accept.ts";
+export {
+	type ExternalArgs,
+	type ExternalInput,
+	type ExternalOptions,
+	isExternalInput,
+	type ToolDecl,
+	type ToolEvent,
+	type ToolVersion,
+} from "./enforcers/external.ts";
+export {
+	narrowExternalArgs,
+	narrowToolDecl,
+} from "./enforcers/external-bind.ts";
+export { resolveExternal } from "./enforcers/external-check.ts";
+export { digestArgv, planRuns, safePath } from "./enforcers/external-runs.ts";
+export { isParametricKind, resolveParametric } from "./enforcers/parametric.ts";
 export { packHashFor, selfTestHashFor } from "./hashes.ts";
 export type { LoadPackOptions } from "./loader.ts";
 export { composePacks, loadBuiltinPack, loadPack } from "./loader.ts";
+export { resolvePackEnforcers } from "./registry.ts";
 // SPEC §4.4.4: self-test every rule against its fixtures before use.
 export { selfTest } from "./selftest.ts";

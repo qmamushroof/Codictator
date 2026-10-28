@@ -14,7 +14,8 @@ import {
 	stableStringify,
 	validateSchema,
 } from "../../kernel/index.ts";
-import type { Enforcer } from "../engine/index.ts";
+import type { ExternalOptions, ToolDecl } from "./enforcers/external.ts";
+import { narrowToolDecl } from "./enforcers/external-bind.ts";
 import { verifyAcceptance } from "./hashes.ts";
 import type { Pack, PackManifest } from "./index.ts";
 import {
@@ -26,6 +27,7 @@ import {
 	narrowEnforcerDecl,
 	narrowManifest,
 } from "./manifest.ts";
+import { livePorts, resolvePackEnforcers } from "./registry.ts";
 
 export interface LoadPackOptions {
 	readonly ports?: Ports;
@@ -34,6 +36,12 @@ export interface LoadPackOptions {
 	readonly builtin?: boolean;
 	// `pack accept` loads past the acceptance gate to re-accept an edit.
 	readonly skipAcceptance?: boolean;
+	// SPEC §4.4.5: config.tools rows bound to external enforcers. Entries
+	// narrow at load (CDX-E203, CDX-E206); an enforcer naming an unbound
+	// tool id resolves deferred until config binds it.
+	readonly tools?: ReadonlyArray<unknown>;
+	// SPEC §4.4.5 visibility: each tool run reports its event here when set.
+	readonly onToolEvent?: ExternalOptions["onToolEvent"];
 }
 
 // SPEC §4.4.1: the owning pack's directory holds pack.json beside fixtures/.
@@ -59,29 +67,6 @@ function deepFreeze(value: unknown): void {
 		deepFreeze(entry);
 	}
 	Object.freeze(value);
-}
-
-// SPEC §4.4.3 step 4: no implementation exists yet in phase 5, so every
-// declared enforcer resolves deferred and fail-closed. A deferred stub
-// throws CDX-E901 when run: violating fixtures cannot pass on it, and the
-// engine turns the throw into a block (SPEC §4.3.8).
-function deferredEnforcer(decl: EnforcerDecl): Enforcer {
-	const owner =
-		decl.kind === "code"
-			? `module ${decl.module ?? "unassigned"}`
-			: `kind ${decl.kind}`;
-	return {
-		id: decl.id,
-		kinds: [],
-		budgetMs: decl.budgetMs,
-		check: (): Promise<never> => {
-			throw makeError(
-				"CDX-E901",
-				`enforcer "${decl.id}" (${owner}) is deferred until its owning module lands`,
-				"Implement the enforcer in its owning module, then re-run the pack self-test.",
-			);
-		},
-	};
 }
 
 // The shipped schemas carry `$schema` and `title`, which are metadata
@@ -217,10 +202,42 @@ export async function loadPack(
 		decls.push(narrowedDecl.value);
 	}
 	decls.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+	const tools: Array<ToolDecl> = [];
+	for (const entry of options.tools ?? []) {
+		const narrowedTool = narrowToolDecl(entry);
+		if (!narrowedTool.ok) {
+			return err(narrowedTool.error);
+		}
+		tools.push(narrowedTool.value);
+	}
+	let enforcerPorts: Ports;
+	if (options.ports !== undefined) {
+		enforcerPorts = options.ports;
+	} else {
+		const live = await livePorts(path.parse(resolved).root);
+		if (!live.ok) {
+			return err(live.error);
+		}
+		enforcerPorts = live.value;
+	}
+	const externalOptions =
+		options.onToolEvent === undefined
+			? {}
+			: { onToolEvent: options.onToolEvent };
+	const enforcers = resolvePackEnforcers(
+		manifest,
+		decls,
+		enforcerPorts,
+		tools,
+		externalOptions,
+	);
+	if (!enforcers.ok) {
+		return err(enforcers.error);
+	}
 	deepFreeze(manifest);
 	return ok({
 		manifest,
-		enforcers: decls.map((decl) => deferredEnforcer(decl)),
+		enforcers: enforcers.value,
 		drivers: manifest.drivers,
 		assets: manifest.assets,
 	});
