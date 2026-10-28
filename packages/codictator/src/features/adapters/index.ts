@@ -22,6 +22,14 @@ import {
 	replyMuse,
 	staticBlockMuse,
 } from "./muse-code.ts";
+import {
+	normalizeOpenCodeToolName,
+	opencodeAdapter,
+	parseOpenCodeEvent,
+	replyOpenCode,
+	staticBlockOpenCode,
+} from "./opencode.ts";
+import { OPENCODE_CAPABILITIES } from "./opencode-capabilities.ts";
 
 export type {
 	Adapter,
@@ -40,9 +48,15 @@ export {
 	MUSE_CAPABILITIES,
 	museAdapter,
 	normalizeMuseToolName,
+	normalizeOpenCodeToolName,
+	OPENCODE_CAPABILITIES,
+	opencodeAdapter,
 	parseMuseEvent,
+	parseOpenCodeEvent,
 	replyMuse,
+	replyOpenCode,
 	staticBlockMuse,
+	staticBlockOpenCode,
 };
 
 // SPEC §4.5.4: the Claude-shaped contract parse shared until each
@@ -87,6 +101,9 @@ export function parseEvent(
 	if (harness === "muse-code") {
 		return parseMuseEvent(event, raw);
 	}
+	if (harness === "opencode") {
+		return parseOpenCodeEvent(event, raw);
+	}
 	if (harness === "claude-code") {
 		return parseClaudeShapedEvent(harness, event, raw, CLAUDE_SHAPED_TABLE);
 	}
@@ -100,6 +117,9 @@ export function renderReply(
 ): HookReply {
 	if (harness === "muse-code") {
 		return replyMuse(decision);
+	}
+	if (harness === "opencode") {
+		return replyOpenCode(decision);
 	}
 	throw new Error(`not implemented: SPEC §4.5.4 adapter for ${harness}`);
 }
