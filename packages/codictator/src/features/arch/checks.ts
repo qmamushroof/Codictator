@@ -105,14 +105,6 @@ function moduleForPath(path: string): ModuleNode | undefined {
 			dependsOn: ["*"],
 		};
 	}
-	if (top === "testing") {
-		return {
-			name: "testing",
-			path: "src/testing/**",
-			kind: "feature",
-			dependsOn: [],
-		};
-	}
 	if (top === "features") {
 		const tail = rest.slice(slash + 1);
 		const next = tail.indexOf("/");

@@ -1,5 +1,14 @@
 // SPEC §4.3: rule model, evaluation, verdicts, waivers, ratchet.
-import type { Instant, Result } from "../../kernel/index.ts";
+import type {
+	CheckContext,
+	Decision,
+	Enforcer,
+	Finding,
+	Instant,
+	Result,
+	Scope,
+	Trigger,
+} from "../../kernel/index.ts";
 import type { EngineOptions } from "./evaluate.ts";
 import { createEngine as createEngineImpl } from "./evaluate.ts";
 import { buildMessage as buildMessageImpl } from "./message.ts";
@@ -12,43 +21,20 @@ import {
 	type WaiverStore,
 } from "./waivers.ts";
 
-export type { EngineOptions, Result, Waiver, WaiverStore };
+export { TRIGGERS } from "../../kernel/index.ts";
+export type {
+	CheckContext,
+	Decision,
+	Enforcer,
+	EngineOptions,
+	Finding,
+	Result,
+	Scope,
+	Trigger,
+	Waiver,
+	WaiverStore,
+};
 export { DEFAULT_WAIVER_STORE, MAX_WAIVER_DAYS };
-
-export const TRIGGERS = [
-	"pre-tool",
-	"post-tool",
-	"prompt",
-	"startup",
-	"compact",
-	"review",
-	"scheduled",
-] as const;
-
-export type Trigger = (typeof TRIGGERS)[number];
-
-export interface CheckContext {
-	readonly trigger: Trigger;
-	readonly scope: Scope;
-	readonly now: Instant;
-	readonly configHash: string;
-}
-
-export interface Scope {
-	readonly files: ReadonlyArray<string>;
-	readonly sessionId?: string;
-}
-
-export interface Finding {
-	readonly ruleId: string;
-	readonly path?: string;
-	readonly line?: number;
-	readonly code?: string;
-	readonly message: string;
-	readonly remediation: string;
-}
-
-export type Decision = "allow" | "advise" | "block" | "escalate";
 
 // SPEC §4.3.7: the verdict carries its event id and the waivers that
 // changed it, alongside the decision, findings and agent message.
@@ -60,19 +46,10 @@ export interface Verdict {
 	readonly waiversApplied: ReadonlyArray<string>;
 }
 
-// SPEC §3.4: rules are data; enforcers plug in through the registry so the
-// engine never grows per family. The enforcer carries the rule's identity
-// (id), its triggers (kinds) and its check; scope globs and params arrive
-// with the pack rule model (phase 5).
-export interface Enforcer {
-	readonly id: string;
-	readonly kinds: ReadonlyArray<Trigger>;
-	readonly budgetMs: number;
-	readonly check: (
-		ctx: CheckContext,
-		params: Readonly<Record<string, unknown>>,
-	) => Promise<Array<Finding>>;
-}
+// SPEC §3.4 (types live in the kernel shared vocabulary): rules are data;
+// enforcers plug in through the registry so the engine never grows per
+// family. Enforcer arrives with the kernel type imports above and is
+// re-exported with them, so existing importers keep working.
 
 export interface Engine {
 	readonly evaluate: (

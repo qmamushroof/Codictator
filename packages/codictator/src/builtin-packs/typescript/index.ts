@@ -3,7 +3,7 @@
 // §7.3) and loads through the pack loader; this entry exposes the pack
 // identity with the §6.1 supplies the arch, testing and engine phases
 // consume (import extractor, measures, titles, patterns, naming, strict).
-import type { Pack } from "../../features/packs/index.ts";
+import type { Pack } from "../../kernel/index.ts";
 
 export {
 	extractImports,

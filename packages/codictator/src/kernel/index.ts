@@ -1,10 +1,26 @@
 // SPEC §4.1: the only module that touches the operating system, the network
 // or the clock (§3.3). Everything else receives ports by injection, which
 // makes every other module testable without I/O.
+
+import type { Instant } from "./contracts.ts";
 import type { Result } from "./result.ts";
 
 export { SystemClock } from "./clock.ts";
 export { readTomlKeys, readYamlKeys } from "./config-keys.ts";
+export type {
+	CheckContext,
+	Decision,
+	Enforcer,
+	Finding,
+	Instant,
+	Pack,
+	PackManifest,
+	PackRule,
+	PackRuleParam,
+	Scope,
+	Trigger,
+} from "./contracts.ts";
+export { TRIGGERS } from "./contracts.ts";
 export { NodeEnv } from "./env.ts";
 export type { CdxError } from "./errors.ts";
 export { makeError } from "./errors.ts";
@@ -52,8 +68,6 @@ export { analyseShell } from "./shell-scan.ts";
 export { readStdinText } from "./stdin.ts";
 export type { TestCaseResult } from "./test-report.ts";
 export { readTestReport } from "./test-report.ts";
-
-export type Instant = string;
 
 export interface FsStat {
 	readonly isFile: boolean;
