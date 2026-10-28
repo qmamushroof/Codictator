@@ -2,10 +2,50 @@
 // line format.
 import type { Decision, Trigger } from "../../kernel/index.ts";
 import { appendEvent, LOG_REL, type NewEvent } from "./append.ts";
+import {
+	errorRowFor,
+	explainCodeText,
+	explainUnknownText,
+	isKnownExplainId,
+	nearestExplainIds,
+} from "./explain.ts";
 import { type ReadEvents, readEvents } from "./read.ts";
+import {
+	buildCiSummary,
+	buildReportText,
+	buildStatusJson,
+	buildStatusText,
+	type CiSummaryInput,
+	type HarnessLayerState,
+	type HarnessStatus,
+	type ReportInput,
+	replaySummary,
+	type StatusInput,
+} from "./surfaces.ts";
 
 export { summarize } from "./summarize.ts";
-export { appendEvent, LOG_REL, type NewEvent, type ReadEvents, readEvents };
+export {
+	appendEvent,
+	buildCiSummary,
+	buildReportText,
+	buildStatusJson,
+	buildStatusText,
+	type CiSummaryInput,
+	errorRowFor,
+	explainCodeText,
+	explainUnknownText,
+	type HarnessLayerState,
+	type HarnessStatus,
+	isKnownExplainId,
+	LOG_REL,
+	type NewEvent,
+	nearestExplainIds,
+	type ReadEvents,
+	type ReportInput,
+	readEvents,
+	replaySummary,
+	type StatusInput,
+};
 
 export type EventKind =
 	| "verdict"
@@ -51,7 +91,13 @@ export interface EventLogLine {
 	readonly message?: string;
 }
 
-// SPEC §4.18.2: human-readable explanation of an event id.
-export function explain(_eventId: string): Promise<string> {
-	throw new Error("not implemented: SPEC §4.18.2");
+// SPEC §4.18.2: human-readable explanation of a rule, event or error id.
+// Error codes print their §8 row; anything else prints CDX-E010 with the
+// nearest known ids (EC-4), which names CDX-E011 for replay-flavoured ids.
+export function explain(eventId: string): Promise<string> {
+	const found = errorRowFor(eventId);
+	if (found !== undefined) {
+		return Promise.resolve(explainCodeText(found));
+	}
+	return Promise.resolve(explainUnknownText(eventId));
 }

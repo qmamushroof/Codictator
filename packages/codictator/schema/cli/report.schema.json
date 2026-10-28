@@ -1,0 +1,15 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://codictator.dev/schema/cli/report.schema.json",
+	"title": "report output",
+	"description": "SPEC §4.18.5: --json rendering of codictator report (PRD §10 metrics from local sources).",
+	"type": "object",
+	"properties": {
+		"now": { "type": "string" },
+		"events": { "type": "integer", "minimum": 0 },
+		"corrupt": { "type": "integer", "minimum": 0 },
+		"text": { "type": "string" }
+	},
+	"required": ["now", "events", "corrupt", "text"],
+	"additionalProperties": false
+}

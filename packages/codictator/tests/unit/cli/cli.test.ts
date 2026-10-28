@@ -65,9 +65,15 @@ test("[§4.19 EC-5] Node 22 on PATH", async () => {
 });
 
 test("[§4.19 EC-6] root and tool-dir engines differ", async () => {
-	// SPEC §4.19.6 EC-6: CDX-E102; root wins only at config.codictator.
+	// SPEC §4.19.6 EC-6: CDX-E102; root wins only at config.codictator. Red
+	// with reason: the engine-resolution path is unimplemented, so production
+	// answers E703 (no git repository above /repo) instead of E102.
+	// Strengthened to SPEC row: the error code must be CDX-E102.
 	const result = await runCommand(optionsFor(["verify"]));
 	assert.equal(result.ok, false);
+	if (!result.ok) {
+		assert.equal(result.error.code, "CDX-E102");
+	}
 });
 
 test("[§4.19 EC-7] effective-config cache stale after waiver edit", async () => {
