@@ -2,10 +2,10 @@
 // because hook I/O translation is the adapter module's job (§3.3 table:
 // adapters may import kernel, config, engine, steering); cli/ composes it
 // with the audit append and the process sinks. Only the reply-capable
-// harnesses dispatch here (muse-code, opencode); the claude-code parse
-// shape exists but its reply lands in phase 9.4, so it stays CDX-E301
-// until then. The loop breaker (§4.12.5) and steering injection (§4.6.3)
-// run at step 5 once their phases land; until then the verdict decides.
+// harnesses dispatch here; universal parses fail-closed (no hook traffic)
+// and every other unknown id stays CDX-E301. The loop breaker (§4.12.5)
+// and steering injection (§4.6.3) run at step 5 once their phases land;
+// until then the verdict decides.
 import type { Clock, Env, Net, Proc, Result } from "../../kernel/index.ts";
 import {
 	NodeFs,
@@ -18,10 +18,14 @@ import type { Config, EffectiveConfig } from "../config/index.ts";
 import { HOOK_MARKER, loadConfig, validateConfig } from "../config/index.ts";
 import type { EngineOptions } from "../engine/index.ts";
 import { createEngine } from "../engine/index.ts";
+import { claudeCodeAdapter } from "./claude-code.ts";
+import { codexCliAdapter } from "./codex-cli.ts";
 import type { Adapter, HookEvent, HookReply } from "./contract.ts";
 import { HOOK_PAYLOAD_MAX_BYTES } from "./contract.ts";
+import { COPILOT_TIMEOUT_SEC, copilotAdapter } from "./copilot.ts";
 import { museAdapter } from "./muse-code.ts";
 import { opencodeAdapter } from "./opencode.ts";
+import { universalAdapter } from "./universal.ts";
 
 // The caller passes the root-independent ports; the runtime confines an Fs
 // to the resolved repo root itself (step 2), so nothing reads the disk
@@ -54,14 +58,19 @@ export interface HookRunRequest {
 
 // SPEC §4.5.5 with §9.3: the hook time limit is min(harness timeout - 1 s,
 // hard limit). Muse Code documents no hook timeout, so the 5 s hard limit
-// applies; the OpenCode bridge spawns with a 5 s timeout, so 4 s here. The
-// CLI start path bounds its stdin wait with the same budget.
+// applies; the OpenCode bridge spawns with a 5 s timeout, so 4 s here.
+// Copilot entries carry timeoutSec and fail open on timeout, so the budget
+// is min(timeoutSec - 1 s, hard limit), which still lands on the hard limit.
+// The CLI start path bounds its stdin wait with the same budget.
 export function hookBudgetMs(harness: string, override?: number): number {
 	if (override !== undefined) {
 		return override;
 	}
 	if (harness === "opencode") {
 		return 4000;
+	}
+	if (harness === "copilot") {
+		return Math.min(COPILOT_TIMEOUT_SEC * 1000 - 1000, 5000);
 	}
 	return 5000;
 }
@@ -72,6 +81,18 @@ function adapterFor(harness: string): Adapter | undefined {
 	}
 	if (harness === opencodeAdapter.id) {
 		return opencodeAdapter;
+	}
+	if (harness === claudeCodeAdapter.id) {
+		return claudeCodeAdapter;
+	}
+	if (harness === copilotAdapter.id) {
+		return copilotAdapter;
+	}
+	if (harness === codexCliAdapter.id) {
+		return codexCliAdapter;
+	}
+	if (harness === universalAdapter.id) {
+		return universalAdapter;
 	}
 	return undefined;
 }

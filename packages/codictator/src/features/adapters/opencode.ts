@@ -55,6 +55,7 @@ export function normalizeOpenCodeToolName(name: string): ToolKind {
 
 interface OpenCodeRecord {
 	readonly [key: string]: unknown;
+	readonly contextDelivered?: unknown;
 	readonly spawnError?: unknown;
 	readonly timedOut?: unknown;
 }
@@ -112,8 +113,9 @@ function blockError(detail: string): CdxError {
 }
 
 // SPEC §4.5.3: OpenCode events to normalised triggers. The per-prompt hooks
-// (chat.message, the experimental transform) land in phase 9.3; until then
-// they are unknown shapes and fail closed.
+// (chat.message, the experimental transform) both feed the prompt trigger:
+// the bridge spawns prompt.submit and caches the returned additionalContext,
+// so the launcher evaluates the same steering content either way (EC-22).
 function mapOpenCodeEvent(event: string): Trigger | undefined {
 	switch (event) {
 		case "tool.execute.before":
@@ -137,6 +139,8 @@ function mapOpenCodeEvent(event: string): Trigger | undefined {
 		case "compact.post":
 			return "compact";
 		case "prompt.submit":
+		case "chat.message":
+		case "experimental.chat.system.transform":
 			return "prompt";
 		default:
 			return undefined;
@@ -215,6 +219,20 @@ export function parseOpenCodeEvent(
 					cwd,
 				});
 			}
+			// SPEC §4.5.8 EC-20: the bridge probe trips when a tool call fires
+			// in a turn whose context the transform never delivered. The
+			// bridge forwards contextDelivered: false; the launcher records
+			// the gap marker here and the bridge falls back to a synthetic
+			// chat.message part from the next prompt. Never a block by itself.
+			if (trigger === "pre-tool" && raw.contextDelivered === false) {
+				return ok({
+					harness: "opencode",
+					event: nativeName ?? event,
+					trigger,
+					sessionId,
+					cwd,
+				});
+			}
 			return tool;
 		}
 		return ok({
@@ -260,6 +278,48 @@ export function staticBlockOpenCode(code: string, message: string): HookReply {
 		message: `${code} ${message}`,
 		eventId: "static",
 	});
+}
+
+// SPEC §4.5.4 OpenCode version range (SPEC §11 S32): the hooks above exist
+// in the type definitions across >=1.15.0 <2.0.0. status compares
+// opencode --version against this range (EC-24); outside it, L1 and
+// contextInject show unknown while L3 and L4 keep enforcing.
+export const OPENCODE_VERSION_MINIMUM = "1.15.0";
+export const OPENCODE_VERSION_MAXIMUM_EXCLUSIVE = "2.0.0";
+
+function versionParts(version: string): Array<number> | undefined {
+	const match = /^(\d+)\.(\d+)\.(\d+)(?:[-+].*)?$/.exec(version.trim());
+	if (match === null) {
+		return undefined;
+	}
+	const parts = match.slice(1, 4).map((part) => Number(part));
+	if (parts.some((part) => !Number.isSafeInteger(part))) {
+		return undefined;
+	}
+	return parts as Array<number>;
+}
+
+function compareVersions(left: Array<number>, right: Array<number>): number {
+	for (let index = 0; index < 3; index += 1) {
+		const a = left[index] ?? 0;
+		const b = right[index] ?? 0;
+		if (a !== b) {
+			return a < b ? -1 : 1;
+		}
+	}
+	return 0;
+}
+
+export function isOpenCodeVersionSupported(version: string): boolean {
+	const seen = versionParts(version);
+	const minimum = versionParts(OPENCODE_VERSION_MINIMUM);
+	const maximum = versionParts(OPENCODE_VERSION_MAXIMUM_EXCLUSIVE);
+	if (seen === undefined || minimum === undefined || maximum === undefined) {
+		return false;
+	}
+	return (
+		compareVersions(seen, minimum) >= 0 && compareVersions(seen, maximum) < 0
+	);
 }
 
 // SPEC §4.5.4: owned opencode.json keys. Bypass-command deny patterns come
