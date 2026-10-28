@@ -8,7 +8,12 @@ export interface EnforcerDecl {
 	readonly kind: string;
 	readonly module?: string;
 	readonly budgetMs: number;
+	readonly tool?: string;
 	readonly ruleMap?: Readonly<Record<string, string>>;
+	// SPEC §7.3: the pack-author binding for the kind (§4.4.6 args, §4.4.5
+	// external input/output). Narrowed by the owning enforcer module, never
+	// here, so new kinds need no loader change.
+	readonly args?: unknown;
 }
 
 // SPEC §4.4.2: built-in pack ids; a custom pack must not equal one (§4.4.3).
@@ -48,7 +53,10 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 
 // Bracket access through a variable keeps noPropertyAccessFromIndexSignature
 // satisfied without tripping useLiteralKeys (kernel narrows the same way).
-export function field(record: Record<string, unknown>, name: string): unknown {
+export function field(
+	record: Readonly<Record<string, unknown>>,
+	name: string,
+): unknown {
 	return record[name];
 }
 
@@ -108,11 +116,15 @@ export function narrowEnforcerDecl(entry: unknown): Result<EnforcerDecl> {
 	}
 	const moduleDecl =
 		typeof moduleValue === "string" ? { module: moduleValue } : {};
+	// SPEC §7.3: args ride along opaquely; the owning enforcer module
+	// narrows them (parametric kinds in step 5.4, external in step 5.5).
+	const argsDecl = "args" in entry ? { args: field(entry, "args") } : {};
 	if (kind !== "external") {
 		return ok({
 			id,
 			kind,
 			...moduleDecl,
+			...argsDecl,
 			budgetMs:
 				typeof budgetValue === "number" ? budgetValue : DEFAULT_BUDGET_MS,
 		});
@@ -142,7 +154,9 @@ export function narrowEnforcerDecl(entry: unknown): Result<EnforcerDecl> {
 		id,
 		kind,
 		...moduleDecl,
+		...argsDecl,
 		budgetMs: typeof budgetValue === "number" ? budgetValue : DEFAULT_BUDGET_MS,
+		tool,
 		ruleMap: mapped,
 	});
 }
