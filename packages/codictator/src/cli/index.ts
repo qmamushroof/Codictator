@@ -27,6 +27,10 @@ export interface CliOptions {
 	// Test and embedder seam: when set, the hook entry evaluates this text
 	// instead of reading process stdin. Production harness runs never set it.
 	readonly stdinText?: string;
+	// Test seam: overrides process.version for the Node floor check (§4.19.4),
+	// so the old-node rejection stays verifiable on any runner, including
+	// Node ≥24. Production callers never set it.
+	readonly nodeVersion?: string;
 }
 
 // SPEC §2.3 with §4.19.4: the engine's node floor. The launcher enforces it
@@ -34,8 +38,8 @@ export interface CliOptions {
 // direct dist invocation fails the same way.
 const MIN_NODE_MAJOR = 24;
 
-function nodeMajor(): number {
-	const match = /^v(\d+)\.[0-9]+\.[0-9]+/.exec(process.version);
+function nodeMajor(version: string): number {
+	const match = /^v(\d+)\.[0-9]+\.[0-9]+/.exec(version);
 	if (match === null) {
 		return 0;
 	}
@@ -43,8 +47,8 @@ function nodeMajor(): number {
 	return Number.isSafeInteger(major) ? major : 0;
 }
 
-function nodeTooOldMessage(): string {
-	return `CDX-E002 node ${process.version} is older than the required >=${MIN_NODE_MAJOR}.0.0; install a newer Node, then retry the tool call.`;
+function nodeTooOldMessage(version: string): string {
+	return `CDX-E002 node ${version} is older than the required >=${MIN_NODE_MAJOR}.0.0; install a newer Node, then retry the tool call.`;
 }
 
 // SPEC §4.19.3 steps 3 and 5: the verdict line lands in the resolved repo's
@@ -102,13 +106,14 @@ function emitReply(stdout: string, stderr: string, exitCode: number): number {
 export async function runHook(options: CliOptions): Promise<number> {
 	const harness = options.argv[1] ?? "";
 	const event = options.argv[2] ?? "";
-	if (nodeMajor() < MIN_NODE_MAJOR) {
+	const version = options.nodeVersion ?? process.version;
+	if (nodeMajor(version) < MIN_NODE_MAJOR) {
 		const staticReply =
 			harness === ""
 				? undefined
-				: staticBlock(harness, "CDX-E002", nodeTooOldMessage());
+				: staticBlock(harness, "CDX-E002", nodeTooOldMessage(version));
 		if (staticReply === undefined) {
-			process.stderr.write(`${nodeTooOldMessage()}\n`);
+			process.stderr.write(`${nodeTooOldMessage(version)}\n`);
 			return 6;
 		}
 		return emitReply(

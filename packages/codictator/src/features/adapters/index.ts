@@ -3,6 +3,7 @@
 import type { Result } from "../../kernel/index.ts";
 import { err, makeError } from "../../kernel/index.ts";
 import type { Decision, Trigger } from "../engine/index.ts";
+import { replyClaudeCode, staticBlockClaudeCode } from "./claude-code.ts";
 import { parseClaudeShapedEvent } from "./claude-shaped.ts";
 import type {
 	Adapter,
@@ -65,8 +66,10 @@ export {
 	opencodeAdapter,
 	parseMuseEvent,
 	parseOpenCodeEvent,
+	replyClaudeCode,
 	replyMuse,
 	replyOpenCode,
+	staticBlockClaudeCode,
 	staticBlockMuse,
 	staticBlockOpenCode,
 };
@@ -137,7 +140,9 @@ export function parseEvent(
 	throw new Error(`not implemented: SPEC §4.5.4 adapter for ${harness}`);
 }
 
-// SPEC §4.5.4: verdict to the harness-native reply.
+// SPEC §4.5.4: verdict to the harness-native reply. Claude Code rides the
+// shared Claude-shaped reply until its full adapter lands in phase 9.4, the
+// same way its parse already rides the shared contract parse.
 export function renderReply(
 	harness: string,
 	decision: HookDecision,
@@ -147,6 +152,9 @@ export function renderReply(
 	}
 	if (harness === "opencode") {
 		return replyOpenCode(decision);
+	}
+	if (harness === "claude-code") {
+		return replyClaudeCode(decision);
 	}
 	throw new Error(`not implemented: SPEC §4.5.4 adapter for ${harness}`);
 }

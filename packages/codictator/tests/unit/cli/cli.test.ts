@@ -38,8 +38,30 @@ test("[§4.19 EC-4] hook stdin empty", async () => {
 
 test("[§4.19 EC-5] Node 22 on PATH", async () => {
 	// SPEC §4.19.6 EC-5: hooks and launcher print CDX-E002 with the version.
-	const exitCode = await runHook(optionsFor(["hook", "muse-code", "pre"]));
-	assert.equal(exitCode, 1);
+	// The nodeVersion seam simulates the old runtime, so the old-node
+	// rejection is verified on any runner, including Node ≥24: the hook
+	// answers at once with the harness's own static block (exit 0 deny JSON
+	// for Muse Code) instead of waiting on stdin for the CDX-E902 timeout.
+	const stdout = process.stdout as unknown as {
+		write: (chunk: string) => boolean;
+	};
+	const originalWrite = stdout.write.bind(process.stdout);
+	const chunks: Array<string> = [];
+	stdout.write = (chunk: string): boolean => {
+		chunks.push(chunk);
+		return true;
+	};
+	try {
+		const exitCode = await runHook({
+			argv: ["hook", "muse-code", "pre"],
+			cwd: "/repo",
+			nodeVersion: "v22.14.0",
+		});
+		assert.equal(exitCode, 0);
+	} finally {
+		stdout.write = originalWrite;
+	}
+	assert.ok(chunks.join("").includes("CDX-E002"));
 });
 
 test("[§4.19 EC-6] root and tool-dir engines differ", async () => {
