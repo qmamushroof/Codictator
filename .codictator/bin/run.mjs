@@ -1,0 +1,187 @@
+// Codictator hook launcher (SPEC §4.19.3). Manifest-owned: regen embeds the
+// static replies below per configured harness (SPEC §4.5.1) and until then
+// they are the two P0 harness deny forms by hand. Zero dependencies and
+// ES2015-only syntax, so any Node parses it: the version check runs before
+// any newer syntax could load, and only node: built-ins are imported. It
+// sets CODICTATOR_HOOK=1 in the engine process, then resolves the engine at
+// <root>/node_modules/codictator/dist/cli/main.js else
+// <root>/.codictator/tool/node_modules/codictator/dist/cli/main.js. A
+// missing engine answers the harness's embedded static CDX-E003 block
+// reply; outside hook it prints CDX-E003 and exits 6. Version arbitration
+// between the root and tool-dir engines (SPEC §4.19 EC-6) belongs to the
+// phase 9 CLI: until then the first candidate that exists wins.
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const MIN_NODE_MAJOR = 24;
+
+function nodeMajor() {
+	const match = /^v(\d+)\./.exec(process.version);
+	if (match === null) {
+		return 0;
+	}
+	const major = parseInt(match[1], 10);
+	if (Number.isNaN(major)) {
+		return 0;
+	}
+	return major;
+}
+
+// The launcher ships at <root>/.codictator/bin/run.mjs, so the repo root
+// is three levels up from this file.
+function launcherRoot() {
+	return path.dirname(
+		path.dirname(path.dirname(fileURLToPath(import.meta.url))),
+	);
+}
+
+function engineCandidates(root) {
+	return [
+		path.join(root, "node_modules", "codictator", "dist", "cli", "main.js"),
+		path.join(
+			root,
+			".codictator",
+			"tool",
+			"node_modules",
+			"codictator",
+			"dist",
+			"cli",
+			"main.js",
+		),
+	];
+}
+
+// The embedded pre-engine deny forms (SPEC §4.5.1): exit 0 with the
+// harness's own deny JSON. Answers null for harnesses without a static
+// form, so the caller falls back to the process exit code.
+function staticReply(harness, code, message) {
+	if (harness === "muse-code") {
+		return {
+			exitCode: 0,
+			stdout: JSON.stringify({
+				hookSpecificOutput: {
+					hookEventName: "PreToolUse",
+					permissionDecision: "deny",
+					permissionDecisionReason: `${code} ${message}`,
+				},
+			}),
+		};
+	}
+	if (harness === "opencode") {
+		return {
+			exitCode: 0,
+			stdout: JSON.stringify({
+				decision: "block",
+				message: `${code} ${message}`,
+				eventId: "static",
+			}),
+		};
+	}
+	return null;
+}
+
+function writeStatic(reply) {
+	process.stdout.write(reply.stdout);
+	process.exitCode = reply.exitCode;
+}
+
+function writeMissingEngine() {
+	process.stderr.write(
+		"CDX-E003 codictator engine is not installed; run npm ci, then retry.\n",
+	);
+	process.exitCode = 6;
+}
+
+function writeOldNode() {
+	process.stderr.write(
+		`CDX-E002 node ${process.version} is older than the required >=24.0.0; install a newer Node, then retry.\n`,
+	);
+	process.exitCode = 6;
+}
+
+function writeEngineFailed() {
+	process.stderr.write(
+		"CDX-E901 the codictator engine failed to load; the tool call is blocked.\n",
+	);
+	process.exitCode = 1;
+}
+
+function oldNodeMessage() {
+	return (
+		`node ${process.version} is older than the required >=24.0.0; ` +
+		"install a newer Node, then retry the tool call."
+	);
+}
+
+function main() {
+	const args = process.argv.slice(2);
+	if (args[0] !== "hook") {
+		writeMissingEngine();
+		return;
+	}
+	const harness = args[1] || "";
+	if (nodeMajor() < MIN_NODE_MAJOR) {
+		const oldNode = staticReply(harness, "CDX-E002", oldNodeMessage());
+		if (oldNode === null) {
+			writeOldNode();
+			return;
+		}
+		writeStatic(oldNode);
+		return;
+	}
+	const root = launcherRoot();
+	const candidates = engineCandidates(root);
+	let enginePath = null;
+	for (let index = 0; index < candidates.length; index += 1) {
+		if (existsSync(candidates[index])) {
+			enginePath = candidates[index];
+			break;
+		}
+	}
+	if (enginePath === null) {
+		const missing = staticReply(
+			harness,
+			"CDX-E003",
+			"codictator engine is not installed; run npm ci, then retry the tool call.",
+		);
+		if (missing === null) {
+			writeMissingEngine();
+			return;
+		}
+		writeStatic(missing);
+		return;
+	}
+	process.env.CODICTATOR_HOOK = "1";
+	import(pathToFileURL(enginePath).href)
+		.then(
+			(engine) => {
+				if (engine === null || typeof engine.main !== "function") {
+					throw new Error("engine entry has no main");
+				}
+				return engine.main(args, process.cwd());
+			},
+			(error) => {
+				throw error;
+			},
+		)
+		.then(
+			(code) => {
+				process.exitCode = typeof code === "number" ? code : 0;
+			},
+			() => {
+				const failed = staticReply(
+					harness,
+					"CDX-E901",
+					"the codictator engine failed to load; the tool call is blocked.",
+				);
+				if (failed === null) {
+					writeEngineFailed();
+					return;
+				}
+				writeStatic(failed);
+			},
+		);
+}
+
+main();

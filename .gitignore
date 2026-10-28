@@ -9,3 +9,6 @@ coverage/
 dist/
 node_modules/
 obj/
+# The hook launcher is manifest-owned and ships in the repo (SPEC §4.19.3);
+# the bin/ rule above would otherwise ignore it.
+!.codictator/bin/

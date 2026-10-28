@@ -49,6 +49,11 @@ export interface HookDecision {
 	readonly eventId: string;
 }
 
+// SPEC §4.19.3 step 1 with §4.5.8 EC-11: stdin is capped at 8 MiB. Both
+// the runtime stdin read and parseEvent enforce it, so an oversized
+// payload blocks CDX-E305 no matter which layer sees it first.
+export const HOOK_PAYLOAD_MAX_BYTES = 8 * 1024 * 1024;
+
 // SPEC §4.5.1: the harness-native reply. stdout carries the whole reply;
 // stderr stays empty so exit 0 plus hookSpecificOutput is the only signal.
 export interface HookReply {
