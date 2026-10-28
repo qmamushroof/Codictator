@@ -1730,7 +1730,8 @@
 		},
 		{
 			"id": "core/doc-placement",
-			"kind": "path-placement",
+			"kind": "code",
+			"module": "records",
 			"budgetMs": 1000,
 			"args": {}
 		},
