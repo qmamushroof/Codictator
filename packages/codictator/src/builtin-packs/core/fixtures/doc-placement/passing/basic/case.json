@@ -2,9 +2,9 @@
 	"rule": "core/doc-placement",
 	"section": "§5.10",
 	"expectation": "passing",
-	"trigger": "doc at the repo root outside the allowlist",
+	"trigger": "doc under docs/ inside the allowlist",
 	"expectRules": [],
 	"files": {
-		"sample.txt": "path: ./docs/NOTES.md\nallowlisted: true\n"
+		"docs/NOTES.md": "# Notes\n\nProject notes live here.\n"
 	}
 }

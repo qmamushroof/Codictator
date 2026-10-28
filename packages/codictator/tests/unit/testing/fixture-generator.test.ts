@@ -54,9 +54,9 @@ function checkManifest(fixture: FixtureCase): void {
 
 for (const pack of packs) {
 	for (const fixture of discoverFixtureCases(pack)) {
-		test(`[${fixture.section}] ${fixture.rule} ${fixture.kind}/${fixture.name}`, () => {
+		test(`[${fixture.section}] ${fixture.rule} ${fixture.kind}/${fixture.name}`, async () => {
 			checkManifest(fixture);
-			runFixtureCase(fixture);
+			await runFixtureCase(fixture);
 		});
 	}
 }

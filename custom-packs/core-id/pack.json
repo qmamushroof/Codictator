@@ -1,0 +1,30 @@
+{
+	"id": "custom",
+	"version": "0.0.0",
+	"description": "SPEC §4.4.8 EC-5 fixture: a custom pack whose rule id lives under the core namespace.",
+	"rules": [
+		{
+			"id": "core/x",
+			"family": "F2",
+			"tier": "floor",
+			"statement": "Fixture statement.",
+			"reason": "Fixture reason.",
+			"remediation": "Rename the rule id under the custom pack namespace.",
+			"enforcer": "custom/check",
+			"triggers": ["startup"],
+			"scope": [],
+			"params": {},
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		}
+	],
+	"enforcers": [
+		{
+			"id": "custom/check",
+			"kind": "pattern-forbid",
+			"budgetMs": 1000,
+			"args": { "pattern": "forbidden-token" }
+		}
+	],
+	"maxWaiverDays": 90
+}
