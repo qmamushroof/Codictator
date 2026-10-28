@@ -48,6 +48,6 @@ export function upgradeBranchName(
 	name: string,
 	version: string,
 ): string {
-	const safe = `${name}@${version}`.replaceAll(/[^0-9A-Za-z@._-]+/g, "-");
+	const safe = `${name}-${version}`.replaceAll(/[^0-9A-Za-z._-]+/g, "-");
 	return `codictator/deps/${ecosystem}/${safe}`;
 }

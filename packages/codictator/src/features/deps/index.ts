@@ -240,6 +240,21 @@ export {
 	type SemVer,
 } from "./stable.ts";
 export {
+	checkRemediationStepSize,
+	DEFAULT_STEP_SIZE,
+	type StepSizeParams,
+} from "./step-size.ts";
+export {
+	planUpgradePr,
+	runUpgradePr,
+	type UpgradeFile,
+	type UpgradeHost,
+	type UpgradePrInput,
+	type UpgradePrPlan,
+	upgradeCommitSubject,
+	upgradeHistoryEntry,
+} from "./upgrade.ts";
+export {
 	depErrorFinding,
 	evaluateDepVerdicts,
 	makeDepError,
