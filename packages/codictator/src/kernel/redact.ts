@@ -109,8 +109,10 @@ function assignmentSpans(text: string): Array<Span> {
 	// Keyword-first scan: the original leading `[A-Za-z0-9_.$-]*` made the
 	// engine backtrack over every long run of name characters (quadratic on
 	// inputs like 65KB of `a`). Anchoring each attempt at a keyword keeps
-	// every scan over disjoint input, and the pieces below reuse the exact
-	// character classes of the original pattern, so matches are unchanged.
+	// every scan over disjoint input. The original pattern also allowed
+	// trailing name characters after the keyword (`aws_secret_access_key`),
+	// so the separator check runs at the end of the name run; the floor
+	// advances past every examined run, keeping the scan linear.
 	KEYWORD_PATTERN.lastIndex = 0;
 	let keyword = KEYWORD_PATTERN.exec(text);
 	let floor = 0;
@@ -118,7 +120,12 @@ function assignmentSpans(text: string): Array<Span> {
 		const keywordStart = keyword.index;
 		const keywordEnd = keywordStart + keyword[0].length;
 		if (keywordStart >= floor) {
-			ASSIGNMENT_MID.lastIndex = keywordEnd;
+			let nameEnd = keywordEnd;
+			while (nameEnd < text.length && isNameChar(text.charCodeAt(nameEnd))) {
+				nameEnd += 1;
+			}
+			floor = nameEnd;
+			ASSIGNMENT_MID.lastIndex = nameEnd;
 			const mid = ASSIGNMENT_MID.exec(text);
 			if (mid !== null) {
 				ASSIGNMENT_VALUE.lastIndex = ASSIGNMENT_MID.lastIndex;

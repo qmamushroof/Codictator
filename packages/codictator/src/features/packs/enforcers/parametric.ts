@@ -14,6 +14,10 @@ import {
 	type RuleBinding,
 	tunableNumber,
 } from "./binding.ts";
+import {
+	checkCommandForbid,
+	narrowCommandForbidArgs,
+} from "./command-forbid.ts";
 import { checkJsonKey, narrowJsonKeyArgs } from "./jsonkey.ts";
 import {
 	checkPatternForbid,
@@ -30,6 +34,7 @@ const PARAMETRIC_KINDS: ReadonlyArray<string> = [
 	"path-placement",
 	"file-size",
 	"file-required",
+	"command-forbid",
 	"json-key",
 ];
 
@@ -135,6 +140,21 @@ export function resolveParametric(
 			return ok({
 				...baseEnforcer(rule, binding, decl),
 				check: () => checkRequired(ports, binding, resolved),
+			});
+		}
+		case "command-forbid": {
+			if (isUnboundArgs(decl.args)) {
+				return ok(undefined);
+			}
+			const config = narrowCommandForbidArgs(decl.id, decl.args);
+			if (!config.ok) {
+				return err(config.error);
+			}
+			const resolved = config.value;
+			return ok({
+				...baseEnforcer(rule, binding, decl),
+				check: (ctx: CheckContext) =>
+					checkCommandForbid(ports, binding, resolved, ctx),
 			});
 		}
 		case "json-key": {

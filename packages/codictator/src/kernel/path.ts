@@ -39,3 +39,9 @@ export function toRepoPath(path: string): Result<string> {
 	}
 	return ok(kept.join("/"));
 }
+
+// SPEC §4.7.3: writes into .git/ are blocked except through git itself.
+// The input is a repo-relative normalised path as toRepoPath returns it.
+export function isGitDirPath(rel: string): boolean {
+	return rel === ".git" || rel.startsWith(".git/");
+}
