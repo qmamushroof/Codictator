@@ -29,13 +29,13 @@ function isTrigger(value: string): value is Trigger {
 // tunable defaults; config-layer tightening applies them later (phase 4).
 export function bindRule(rule: PackRule): RuleBinding {
 	const triggers: Array<Trigger> = [];
-	for (const trigger of rule.triggers) {
+	for (const trigger of rule.triggers ?? []) {
 		if (isTrigger(trigger)) {
 			triggers.push(trigger);
 		}
 	}
 	const tunables: Record<string, unknown> = {};
-	for (const [name, param] of Object.entries(rule.params)) {
+	for (const [name, param] of Object.entries(rule.params ?? {})) {
 		if (isRecord(param)) {
 			tunables[name] = field(param, "default");
 		}
@@ -43,7 +43,7 @@ export function bindRule(rule: PackRule): RuleBinding {
 	return {
 		ruleId: rule.id,
 		triggers,
-		scopeGlobs: [...rule.scope],
+		scopeGlobs: [...(rule.scope ?? [])],
 		remediation: rule.remediation,
 		tunables,
 	};

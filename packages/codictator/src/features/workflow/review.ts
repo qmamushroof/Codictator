@@ -118,9 +118,11 @@ export async function checkReview(
 	if (refusal !== undefined) {
 		findings.push(refusal);
 	}
-	const openBlockers = file.findings.filter(
-		(entry) => entry.severity === "blocker" || entry.severity === "major",
-	);
+	const openBlockers = Array.isArray(file.findings)
+		? file.findings.filter(
+				(entry) => entry.severity === "blocker" || entry.severity === "major",
+			)
+		: [];
 	if (openBlockers.length > 0 && malformed === undefined) {
 		const first = openBlockers[0];
 		const location =

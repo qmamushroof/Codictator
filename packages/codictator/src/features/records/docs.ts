@@ -425,7 +425,10 @@ export function checkDocBreadth(
 }
 
 function wordsOf(sentence: string): Array<string> {
-	return sentence.split(/\s+/).filter((token) => /[A-Za-z0-9]/.test(token));
+	return sentence
+		.replace(/`[^`]*`/g, "X")
+		.split(/\s+/)
+		.filter((token) => /[A-Za-z0-9]/.test(token));
 }
 
 // SPEC §4.9.2 core/doc-density: tables, code, headings and link-only lines
@@ -433,7 +436,9 @@ function wordsOf(sentence: string): Array<string> {
 // followed by whitespace and then anything but a lowercase letter, or at the
 // paragraph end; never inside a code span or after the listed abbreviations.
 export function splitSentences(paragraph: string): Array<string> {
-	const masked = paragraph.replace(/`[^`]*`/g, "X");
+	const masked = paragraph.replace(/`[^`]*`/g, (span) =>
+		"X".repeat(span.length),
+	);
 	const sentences: Array<string> = [];
 	let start = 0;
 	const flush = (end: number): void => {
