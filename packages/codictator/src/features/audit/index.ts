@@ -1,6 +1,6 @@
 // SPEC §4.18: event log, explain, summaries. Owns the §7.10 event log
 // line format.
-import type { Decision, Trigger } from "../engine/index.ts";
+import type { Decision, Trigger } from "../../kernel/index.ts";
 import { appendEvent, LOG_REL, type NewEvent } from "./append.ts";
 import { type ReadEvents, readEvents } from "./read.ts";
 

@@ -3,7 +3,13 @@
 // (the message is truncated with a marker first); past 5 MiB the log
 // rotates to events.<n>.jsonl keeping the newest five.
 
-import type { CdxError, Ports } from "../../kernel/index.ts";
+import type {
+	CdxError,
+	Decision,
+	Finding,
+	Ports,
+	Trigger,
+} from "../../kernel/index.ts";
 import {
 	err,
 	makeError,
@@ -14,7 +20,6 @@ import {
 	stableLineStringify,
 	stableStringify,
 } from "../../kernel/index.ts";
-import type { Decision, Finding, Trigger } from "../engine/index.ts";
 import type { EventFinding, EventKind } from "./index.ts";
 
 export const LOG_REL = ".codictator/state/events.jsonl";
