@@ -13,13 +13,13 @@ Split by module in the order arch → records → testing → workflow, since te
 
 ## Steps
 
-- [ ] **7.1** `typescript` pack supplies: import extractor and resolution, function-size, cyclomatic and dead-code measures, test-title extraction and filters, assertion, skip and suppression patterns, file naming, strict settings (SPEC §6.1). Verify: §6.4 EC-2–5, EC-9.
-- [ ] **7.2** arch: profiles and layers, module map, graph cache, every check of SPEC §4.11.4. Verify: §4.11 EC-1–13.
-- [ ] **7.3** The arch guard runs on Codictator's own `src/` with the SPEC §3.3 map. Verify: §10.3 item 1 leaves the ledger with zero findings.
-- [ ] **7.4** records: doc classes and every check of SPEC §4.9.2; history entry rules and append-only check; bug registry rules. Verify: §4.9 EC-1–15.
-- [ ] **7.5** testing: SPEC trace, red and green proofs from JUnit reports with the worktree re-run, scenario classifier, test-integrity rules and exceptions (SPEC §4.10). Verify: §4.10 EC-1–15.
-- [ ] **7.6** workflow: task records and lock, phases and change classes, custom phases, L1 write gating, review gate, loop breaker, multi-agent roles (SPEC §4.12). Verify: §4.12 EC-1–14.
-- [ ] **7.7** Code-health enforcers for `core/file-size`, `core/function-size`, `core/complexity`, `core/dead-code`, `core/no-guard-removal`, `core/ratchet-touched-improves`, `core/max-file-bytes`, and the `ts/typecheck`, `ts/lint`, `ts/no-phantom-import` pack rules. Verify: their fixture cases.
+- [x] **7.1** `typescript` pack supplies: import extractor and resolution, function-size, cyclomatic and dead-code measures, test-title extraction and filters, assertion, skip and suppression patterns, file naming, strict settings (SPEC §6.1). Verify: §6.4 EC-2–5, EC-9.
+- [x] **7.2** arch: profiles and layers, module map, graph cache, every check of SPEC §4.11.4. Verify: §4.11 EC-1–13.
+- [x] **7.3** The arch guard runs on Codictator's own `src/` with the SPEC §3.3 map. Verify: §10.3 item 1 leaves the ledger with zero findings.
+- [x] **7.4** records: doc classes and every check of SPEC §4.9.2; history entry rules and append-only check; bug registry rules. Verify: §4.9 EC-1–15.
+- [x] **7.5** testing: SPEC trace, red and green proofs from JUnit reports with the worktree re-run, scenario classifier, test-integrity rules and exceptions (SPEC §4.10). Verify: §4.10 EC-1–15.
+- [x] **7.6** workflow: task records and lock, phases and change classes, custom phases, L1 write gating, review gate, loop breaker, multi-agent roles (SPEC §4.12). Verify: §4.12 EC-1–14.
+- [x] **7.7** Code-health enforcers for `core/file-size`, `core/function-size`, `core/complexity`, `core/dead-code`, `core/no-guard-removal`, `core/ratchet-touched-improves`, `core/max-file-bytes`, and the `ts/typecheck`, `ts/lint`, `ts/no-phantom-import` pack rules. Verify: their fixture cases.
 
 ## Exit gate
 
