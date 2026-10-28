@@ -5,6 +5,6 @@
 	"trigger": "doc at the repo root outside the allowlist",
 	"expectRules": ["core/doc-placement"],
 	"files": {
-		"sample.txt": "path: ./NOTES.md\nallowlisted: false\n"
+		"NOTES.md": "# Notes\n\nProject notes live here.\n"
 	}
 }
