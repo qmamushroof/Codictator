@@ -1,48 +1,49 @@
 // SPEC §4.9: doc checks, history, bug registry. Owns the §7.7 record
-// grammars.
-import type { CheckContext, Finding } from "../engine/index.ts";
+// grammars. The checks are pure over caller-supplied trees; ports stay at
+// the enforcer layer (SPEC §3.3).
 
-export type HistoryKind = "code" | "docs" | "deps" | "guardrail";
-
-export interface HistoryEntry {
-	readonly date: string;
-	readonly subject: string;
-	readonly kind: HistoryKind;
-	readonly task: string;
-	readonly bug: string;
-}
-
-export type BugStatus = "open" | "fixed" | "wontfix";
-
-export interface BugRow {
-	readonly id: string;
-	readonly status: BugStatus;
-	readonly title: string;
-	readonly found: string;
-	readonly fix: string;
-	readonly regressionTest: string;
-}
-
-// SPEC §4.9.2: doc class checks (placement, density, one fact one owner).
-export function checkDocs(
-	_ctx: CheckContext,
-	_paths: ReadonlyArray<string>,
-): Promise<Array<Finding>> {
-	throw new Error("not implemented: SPEC §4.9.2");
-}
-
-// SPEC §4.9.3: history entry grammar validation.
-export function checkHistory(
-	_ctx: CheckContext,
-	_text: string,
-): Promise<Array<Finding>> {
-	throw new Error("not implemented: SPEC §4.9.3");
-}
-
-// SPEC §4.9.4: bug registry grammar validation.
-export function checkBugs(
-	_ctx: CheckContext,
-	_text: string,
-): Promise<Array<Finding>> {
-	throw new Error("not implemented: SPEC §4.9.4");
-}
+export {
+	type BugFile,
+	type BugRow,
+	type BugStatus,
+	checkBugRegistry,
+	checkBugRowsImmutable,
+	checkBugs,
+	checkDiagnoseBeforeFix,
+	parseBugFile,
+	type TaskRef,
+} from "./bugs.ts";
+export {
+	checkDocBreadth,
+	checkDocDensity,
+	checkDocLinksValid,
+	checkDocNoCorpusCounts,
+	checkDocNoInlineChangelog,
+	checkDocOneLevel,
+	checkDocPlacement,
+	checkDocRouterLeaf,
+	checkDocSingleOwner,
+	checkDocSize,
+	checkDocs,
+	classifyDoc,
+	DEFAULT_DOC_LIMITS,
+	type DocClass,
+	type DocFile,
+	type DocLimits,
+	githubSlug,
+	type RouterLeaf,
+	type RouterTree,
+	splitSentences,
+} from "./docs.ts";
+export {
+	checkHistory,
+	checkHistoryAppendOnly,
+	checkHistoryEntryComplete,
+	checkHistoryEntryCount,
+	checkHistoryFiles,
+	deriveHistoryKind,
+	type HistoryEntry,
+	type HistoryKind,
+	type HistoryParse,
+	parseHistoryEntries,
+} from "./history.ts";

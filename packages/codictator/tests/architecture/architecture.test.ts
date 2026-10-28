@@ -57,8 +57,8 @@ test("[§10.3 item 5] every module folder has a §3.3 row and SPEC leaf", () => 
 });
 
 // Every SPEC §3.3 module row and the SPEC leaf that owns its contract. The
-// legacy src/testing/ runner predates these contracts and moves to
-// src/features/testing/ later; it is the only excused indexed dir.
+// red-ledger runner core moved to src/features/testing/ in Phase 7 step
+// 7.5, so the module map (§3.3, profiles.ts) owns it with no excuses.
 const expectedModules: ReadonlyArray<{
 	readonly dir: string;
 	readonly leaf: string;
@@ -72,6 +72,7 @@ const expectedModules: ReadonlyArray<{
 	{ dir: "features/security", leaf: "04-07-SECURITY-GUARDS.md" },
 	{ dir: "features/deps", leaf: "04-08-DEPENDENCIES.md" },
 	{ dir: "features/records", leaf: "04-09-RECORDS.md" },
+	{ dir: "features/testing", leaf: "04-10-TESTING.md" },
 	{ dir: "features/arch", leaf: "04-11-ARCHITECTURE-GUARDS.md" },
 	{ dir: "features/workflow", leaf: "04-12-WORKFLOW.md" },
 	{ dir: "features/remediation", leaf: "04-13-REMEDIATION.md" },
@@ -87,7 +88,7 @@ const expectedModules: ReadonlyArray<{
 	{ dir: "builtin-packs/python", leaf: "06-LANGUAGE-PACKS.md" },
 ];
 
-const EXCUSED_INDEXED_DIRS: ReadonlySet<string> = new Set(["testing"]);
+const EXCUSED_INDEXED_DIRS: ReadonlySet<string> = new Set([]);
 
 function specDir(): string {
 	return path.resolve(srcRoot(), "..", "..", "..", "docs", "SPEC");

@@ -2,12 +2,15 @@
 // run (SPEC §3.3: only the kernel owns OS ports; the kernel lands later, so
 // this test-support driver is the bootstrap composition root and arch rules
 // treat tests/ as non-production code per SPEC §3.1). The verdict logic it
-// drives is pure and lives in src/testing/.
+// drives is pure and lives in src/features/testing/.
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import type { FailureMode, TestOutcome } from "../../src/testing/index.ts";
+import type {
+	FailureMode,
+	TestOutcome,
+} from "../../src/features/testing/index.ts";
 import {
 	evaluateRun,
 	filterRedByCovers,
@@ -17,7 +20,7 @@ import {
 	parseLedgerFile,
 	parseTap,
 	splitTestId,
-} from "../../src/testing/index.ts";
+} from "../../src/features/testing/index.ts";
 
 interface PackagePaths {
 	readonly name: string;
