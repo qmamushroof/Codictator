@@ -4,7 +4,11 @@
 
 import { makeError } from "../../kernel/index.ts";
 import type { Finding } from "../engine/index.ts";
-import { capabilityOf, DEFAULT_LICENSE_ALLOW } from "./capabilities.ts";
+import {
+	capabilityOf,
+	DEFAULT_LICENSE_ALLOW,
+	platformCapabilityCover,
+} from "./capabilities.ts";
 import {
 	type DepEvalInput,
 	type DepEvaluation,
@@ -156,9 +160,20 @@ function checkOnePerCapability(
 	findings: Array<Finding>,
 ): void {
 	const byCapability = new Map<string, Array<{ path: string; name: string }>>();
+	const platformHeld = new Set(input.platformCaps ?? []);
 	for (const { path, dep } of uniqueDeps(input.manifests)) {
 		const capability = capabilityOf(dep.name);
 		if (capability === undefined) {
+			continue;
+		}
+		if (platformHeld.has(capability)) {
+			const cover = platformCapabilityCover(capability) ?? capability;
+			findings.push({
+				ruleId: "core/dep-one-per-capability",
+				path,
+				message: `${dep.name} duplicates the pinned platform's ${cover} (${capability})`,
+				remediation: `Remove ${dep.name}; the pinned platform already covers ${capability}.`,
+			});
 			continue;
 		}
 		const holders = byCapability.get(capability) ?? [];
