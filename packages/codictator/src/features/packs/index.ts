@@ -1,11 +1,12 @@
 // SPEC §4.4: pack loading, composition, self-test, external tools. Owns
 // the §7.3 pack.json and §7.4 accepted.json formats.
-import type { Result } from "../../kernel/index.ts";
 import type { Enforcer } from "../engine/index.ts";
 
 export interface PackRuleParam {
 	readonly type: "integer" | "number" | "string[]";
-	readonly def: unknown;
+	// SPEC §7.3: the pack default; self-test (§4.4.4 EC) checks it sits
+	// within bound along the stricter direction.
+	readonly default: unknown;
 	readonly bound: unknown;
 	readonly stricter: "lower" | "higher" | "subset" | "superset" | "policy";
 	readonly min?: number;
@@ -61,12 +62,10 @@ export interface Pack {
 	readonly assets: ReadonlyArray<unknown>;
 }
 
-// SPEC §4.4.3: loading and composition; custom packs need acceptance (§7.4).
-export function loadPack(_path: string): Promise<Result<Pack>> {
-	throw new Error("not implemented: SPEC §4.4.3");
-}
-
+export type { AcceptPackOptions } from "./accept.ts";
+export { acceptPack } from "./accept.ts";
+export { packHashFor, selfTestHashFor } from "./hashes.ts";
+export type { LoadPackOptions } from "./loader.ts";
+export { composePacks, loadBuiltinPack, loadPack } from "./loader.ts";
 // SPEC §4.4.4: self-test every rule against its fixtures before use.
-export function selfTest(_pack: Pack): Promise<Result<void>> {
-	throw new Error("not implemented: SPEC §4.4.4");
-}
+export { selfTest } from "./selftest.ts";

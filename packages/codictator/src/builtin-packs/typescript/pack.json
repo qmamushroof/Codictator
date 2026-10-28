@@ -1,0 +1,170 @@
+{
+	"id": "typescript",
+	"version": "0.0.0",
+	"description": "Codictator TypeScript/JavaScript built-in pack (SPEC §6.1).",
+	"rules": [
+		{
+			"id": "ts/typecheck",
+			"family": "TS",
+			"tier": "floor",
+			"statement": "The repo's tsc --noEmit passes.",
+			"reason": "Type errors break the assumptions every other check makes.",
+			"remediation": "Fix the type error at {path}:{line}.",
+			"enforcer": "ts/typecheck",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "ts/lint",
+			"family": "TS",
+			"tier": "floor",
+			"statement": "The repo's linter passes on scope.",
+			"reason": "Lint drift accumulates into unreadable code.",
+			"remediation": "Fix the lint finding at {path}:{line}.",
+			"enforcer": "ts/lint",
+			"triggers": ["post-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "ts/no-phantom-import",
+			"family": "TS",
+			"tier": "floor",
+			"statement": "Bare imports resolve to a declared dependency or a Node built-in.",
+			"reason": "Phantom imports install hallucinated packages.",
+			"remediation": "Declare {value} in {path} or fix the import.",
+			"enforcer": "ts/no-phantom-import",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "ts/security-patterns",
+			"family": "TS",
+			"tier": "floor",
+			"statement": "No dangerous JS patterns: eval, Function, exec with templates, innerHTML, document.write, dangerouslySetInnerHTML, rejectUnauthorized false, raw SQL.",
+			"reason": "These patterns are injection sinks.",
+			"remediation": "Remove the pattern at {path}:{line}; use the safe alternative.",
+			"enforcer": "ts/security-patterns",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		}
+	],
+	"enforcers": [
+		{
+			"id": "ts/lint",
+			"kind": "external",
+			"tool": "lint",
+			"ruleMap": { "*": "ts/lint" },
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "ts/no-phantom-import",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "ts/security-patterns",
+			"kind": "code",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "ts/typecheck",
+			"kind": "external",
+			"tool": "typecheck",
+			"ruleMap": { "*": "ts/typecheck" },
+			"budgetMs": 1000,
+			"args": {}
+		}
+	],
+	"drivers": [],
+	"extractors": [],
+	"measures": [],
+	"capabilities": [
+		{
+			"name": "HTTP client",
+			"packages": [
+				"axios",
+				"got",
+				"node-fetch",
+				"ky",
+				"superagent",
+				"undici",
+				"request",
+				"cross-fetch"
+			],
+			"platform": ["fetch"]
+		},
+		{
+			"name": "Unique ids",
+			"packages": ["uuid", "nanoid"],
+			"platform": ["crypto.randomUUID"]
+		},
+		{
+			"name": "Env files",
+			"packages": ["dotenv"],
+			"platform": ["node --env-file"]
+		},
+		{
+			"name": "Test runner",
+			"packages": ["jest", "vitest", "mocha", "ava", "jasmine", "tap"],
+			"platform": ["node:test"]
+		},
+		{
+			"name": "Glob",
+			"packages": ["glob", "fast-glob", "globby"],
+			"platform": ["fs.glob"]
+		},
+		{
+			"name": "Recursive fs",
+			"packages": ["rimraf", "mkdirp", "fs-extra"],
+			"platform": ["fs.rm", "fs.mkdir", "fs.cp"]
+		},
+		{
+			"name": "Deep clone",
+			"packages": ["lodash.clonedeep", "clone-deep", "rfdc"],
+			"platform": ["structuredClone"]
+		},
+		{
+			"name": "Terminal colours",
+			"packages": ["chalk", "kleur", "picocolors", "colors"],
+			"platform": ["util.styleText"]
+		},
+		{
+			"name": "Argument parsing",
+			"packages": ["commander", "yargs", "minimist", "meow"],
+			"platform": ["util.parseArgs"]
+		},
+		{ "name": "Dates", "packages": ["moment", "dayjs", "date-fns", "luxon"] },
+		{
+			"name": "Schema validation",
+			"packages": ["zod", "yup", "joi", "ajv", "valibot", "superstruct"]
+		},
+		{ "name": "Lint", "packages": ["eslint", "@biomejs/biome", "oxlint"] },
+		{ "name": "Format", "packages": ["prettier", "@biomejs/biome", "dprint"] },
+		{
+			"name": "Utility belt",
+			"packages": ["lodash", "underscore", "ramda", "remeda"]
+		}
+	],
+	"assets": [],
+	"maxWaiverDays": 90
+}
