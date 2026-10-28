@@ -49,6 +49,7 @@ export type { ShellAnalysis, ShellPipeline, SimpleCommand } from "./shell.ts";
 export type { ShellViolation, ShellViolationClass } from "./shell-deny.ts";
 export { matchDangerousShell } from "./shell-deny.ts";
 export { analyseShell } from "./shell-scan.ts";
+export { readStdinText } from "./stdin.ts";
 export type { TestCaseResult } from "./test-report.ts";
 export { readTestReport } from "./test-report.ts";
 

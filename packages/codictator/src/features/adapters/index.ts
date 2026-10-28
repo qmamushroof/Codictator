@@ -1,6 +1,7 @@
 // SPEC §4.5: rendering per harness, hook I/O translation. Owns the §7.8
 // hook contract and the §7.9 capability declaration.
 import type { Result } from "../../kernel/index.ts";
+import { err, makeError } from "../../kernel/index.ts";
 import type { Decision, Trigger } from "../engine/index.ts";
 import { parseClaudeShapedEvent } from "./claude-shaped.ts";
 import type {
@@ -14,6 +15,7 @@ import type {
 	RenderInput,
 	ToolKind,
 } from "./contract.ts";
+import { HOOK_PAYLOAD_MAX_BYTES } from "./contract.ts";
 import {
 	MUSE_CAPABILITIES,
 	museAdapter,
@@ -31,6 +33,15 @@ import {
 } from "./opencode.ts";
 import { OPENCODE_CAPABILITIES } from "./opencode-capabilities.ts";
 
+export {
+	type HookAppend,
+	type HookBasePorts,
+	type HookRunRequest,
+	hookBudgetMs,
+	runHookEvent,
+	staticBlock,
+	supportedHarness,
+} from "./runtime.ts";
 export type {
 	Adapter,
 	CapabilityDeclaration,
@@ -45,6 +56,7 @@ export type {
 	Trigger,
 };
 export {
+	HOOK_PAYLOAD_MAX_BYTES,
 	MUSE_CAPABILITIES,
 	museAdapter,
 	normalizeMuseToolName,
@@ -92,12 +104,27 @@ const CLAUDE_SHAPED_TABLE: Readonly<Record<string, ToolKind>> = {
 
 // SPEC §4.5.3: native harness payload to the normalised event. Muse Code is
 // implemented in step 6.2; the Claude-shaped contract parse also covers the
-// claude-code unit rows until its own adapter lands in phase 9.
+// claude-code unit rows until its own adapter lands in phase 9. Payloads
+// over the 8 MiB cap block CDX-E305 here too (§4.5 EC-11), so the parse
+// layer enforces the same limit the runtime stdin read enforces.
 export function parseEvent(
 	harness: string,
 	event: string,
 	raw: unknown,
 ): Result<HookEvent> {
+	const text = JSON.stringify(raw);
+	if (
+		text !== undefined &&
+		new TextEncoder().encode(text).length > HOOK_PAYLOAD_MAX_BYTES
+	) {
+		return err(
+			makeError(
+				"CDX-E305",
+				"hook payload over 8 MiB is refused",
+				"Write the file in smaller edits, then retry the tool call.",
+			),
+		);
+	}
 	if (harness === "muse-code") {
 		return parseMuseEvent(event, raw);
 	}
