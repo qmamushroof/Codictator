@@ -30,6 +30,7 @@ export interface DepEvalInput {
 	readonly addedReasons?: Readonly<Record<string, boolean>>;
 	readonly unpublished?: ReadonlyArray<string>;
 	readonly saveExactRequired?: boolean;
+	readonly platformCaps?: ReadonlyArray<string>;
 }
 
 export interface DepEvaluation {

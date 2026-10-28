@@ -10,6 +10,7 @@ import type {
 import { checkDeps, resolveLatest } from "../../../src/features/deps/index.ts";
 import type { CheckContext } from "../../../src/features/engine/index.ts";
 import { FIXED_INSTANT } from "../../support/fake-clock.ts";
+import { FakeNet } from "../../support/fake-net.ts";
 
 function ctxFor(files: ReadonlyArray<string> = []): CheckContext {
 	return {
@@ -61,11 +62,45 @@ test("[§4.8 EC-1] newest version two days old resolves to previous", () => {
 
 test("[§4.8 EC-2] pinned advisory fixed yesterday is eligible via S9", async () => {
 	// SPEC §4.8.8 EC-2: the fix is eligible; remediation names it.
+	// SPEC §4.10.4 integrity note: the red body pinned lodash with no
+	// registry data, so the verdict had nothing to judge; the test now
+	// supplies the evaluation-path snapshot (advisory on the pin, fix
+	// published yesterday), and the same "remediation names it" assertion
+	// proves EC-2.
+	const snapshot: RegistrySnapshot = {
+		version: 1,
+		ecosystem: "npm",
+		fetchedAt: FIXED_INSTANT,
+		packages: {
+			lodash: {
+				versions: {
+					"4.17.20": {
+						published: "2025-01-01T00:00:00.000Z",
+						license: "MIT",
+					},
+					"4.17.21": {
+						published: "2025-12-31T00:00:00.000Z",
+						license: "MIT",
+					},
+				},
+			},
+		},
+		advisories: { "lodash@4.17.20": ["GHSA-x"] },
+	};
 	const findings = await checkDeps(
 		ctxFor(["package.json"]),
 		manifestFor("4.17.20"),
+		{
+			snapshot,
+		},
 	);
-	assert.ok(findings.length > 0);
+	assert.ok(
+		findings.some(
+			(finding) =>
+				finding.ruleId === "core/dep-no-vulnerable" &&
+				finding.remediation.includes("4.17.21"),
+		),
+	);
 });
 
 test("[§4.8 EC-3] every newer version advisory keeps pinned when clean", () => {
@@ -76,9 +111,30 @@ test("[§4.8 EC-3] every newer version advisory keeps pinned when clean", () => 
 
 test("[§4.8 EC-4] unpublished package blocks deprecated", async () => {
 	// SPEC §4.8.8 EC-4: block core/dep-no-deprecated with "unpublished".
+	// SPEC §4.10.4 integrity note: the red body pinned lodash with no
+	// registry data, so no deprecation verdict could fire; the test now
+	// supplies the evaluation-path snapshot plus the unpublished list, and
+	// the same rule-id assertion proves EC-4.
+	const snapshot: RegistrySnapshot = {
+		version: 1,
+		ecosystem: "npm",
+		fetchedAt: FIXED_INSTANT,
+		packages: {
+			lodash: {
+				versions: {
+					"9.9.9": { published: "2025-01-01T00:00:00.000Z" },
+				},
+			},
+		},
+		advisories: {},
+	};
 	const findings = await checkDeps(
 		ctxFor(["package.json"]),
 		manifestFor("9.9.9"),
+		{
+			snapshot,
+			unpublished: ["lodash"],
+		},
 	);
 	assert.ok(
 		findings.some((finding) => finding.ruleId === "core/dep-no-deprecated"),
@@ -87,9 +143,21 @@ test("[§4.8 EC-4] unpublished package blocks deprecated", async () => {
 
 test("[§4.8 EC-5] registry 429 retries then CDX-E401", async () => {
 	// SPEC §4.8.8 EC-5: retry twice with backoff, then fail closed.
+	// SPEC §4.10.4 integrity note: the red body pinned lodash with no Net
+	// port, so no fetch could run; the test now injects the evaluation-path
+	// Net port serving 429, and the same CDX-E401 assertion proves EC-5.
+	const net = new FakeNet();
+	net.route("GET", "https://registry.npmjs.org/lodash", {
+		status: 429,
+		headers: {},
+		body: "slow",
+	});
 	const findings = await checkDeps(
 		ctxFor(["package.json"]),
 		manifestFor("4.17.20"),
+		{
+			net,
+		},
 	);
 	assert.ok(findings.some((finding) => finding.code === "CDX-E401"));
 });
@@ -107,16 +175,30 @@ test("[§4.8 EC-6] engines range exempt from exact pin", async () => {
 
 test("[§4.8 EC-7] git dependency pinned by full SHA is allowed", async () => {
 	// SPEC §4.8.8 EC-7: latest-stable skipped, reported as unversioned source.
+	// SPEC §4.10.4 integrity note: the red body pinned the short "#abc123"
+	// fragment, which §6.1 classifies git-unpinned (a range, not a pin); the
+	// test now pins the full 40-hex SHA the EC names, and the same "allowed"
+	// assertion proves EC-7.
+	const sha = "a".repeat(40);
 	const findings = await checkDeps(
 		ctxFor(["package.json"]),
-		manifestFor("git+https://example.com/r.git#abc123"),
+		manifestFor(`git+https://example.com/r.git#${sha}`),
 	);
 	assert.equal(findings.length, 0);
 });
 
 test("[§4.8 EC-8] scoped private registry without allowlist blocks", async () => {
 	// SPEC §4.8.8 EC-8: CDX-E702 until the host joins config.network.registries.
-	const findings = await checkDeps(ctxFor([".npmrc"]), manifestFor("1.0.0"));
+	// SPEC §4.10.4 integrity note: the red body passed no .npmrc content, so
+	// no registry-host verdict could fire; the test now supplies the
+	// evaluation-path .npmrc bytes, and the same CDX-E702 assertion proves
+	// EC-8.
+	const findings = await checkDeps(ctxFor([".npmrc"]), manifestFor("1.0.0"), {
+		npmrc: {
+			path: ".npmrc",
+			text: "@acme:registry=https://npm.acme.test/\n",
+		},
+	});
 	assert.ok(findings.some((finding) => finding.code === "CDX-E702"));
 });
 
@@ -155,9 +237,22 @@ test("[§4.8 EC-12] deliberate prerelease pin blocks with no waiver", () => {
 
 test("[§4.8 EC-13] platform crypto beats uuid package", async () => {
 	// SPEC §4.8.8 EC-13: block core/dep-one-per-capability, platform first.
+	// SPEC §4.10.4 integrity note: the red body pinned lodash alone, which
+	// holds no shared capability to judge; the test now pins uuid while the
+	// pinned platform covers unique-ids, and the same rule-id assertion
+	// proves EC-13 with the platform-first message.
 	const findings = await checkDeps(
 		ctxFor(["package.json"]),
-		manifestFor("9.0.0"),
+		[
+			{
+				ecosystem: "npm",
+				path: "package.json",
+				dependencies: [{ name: "uuid", range: "9.0.0" }],
+			},
+		],
+		{
+			platformCaps: ["unique-ids"],
+		},
 	);
 	assert.ok(
 		findings.some(

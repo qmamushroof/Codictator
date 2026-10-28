@@ -25,6 +25,18 @@ import {
 	resolveRatchetTouchedImproves,
 } from "./code-health.ts";
 import {
+	resolveDepExactPin,
+	resolveDepLatestStable,
+	resolveDepLockfile,
+	resolveDepNewNeedsReason,
+} from "./deps-guards.ts";
+import {
+	resolveDepLicense,
+	resolveDepNoDeprecated,
+	resolveDepNoVulnerable,
+	resolveDepOnePerCapability,
+} from "./deps-policy-guards.ts";
+import {
 	resolveDocBreadth,
 	resolveDocDensity,
 	resolveDocLinksValid,
@@ -53,6 +65,7 @@ import {
 	resolveHistoryEntry,
 	resolveHistoryEntryComplete,
 } from "./records-guards.ts";
+import { resolveRemediationStepSize } from "./remediation-guards.ts";
 import { resolveNoSecretReads, resolveNoSecrets } from "./secret-scan.ts";
 import { resolveDangerousShell } from "./shell-analyse.ts";
 import {
@@ -133,6 +146,15 @@ const CODE_RESOLVERS: Readonly<Record<string, CodeResolver>> = {
 	"core/doc-no-inline-changelog": resolveDocNoInlineChangelog,
 	"core/doc-no-corpus-counts": resolveDocNoCorpusCounts,
 	"core/doc-single-owner": resolveDocSingleOwner,
+	"core/dep-exact-pin": resolveDepExactPin,
+	"core/dep-lockfile": resolveDepLockfile,
+	"core/dep-no-vulnerable": resolveDepNoVulnerable,
+	"core/dep-no-deprecated": resolveDepNoDeprecated,
+	"core/dep-latest-stable": resolveDepLatestStable,
+	"core/dep-new-needs-reason": resolveDepNewNeedsReason,
+	"core/dep-one-per-capability": resolveDepOnePerCapability,
+	"core/dep-license": resolveDepLicense,
+	"core/remediation-step-size": resolveRemediationStepSize,
 };
 
 // SPEC §4.4.3 step 4: one enforcer per referencing rule. An unknown rule

@@ -1,7 +1,14 @@
 // SPEC §4.8.3: "latest stable" selection with the S9 security exemption.
 // Eligibility is pure over the §7.12 snapshot; ages measure from the
 // snapshot's fetchedAt ("as of fetchedAt", §4.8.4), never the wall clock.
-import { err, makeError, ok, type Result } from "../../kernel/index.ts";
+import {
+	err,
+	type Fs,
+	makeError,
+	type Net,
+	ok,
+	type Result,
+} from "../../kernel/index.ts";
 import type { RegistrySnapshot, RegistryVersion } from "./index.ts";
 import {
 	compareNpmVersions,
@@ -16,6 +23,8 @@ export interface ResolveOptions {
 	readonly pinned?: string;
 	readonly params?: Partial<DepLagParams>;
 	readonly satisfiesRuntime?: (version: RegistryVersion) => boolean;
+	readonly net?: Net;
+	readonly fs?: Fs;
 }
 
 function withDefaults(params: Partial<DepLagParams> | undefined): DepLagParams {

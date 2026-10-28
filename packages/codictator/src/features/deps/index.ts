@@ -2,17 +2,14 @@
 // registry snapshot format. The npm driver logic lives in this module as
 // pure functions over caller-supplied text and ports (npm, lockfile, npmrc,
 // registry, osv, osv-ranges, stable, selection, capabilities, eval, verdicts,
-// snapshot-verdicts, bots, renovate, dependabot, fields); a Driver instance
-// that reads the repo and the pack-rule binding both wait for gate-closure
-// wiring with ports (SPEC §3.3, §3.4), like the deferred enforcers of later
-// phases.
+// snapshot-verdicts, bots, renovate, dependabot, fields, check); the pack-rule
+// binding for the dep rules lives in packs/enforcers/deps-guards.ts (D3),
+// while a Driver instance that reads the repo still waits for later wiring
+// with ports (SPEC §3.3, §3.4).
 import type { Result } from "../../kernel/index.ts";
-import type { CheckContext, Finding } from "../engine/index.ts";
 import type { NpmDepKind } from "./npm.ts";
-import { isExactNpmPin } from "./npm.ts";
 import type { ResolveOptions } from "./selection.ts";
 import { selectLatestStable } from "./selection.ts";
-import { evaluateDepVerdicts, manifestToEval } from "./verdicts.ts";
 
 export interface ManifestDependency {
 	readonly name: string;
@@ -89,43 +86,6 @@ export function resolveLatest(
 	return { ok: true, value: selected.value.version };
 }
 
-// SPEC §4.8.5: the manifest-intrinsic verdicts for the evaluation path.
-// Anything needing the snapshot, lockfile bytes or bot files runs in
-// evaluateDepVerdicts once the enforcer layer supplies them; without that
-// data this reports only what the ranges themselves prove, never a guess.
-export function checkDeps(
-	ctx: CheckContext,
-	manifests: ReadonlyArray<Manifest>,
-): Promise<Array<Finding>> {
-	const evaluated = evaluateDepVerdicts({
-		manifests: manifests.map(manifestToEval),
-		now: ctx.now,
-	});
-	const intrinsic: Array<Finding> = [];
-	for (const finding of evaluated.findings) {
-		if (finding.ruleId === "core/dep-exact-pin") {
-			intrinsic.push(finding);
-		}
-	}
-	for (const manifest of manifests) {
-		for (const dep of manifest.dependencies) {
-			if (!isExactNpmPin(dep.range)) {
-				continue;
-			}
-			const parsed = dep.range.replace(/^v/, "");
-			if (/-/.test(parsed) && !/^\d+\.\d+\.\d+$/.test(parsed)) {
-				intrinsic.push({
-					ruleId: "core/dep-latest-stable",
-					path: manifest.path,
-					message: `${dep.name}@${dep.range} in ${manifest.path} is a prerelease, never stable`,
-					remediation: `Pin ${dep.name} to a stable release.`,
-				});
-			}
-		}
-	}
-	return Promise.resolve(intrinsic);
-}
-
 export {
 	detectUpgradeBots,
 	isDependabotFile,
@@ -138,6 +98,7 @@ export {
 	DEFAULT_LICENSE_ALLOW,
 	platformCapabilityCover,
 } from "./capabilities.ts";
+export { checkDeps, type DepCheckContext } from "./check.ts";
 export {
 	checkDependabotOwnedKeys,
 	type DependabotUpdateEntry,
