@@ -140,7 +140,7 @@ function lastEventLine(repo: TempRepo): {
 		"utf8",
 	);
 	const lines = text.split("\n").filter((line) => line !== "");
-	assert.ok(lines.length > 0);
+	assert.ok(lines.length > 0, "event log is empty");
 	const last: unknown = JSON.parse(lines[lines.length - 1] ?? "");
 	if (
 		typeof last !== "object" ||
@@ -168,11 +168,27 @@ test("[§4.19.3] hook path allows a Muse Code write", async () => {
 			readPayload("muse-code", "1.4.10", "pre-tool-use.json", subdir),
 			subdir,
 		);
-		assert.equal(result.status, 0);
-		assert.equal(result.stdout, "{}");
+		assert.equal(
+			result.status,
+			0,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.equal(
+			result.stdout,
+			"{}",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 		const verdict = lastEventLine(repo);
-		assert.equal(verdict.decision, "allow");
-		assert.equal(verdict.trigger, "pre-tool");
+		assert.equal(
+			verdict.decision,
+			"allow",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.equal(
+			verdict.trigger,
+			"pre-tool",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 	} finally {
 		repo.cleanup();
 	}
@@ -198,7 +214,11 @@ test("[§4.19.3] hook path blocks a Muse Code payload missing the tool name", as
 			withoutTool,
 			repo.dir,
 		);
-		assert.equal(result.status, 0);
+		assert.equal(
+			result.status,
+			0,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 		const reply: unknown = JSON.parse(result.stdout);
 		if (
 			typeof reply !== "object" ||
@@ -216,8 +236,16 @@ test("[§4.19.3] hook path blocks a Muse Code payload missing the tool name", as
 		) {
 			throw new Error("hookSpecificOutput is not an object");
 		}
-		assert.equal(specific.permissionDecision, "deny");
-		assert.match(String(specific.permissionDecisionReason ?? ""), /CDX-E303/);
+		assert.equal(
+			specific.permissionDecision,
+			"deny",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.match(
+			String(specific.permissionDecisionReason ?? ""),
+			/CDX-E303/,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 	} finally {
 		repo.cleanup();
 	}
@@ -236,14 +264,26 @@ test("[§4.19.3] hook path allows an OpenCode tool call", async () => {
 			readPayload("opencode", "1.19.4", "tool-execute-before.json", repo.dir),
 			repo.dir,
 		);
-		assert.equal(result.status, 0);
+		assert.equal(
+			result.status,
+			0,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 		const reply: unknown = JSON.parse(result.stdout);
 		if (typeof reply !== "object" || reply === null || !("decision" in reply)) {
 			throw new Error("reply is not an object");
 		}
-		assert.equal(reply.decision, "allow");
+		assert.equal(
+			reply.decision,
+			"allow",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 		const verdict = lastEventLine(repo);
-		assert.equal(verdict.decision, "allow");
+		assert.equal(
+			verdict.decision,
+			"allow",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 	} finally {
 		repo.cleanup();
 	}
@@ -269,7 +309,11 @@ test("[§4.19.3] hook path blocks an OpenCode payload missing the tool", async (
 			withoutTool,
 			repo.dir,
 		);
-		assert.equal(result.status, 0);
+		assert.equal(
+			result.status,
+			0,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 		const reply: unknown = JSON.parse(result.stdout);
 		if (
 			typeof reply !== "object" ||
@@ -279,8 +323,16 @@ test("[§4.19.3] hook path blocks an OpenCode payload missing the tool", async (
 		) {
 			throw new Error("reply is not an object");
 		}
-		assert.equal(reply.decision, "block");
-		assert.match(String(reply.message ?? ""), /CDX-E303/);
+		assert.equal(
+			reply.decision,
+			"block",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.match(
+			String(reply.message ?? ""),
+			/CDX-E303/,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 	} finally {
 		repo.cleanup();
 	}
@@ -299,9 +351,21 @@ test("[§4.19.3] hook path without an engine answers the static CDX-E003 block",
 			readPayload("muse-code", "1.4.10", "pre-tool-use.json", repo.dir),
 			repo.dir,
 		);
-		assert.equal(result.status, 0);
-		assert.match(result.stdout, /CDX-E003/);
-		assert.match(result.stdout, /deny/);
+		assert.equal(
+			result.status,
+			0,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.match(
+			result.stdout,
+			/CDX-E003/,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.match(
+			result.stdout,
+			/deny/,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 	} finally {
 		repo.cleanup();
 	}
@@ -320,8 +384,16 @@ test("[§4.19.3] hook path outside a Codictator repo allows silently", async () 
 			readPayload("muse-code", "1.4.10", "pre-tool-use.json", repo.dir),
 			repo.dir,
 		);
-		assert.equal(result.status, 0);
-		assert.equal(result.stdout, "{}");
+		assert.equal(
+			result.status,
+			0,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.equal(
+			result.stdout,
+			"{}",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
 	} finally {
 		repo.cleanup();
 	}
