@@ -67,9 +67,7 @@
 	"enforcers": [
 		{
 			"id": "ts/lint",
-			"kind": "external",
-			"tool": "lint",
-			"ruleMap": { "*": "ts/lint" },
+			"kind": "code",
 			"budgetMs": 1000,
 			"args": {}
 		},
@@ -88,9 +86,7 @@
 		},
 		{
 			"id": "ts/typecheck",
-			"kind": "external",
-			"tool": "typecheck",
-			"ruleMap": { "*": "ts/typecheck" },
+			"kind": "code",
 			"budgetMs": 1000,
 			"args": {}
 		}
