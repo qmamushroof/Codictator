@@ -15,6 +15,11 @@ export interface TempRepo {
 	cleanup(): void;
 }
 
+export interface BareRepo {
+	readonly dir: string;
+	cleanup(): void;
+}
+
 const FIXED_GIT_DATE = "2026-01-01T00:00:00+00:00";
 
 function runGit(
@@ -72,4 +77,23 @@ export function createTempRepo(
 		repo.commit("test fixture");
 	}
 	return repo;
+}
+
+// SPEC §10.2: a bare repo stands in for the git host in acceptance tests.
+// The subject pushes its branch here; assertions read it back with
+// `git --git-dir <dir>`. Fixed author dates keep the pushed hashes
+// deterministic like TempRepo commits.
+export function createBareRepo(): BareRepo {
+	const dir = mkdtempSync(path.join(tmpdir(), "codictator-host-"));
+	try {
+		runGit(dir, ["init", "--bare", "-b", "main"]);
+	} catch {
+		runGit(dir, ["init", "--bare"]);
+	}
+	return {
+		dir,
+		cleanup: (): void => {
+			rmSync(dir, { recursive: true, force: true });
+		},
+	};
 }

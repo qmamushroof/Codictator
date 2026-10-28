@@ -987,7 +987,7 @@ test("[§4.8.6] dependabot entries carry schedule cooldown and strategy", () => 
 test("[§4.8.6] upgrade branches group patch and minor of one line", () => {
 	assert.equal(
 		upgradeBranchName("npm", "lodash", "4.17.21"),
-		"codictator/deps/npm/lodash@4.17.21",
+		"codictator/deps/npm/lodash-4.17.21",
 	);
 });
 
