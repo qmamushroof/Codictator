@@ -1,0 +1,19 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://codictator.dev/schema/cli/explain.schema.json",
+	"title": "explain output",
+	"description": "SPEC §4.18.2: --json rendering of codictator explain for an error code, rule or event.",
+	"type": "object",
+	"properties": {
+		"code": { "type": "string" },
+		"exit": { "type": "integer", "minimum": 0, "maximum": 7 },
+		"meaning": { "type": "string" },
+		"remediation": { "type": "string" },
+		"rule": { "type": "string" },
+		"event": { "type": "string" },
+		"id": { "type": "string" },
+		"text": { "type": "string" }
+	},
+	"required": ["text"],
+	"additionalProperties": false
+}

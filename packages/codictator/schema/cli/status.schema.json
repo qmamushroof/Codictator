@@ -1,0 +1,38 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://codictator.dev/schema/cli/status.schema.json",
+	"title": "status output",
+	"description": "SPEC §4.18.3: --json rendering of codictator status for the extension.",
+	"type": "object",
+	"properties": {
+		"engineVersion": { "type": "string" },
+		"packs": { "type": "object" },
+		"harnesses": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"harness": { "type": "string" },
+					"state": { "enum": ["active", "inactive", "unknown", "unverified"] },
+					"layers": { "type": "string" }
+				},
+				"required": ["harness", "state", "layers"],
+				"additionalProperties": false
+			}
+		},
+		"events": { "type": "integer", "minimum": 0 },
+		"corrupt": { "type": "integer", "minimum": 0 },
+		"gap": { "type": "boolean" },
+		"now": { "type": "string" }
+	},
+	"required": [
+		"engineVersion",
+		"packs",
+		"harnesses",
+		"events",
+		"corrupt",
+		"gap",
+		"now"
+	],
+	"additionalProperties": true
+}

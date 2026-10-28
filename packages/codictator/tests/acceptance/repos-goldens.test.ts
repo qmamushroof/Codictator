@@ -67,6 +67,10 @@ const repoNames = [
 
 for (const name of repoNames) {
 	test(`[§10.2] fixture repo ${name} builds into temp git repo`, async () => {
+		// SPEC §10.2: the fixture repo builds into a temporary git repo with a
+		// clean tree and a real HEAD, and the CLI evaluation succeeds there.
+		// Strengthened to SPEC row: the run must succeed (a verdict, not an
+		// error); the release phase makes the fixtures evaluable.
 		const dir = path.join(fixturesRoot(), "repos", name);
 		assert.equal(statSync(dir).isDirectory(), true);
 		const files = readTree(dir);
@@ -79,7 +83,8 @@ for (const name of repoNames) {
 			assert.equal(repo.git(["status", "--porcelain"]).trim(), "");
 			const head = repo.git(["rev-parse", "HEAD"]).trim();
 			assert.match(head, /^[0-9a-f]{40}$/);
-			await runCommand({ argv: ["verify"], cwd: repo.dir });
+			const evaluated = await runCommand({ argv: ["verify"], cwd: repo.dir });
+			assert.equal(evaluated.ok, true);
 		} finally {
 			repo.cleanup();
 		}

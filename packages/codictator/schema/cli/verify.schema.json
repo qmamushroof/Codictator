@@ -1,0 +1,15 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://codictator.dev/schema/cli/verify.schema.json",
+	"title": "verify output",
+	"description": "SPEC §4.19.2: --json rendering of codictator verify (exit 0 allow, 1 block).",
+	"type": "object",
+	"properties": {
+		"decision": { "enum": ["allow", "block"] },
+		"findings": { "type": "array" },
+		"configHash": { "type": "string" },
+		"note": { "type": "string" }
+	},
+	"required": ["decision", "findings", "configHash", "note"],
+	"additionalProperties": false
+}

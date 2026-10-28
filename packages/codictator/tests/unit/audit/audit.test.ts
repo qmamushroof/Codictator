@@ -5,8 +5,15 @@
 // usage rollups.
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import { explain, summarize } from "../../../src/features/audit/index.ts";
+import {
+	buildCiSummary,
+	type CiSummaryInput,
+	explain,
+	summarize,
+} from "../../../src/features/audit/index.ts";
+import { runNodeScript } from "../../support/cli-runner.ts";
 import { FIXED_INSTANT } from "../../support/fake-clock.ts";
+import { createTempRepo } from "../../support/temp-repo.ts";
 
 test("[§4.18 EC-1] two hook processes append simultaneously", async () => {
 	// SPEC §4.18.6 EC-1: both lines intact; appends are line-atomic.
@@ -39,9 +46,50 @@ test("[§4.18 EC-5] replay of a removed pack version", async () => {
 });
 
 test("[§4.18 EC-6] CI summary exceeds 60 KB", async () => {
-	// SPEC §4.18.6 EC-6: truncated with counts.
-	const summary = await summarize(FIXED_INSTANT, 10000);
-	assert.ok(summary.length <= 60000);
+	// SPEC §4.18.6 EC-6 + §4.18.4: the wired CI summary truncates past 60 KB
+	// with counts and the command to see all. buildCiSummary caps in isolation,
+	// and ci verify wires it (R4b2): the CLI half of this test requires
+	// ci verify to emit the summary.
+	const waivers: Array<string> = [];
+	for (let index = 0; index < 2000; index += 1) {
+		waivers.push(`waiver ${index} in force with a long reason line ${index}`);
+	}
+	const input: CiSummaryInput = {
+		integrity: [],
+		blocking: [],
+		exceptions: [],
+		waivers,
+		deps: [],
+		remediation: [],
+		unverifiable: [],
+		command: "codictator ci verify",
+	};
+	const text = buildCiSummary(input);
+	assert.ok(Buffer.byteLength(text, "utf8") <= 60000);
+	assert.ok(text.includes("truncated with counts"));
+	assert.ok(text.includes("codictator ci verify"));
+	const repo = createTempRepo({
+		".codictator/config.json": JSON.stringify({
+			version: 1,
+			codictator: "0.0.0",
+			packs: [],
+			harnesses: ["muse-code", "opencode"],
+		}),
+	});
+	try {
+		// The CLI runs in a child process so its stdout stays assertable: the
+		// in-process test runner shares process.stdout with reporter writes.
+		const entry = new URL("../../../src/cli/main.ts", import.meta.url).href;
+		const script = `const { main } = await import(${JSON.stringify(entry)}); process.exitCode = await main(${JSON.stringify(["ci", "verify"])}, ${JSON.stringify(repo.dir)});`;
+		const ran = await runNodeScript({
+			nodeArgs: ["--input-type=module", "-e", script],
+			cwd: repo.dir,
+			timeoutMs: 120000,
+		});
+		assert.ok(ran.stdout.includes("# codictator CI summary"));
+	} finally {
+		repo.cleanup();
+	}
 });
 
 test("[§4.18 EC-7] harness without usage data", async () => {

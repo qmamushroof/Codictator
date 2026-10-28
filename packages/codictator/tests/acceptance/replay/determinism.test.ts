@@ -48,7 +48,8 @@ const repoNames = [
 for (const name of repoNames) {
 	test(`[§10.4] determinism ${name} verdict byte-identical across three runs`, async () => {
 		// SPEC §10.4: three evaluations with the same inputs and a fixed now
-		// produce byte-identical verdict JSON.
+		// produce byte-identical verdict JSON. Strengthened to SPEC row: each
+		// run must succeed (a verdict, not an error) before bytes compare.
 		const dir = path.join(fixturesRoot(), "repos", name);
 		assert.equal(statSync(dir).isDirectory(), true);
 		const files = readTree(dir);
@@ -58,6 +59,9 @@ for (const name of repoNames) {
 			const first = await runCommand({ argv: ["verify"], cwd: repo.dir });
 			const second = await runCommand({ argv: ["verify"], cwd: repo.dir });
 			const third = await runCommand({ argv: ["verify"], cwd: repo.dir });
+			assert.equal(first.ok, true);
+			assert.equal(second.ok, true);
+			assert.equal(third.ok, true);
 			assert.equal(JSON.stringify(first), JSON.stringify(second));
 			assert.equal(JSON.stringify(second), JSON.stringify(third));
 		} finally {

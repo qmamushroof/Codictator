@@ -23,9 +23,17 @@ test("[§8.2] exit 1 on blocked findings or a blocking error", async () => {
 });
 
 test("[§8.2] exit 2 on a usage error", async () => {
-	// SPEC §8.2: an unknown command is a usage error, not a CdxError row.
+	// SPEC §8.2 + §4.19.6 EC-1: an unknown command is a usage error, not a
+	// CdxError row: exit 2 with a usage line. Integrity exception
+	// IE-09-R4b1-exit2 (rule core/no-assertion-loss, path
+	// packages/codictator/tests/acceptance/exits-explain.test.ts, reason: the
+	// old body asserted ok:false but the SPEC design returns ok:true with
+	// value 2 for usage errors, so the assertion is corrected to the design).
 	const result = await runCommand({ argv: ["frobnicate"], cwd: "/repo" });
-	assert.equal(result.ok, false);
+	assert.equal(result.ok, true);
+	if (result.ok) {
+		assert.equal(result.value, 2);
+	}
 });
 
 test("[§8.2] exit 3 on invalid configuration, pack or schema", async () => {
