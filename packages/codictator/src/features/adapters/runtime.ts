@@ -144,7 +144,30 @@ function hookEnv(env: Env): Env {
 // SPEC §4.19.3 step 2: the repo root from the payload cwd, else the process
 // cwd, via git rev-parse. A cwd git cannot resolve is outside any Codictator
 // repo, so the hook allows silently and the git-hook/CI backstops keep
-// enforcing (§4.2 EC-2).
+// enforcing (§4.2 EC-2). The resolved root is canonicalized once via the
+// kernel Fs port before config load and engine confinement: confinePath
+// realpaths files before comparing against the root, so the root side must
+// be canonical too — on macOS $TMPDIR lives under /var, which is a symlink
+// to /private/var, and an unresolved root fails every confined access
+// closed with CDX-E701. Only the kernel touches node:fs (§10.3 item 3), so
+// this goes through NodeFs (whose explicit-root create already resolves via
+// realpath) and reads the canonical root back with realpath(".").
+// realpath is idempotent when no symlinks are present, so this is a no-op
+// on Windows/Linux; a root NodeFs cannot resolve keeps the git answer, so
+// unreadable roots still fail closed with CDX-E801 downstream instead of
+// here.
+async function canonicalRoot(root: string): Promise<string> {
+	const made = await NodeFs.create({ root });
+	if (!made.ok) {
+		return root;
+	}
+	const real = await made.value.realpath(".");
+	if (!real.ok) {
+		return root;
+	}
+	return real.value;
+}
+
 async function resolveRoot(
 	ports: HookBasePorts,
 	startDir: string,
@@ -154,7 +177,7 @@ async function resolveRoot(
 	if (!root.ok) {
 		return undefined;
 	}
-	return root.value;
+	return canonicalRoot(root.value);
 }
 
 // SPEC §4.19.3 step 3: the effective-config cache. The key hashes the
