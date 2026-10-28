@@ -4,7 +4,7 @@
 // touch.
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import type { TestOutcome } from "../../../src/testing/index.ts";
+import type { TestOutcome } from "../../../src/features/testing/index.ts";
 import {
 	entryMatchesCover,
 	evaluateRun,
@@ -13,7 +13,7 @@ import {
 	parseCoverSpecifier,
 	parseLedgerFile,
 	parseTap,
-} from "../../../src/testing/index.ts";
+} from "../../../src/features/testing/index.ts";
 import { runBaseComparison } from "../../support/red-ledger-runner.ts";
 
 test("[§10.7] evaluateRun passes a clean run with an empty ledger", () => {

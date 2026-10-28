@@ -3,7 +3,10 @@
 // suite holds the SPEC §10.6 coverage thresholds.
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import type { RunVerdict, TestOutcome } from "../../../src/testing/index.ts";
+import type {
+	RunVerdict,
+	TestOutcome,
+} from "../../../src/features/testing/index.ts";
 import {
 	entryMatchesCover,
 	evaluateRun,
@@ -12,7 +15,7 @@ import {
 	parseCoverSpecifier,
 	parseLedgerFile,
 	parseTap,
-} from "../../../src/testing/index.ts";
+} from "../../../src/features/testing/index.ts";
 
 test("[§10.7] parseCoverSpecifier rejects text without a section", () => {
 	assert.equal(parseCoverSpecifier("no reference here"), undefined);
