@@ -3,8 +3,22 @@
 import type { Result } from "../../kernel/index.ts";
 import { err, makeError } from "../../kernel/index.ts";
 import type { Decision, Trigger } from "../engine/index.ts";
-import { replyClaudeCode, staticBlockClaudeCode } from "./claude-code.ts";
-import { parseClaudeShapedEvent } from "./claude-shaped.ts";
+import {
+	CLAUDE_CODE_CAPABILITIES,
+	claudeCodeAdapter,
+	normalizeClaudeCodeToolName,
+	parseClaudeCodeEvent,
+	replyClaudeCode,
+	staticBlockClaudeCode,
+} from "./claude-code.ts";
+import {
+	CODEX_CAPABILITIES,
+	codexCliAdapter,
+	normalizeCodexToolName,
+	parseCodexEvent,
+	replyCodex,
+	staticBlockCodex,
+} from "./codex-cli.ts";
 import type {
 	Adapter,
 	CapabilityDeclaration,
@@ -18,6 +32,15 @@ import type {
 } from "./contract.ts";
 import { HOOK_PAYLOAD_MAX_BYTES } from "./contract.ts";
 import {
+	COPILOT_TIMEOUT_SEC,
+	copilotAdapter,
+	normalizeCopilotToolName,
+	parseCopilotEvent,
+	replyCopilot,
+	staticBlockCopilot,
+} from "./copilot.ts";
+import { COPILOT_CAPABILITIES } from "./copilot-capabilities.ts";
+import {
 	MUSE_CAPABILITIES,
 	museAdapter,
 	normalizeMuseToolName,
@@ -26,13 +49,23 @@ import {
 	staticBlockMuse,
 } from "./muse-code.ts";
 import {
+	isOpenCodeVersionSupported,
 	normalizeOpenCodeToolName,
+	OPENCODE_VERSION_MAXIMUM_EXCLUSIVE,
+	OPENCODE_VERSION_MINIMUM,
 	opencodeAdapter,
 	parseOpenCodeEvent,
 	replyOpenCode,
 	staticBlockOpenCode,
 } from "./opencode.ts";
 import { OPENCODE_CAPABILITIES } from "./opencode-capabilities.ts";
+import {
+	parseUniversalEvent,
+	replyUniversal,
+	staticBlockUniversal,
+	UNIVERSAL_CAPABILITIES,
+	universalAdapter,
+} from "./universal.ts";
 
 export {
 	type HookAppend,
@@ -57,57 +90,49 @@ export type {
 	Trigger,
 };
 export {
+	CLAUDE_CODE_CAPABILITIES,
+	CODEX_CAPABILITIES,
+	COPILOT_CAPABILITIES,
+	COPILOT_TIMEOUT_SEC,
+	claudeCodeAdapter,
+	codexCliAdapter,
+	copilotAdapter,
 	HOOK_PAYLOAD_MAX_BYTES,
+	isOpenCodeVersionSupported,
 	MUSE_CAPABILITIES,
 	museAdapter,
+	normalizeClaudeCodeToolName,
+	normalizeCodexToolName,
+	normalizeCopilotToolName,
 	normalizeMuseToolName,
 	normalizeOpenCodeToolName,
 	OPENCODE_CAPABILITIES,
+	OPENCODE_VERSION_MAXIMUM_EXCLUSIVE,
+	OPENCODE_VERSION_MINIMUM,
 	opencodeAdapter,
+	parseClaudeCodeEvent,
+	parseCodexEvent,
+	parseCopilotEvent,
 	parseMuseEvent,
 	parseOpenCodeEvent,
+	parseUniversalEvent,
 	replyClaudeCode,
+	replyCodex,
+	replyCopilot,
 	replyMuse,
 	replyOpenCode,
+	replyUniversal,
 	staticBlockClaudeCode,
+	staticBlockCodex,
+	staticBlockCopilot,
 	staticBlockMuse,
 	staticBlockOpenCode,
+	staticBlockUniversal,
+	UNIVERSAL_CAPABILITIES,
+	universalAdapter,
 };
 
-// SPEC §4.5.4: the Claude-shaped contract parse shared until each
-// Claude-family harness lands its own adapter in phase 9.
-const CLAUDE_SHAPED_TABLE: Readonly<Record<string, ToolKind>> = {
-	write: "write",
-	edit: "write",
-	notebookedit: "write",
-	create: "write",
-	apply_patch: "write",
-	bash: "shell",
-	shell: "shell",
-	exec: "shell",
-	terminal: "shell",
-	bashoutput: "shell",
-	read: "read",
-	cat: "read",
-	view: "read",
-	glob: "search",
-	grep: "search",
-	search: "search",
-	find: "search",
-	ls: "search",
-	webfetch: "web",
-	websearch: "web",
-	fetch: "web",
-	curl: "web",
-	task: "task",
-	todo: "task",
-	todowrite: "task",
-	todoread: "task",
-};
-
-// SPEC §4.5.3: native harness payload to the normalised event. Muse Code is
-// implemented in step 6.2; the Claude-shaped contract parse also covers the
-// claude-code unit rows until its own adapter lands in phase 9. Payloads
+// SPEC §4.5.3: native harness payload to the normalised event. Payloads
 // over the 8 MiB cap block CDX-E305 here too (§4.5 EC-11), so the parse
 // layer enforces the same limit the runtime stdin read enforces.
 export function parseEvent(
@@ -128,33 +153,49 @@ export function parseEvent(
 			),
 		);
 	}
-	if (harness === "muse-code") {
-		return parseMuseEvent(event, raw);
+	if (harness === museAdapter.id) {
+		return museAdapter.parse(event, raw);
 	}
-	if (harness === "opencode") {
-		return parseOpenCodeEvent(event, raw);
+	if (harness === opencodeAdapter.id) {
+		return opencodeAdapter.parse(event, raw);
 	}
-	if (harness === "claude-code") {
-		return parseClaudeShapedEvent(harness, event, raw, CLAUDE_SHAPED_TABLE);
+	if (harness === claudeCodeAdapter.id) {
+		return claudeCodeAdapter.parse(event, raw);
+	}
+	if (harness === copilotAdapter.id) {
+		return copilotAdapter.parse(event, raw);
+	}
+	if (harness === codexCliAdapter.id) {
+		return codexCliAdapter.parse(event, raw);
+	}
+	if (harness === universalAdapter.id) {
+		return universalAdapter.parse(event, raw);
 	}
 	throw new Error(`not implemented: SPEC §4.5.4 adapter for ${harness}`);
 }
 
-// SPEC §4.5.4: verdict to the harness-native reply. Claude Code rides the
-// shared Claude-shaped reply until its full adapter lands in phase 9.4, the
-// same way its parse already rides the shared contract parse.
+// SPEC §4.5.4: verdict to the harness-native reply.
 export function renderReply(
 	harness: string,
 	decision: HookDecision,
 ): HookReply {
-	if (harness === "muse-code") {
-		return replyMuse(decision);
+	if (harness === museAdapter.id) {
+		return museAdapter.reply(decision);
 	}
-	if (harness === "opencode") {
-		return replyOpenCode(decision);
+	if (harness === opencodeAdapter.id) {
+		return opencodeAdapter.reply(decision);
 	}
-	if (harness === "claude-code") {
-		return replyClaudeCode(decision);
+	if (harness === claudeCodeAdapter.id) {
+		return claudeCodeAdapter.reply(decision);
+	}
+	if (harness === copilotAdapter.id) {
+		return copilotAdapter.reply(decision);
+	}
+	if (harness === codexCliAdapter.id) {
+		return codexCliAdapter.reply(decision);
+	}
+	if (harness === universalAdapter.id) {
+		return universalAdapter.reply(decision);
 	}
 	throw new Error(`not implemented: SPEC §4.5.4 adapter for ${harness}`);
 }

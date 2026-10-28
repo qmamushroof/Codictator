@@ -4,10 +4,20 @@
 // twenty-four fail red until the P0 adapters land.
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import type { HookDecision } from "../../../src/features/adapters/index.ts";
+import type {
+	HookDecision,
+	HookEvent,
+	RenderInput,
+} from "../../../src/features/adapters/index.ts";
 import {
+	claudeCodeAdapter,
+	codexCliAdapter,
+	copilotAdapter,
+	museAdapter,
+	opencodeAdapter,
 	parseEvent,
 	renderReply,
+	universalAdapter,
 } from "../../../src/features/adapters/index.ts";
 
 function blockDecision(message: string): HookDecision {
@@ -156,11 +166,40 @@ test("[§4.5 EC-11] hook payload larger than eight MiB", () => {
 });
 
 test("[§4.5 EC-12] regenerate with no config change", () => {
-	// SPEC §4.5.8 EC-12: byte-identical files.
-	const first = renderReply("claude-code", blockDecision("blocked by core/x"));
-	const second = renderReply("claude-code", blockDecision("blocked by core/x"));
-	assert.equal(first.stdout, second.stdout);
-	assert.equal(first.exitCode, second.exitCode);
+	// SPEC §4.5.8 EC-12: render twice from the same input → byte-identical
+	// artifacts. The old body only proved reply determinism; regeneration is
+	// render determinism, so every P0 adapter renders twice here.
+	const event: HookEvent = {
+		harness: "regen-proof",
+		event: "PreToolUse",
+		trigger: "pre-tool",
+		sessionId: "s-regen",
+		cwd: "/repo",
+		tool: { kind: "write", name: "Write", paths: ["/repo/a.ts"] },
+	};
+	const input: RenderInput = {
+		event,
+		decision: {
+			decision: "allow",
+			eventId: "01JDTESTEVENT00000000000012",
+		},
+	};
+	for (const adapter of [
+		museAdapter,
+		opencodeAdapter,
+		claudeCodeAdapter,
+		copilotAdapter,
+		codexCliAdapter,
+		universalAdapter,
+	]) {
+		const first = adapter.render(input);
+		const second = adapter.render(input);
+		assert.deepEqual(second, first);
+		assert.deepEqual(
+			second.map((artifact) => artifact.path),
+			first.map((artifact) => artifact.path),
+		);
+	}
 });
 
 test("[§4.5 EC-13] harness hook runs from a sub-directory", () => {

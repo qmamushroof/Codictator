@@ -22,7 +22,7 @@ export const OPENCODE_CAPABILITIES: CapabilityDeclaration = {
 	},
 	controls: {
 		contextFile: true,
-		contextInject: false,
+		contextInject: true,
 		postCompactInject: true,
 		promptBlock: false,
 		preToolBlock: true,

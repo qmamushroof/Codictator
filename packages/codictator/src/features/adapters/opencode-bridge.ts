@@ -12,8 +12,11 @@ export const OPENCODE_BRIDGE_SOURCE = `// Codictator OpenCode bridge (generated,
 // only imports are node:child_process and node:crypto. Tool gating fails
 // closed: a block reply, a non-zero launcher exit, a spawn error or a timeout
 // throws, which OpenCode turns into a refused tool call. Session events are
-// forwarded for recording and never throw. Per-prompt injection with the
-// chat.message hook and the experimental transform lands in phase 9.3.
+// forwarded for recording and never throw. Per-prompt injection: chat.message
+// caches the prompt.submit context per session and the experimental transform
+// appends it before every model call; when the probe trips (a tool call in a
+// turn the transform never delivered), the next prompt carries the context as
+// a synthetic chat.message part instead (EC-20).
 import { spawnSync } from "${CHILD_PROCESS_SPECIFIER}";
 import { createHash } from "node:crypto";
 
@@ -53,18 +56,127 @@ function runLauncher(directory, event, fields) {
   }
 }
 
+const promptContexts = new Map();
+const transformDelivered = new Map();
+const probeFallback = new Set();
+const fallbackPushed = new Map();
+
+function readAdditionalContext(reply) {
+  if (reply !== null && typeof reply === "object" && typeof reply.additionalContext === "string" && reply.additionalContext !== "") {
+    return reply.additionalContext;
+  }
+  return "";
+}
+
+function rememberContext(sessionID, text) {
+  if (text === "") {
+    return;
+  }
+  promptContexts.set(sessionID, { hash: digestOf(text), text: text });
+}
+
+function appendSystem(output, text) {
+  if (text === "") {
+    return;
+  }
+  if (typeof output.system === "string") {
+    output.system = output.system + text;
+    return;
+  }
+  if (Array.isArray(output.system)) {
+    output.system.push(text);
+    return;
+  }
+  output.system = text;
+}
+
+function throwOnBlock(reply) {
+  const blocked = reply !== null && typeof reply === "object" && (reply.decision === "block" || reply.decision === "escalate");
+  if (blocked) {
+    const message = typeof reply.message === "string" && reply.message !== "" ? reply.message : "codictator blocked the turn";
+    throw new Error(message);
+  }
+}
+
 function gateTool(input, output, event) {
+  if (transformDelivered.get(input.sessionID) !== true) {
+    probeFallback.add(input.sessionID);
+  }
   const reply = runLauncher(input.directory, event, {
     tool: input.tool,
     sessionID: input.sessionID,
     callID: input.callID,
+    contextDelivered: transformDelivered.get(input.sessionID) === true,
     args: output.args || {},
   });
-  const blocked = reply !== null && typeof reply === "object" && (reply.decision === "block" || reply.decision === "escalate");
-  if (blocked) {
-    const message = typeof reply.message === "string" && reply.message !== "" ? reply.message : "codictator blocked the tool call";
-    throw new Error(message);
+  throwOnBlock(reply);
+}
+
+function pushFallbackPart(input, output) {
+  let text = "";
+  try {
+    const reply = runLauncher(input.directory, "prompt.submit", { sessionID: input.sessionID });
+    throwOnBlock(reply);
+    text = readAdditionalContext(reply);
+  } catch {
+    text = FALLBACK_LINE;
   }
+  if (text === "") {
+    text = FALLBACK_LINE;
+  }
+  const digest = digestOf(text);
+  if (fallbackPushed.get(input.sessionID) === digest) {
+    return;
+  }
+  fallbackPushed.set(input.sessionID, digest);
+  rememberContext(input.sessionID, text);
+  if (!Array.isArray(output.parts)) {
+    output.parts = [];
+  }
+  output.parts.push({ type: "text", text: text, synthetic: true });
+}
+
+function handleChatMessage(input, output) {
+  const sessionID = input.sessionID;
+  transformDelivered.set(sessionID, false);
+  if (probeFallback.has(sessionID)) {
+    pushFallbackPart(input, output);
+    return;
+  }
+  let reply;
+  try {
+    reply = runLauncher(input.directory, "prompt.submit", { sessionID: sessionID });
+  } catch {
+    if (!Array.isArray(output.parts)) {
+      output.parts = [];
+    }
+    output.parts.push({ type: "text", text: FALLBACK_LINE, synthetic: true });
+    return;
+  }
+  throwOnBlock(reply);
+  rememberContext(sessionID, readAdditionalContext(reply));
+}
+
+function handleTransform(input, output) {
+  const sessionID = input.sessionID;
+  const cached = promptContexts.get(sessionID);
+  if (cached !== undefined && cached.text !== "") {
+    appendSystem(output, cached.text);
+    transformDelivered.set(sessionID, true);
+    return;
+  }
+  let reply;
+  try {
+    reply = runLauncher(input.directory, "prompt.submit", { sessionID: sessionID });
+  } catch {
+    appendSystem(output, FALLBACK_LINE);
+    return;
+  }
+  throwOnBlock(reply);
+  const text = readAdditionalContext(reply);
+  rememberContext(sessionID, text);
+  appendSystem(output, text);
+  transformDelivered.set(sessionID, true);
 }
 
 function pushCompactingContext(input, output) {
@@ -99,6 +211,12 @@ export default function codictator() {
     },
     "tool.execute.after": async (input, output) => {
       gateTool(input, output, "tool.execute.after");
+    },
+    "chat.message": async (input, output) => {
+      handleChatMessage(input, output);
+    },
+    "experimental.chat.system.transform": async (input, output) => {
+      handleTransform(input, output);
     },
     "experimental.session.compacting": async (input, output) => {
       pushCompactingContext(input, output);
