@@ -64,6 +64,7 @@ export interface Pack {
 
 export type { AcceptPackOptions } from "./accept.ts";
 export { acceptPack } from "./accept.ts";
+export { resolveCodeEnforcer } from "./enforcers/code.ts";
 export {
 	type ExternalArgs,
 	type ExternalInput,

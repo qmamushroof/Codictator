@@ -15,6 +15,7 @@ import {
 	SystemClock,
 } from "../../kernel/index.ts";
 import type { Enforcer } from "../engine/index.ts";
+import { resolveCodeEnforcer } from "./enforcers/code.ts";
 import type { ExternalOptions, ToolDecl } from "./enforcers/external.ts";
 import { resolveExternal } from "./enforcers/external-check.ts";
 import { isParametricKind, resolveParametric } from "./enforcers/parametric.ts";
@@ -109,8 +110,24 @@ export function resolvePackEnforcers(
 		const rules = (byDecl.get(decl.id) ?? []).sort((a, b) =>
 			a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
 		);
-		if (rules.length === 0 || !wiredKind(decl.kind)) {
+		if (rules.length === 0 || (!wiredKind(decl.kind) && decl.kind !== "code")) {
 			resolved.push(deferredEnforcer(decl));
+			continue;
+		}
+		if (decl.kind === "code") {
+			for (const rule of rules) {
+				const made = resolveCodeEnforcer(decl, rule, ports);
+				if (!made.ok) {
+					return err(made.error);
+				}
+				if (made.value === undefined) {
+					resolved.push(
+						deferredEnforcer(decl, "until its owning module lands"),
+					);
+					continue;
+				}
+				resolved.push(made.value);
+			}
 			continue;
 		}
 		for (const rule of rules) {

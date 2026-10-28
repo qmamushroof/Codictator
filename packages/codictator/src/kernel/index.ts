@@ -32,7 +32,7 @@ export {
 	netHostAllowed,
 	rejectNetUrl,
 } from "./net.ts";
-export { toRepoPath } from "./path.ts";
+export { isGitDirPath, toRepoPath } from "./path.ts";
 export { checkPattern } from "./pattern.ts";
 export { buildProcEnv, NodeProc, PROC_ENV_ALLOWLIST } from "./proc.ts";
 export { redactSecrets } from "./redact.ts";
@@ -40,6 +40,15 @@ export { pathExists, resolveRepoRoot } from "./repo-root.ts";
 export type { Result } from "./result.ts";
 export { err, ok } from "./result.ts";
 export { validateSchema } from "./schema.ts";
+export {
+	DEFAULT_FIXTURE_GLOBS,
+	isFixturePath,
+	isSecretReadPath,
+} from "./secret-paths.ts";
+export type { ShellAnalysis, ShellPipeline, SimpleCommand } from "./shell.ts";
+export type { ShellViolation, ShellViolationClass } from "./shell-deny.ts";
+export { matchDangerousShell } from "./shell-deny.ts";
+export { analyseShell } from "./shell-scan.ts";
 export type { TestCaseResult } from "./test-report.ts";
 export { readTestReport } from "./test-report.ts";
 
