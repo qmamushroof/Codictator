@@ -1,10 +1,11 @@
 // SPEC §4.12.4: review rounds. Submit validates the findings file and
 // verdicts it; resolve reports the still-open blockers and majors. Rounds
 // bind the staged tree and the reviewer session on the task record.
+import path from "node:path";
 import { parseArgs } from "node:util";
 import { checkReview } from "../features/workflow/index.ts";
 import type { Result } from "../kernel/index.ts";
-import { ok, parseJson } from "../kernel/index.ts";
+import { NodeFs, ok, parseJson } from "../kernel/index.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
 	fail,
@@ -42,14 +43,46 @@ function parseReviewArgs(req: CommandRequest): ReviewArgs | undefined {
 	}
 }
 
+// SPEC §4.12.4: absolute --file inputs are canonicalized before the
+// root-prefix comparison, so symlinked checkouts (macOS /var to
+// /private/var, Windows SUBST drives) compare canonical against canonical.
+// The root is already canonical via resolveRepoRoot; only the kernel
+// touches node:fs (§10.3 item 3), so the input goes through NodeFs the same
+// way the hook runtime's canonicalRoot does. Inputs that do not resolve
+// keep their spelling and fail closed downstream as CDX-E607.
+async function canonicalDir(dir: string): Promise<string> {
+	const made = await NodeFs.create({ root: dir });
+	if (!made.ok) {
+		return dir;
+	}
+	const real = await made.value.realpath(".");
+	if (!real.ok) {
+		return dir;
+	}
+	return real.value;
+}
+
 async function readFindingsFile(
 	root: string,
 	file: string,
 ): Promise<string | undefined> {
-	const rel =
-		file.startsWith("/") || /^[A-Za-z]:/.test(file)
-			? file.replace(`${root}/`, "")
-			: file;
+	if (!path.isAbsolute(file)) {
+		return readStateText(root, file);
+	}
+	const realRoot = await canonicalDir(root);
+	const realFile = path.join(
+		await canonicalDir(path.dirname(file)),
+		path.basename(file),
+	);
+	const rel = path.relative(realRoot, realFile);
+	if (
+		rel === "" ||
+		rel === ".." ||
+		rel.startsWith(`..${path.sep}`) ||
+		path.isAbsolute(rel)
+	) {
+		return undefined;
+	}
 	return readStateText(root, rel);
 }
 

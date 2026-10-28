@@ -6,10 +6,10 @@
 // tests on source). The shim is the only fixture file; every assertion
 // covers the real launcher and the real runtime.
 import { strict as assert } from "node:assert";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { runNodeScript } from "../../support/cli-runner.ts";
 import { createTempRepo, type TempRepo } from "../../support/temp-repo.ts";
 
@@ -36,13 +36,13 @@ function goldenPayload(harness: string, version: string, file: string): string {
 	);
 }
 
-function toPosixPath(value: string): string {
-	return value.split(path.sep).join("/");
-}
-
 // The temp repo holds the real launcher at its SPEC path plus an engine
-// shim at the SPEC resolution path; the shim re-exports src/cli/main, so
-// no build is needed and the launcher resolves exactly like production.
+// shim at the SPEC resolution path; the shim re-exports src/cli/main via a
+// canonical file URL, so no build is needed and the launcher resolves
+// exactly like production. A relative shim specifier breaks when the temp
+// repo lives under a symlinked or drive-aliased path (macOS /var to
+// /private/var, Windows SUBST drives): realpath adds a level the ../
+// arithmetic cannot see, so the engine fails to load.
 function installHookPath(
 	repo: TempRepo,
 	options: { readonly config: boolean; readonly engine: boolean },
@@ -58,10 +58,10 @@ function installHookPath(
 		);
 		mkdirSync(shimDir, { recursive: true });
 		const target = path.join(packageRoot(), "src", "cli", "main.ts");
-		const relative = toPosixPath(path.relative(shimDir, target));
+		const fileUrl = pathToFileURL(realpathSync(target)).href;
 		writeFileSync(
 			path.join(shimDir, "main.js"),
-			`export { main } from "${relative}";\n`,
+			`export { main } from "${fileUrl}";\n`,
 			"utf8",
 		);
 	}
