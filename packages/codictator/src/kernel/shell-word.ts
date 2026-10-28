@@ -120,6 +120,14 @@ export function readShellBalanced(
 			at += 1;
 			continue;
 		}
+		if (char === close) {
+			depth -= 1;
+			if (depth === 0) {
+				return { value: text.slice(start, at), next: at + 1 };
+			}
+			at += 1;
+			continue;
+		}
 		if (char === "'" || char === '"' || char === "`") {
 			quote = char;
 			at += 1;
@@ -132,14 +140,6 @@ export function readShellBalanced(
 		}
 		if (char === "(" && close === ")") {
 			depth += 1;
-			at += 1;
-			continue;
-		}
-		if (char === close) {
-			depth -= 1;
-			if (depth === 0) {
-				return { value: text.slice(start, at), next: at + 1 };
-			}
 			at += 1;
 			continue;
 		}
