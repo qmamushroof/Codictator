@@ -1,0 +1,2055 @@
+{
+	"id": "core",
+	"version": "0.0.0",
+	"description": "Codictator core built-in pack (SPEC §5).",
+	"rules": [
+		{
+			"id": "core/context-soft-band",
+			"family": "F1",
+			"tier": "tunable",
+			"statement": "Keep routine work inside softPercent of the context window.",
+			"reason": "Past the soft band the agent loses earlier context and repeats work.",
+			"remediation": "Checkpoint {detail} and continue in a fresh session before {limit}%.",
+			"enforcer": "core/context-soft-band",
+			"triggers": ["startup", "pre-tool"],
+			"scope": [],
+			"params": {
+				"softPercent": {
+					"type": "integer",
+					"default": 60,
+					"bound": 70,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/context-hard-band",
+			"family": "F1",
+			"tier": "tunable",
+			"statement": "Stop and checkpoint at hardPercent of the context window.",
+			"reason": "Past the hard band output degrades and the run must continue fresh.",
+			"remediation": "Checkpoint now: the hard band is {limit}%.",
+			"enforcer": "core/context-hard-band",
+			"triggers": ["startup", "pre-tool"],
+			"scope": [],
+			"params": {
+				"hardPercent": {
+					"type": "integer",
+					"default": 75,
+					"bound": 85,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/session-tool-call-limit",
+			"family": "F1",
+			"tier": "tunable",
+			"statement": "Finish within maxToolCalls tool calls per session.",
+			"reason": "Unbounded tool loops burn context and hide stuck runs.",
+			"remediation": "Checkpoint and continue; the session limit is {limit} calls.",
+			"enforcer": "core/session-tool-call-limit",
+			"triggers": ["pre-tool"],
+			"scope": [],
+			"params": {
+				"maxToolCalls": {
+					"type": "integer",
+					"default": 300,
+					"bound": 500,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/read-dedupe",
+			"family": "F1",
+			"tier": "floor",
+			"statement": "Never re-read a file whose content is already in context.",
+			"reason": "Re-reads waste context and tool calls.",
+			"remediation": "Reuse the copy of {path} already in context.",
+			"enforcer": "core/read-dedupe",
+			"triggers": ["pre-tool"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/graph-before-scan",
+			"family": "F1",
+			"tier": "floor",
+			"statement": "Consult the knowledge-graph output before broad scans, when present.",
+			"reason": "Scanning without the graph repeats indexed work.",
+			"remediation": "Query the knowledge graph for {path} before scanning.",
+			"enforcer": "core/graph-before-scan",
+			"triggers": ["pre-tool"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/mcp-declared",
+			"family": "F1",
+			"tier": "floor",
+			"statement": "Use only declared MCP servers.",
+			"reason": "Undeclared servers run unreviewed code with repo access.",
+			"remediation": "Declare the server in config or remove its use from {path}.",
+			"enforcer": "core/mcp-declared",
+			"triggers": ["startup", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-secrets",
+			"family": "F2",
+			"tier": "floor",
+			"statement": "No credentials, tokens or private keys in the repo or context.",
+			"reason": "A credential in the repo or context cannot be revoked from history.",
+			"remediation": "Read it from an env var; add the name, without a value, to .env.example.",
+			"enforcer": "core/no-secrets",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-secret-reads",
+			"family": "F2",
+			"tier": "floor",
+			"statement": "Never read secret material into the agent context.",
+			"reason": "Secrets in context leak into logs, events and model calls.",
+			"remediation": "Stop reading {path} and revoke the exposed value.",
+			"enforcer": "core/no-secret-reads",
+			"triggers": ["pre-tool"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dangerous-shell",
+			"family": "F2",
+			"tier": "floor",
+			"statement": "No unanalysed shell that escapes confinement.",
+			"reason": "Shell escapes bypass every other guard.",
+			"remediation": "Rewrite the command in {path} without the blocked construct.",
+			"enforcer": "core/dangerous-shell",
+			"triggers": ["pre-tool"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/write-confinement",
+			"family": "F2",
+			"tier": "floor",
+			"statement": "Write only inside the repo root or the OS temp dir.",
+			"reason": "Writes outside the root escape review and ownership.",
+			"remediation": "Move the write target under the repo root: {path}.",
+			"enforcer": "core/write-confinement",
+			"triggers": ["pre-tool"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dep-exact-pin",
+			"family": "F3",
+			"tier": "floor",
+			"statement": "Pin every dependency to an exact version.",
+			"reason": "Ranges resolve differently over time and break replay.",
+			"remediation": "Pin {value} to an exact version in {path}.",
+			"enforcer": "core/dep-exact-pin",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dep-lockfile",
+			"family": "F3",
+			"tier": "floor",
+			"statement": "Commit the lockfile for every manifest.",
+			"reason": "Without a lockfile the install is not the reviewed one.",
+			"remediation": "Commit the lockfile for {path}.",
+			"enforcer": "core/dep-lockfile",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dep-no-vulnerable",
+			"family": "F3",
+			"tier": "floor",
+			"statement": "No dependency with a known advisory.",
+			"reason": "Known vulnerabilities ship known exploits.",
+			"remediation": "Upgrade {value} past the advisory, then re-run the sweep.",
+			"enforcer": "core/dep-no-vulnerable",
+			"triggers": ["pre-tool", "review", "scheduled"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dep-no-deprecated",
+			"family": "F3",
+			"tier": "floor",
+			"statement": "No deprecated dependency.",
+			"reason": "Deprecated packages stop receiving security fixes.",
+			"remediation": "Replace {value} with a maintained package.",
+			"enforcer": "core/dep-no-deprecated",
+			"triggers": ["pre-tool", "review", "scheduled"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dep-latest-stable",
+			"family": "F3",
+			"tier": "tunable",
+			"statement": "Stay within lagDays of latest stable.",
+			"reason": "Stale dependencies accumulate upgrade risk and advisories.",
+			"remediation": "Upgrade {value} to a release newer than {limit} days.",
+			"enforcer": "core/dep-latest-stable",
+			"triggers": ["review", "scheduled"],
+			"scope": [],
+			"params": {
+				"lagDays": {
+					"type": "integer",
+					"default": 30,
+					"bound": 60,
+					"stricter": "lower"
+				},
+				"majorLagDays": {
+					"type": "integer",
+					"default": 60,
+					"bound": 120,
+					"stricter": "lower"
+				},
+				"minReleaseAgeDays": {
+					"type": "integer",
+					"default": 7,
+					"bound": 3,
+					"stricter": "higher"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dep-new-needs-reason",
+			"family": "F3",
+			"tier": "floor",
+			"statement": "Every new dependency carries a reason.",
+			"reason": "Unexplained dependencies hide capability duplication.",
+			"remediation": "Record why {value} is needed in {path}.",
+			"enforcer": "core/dep-new-needs-reason",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dep-one-per-capability",
+			"family": "F3",
+			"tier": "floor",
+			"statement": "One package per capability.",
+			"reason": "Two packages for one job double the audit surface.",
+			"remediation": "Remove {value}; the platform or the kept package already covers it.",
+			"enforcer": "core/dep-one-per-capability",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dep-license",
+			"family": "F3",
+			"tier": "tunable",
+			"statement": "Every dependency license is in the allow policy.",
+			"reason": "Unreviewed licenses create legal exposure.",
+			"remediation": "Replace {value} with an allowed-license package or tighten the policy.",
+			"enforcer": "core/dep-license",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {
+				"allow": {
+					"type": "string[]",
+					"default": [
+						"MIT",
+						"ISC",
+						"BSD-2-Clause",
+						"BSD-3-Clause",
+						"Apache-2.0",
+						"0BSD",
+						"BlueOak-1.0.0",
+						"Unlicense",
+						"CC0-1.0",
+						"Python-2.0",
+						"MPL-2.0"
+					],
+					"bound": [
+						"MIT",
+						"ISC",
+						"BSD-2-Clause",
+						"BSD-3-Clause",
+						"Apache-2.0",
+						"0BSD",
+						"BlueOak-1.0.0",
+						"Unlicense",
+						"CC0-1.0",
+						"Python-2.0",
+						"MPL-2.0"
+					],
+					"stricter": "policy"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/spec-trace",
+			"family": "F4",
+			"tier": "floor",
+			"statement": "Every test traces to a SPEC reference.",
+			"reason": "Untraced tests cannot prove the spec they guard.",
+			"remediation": "Give the test in {path} a literal SPEC reference.",
+			"enforcer": "core/spec-trace",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/red-before-green",
+			"family": "F4",
+			"tier": "floor",
+			"statement": "Prove red before implementing.",
+			"reason": "A test that never failed proves nothing.",
+			"remediation": "Record the failing run for {path} before implementing.",
+			"enforcer": "core/red-before-green",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/test-kinds-by-scenario",
+			"family": "F4",
+			"tier": "floor",
+			"statement": "Cover the scenario's required test kinds.",
+			"reason": "Wrong-kind tests miss the layer they should guard.",
+			"remediation": "Add the missing {detail} test for {path}.",
+			"enforcer": "core/test-kinds-by-scenario",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/regression-test-for-fix",
+			"family": "F4",
+			"tier": "floor",
+			"statement": "Every fix ships a regression test.",
+			"reason": "Fixes without regression tests regress.",
+			"remediation": "Add a regression test covering {detail}.",
+			"enforcer": "core/regression-test-for-fix",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/coverage-floor",
+			"family": "F4",
+			"tier": "tunable",
+			"statement": "Hold line and branch coverage at the floor.",
+			"reason": "Falling coverage hides untested behaviour.",
+			"remediation": "Add tests until {path} reaches {limit}%.",
+			"enforcer": "core/coverage-floor",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {
+				"lines": {
+					"type": "integer",
+					"default": 90,
+					"bound": 80,
+					"stricter": "higher"
+				},
+				"branches": {
+					"type": "integer",
+					"default": 80,
+					"bound": 70,
+					"stricter": "higher"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-assertion-loss",
+			"family": "F5",
+			"tier": "floor",
+			"statement": "No test edit removes an assertion.",
+			"reason": "Lost assertions silently weaken the suite.",
+			"remediation": "Restore the assertion in {path}.",
+			"enforcer": "core/no-assertion-loss",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-skipped-tests",
+			"family": "F5",
+			"tier": "floor",
+			"statement": "No skipped or focused tests.",
+			"reason": "Skips hide failures and rot the suite.",
+			"remediation": "Unskip the test in {path} or delete it.",
+			"enforcer": "core/no-skipped-tests",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-new-suppressions",
+			"family": "F5",
+			"tier": "floor",
+			"statement": "No new lint, type or coverage suppressions.",
+			"reason": "Suppressions move failures out of sight.",
+			"remediation": "Fix the finding in {path} instead of suppressing it.",
+			"enforcer": "core/no-new-suppressions",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-fixture-shrink",
+			"family": "F5",
+			"tier": "floor",
+			"statement": "No fixture edit that weakens a rule.",
+			"reason": "Shrunk fixtures let violations pass.",
+			"remediation": "Restore the fixture case for {detail}.",
+			"enforcer": "core/no-fixture-shrink",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-threshold-lowering",
+			"family": "F5",
+			"tier": "floor",
+			"statement": "No lowered gate threshold.",
+			"reason": "Lowered thresholds ratify decay.",
+			"remediation": "Restore the threshold in {path} to {limit}.",
+			"enforcer": "core/no-threshold-lowering",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/test-command-intact",
+			"family": "F5",
+			"tier": "floor",
+			"statement": "Run the repo's own test commands unmodified.",
+			"reason": "Rewritten commands skip the gates they should run.",
+			"remediation": "Restore the test command in {path}.",
+			"enforcer": "core/test-command-intact",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-baseline-raise",
+			"family": "F5",
+			"tier": "floor",
+			"statement": "Never raise a baseline entry.",
+			"reason": "Raised baselines bless worse code.",
+			"remediation": "Lower the count for {detail} instead of raising the baseline.",
+			"enforcer": "core/no-baseline-raise",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/file-size",
+			"family": "F6",
+			"tier": "tunable",
+			"statement": "Source files stay under maxLines lines.",
+			"reason": "Oversize files resist review and hide coupling.",
+			"remediation": "Split {path} below {limit} lines by responsibility.",
+			"enforcer": "core/file-size",
+			"triggers": ["pre-tool", "post-tool", "review"],
+			"scope": [],
+			"params": {
+				"maxLines": {
+					"type": "integer",
+					"default": 300,
+					"bound": 500,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/function-size",
+			"family": "F6",
+			"tier": "tunable",
+			"statement": "Functions stay under maxLines lines.",
+			"reason": "Long functions mix responsibilities and resist tests.",
+			"remediation": "Extract helpers from {path}:{line} below {limit} lines.",
+			"enforcer": "core/function-size",
+			"triggers": ["pre-tool", "post-tool", "review"],
+			"scope": [],
+			"params": {
+				"maxLines": {
+					"type": "integer",
+					"default": 40,
+					"bound": 80,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/complexity",
+			"family": "F6",
+			"tier": "tunable",
+			"statement": "Cyclomatic complexity stays under maxCyclomatic.",
+			"reason": "Branchy code hides untested paths.",
+			"remediation": "Simplify {path}:{line} below complexity {limit}.",
+			"enforcer": "core/complexity",
+			"triggers": ["pre-tool", "post-tool", "review"],
+			"scope": [],
+			"params": {
+				"maxCyclomatic": {
+					"type": "integer",
+					"default": 10,
+					"bound": 15,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/duplication",
+			"family": "F6",
+			"tier": "tunable",
+			"statement": "No duplicated token runs above minTokens.",
+			"reason": "Copies drift and fix in one place only.",
+			"remediation": "Extract the duplication at {path}:{line} into one helper.",
+			"enforcer": "core/duplication",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {
+				"minTokens": {
+					"type": "integer",
+					"default": 50,
+					"bound": 100,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/dead-code",
+			"family": "F6",
+			"tier": "floor",
+			"statement": "No unused exports or members.",
+			"reason": "Dead code misleads readers and rots.",
+			"remediation": "Delete the unused export at {path}:{line}.",
+			"enforcer": "core/dead-code",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-speculative-abstraction",
+			"family": "F6",
+			"tier": "floor",
+			"statement": "No interface or abstract type with one implementation.",
+			"reason": "Speculative abstractions tax every reader for no seam.",
+			"remediation": "Inline the abstraction at {path}:{line}.",
+			"enforcer": "core/no-speculative-abstraction",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-guard-removal",
+			"family": "F6",
+			"tier": "floor",
+			"statement": "No deleted validation, throw or assert in a living function.",
+			"reason": "Removed guards reopen the failure they closed.",
+			"remediation": "Restore the guard at {path}:{line}.",
+			"enforcer": "core/no-guard-removal",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/ratchet-touched-improves",
+			"family": "F6",
+			"tier": "tunable",
+			"statement": "Touching a file lowers at least one ratchet metric.",
+			"reason": "Touched files must leave the tree better, never worse.",
+			"remediation": "Reduce a ratchet metric for {path} by {limit}.",
+			"enforcer": "core/ratchet-touched-improves",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {
+				"minDecrement": {
+					"type": "integer",
+					"default": 1,
+					"bound": 1,
+					"stricter": "higher"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/remediation-step-size",
+			"family": "F6",
+			"tier": "tunable",
+			"statement": "Remediation steps stay within maxFiles files and maxChangedLines lines.",
+			"reason": "Oversize steps cannot be reviewed or safely landed.",
+			"remediation": "Split the step touching {path} below {limit}.",
+			"enforcer": "core/remediation-step-size",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {
+				"maxFiles": {
+					"type": "integer",
+					"default": 10,
+					"bound": 20,
+					"stricter": "lower"
+				},
+				"maxChangedLines": {
+					"type": "integer",
+					"default": 300,
+					"bound": 600,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/max-file-bytes",
+			"family": "F6",
+			"tier": "tunable",
+			"statement": "Committed files stay under maxBytes bytes.",
+			"reason": "Huge files bloat clones and dodge review.",
+			"remediation": "Shrink {path} below {limit} bytes or stop tracking it.",
+			"enforcer": "core/max-file-bytes",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {
+				"maxBytes": {
+					"type": "integer",
+					"default": 1048576,
+					"bound": 5242880,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/arch-profile-declared",
+			"family": "F7",
+			"tier": "floor",
+			"statement": "The repo declares its architecture profile.",
+			"reason": "Without a profile no boundary can be checked.",
+			"remediation": "Declare the profile in {path}.",
+			"enforcer": "core/arch-profile-declared",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/arch-module-mapped",
+			"family": "F7",
+			"tier": "floor",
+			"statement": "Every source file maps to a declared module.",
+			"reason": "Unmapped files escape boundary checks.",
+			"remediation": "Map {path} to a declared module.",
+			"enforcer": "core/arch-module-mapped",
+			"triggers": ["pre-tool", "post-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/arch-boundaries",
+			"family": "F7",
+			"tier": "floor",
+			"statement": "No import crosses a denied boundary.",
+			"reason": "Boundary breaks recouple the modules.",
+			"remediation": "Remove the import from {path} to {detail}.",
+			"enforcer": "core/arch-boundaries",
+			"triggers": ["pre-tool", "post-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/arch-public-entry",
+			"family": "F7",
+			"tier": "floor",
+			"statement": "Cross-module imports use public entries.",
+			"reason": "Deep imports freeze internals.",
+			"remediation": "Import the public entry instead of {path}:{line}.",
+			"enforcer": "core/arch-public-entry",
+			"triggers": ["pre-tool", "post-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/arch-no-cycles",
+			"family": "F7",
+			"tier": "floor",
+			"statement": "No dependency cycles between modules.",
+			"reason": "Cycles merge modules and block layering.",
+			"remediation": "Break the cycle through {path}.",
+			"enforcer": "core/arch-no-cycles",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/arch-module-size",
+			"family": "F7",
+			"tier": "tunable",
+			"statement": "Modules stay within maxFiles files and maxLines lines.",
+			"reason": "Oversize modules are monoliths by another name.",
+			"remediation": "Split the module at {path} below {limit}.",
+			"enforcer": "core/arch-module-size",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {
+				"maxFiles": {
+					"type": "integer",
+					"default": 80,
+					"bound": 150,
+					"stricter": "lower"
+				},
+				"maxLines": {
+					"type": "integer",
+					"default": 8000,
+					"bound": 15000,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/compiler-strict",
+			"family": "F7",
+			"tier": "floor",
+			"statement": "Strict compiler settings stay on.",
+			"reason": "Loose settings hide type errors the pack assumes absent.",
+			"remediation": "Re-enable the strict flag in {path}.",
+			"enforcer": "core/compiler-strict",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/history-entry",
+			"family": "F8",
+			"tier": "floor",
+			"statement": "Every commit carries a history entry.",
+			"reason": "Missing entries erase the reason a change was safe.",
+			"remediation": "Add the history entry for {detail}.",
+			"enforcer": "core/history-entry",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/history-append-only",
+			"family": "F8",
+			"tier": "floor",
+			"statement": "History files are append-only.",
+			"reason": "Edits rewrite the record reviewers trusted.",
+			"remediation": "Revert the edit to {path}; append a new entry instead.",
+			"enforcer": "core/history-append-only",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/history-entry-complete",
+			"family": "F8",
+			"tier": "floor",
+			"statement": "History entries carry every required field.",
+			"reason": "Incomplete entries skip the review the kind requires.",
+			"remediation": "Complete the entry in {path}: {detail}.",
+			"enforcer": "core/history-entry-complete",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/bug-registry",
+			"family": "F15",
+			"tier": "floor",
+			"statement": "Every defect has a bug row.",
+			"reason": "Unrecorded defects skip diagnosis and regression tests.",
+			"remediation": "Add the bug row for {detail}.",
+			"enforcer": "core/bug-registry",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/bug-rows-immutable",
+			"family": "F15",
+			"tier": "floor",
+			"statement": "Bug rows never change after filing.",
+			"reason": "Edited rows rewrite the defect record.",
+			"remediation": "Revert the edit to {path}; append instead.",
+			"enforcer": "core/bug-rows-immutable",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/diagnose-before-fix",
+			"family": "F8",
+			"tier": "floor",
+			"statement": "Diagnose before fixing.",
+			"reason": "Undiagnosed fixes treat symptoms.",
+			"remediation": "Record the diagnosis for {detail} before fixing.",
+			"enforcer": "core/diagnose-before-fix",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/workflow-gates",
+			"family": "F9",
+			"tier": "floor",
+			"statement": "Mandatory gates stay in order.",
+			"reason": "Skipped gates ship unreviewed work.",
+			"remediation": "Restore the gate in {path}.",
+			"enforcer": "core/workflow-gates",
+			"triggers": ["startup", "pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/writes-within-plan",
+			"family": "F9",
+			"tier": "floor",
+			"statement": "Write only files the plan allows.",
+			"reason": "Out-of-plan writes bypass task scoping.",
+			"remediation": "Stop writing {path}; extend the plan first.",
+			"enforcer": "core/writes-within-plan",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/loop-breaker",
+			"family": "F9",
+			"tier": "tunable",
+			"statement": "Stop after maxRepeats failed attempts.",
+			"reason": "Endless retries burn context and repeat the same error.",
+			"remediation": "Checkpoint {detail} and ask after {limit} attempts.",
+			"enforcer": "core/loop-breaker",
+			"triggers": ["pre-tool"],
+			"scope": [],
+			"params": {
+				"maxRepeats": {
+					"type": "integer",
+					"default": 3,
+					"bound": 5,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/review-gate",
+			"family": "F11",
+			"tier": "floor",
+			"statement": "Changes pass review before landing.",
+			"reason": "Unreviewed changes bypass the second pair of eyes.",
+			"remediation": "Submit {path} for review.",
+			"enforcer": "core/review-gate",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/review-round-cap",
+			"family": "F11",
+			"tier": "tunable",
+			"statement": "Reviews close within maxRounds rounds.",
+			"reason": "Endless rounds mean the change is too big or unclear.",
+			"remediation": "Split {path} or resolve round {detail}.",
+			"enforcer": "core/review-round-cap",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {
+				"maxRounds": {
+					"type": "integer",
+					"default": 3,
+					"bound": 5,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-placement",
+			"family": "F10",
+			"tier": "tunable",
+			"statement": "Docs live in owned locations.",
+			"reason": "Scattered docs rot and contradict.",
+			"remediation": "Move {path} to an allowed location.",
+			"enforcer": "core/doc-placement",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {
+				"allowedGlobs": {
+					"type": "string[]",
+					"default": [],
+					"bound": [],
+					"stricter": "subset"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-one-level",
+			"family": "F10",
+			"tier": "floor",
+			"statement": "Docs sit one level under their router.",
+			"reason": "Deep trees hide docs from their owners.",
+			"remediation": "Move {path} beside its router.",
+			"enforcer": "core/doc-one-level",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-router-leaf",
+			"family": "F10",
+			"tier": "floor",
+			"statement": "Every doc folder has its router leaf.",
+			"reason": "Routerless folders have no stated owner.",
+			"remediation": "Add the router leaf for {path}.",
+			"enforcer": "core/doc-router-leaf",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-size",
+			"family": "F10",
+			"tier": "tunable",
+			"statement": "Docs stay within maxBytes bytes and maxLines lines.",
+			"reason": "Oversize docs are not read.",
+			"remediation": "Split {path} below {limit}.",
+			"enforcer": "core/doc-size",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {
+				"maxBytes": {
+					"type": "integer",
+					"default": 40000,
+					"bound": 60000,
+					"stricter": "lower"
+				},
+				"maxLines": {
+					"type": "integer",
+					"default": 500,
+					"bound": 800,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-breadth",
+			"family": "F10",
+			"tier": "tunable",
+			"statement": "Doc folders stay within maxH2 headings and maxFilesPerFolder files.",
+			"reason": "Wide folders bury their subject.",
+			"remediation": "Split the folder at {path} below {limit}.",
+			"enforcer": "core/doc-breadth",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {
+				"maxH2": {
+					"type": "integer",
+					"default": 15,
+					"bound": 25,
+					"stricter": "lower"
+				},
+				"maxFilesPerFolder": {
+					"type": "integer",
+					"default": 40,
+					"bound": 60,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-density",
+			"family": "F10",
+			"tier": "tunable",
+			"statement": "Sentences and paragraphs stay short.",
+			"reason": "Dense prose is not reviewed.",
+			"remediation": "Shorten the passage at {path}:{line}.",
+			"enforcer": "core/doc-density",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {
+				"maxSentenceWords": {
+					"type": "integer",
+					"default": 40,
+					"bound": 55,
+					"stricter": "lower"
+				},
+				"maxParagraphSentences": {
+					"type": "integer",
+					"default": 6,
+					"bound": 9,
+					"stricter": "lower"
+				}
+			},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-links-valid",
+			"family": "F10",
+			"tier": "floor",
+			"statement": "Doc links resolve.",
+			"reason": "Broken links strand readers.",
+			"remediation": "Fix the link in {path}:{line}.",
+			"enforcer": "core/doc-links-valid",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-no-inline-changelog",
+			"family": "F10",
+			"tier": "floor",
+			"statement": "No inline changelogs in docs.",
+			"reason": "Inline history duplicates HISTORY and diverges.",
+			"remediation": "Move the entry from {path} to HISTORY.",
+			"enforcer": "core/doc-no-inline-changelog",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-no-corpus-counts",
+			"family": "F10",
+			"tier": "floor",
+			"statement": "No corpus counts in docs.",
+			"reason": "Counts rot on the next commit.",
+			"remediation": "Remove the count from {path}.",
+			"enforcer": "core/doc-no-corpus-counts",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/doc-single-owner",
+			"family": "F10",
+			"tier": "floor",
+			"statement": "Every doc names one owner.",
+			"reason": "Shared ownership is no ownership.",
+			"remediation": "Name the single owner of {path}.",
+			"enforcer": "core/doc-single-owner",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/conventional-commit",
+			"family": "F12",
+			"tier": "floor",
+			"statement": "Subjects match the conventional form.",
+			"reason": "Unparsed subjects break history checks.",
+			"remediation": "Rewrite the subject as type(scope): {detail}.",
+			"enforcer": "core/conventional-commit",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/no-bypass",
+			"family": "F12",
+			"tier": "floor",
+			"statement": "No hook or check bypass.",
+			"reason": "Bypasses blind the guardrails.",
+			"remediation": "Remove the bypass from {path}.",
+			"enforcer": "core/no-bypass",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/repo-hygiene",
+			"family": "F12",
+			"tier": "floor",
+			"statement": "No committed build output, caches or stray root files.",
+			"reason": "Committed output rots and bloats every clone.",
+			"remediation": "Delete {path} from the commit and ignore it.",
+			"enforcer": "core/repo-hygiene",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/file-naming",
+			"family": "F12",
+			"tier": "floor",
+			"statement": "File names follow the language convention.",
+			"reason": "Misnamed files break extraction and discovery.",
+			"remediation": "Rename {path} to the convention.",
+			"enforcer": "core/file-naming",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": true,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/branch-protection",
+			"family": "F12",
+			"tier": "floor",
+			"statement": "Protected branches stay protected.",
+			"reason": "Unprotected branches land unreviewed work.",
+			"remediation": "Restore protection for {detail}.",
+			"enforcer": "core/branch-protection",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/ci-present",
+			"family": "F13",
+			"tier": "floor",
+			"statement": "The repo has CI.",
+			"reason": "Without CI no gate runs on landing.",
+			"remediation": "Add the CI workflow for {detail}.",
+			"enforcer": "core/ci-present",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/ci-required-check",
+			"family": "F13",
+			"tier": "floor",
+			"statement": "Required checks are configured.",
+			"reason": "Unrequired checks can be skipped silently.",
+			"remediation": "Mark {detail} required.",
+			"enforcer": "core/ci-required-check",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/ci-actions-pinned",
+			"family": "F13",
+			"tier": "floor",
+			"statement": "CI actions are pinned to SHAs.",
+			"reason": "Floating actions change under review.",
+			"remediation": "Pin {value} to its SHA in {path}.",
+			"enforcer": "core/ci-actions-pinned",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/perf-budgets",
+			"family": "F13",
+			"tier": "floor",
+			"statement": "Hook and verify budgets hold.",
+			"reason": "Slow guards get bypassed.",
+			"remediation": "Bring {detail} back inside {limit}.",
+			"enforcer": "core/perf-budgets",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/agent-assets-present",
+			"family": "F14",
+			"tier": "tunable",
+			"statement": "Required agent assets exist.",
+			"reason": "Missing assets leave agents without guardrails.",
+			"remediation": "Add the missing {detail} asset.",
+			"enforcer": "core/agent-assets-present",
+			"triggers": ["startup", "review"],
+			"scope": [],
+			"params": {
+				"requiredHelpers": {
+					"type": "string[]",
+					"default": ["knowledge-graph", "token-saver"],
+					"bound": [],
+					"stricter": "superset"
+				}
+			},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/guardrail-manifest",
+			"family": "F16",
+			"tier": "floor",
+			"statement": "The guardrail manifest matches the tree.",
+			"reason": "Drift between manifest and tree hides tampering.",
+			"remediation": "Regenerate the manifest; inspect {detail} first.",
+			"enforcer": "core/guardrail-manifest",
+			"triggers": ["startup", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/hooks-active",
+			"family": "F16",
+			"tier": "floor",
+			"statement": "Hooks are installed and active.",
+			"reason": "Inactive hooks never gate.",
+			"remediation": "Reinstall hooks for {detail}.",
+			"enforcer": "core/hooks-active",
+			"triggers": ["startup", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/engine-version-match",
+			"family": "F16",
+			"tier": "floor",
+			"statement": "Pinned engine matches the installed one.",
+			"reason": "Version skew runs a different rule set than reviewed.",
+			"remediation": "Set the version in {path} to {value}.",
+			"enforcer": "core/engine-version-match",
+			"triggers": ["startup", "review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/waivers-valid",
+			"family": "F16",
+			"tier": "floor",
+			"statement": "Waivers are valid and unexpired.",
+			"reason": "Expired waivers silently re-allow violations.",
+			"remediation": "Renew or remove the waiver for {detail} in {path}.",
+			"enforcer": "core/waivers-valid",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "core/custom-pack-selftest",
+			"family": "F16",
+			"tier": "floor",
+			"statement": "Custom packs pass self-test at L4.",
+			"reason": "Untested custom packs enforce unknown rules.",
+			"remediation": "Fix the self-test failure for {detail}, then re-accept.",
+			"enforcer": "core/custom-pack-selftest",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"ratchet": false,
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		}
+	],
+	"enforcers": [
+		{
+			"id": "core/arch-boundaries",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/arch-module-mapped",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/arch-module-size",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/arch-no-cycles",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/arch-profile-declared",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/arch-public-entry",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/agent-assets-present",
+			"kind": "code",
+			"module": "steering",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/branch-protection",
+			"kind": "code",
+			"module": "ci",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/bug-registry",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/bug-rows-immutable",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/ci-actions-pinned",
+			"kind": "code",
+			"module": "ci",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/ci-present",
+			"kind": "code",
+			"module": "ci",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/ci-required-check",
+			"kind": "code",
+			"module": "ci",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/compiler-strict",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/complexity",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/context-hard-band",
+			"kind": "code",
+			"module": "steering",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/context-soft-band",
+			"kind": "code",
+			"module": "steering",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/conventional-commit",
+			"kind": "code",
+			"module": "ci",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/coverage-floor",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/custom-pack-selftest",
+			"kind": "code",
+			"module": "cli",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dangerous-shell",
+			"kind": "code",
+			"module": "security",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dead-code",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dep-exact-pin",
+			"kind": "code",
+			"module": "deps",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dep-latest-stable",
+			"kind": "code",
+			"module": "deps",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dep-license",
+			"kind": "code",
+			"module": "deps",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dep-lockfile",
+			"kind": "code",
+			"module": "deps",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dep-new-needs-reason",
+			"kind": "code",
+			"module": "deps",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dep-no-deprecated",
+			"kind": "code",
+			"module": "deps",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dep-no-vulnerable",
+			"kind": "code",
+			"module": "deps",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/dep-one-per-capability",
+			"kind": "code",
+			"module": "deps",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/diagnose-before-fix",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-breadth",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-density",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-links-valid",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-no-corpus-counts",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-no-inline-changelog",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-one-level",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-placement",
+			"kind": "path-placement",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-router-leaf",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-single-owner",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/doc-size",
+			"kind": "file-size",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/duplication",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/engine-version-match",
+			"kind": "json-key",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/file-naming",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/file-size",
+			"kind": "file-size",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/function-size",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/graph-before-scan",
+			"kind": "code",
+			"module": "steering",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/guardrail-manifest",
+			"kind": "code",
+			"module": "integrity",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/history-append-only",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/history-entry",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/history-entry-complete",
+			"kind": "code",
+			"module": "records",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/hooks-active",
+			"kind": "code",
+			"module": "integrity",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/loop-breaker",
+			"kind": "code",
+			"module": "workflow",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/max-file-bytes",
+			"kind": "file-size",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/mcp-declared",
+			"kind": "code",
+			"module": "steering",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-assertion-loss",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-baseline-raise",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-bypass",
+			"kind": "code",
+			"module": "integrity",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-fixture-shrink",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-guard-removal",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-new-suppressions",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-secret-reads",
+			"kind": "code",
+			"module": "security",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-secrets",
+			"kind": "code",
+			"module": "security",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-skipped-tests",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-speculative-abstraction",
+			"kind": "code",
+			"module": "arch",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/no-threshold-lowering",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/perf-budgets",
+			"kind": "code",
+			"module": "ci",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/ratchet-touched-improves",
+			"kind": "code",
+			"module": "remediation",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/read-dedupe",
+			"kind": "code",
+			"module": "steering",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/red-before-green",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/regression-test-for-fix",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/remediation-step-size",
+			"kind": "code",
+			"module": "remediation",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/repo-hygiene",
+			"kind": "code",
+			"module": "integrity",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/review-gate",
+			"kind": "code",
+			"module": "workflow",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/review-round-cap",
+			"kind": "code",
+			"module": "workflow",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/session-tool-call-limit",
+			"kind": "code",
+			"module": "steering",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/spec-trace",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/test-command-intact",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/test-kinds-by-scenario",
+			"kind": "code",
+			"module": "testing",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/waivers-valid",
+			"kind": "code",
+			"module": "engine",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/workflow-gates",
+			"kind": "code",
+			"module": "workflow",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/write-confinement",
+			"kind": "code",
+			"module": "security",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "core/writes-within-plan",
+			"kind": "code",
+			"module": "workflow",
+			"budgetMs": 1000,
+			"args": {}
+		}
+	],
+	"drivers": [],
+	"extractors": [],
+	"measures": [],
+	"capabilities": [],
+	"assets": [],
+	"maxWaiverDays": 90
+}
