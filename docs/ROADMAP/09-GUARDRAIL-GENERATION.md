@@ -11,14 +11,14 @@
 
 ## Steps
 
-- [ ] **9.1** steering: precedence statement, the `AGENTS.md` managed block within its budget, scoped injection, budget bands and checkpoints, read cache, graph-before-scan, MCP declaration (SPEC §4.6.1–§4.6.5). Verify: §4.6 EC-1–13.
-- [ ] **9.2** Agent asset templates of SPEC §4.6.6 and `core/agent-assets-present`. Verify: §4.4 EC-14 and the §5.12 fixtures.
-- [ ] **9.3** Muse Code and OpenCode render completed with the steering content, including OpenCode's per-prompt injection, probe fallback and version check. Verify: render goldens, byte-identical on regeneration (§4.5 EC-12); §4.5 EC-20–24.
-- [ ] **9.4** Universal, Claude Code, GitHub Copilot and Codex CLI adapters, with goldens and capability declarations (SPEC §4.5.4). Verify: §4.5 EC-3–8, EC-10.
-- [ ] **9.5** integrity: manifest, drift and tamper checks, self-protection paths and commands, git-hook installation, `regen` (SPEC §4.14). Verify: §4.14 EC-1–12.
-- [ ] **9.6** ci: generated workflow, required-check and branch-protection reads, bot-change recording, sweep, external CI (SPEC §4.15). Verify: §4.15 EC-1–10.
-- [ ] **9.7** audit surfaces: `explain`, `replay`, `status`, the CI summary, `report` (SPEC §4.18.2–§4.18.5). Verify: §4.18 EC-4–7.
-- [ ] **9.8** Every remaining command of SPEC §4.19.2, `init` included, with `--json` schemas, terse output and the exit codes of §8.2. Verify: §4.19 EC-1, EC-2, EC-7; the §8.1 and §8.2 tests.
+- [x] **9.1** steering: precedence statement, the `AGENTS.md` managed block within its budget, scoped injection, budget bands and checkpoints, read cache, graph-before-scan, MCP declaration (SPEC §4.6.1–§4.6.5). Verify: §4.6 EC-1–13.
+- [x] **9.2** Agent asset templates of SPEC §4.6.6 and `core/agent-assets-present`. Verify: §4.4 EC-14 and the §5.12 fixtures.
+- [x] **9.3** Muse Code and OpenCode render completed with the steering content, including OpenCode's per-prompt injection, probe fallback and version check. Verify: render goldens, byte-identical on regeneration (§4.5 EC-12); §4.5 EC-20–24.
+- [x] **9.4** Universal, Claude Code, GitHub Copilot and Codex CLI adapters, with goldens and capability declarations (SPEC §4.5.4). Verify: §4.5 EC-3–8, EC-10.
+- [x] **9.5** integrity: manifest, drift and tamper checks, self-protection paths and commands, git-hook installation, `regen` (SPEC §4.14). Verify: §4.14 EC-1–12.
+- [x] **9.6** ci: generated workflow, required-check and branch-protection reads, bot-change recording, sweep, external CI (SPEC §4.15). Verify: §4.15 EC-1–10.
+- [x] **9.7** audit surfaces: `explain`, `replay`, `status`, the CI summary, `report` (SPEC §4.18.2–§4.18.5). Verify: §4.18 EC-4–7.
+- [x] **9.8** Every remaining command of SPEC §4.19.2, `init` included, with `--json` schemas, terse output and the exit codes of §8.2. Verify: §4.19 EC-1, EC-2, EC-7; the §8.1 and §8.2 tests.
 - [ ] **9.9** The stress rows of SPEC §10.5 for `pre-commit`, `ci verify` and `status` meet the §9.3 budgets. Verify: `npm run test:stress`.
 
 ## Exit gate
