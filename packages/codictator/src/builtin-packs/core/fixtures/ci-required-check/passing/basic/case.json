@@ -2,9 +2,9 @@
 	"rule": "core/ci-required-check",
 	"section": "§5.12",
 	"expectation": "passing",
-	"trigger": "lint missing from required checks",
+	"trigger": "verify check required on the default branch",
 	"expectRules": [],
 	"files": {
-		"sample.txt": "required: typecheck, lint, test\n"
+		"sample.txt": "required: verify\n"
 	}
 }

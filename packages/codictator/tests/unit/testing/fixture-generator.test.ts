@@ -8,6 +8,14 @@
 // used a 7-hex short SHA, contradicting SPEC §4.15.2 and the ci module's
 // own 40-hex check; corrected to a full 40-hex SHA so the passing case is
 // passing for the SPEC reason).
+// Integrity exception IE-09-R6-cireq (rule core/no-assertion-loss,
+// path packages/codictator/src/builtin-packs/core/fixtures/
+// ci-required-check/passing/basic/case.json and
+// ci-required-check/violating/basic/case.json, reason: the marker table
+// named lint/typecheck/test as the required set, contradicting SPEC
+// §4.15.2 and EC-7 (the default branch must require the verify check);
+// corrected to required verify (passing) and the old trio without verify
+// (violating for the SPEC reason).
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import type { FixtureCase } from "../../support/fixture-generator.ts";
