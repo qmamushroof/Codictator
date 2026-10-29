@@ -403,11 +403,29 @@ test("[§4.15.6] external evidence flows through the gate", async () => {
 });
 
 test("[§4.15.1] rendered workflow pins and verifies", async () => {
-	// SPEC §4.15.1: generated workflow pins actions by SHA and runs verify.
+	// SPEC §4.15.1 + §4.15.5: generated workflow pins actions by SHA and
+	// every job bootstraps the CLI from the local checkout (no published
+	// binary on PATH pre-publish), invoking the built entry.
 	const workflow = renderWorkflow("/repo", { repoName: "app" });
 	assert.ok(workflow.text?.includes(`actions/checkout@${PINNED_SHA}`));
-	assert.ok(workflow.text?.includes("codictator ci verify"));
+	assert.ok(
+		workflow.text?.includes(
+			"node packages/codictator/dist/cli/main.js ci verify",
+		),
+	);
+	assert.ok(
+		workflow.text?.includes(
+			"node packages/codictator/dist/cli/main.js ci record-bot-change",
+		),
+	);
+	assert.ok(
+		workflow.text?.includes(
+			"node packages/codictator/dist/cli/main.js ci sweep",
+		),
+	);
+	assert.ok(workflow.text?.includes("npm run build"));
 	assert.ok(workflow.text?.includes("fetch-depth: 0"));
+	assert.ok(!workflow.text?.includes("- run: codictator ci "));
 	assert.ok(workflow.scheduleCron?.match(/^\d+ \d+ \* \* \*$/));
 });
 

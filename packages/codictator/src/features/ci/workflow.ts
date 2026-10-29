@@ -56,6 +56,12 @@ function sweepPermissions(bot: string): string {
 
 // SPEC §4.15.1: .github/workflows/codictator.yml, manifest-owned. Workflow
 // default is contents: read; jobs raise only what they need.
+// SPEC §4.15.5: this workflow also governs Codictator's own repo, where no
+// published `codictator` binary exists on PATH yet — every job therefore
+// bootstraps the CLI from the local checkout (setup-node, install, build)
+// and invokes the built entry, instead of assuming a published binary.
+// Build-from-source stays deterministic and keeps working post-publish.
+const CODICTATOR_RUN = "node packages/codictator/dist/cli/main.js";
 export function renderWorkflow(
 	repoRoot: string,
 	options?: RenderWorkflowOptions,
@@ -102,7 +108,8 @@ export function renderWorkflow(
 		"          node-version-file: .nvmrc",
 		"          cache: npm",
 		"      - run: npm ci --ignore-scripts",
-		"      - run: codictator ci verify",
+		"      - run: npm run build",
+		`      - run: ${CODICTATOR_RUN} ci verify`,
 		"",
 		"  record-bot-change:",
 		"    if: github.event_name == 'pull_request'",
@@ -113,7 +120,13 @@ export function renderWorkflow(
 		`      - uses: actions/checkout@${pins.checkoutSha} # ${pins.checkoutVersion}`,
 		"        with:",
 		"          fetch-depth: 0",
-		"      - run: codictator ci record-bot-change",
+		`      - uses: actions/setup-node@${pins.setupNodeSha} # ${pins.setupNodeVersion}`,
+		"        with:",
+		"          node-version-file: .nvmrc",
+		"          cache: npm",
+		"      - run: npm ci --ignore-scripts",
+		"      - run: npm run build",
+		`      - run: ${CODICTATOR_RUN} ci record-bot-change`,
 		"",
 		"  sweep:",
 		"    if: github.event_name == 'schedule'",
@@ -123,13 +136,19 @@ export function renderWorkflow(
 		`      - uses: actions/checkout@${pins.checkoutSha} # ${pins.checkoutVersion}`,
 		"        with:",
 		"          fetch-depth: 0",
-		"      - run: codictator ci sweep",
+		`      - uses: actions/setup-node@${pins.setupNodeSha} # ${pins.setupNodeVersion}`,
+		"        with:",
+		"          node-version-file: .nvmrc",
+		"          cache: npm",
+		"      - run: npm ci --ignore-scripts",
+		"      - run: npm run build",
+		`      - run: ${CODICTATOR_RUN} ci sweep`,
 		"",
 	].join("\n");
 	return {
 		host: "github",
 		os,
-		steps: ["checkout", "setup-node", "install", "verify"],
+		steps: ["checkout", "setup-node", "install", "build", "verify"],
 		text,
 		scheduleCron: cron,
 	};
