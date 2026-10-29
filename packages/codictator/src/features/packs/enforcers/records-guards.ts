@@ -1,7 +1,8 @@
-// SPEC §5.8: F8 change-history and F15 defect enforcers. Each rule first
-// honours the fixture measure report (`sample.txt` marker files), then stays
-// quiet when the report carries no violation, so violating fixtures flag
-// and passing fixtures stay clean (SPEC §4.4.4).
+// SPEC §5.8 F8 change-history and F15 defect enforcers, plus the §5.11 F12
+// file-naming check (decl module records). Each rule first honours the
+// fixture measure report (`sample.txt` marker files), then stays quiet when
+// the report carries no violation, so violating fixtures flag and passing
+// fixtures stay clean (SPEC §4.4.4).
 import type { Ports } from "../../../kernel/index.ts";
 import { ok, type Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
@@ -12,6 +13,7 @@ import {
 	baseEnforcer,
 	loadScopeText,
 	parseMarkers,
+	scopeMarkerTexts,
 } from "./health-measures.ts";
 
 // SPEC §5.8 core/history-entry: a commit with no history entry flags.
@@ -188,6 +190,70 @@ export function resolveDiagnoseBeforeFix(
 						}),
 					);
 				}
+			}
+			return findings;
+		}),
+	);
+}
+
+// SPEC §5.11 + §6.1 core/file-naming: TypeScript sources are kebab-case,
+// tests are *.test.<ext>; framework-reserved names ([id], +page, _layout)
+// stay allowed. Lexer-light mirror of builtin-packs/typescript/naming.ts:
+// packs cannot import the pack supplies (§3.3). Markdown names per §4.9.2
+// stay with the records doc reads.
+function isKebabStem(stem: string): boolean {
+	return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(stem);
+}
+
+// Test files judge the stem before `.test.`; other files judge the stem
+// before the last dot; a dotless name judges whole.
+function judgedStem(base: string): string {
+	const testAt = base.toLowerCase().indexOf(".test.");
+	if (testAt >= 0) {
+		return base.slice(0, testAt);
+	}
+	const dot = base.lastIndexOf(".");
+	return dot < 0 ? base : base.slice(0, dot);
+}
+
+export function resolveFileNaming(
+	decl: EnforcerDecl,
+	rule: PackRule,
+	ports: Ports,
+): Result<Enforcer> {
+	const binding = bindRule(rule);
+	return ok(
+		baseEnforcer(rule, binding, decl, async (ctx) => {
+			const findings: Array<Finding> = [];
+			for (const { file, markers } of await scopeMarkerTexts(
+				ports,
+				binding,
+				ctx,
+				findings,
+			)) {
+				const name = markers.get("file") ?? "";
+				if (name === "") {
+					continue;
+				}
+				const base = name.split("/").pop() ?? name;
+				if (
+					base.startsWith("[") ||
+					base.startsWith("+") ||
+					base.startsWith("_")
+				) {
+					continue;
+				}
+				const stem = judgedStem(base);
+				if (isKebabStem(stem)) {
+					continue;
+				}
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `file stem "${stem}" is not kebab-case`,
+						vars: { path: file },
+					}),
+				);
 			}
 			return findings;
 		}),

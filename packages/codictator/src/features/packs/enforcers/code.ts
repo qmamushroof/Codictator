@@ -18,7 +18,13 @@ import {
 	resolveArchPublicEntry,
 	resolveCompilerStrict,
 } from "./arch-guards.ts";
-import { resolveCiActionsPinned, resolveCiPresent } from "./ci-guards.ts";
+import {
+	resolveBranchProtection,
+	resolveCiActionsPinned,
+	resolveCiPresent,
+	resolveCiRequiredCheck,
+	resolveConventionalCommit,
+} from "./ci-guards.ts";
 import {
 	resolveComplexity,
 	resolveFunctionSize,
@@ -61,16 +67,19 @@ import { resolveDeadCode } from "./health-refs.ts";
 import {
 	resolveNoAssertionLoss,
 	resolveNoBaselineRaise,
+	resolveNoBypass,
 	resolveNoFixtureShrink,
 	resolveNoNewSuppressions,
 	resolveNoSkippedTests,
 	resolveNoThresholdLowering,
+	resolveRepoHygiene,
 	resolveTestCommandIntact,
 } from "./integrity-guards.ts";
 import {
 	resolveBugRegistry,
 	resolveBugRowsImmutable,
 	resolveDiagnoseBeforeFix,
+	resolveFileNaming,
 	resolveHistoryAppendOnly,
 	resolveHistoryEntry,
 	resolveHistoryEntryComplete,
@@ -152,6 +161,9 @@ const CODE_RESOLVERS: Readonly<Record<string, CodeResolver>> = {
 	"core/diagnose-before-fix": resolveDiagnoseBeforeFix,
 	"core/workflow-gates": resolveWorkflowGates,
 	"core/writes-within-plan": resolveWritesWithinPlan,
+	"core/no-bypass": resolveNoBypass,
+	"core/repo-hygiene": resolveRepoHygiene,
+	"core/file-naming": resolveFileNaming,
 	"core/loop-breaker": resolveLoopBreaker,
 	"core/review-gate": resolveReviewGate,
 	"core/review-round-cap": resolveReviewRoundCap,
@@ -182,6 +194,9 @@ const CODE_RESOLVERS: Readonly<Record<string, CodeResolver>> = {
 	"core/agent-assets-present": resolveAgentAssetsPresent,
 	"core/ci-present": resolveCiPresent,
 	"core/ci-actions-pinned": resolveCiActionsPinned,
+	"core/ci-required-check": resolveCiRequiredCheck,
+	"core/branch-protection": resolveBranchProtection,
+	"core/conventional-commit": resolveConventionalCommit,
 	"core/perf-budgets": resolvePerfBudgets,
 	"core/guardrail-manifest": resolveGuardrailManifest,
 	"core/hooks-active": resolveHooksActive,

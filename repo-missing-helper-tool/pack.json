@@ -1,0 +1,32 @@
+{
+	"id": "missing-helper",
+	"version": "0.0.0",
+	"description": "SPEC §4.4.8 EC-14 fixture: a pack whose helper tool is not bound in config, so the load succeeds while the enforcer stays deferred until a tool row binds it.",
+	"rules": [
+		{
+			"id": "missing-helper/assets-check",
+			"family": "F2",
+			"tier": "floor",
+			"statement": "Required helper assets are present.",
+			"reason": "Missing helpers leave asset rules blind.",
+			"remediation": "Bind the helper tool in config.tools, then reload.",
+			"enforcer": "missing-helper/check",
+			"triggers": ["startup"],
+			"scope": [],
+			"params": {},
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		}
+	],
+	"enforcers": [
+		{
+			"id": "missing-helper/check",
+			"kind": "external",
+			"tool": "helper-tool",
+			"ruleMap": { "found": "missing-helper/assets-check" },
+			"budgetMs": 1000,
+			"args": {}
+		}
+	],
+	"maxWaiverDays": 90
+}

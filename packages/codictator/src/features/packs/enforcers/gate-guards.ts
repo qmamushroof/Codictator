@@ -4,9 +4,8 @@
 // answers whether the rule fires, so the pack self-test (§4.4.4) drives
 // them while the live reads (workflow files, manifest bytes) stay in
 // their owning modules (§3.3 forbids packs from importing them).
-// core/ci-required-check stays deferred: its marker table names
-// lint/typecheck/test while SPEC §4.15.2 requires the verify check, so
-// wiring it would settle a SPEC contradiction in code.
+// core/ci-required-check resolves in ci-guards.ts now that its marker table
+// names the SPEC §4.15.2 verify check (integrity exception IE-09-R6-cireq).
 import type { Ports } from "../../../kernel/index.ts";
 import { ok, parseJson, type Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
