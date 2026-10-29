@@ -90,6 +90,7 @@ The review gate is SPEC §4.12.4.
 - Context bands and the tool-call limit are SPEC §5.1. At the soft band, finish the current unit and checkpoint. At the hard band, checkpoint and continue in a new session.
 - Bootstrap checkpoint: write `.codictator/state/resume.md` (git-ignored, the path SPEC §7.1 reserves) with task, branch, done, next and open questions. Self-hosted: `codictator task checkpoint`.
 - A subagent at its limit returns `CHECKPOINT: <summary>` to its caller instead of clearing.
+- A subagent returning without its deliverable — no verdict, no gate numbers, mid-gate yield — is a STALL, not completion. The orchestrator immediately relaunches a continuation subagent carrying the interim evidence; no phase waits on a missing verdict.
 - Never re-read an unchanged file range already in context (`core/read-dedupe`). Load MCP servers and tools only when the task needs them.
 - The same rule or test failing three consecutive times (`core/loop-breaker`) means stop. Summarise the rule, the attempts and the conflict for the human instead of trying a variation.
 
