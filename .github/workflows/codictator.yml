@@ -50,7 +50,14 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run build
-      - run: node packages/codictator/dist/cli/main.js ci record-bot-change
+      - run: |
+          base_sha="${{ github.event.pull_request.base.sha }}"
+          record_args=(--author "${{ github.event.pull_request.user.login }}")
+          while IFS= read -r changed_file; do
+            if [ -n "$changed_file" ]; then record_args+=(--files="$changed_file"); fi
+          done < <(git diff --name-only "$base_sha"...HEAD --)
+          if [ "${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then record_args+=(--fork); fi
+          node packages/codictator/dist/cli/main.js ci record-bot-change "${record_args[@]}"
 
   sweep:
     if: github.event_name == 'schedule'

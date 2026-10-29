@@ -62,6 +62,23 @@ function sweepPermissions(bot: string): string {
 // and invokes the built entry, instead of assuming a published binary.
 // Build-from-source stays deterministic and keeps working post-publish.
 const CODICTATOR_RUN = "node packages/codictator/dist/cli/main.js";
+
+// SPEC §4.15.3: the step passes the PR author and the changed files from
+// the Actions context, so the command's --author/--files contract holds;
+// forks ride along as --fork and are never written to. (Actions
+// expressions stay literal via \${{ escapes; only the runner path
+// interpolates.)
+const recordBotChange: ReadonlyArray<string> = [
+	"      - run: |",
+	`          base_sha="\${{ github.event.pull_request.base.sha }}"`,
+	`          record_args=(--author "\${{ github.event.pull_request.user.login }}")`,
+	"          while IFS= read -r changed_file; do",
+	'            if [ -n "$changed_file" ]; then record_args+=(--files="$changed_file"); fi',
+	'          done < <(git diff --name-only "$base_sha"...HEAD --)',
+	`          if [ "\${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then record_args+=(--fork); fi`,
+	`          ${CODICTATOR_RUN} ci record-bot-change "\${record_args[@]}"`,
+];
+
 export function renderWorkflow(
 	repoRoot: string,
 	options?: RenderWorkflowOptions,
@@ -126,7 +143,7 @@ export function renderWorkflow(
 		"          cache: npm",
 		"      - run: npm ci --ignore-scripts",
 		"      - run: npm run build",
-		`      - run: ${CODICTATOR_RUN} ci record-bot-change`,
+		...recordBotChange,
 		"",
 		"  sweep:",
 		"    if: github.event_name == 'schedule'",

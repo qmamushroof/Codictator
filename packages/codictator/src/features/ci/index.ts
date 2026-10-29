@@ -52,7 +52,9 @@ export interface CiEvidence {
 	readonly forkPr?: boolean;
 	// SPEC §4.15.2: unreadable protection reads advise, never allow.
 	readonly protection?: ProtectionRead;
-	// SPEC §4.15.2: absent uses default to the unpinned generated steps.
+	// SPEC §4.15.2: without caller uses evidence the check reads the
+	// rendered workflow's own uses: entries, so the generated workflow is
+	// judged by what it actually pins instead of an assumed ref.
 	readonly unpinnedUses?: ReadonlyArray<PinnedUse>;
 	readonly workflowDrifted?: boolean;
 	readonly botChange?: BotChangeInput;
@@ -81,6 +83,26 @@ function unreachableBase(): Finding {
 	};
 }
 
+// SPEC §4.15.2 core/ci-actions-pinned: without caller evidence the check
+// reads the rendered workflow's own uses: entries (the trailing version
+// comment is not part of the ref). No rendered text to read fails closed.
+const WORKFLOW_USES_LINE = /^\s*-\s*uses:\s*(\S+)/;
+const GENERATED_WORKFLOW_FILE = ".github/workflows/codictator.yml";
+
+function defaultUses(workflow: CiWorkflow): Array<PinnedUse> {
+	if (workflow.text === undefined) {
+		return [{ file: GENERATED_WORKFLOW_FILE, uses: "actions/checkout" }];
+	}
+	const found: Array<PinnedUse> = [];
+	for (const line of workflow.text.split("\n")) {
+		const ref = WORKFLOW_USES_LINE.exec(line)?.[1];
+		if (ref !== undefined) {
+			found.push({ file: GENERATED_WORKFLOW_FILE, uses: ref });
+		}
+	}
+	return found;
+}
+
 // SPEC §4.15.2: CI-side checks (required checks present, no bypass).
 // Defaults fail closed: unknown base → CDX-E503, unreadable protection →
 // advise, unpinned steps → core/ci-actions-pinned.
@@ -97,11 +119,7 @@ export function checkCi(
 	if (evidence?.unpinnedUses !== undefined) {
 		findings.push(...checkActionsPinned(evidence.unpinnedUses));
 	} else if (workflow.host === "github") {
-		findings.push(
-			...checkActionsPinned([
-				{ file: ".github/workflows/codictator.yml", uses: "actions/checkout" },
-			]),
-		);
+		findings.push(...checkActionsPinned(defaultUses(workflow)));
 	}
 	if (evidence?.workflowDrifted === true) {
 		findings.push({
