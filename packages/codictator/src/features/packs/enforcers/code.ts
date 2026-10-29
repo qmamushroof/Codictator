@@ -44,16 +44,18 @@ import {
 	resolveDepOnePerCapability,
 } from "./deps-policy-guards.ts";
 import {
-	resolveDocBreadth,
-	resolveDocDensity,
-	resolveDocLinksValid,
 	resolveDocNoCorpusCounts,
-	resolveDocNoInlineChangelog,
 	resolveDocOneLevel,
 	resolveDocPlacement,
 	resolveDocRouterLeaf,
 	resolveDocSingleOwner,
 } from "./docs-guards.ts";
+import {
+	resolveDocBreadth,
+	resolveDocDensity,
+	resolveDocLinksValid,
+	resolveDocNoInlineChangelog,
+} from "./docs-guards-measures.ts";
 import {
 	resolveAgentAssetsPresent,
 	resolveCustomPackSelftest,
@@ -67,14 +69,16 @@ import { resolveDeadCode } from "./health-refs.ts";
 import {
 	resolveNoAssertionLoss,
 	resolveNoBaselineRaise,
-	resolveNoBypass,
 	resolveNoFixtureShrink,
 	resolveNoNewSuppressions,
 	resolveNoSkippedTests,
 	resolveNoThresholdLowering,
-	resolveRepoHygiene,
 	resolveTestCommandIntact,
 } from "./integrity-guards.ts";
+import {
+	resolveNoBypass,
+	resolveRepoHygiene,
+} from "./integrity-guards-repo.ts";
 import {
 	resolveBugRegistry,
 	resolveBugRowsImmutable,

@@ -16,7 +16,10 @@ import {
 	parseMarkers,
 } from "./health-measures.ts";
 
-// SPEC §5.9 core/workflow-gates: a skipped mandatory gate flags.
+// A skipped mandatory gate flags. The marker is a report line (`skipped:`
+// at the line start, as the fixture measure report carries it), never a
+// substring: status strings like "corrupt lines skipped: 2" and the
+// guard's own source are not skipped gates.
 export function resolveWorkflowGates(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -28,7 +31,7 @@ export function resolveWorkflowGates(
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !text.includes("skipped:")) {
+				if (text === undefined || !/^[ \t]*skipped:/m.test(text)) {
 					continue;
 				}
 				findings.push(

@@ -1,0 +1,295 @@
+{
+  "architecture": {
+    "modules": [
+      {
+        "dependsOn": [],
+        "kind": "kernel",
+        "name": "kernel",
+        "path": "packages/codictator/src/kernel/**"
+      },
+      {
+        "dependsOn": [
+          "kernel"
+        ],
+        "kind": "feature",
+        "name": "config",
+        "path": "packages/codictator/src/features/config/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "audit"
+        ],
+        "kind": "feature",
+        "name": "engine",
+        "path": "packages/codictator/src/features/engine/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine"
+        ],
+        "kind": "feature",
+        "name": "packs",
+        "path": "packages/codictator/src/features/packs/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine",
+          "steering"
+        ],
+        "kind": "feature",
+        "name": "adapters",
+        "path": "packages/codictator/src/features/adapters/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine",
+          "workflow"
+        ],
+        "kind": "feature",
+        "name": "steering",
+        "path": "packages/codictator/src/features/steering/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "engine"
+        ],
+        "kind": "feature",
+        "name": "security",
+        "path": "packages/codictator/src/features/security/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine"
+        ],
+        "kind": "feature",
+        "name": "deps",
+        "path": "packages/codictator/src/features/deps/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "engine"
+        ],
+        "kind": "feature",
+        "name": "records",
+        "path": "packages/codictator/src/features/records/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine"
+        ],
+        "kind": "feature",
+        "name": "testing",
+        "path": "packages/codictator/src/features/testing/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine"
+        ],
+        "kind": "feature",
+        "name": "arch",
+        "path": "packages/codictator/src/features/arch/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine",
+          "testing",
+          "audit"
+        ],
+        "kind": "feature",
+        "name": "workflow",
+        "path": "packages/codictator/src/features/workflow/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine",
+          "deps",
+          "arch",
+          "workflow"
+        ],
+        "kind": "feature",
+        "name": "remediation",
+        "path": "packages/codictator/src/features/remediation/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine"
+        ],
+        "kind": "feature",
+        "name": "integrity",
+        "path": "packages/codictator/src/features/integrity/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "engine"
+        ],
+        "kind": "feature",
+        "name": "ci",
+        "path": "packages/codictator/src/features/ci/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "config",
+          "packs",
+          "llm"
+        ],
+        "kind": "feature",
+        "name": "generator",
+        "path": "packages/codictator/src/features/generator/**"
+      },
+      {
+        "dependsOn": [
+          "kernel"
+        ],
+        "kind": "feature",
+        "name": "llm",
+        "path": "packages/codictator/src/features/llm/**"
+      },
+      {
+        "dependsOn": [
+          "kernel"
+        ],
+        "kind": "feature",
+        "name": "audit",
+        "path": "packages/codictator/src/features/audit/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "engine",
+          "security",
+          "deps",
+          "records",
+          "testing",
+          "arch",
+          "workflow",
+          "integrity",
+          "steering",
+          "ci"
+        ],
+        "name": "builtin-packs/core",
+        "path": "packages/codictator/src/builtin-packs/core/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "engine",
+          "security",
+          "deps",
+          "records",
+          "testing",
+          "arch",
+          "workflow",
+          "integrity",
+          "steering",
+          "ci"
+        ],
+        "name": "builtin-packs/typescript",
+        "path": "packages/codictator/src/builtin-packs/typescript/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "engine",
+          "security",
+          "deps",
+          "records",
+          "testing",
+          "arch",
+          "workflow",
+          "integrity",
+          "steering",
+          "ci"
+        ],
+        "name": "builtin-packs/dotnet",
+        "path": "packages/codictator/src/builtin-packs/dotnet/**"
+      },
+      {
+        "dependsOn": [
+          "kernel",
+          "engine",
+          "security",
+          "deps",
+          "records",
+          "testing",
+          "arch",
+          "workflow",
+          "integrity",
+          "steering",
+          "ci"
+        ],
+        "name": "builtin-packs/python",
+        "path": "packages/codictator/src/builtin-packs/python/**"
+      },
+      {
+        "dependsOn": [
+          "*"
+        ],
+        "kind": "composition",
+        "name": "cli",
+        "path": "packages/codictator/src/cli/**"
+      }
+    ],
+    "profile": "app"
+  },
+  "codictator": "0.0.0",
+  "harnesses": [
+    "claude-code",
+    "muse-code",
+    "opencode"
+  ],
+  "packs": [
+    {
+      "id": "core",
+      "version": "0.0.0"
+    },
+    {
+      "id": "typescript",
+      "version": "0.0.0"
+    }
+  ],
+  "tools": [
+    {
+      "command": [
+        "lat"
+      ],
+      "id": "lat",
+      "role": "knowledge-graph",
+      "version": {
+        "pattern": "(\\d+\\.\\d+\\.\\d+)",
+        "pin": "0.13.3",
+        "probe": [
+          "lat",
+          "--version"
+        ]
+      }
+    }
+  ],
+  "tunables": {},
+  "version": 1
+}
+

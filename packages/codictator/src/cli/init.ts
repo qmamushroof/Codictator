@@ -2,34 +2,21 @@
 // block, manifest, CI workflow, hooks and launcher; existing config needs
 // --repair, unknown harnesses fail as CDX-E301 via validation.
 import { parseArgs } from "node:util";
+import { isBuiltinPackId } from "../features/packs/index.ts";
 import type { Result } from "../kernel/index.ts";
-import { ok, resolveRepoRoot } from "../kernel/index.ts";
-import { guardrailPlan, writePlan } from "./plan.ts";
-import type { CommandRequest } from "./shared.ts";
 import {
-	checkHuman,
-	commandEnv,
-	fail,
-	loadRepoConfig,
-	printHuman,
-	printJson,
-	readStateText,
-	usageError,
-} from "./shared.ts";
-
-// SPEC §4.19.2: init harnesses default to every known adapter id when no
-// --harness flag is given; unknown ids fail as CDX-E301 via config
-// validation, never silently.
-const DEFAULT_HARNESSES: ReadonlyArray<string> = [
-	"muse-code",
-	"universal",
-	"claude-code",
-	"copilot",
-	"codex-cli",
-	"cursor",
-	"gemini-cli",
-	"opencode",
-];
+	buildGuardrailPlan,
+	checkFreshConfig,
+	defaultHarnesses,
+	emitInitResult,
+	ensureBaseline,
+	type InitFlags,
+	initPreamble,
+	reportExisting,
+} from "./init-plan.ts";
+import { KNOWN_HELPER_ROLES, writePlan } from "./plan.ts";
+import type { CommandRequest } from "./shared.ts";
+import { fail, readStateText, usageError } from "./shared.ts";
 
 const KNOWN_PROFILES: ReadonlySet<string> = new Set([
 	"app",
@@ -38,10 +25,56 @@ const KNOWN_PROFILES: ReadonlySet<string> = new Set([
 	"service",
 ]);
 
-interface InitFlags {
-	readonly harnesses: Array<string>;
-	readonly profile: string;
-	readonly repair: boolean;
+function parseToolSpec(
+	spec: string,
+): { role: string; command: string; pin: string } | undefined {
+	const eq = spec.indexOf("=");
+	if (eq < 0) {
+		return undefined;
+	}
+	const role = spec.slice(0, eq).trim();
+	const rest = spec.slice(eq + 1);
+	const at = rest.lastIndexOf("@");
+	if (at < 0) {
+		return undefined;
+	}
+	const command = rest.slice(0, at).trim();
+	const pin = rest.slice(at + 1).trim();
+	if (!KNOWN_HELPER_ROLES.has(role) || command === "" || pin === "") {
+		return undefined;
+	}
+	return { role, command, pin };
+}
+
+function narrowInitProfile(profile: string | undefined): string | undefined {
+	if (profile !== undefined && profile !== "" && !KNOWN_PROFILES.has(profile)) {
+		return undefined;
+	}
+	return profile ?? "";
+}
+
+function narrowInitPacks(
+	packs: ReadonlyArray<string> | undefined,
+): Array<string> | undefined {
+	const ids = [...(packs ?? [])];
+	if (ids.some((id) => !isBuiltinPackId(id))) {
+		return undefined;
+	}
+	return ids;
+}
+
+function narrowInitTools(
+	specs: ReadonlyArray<string> | undefined,
+): Array<{ role: string; command: string; pin: string }> | undefined {
+	const tools: Array<{ role: string; command: string; pin: string }> = [];
+	for (const spec of specs ?? []) {
+		const tool = parseToolSpec(spec);
+		if (tool === undefined) {
+			return undefined;
+		}
+		tools.push(tool);
+	}
+	return tools;
 }
 
 function parseInitFlags(args: ReadonlyArray<string>): InitFlags | undefined {
@@ -51,6 +84,8 @@ function parseInitFlags(args: ReadonlyArray<string>): InitFlags | undefined {
 			options: {
 				harness: { type: "string", multiple: true, default: [] },
 				profile: { type: "string", default: "" },
+				pack: { type: "string", multiple: true, default: [] },
+				tool: { type: "string", multiple: true, default: [] },
 				repair: { type: "boolean", default: false },
 			},
 			allowPositionals: true,
@@ -58,16 +93,17 @@ function parseInitFlags(args: ReadonlyArray<string>): InitFlags | undefined {
 		if (parsed.positionals.length > 0) {
 			return undefined;
 		}
-		if (
-			parsed.values.profile !== undefined &&
-			parsed.values.profile !== "" &&
-			!KNOWN_PROFILES.has(parsed.values.profile)
-		) {
+		const profile = narrowInitProfile(parsed.values.profile);
+		const packs = narrowInitPacks(parsed.values.pack);
+		const tools = narrowInitTools(parsed.values.tool);
+		if (profile === undefined || packs === undefined || tools === undefined) {
 			return undefined;
 		}
 		return {
 			harnesses: [...(parsed.values.harness ?? [])],
-			profile: parsed.values.profile ?? "",
+			profile,
+			packs,
+			tools,
 			repair: parsed.values.repair ?? false,
 		};
 	} catch {
@@ -76,83 +112,7 @@ function parseInitFlags(args: ReadonlyArray<string>): InitFlags | undefined {
 }
 
 const INIT_USAGE =
-	"usage: codictator init [--harness <id> ...] [--profile <app|library|cli|service>] [--repair]";
-
-function defaultHarnesses(flags: InitFlags): Array<string> {
-	return flags.harnesses.length > 0 ? flags.harnesses : [...DEFAULT_HARNESSES];
-}
-
-function reportExisting(req: CommandRequest, root: string): Result<number> {
-	printHuman(
-		"already a Codictator repo; rerun with --repair to regenerate",
-		req.quiet,
-	);
-	if (req.json) {
-		printJson({ initialized: false, reason: "exists", root });
-	}
-	return ok(0);
-}
-
-async function checkFreshConfig(
-	root: string,
-	req: CommandRequest,
-): Promise<Result<number>> {
-	const fresh = await loadRepoConfig(root);
-	if (!fresh.ok) {
-		return fail(
-			"CDX-E901",
-			fresh.error.message,
-			"Rerun codictator init --repair; report the mismatch.",
-			req.json,
-			fresh.error.detail,
-		);
-	}
-	return ok(0);
-}
-
-function emitInitResult(
-	req: CommandRequest,
-	root: string,
-	written: ReadonlyArray<{ path: string }>,
-): Result<number> {
-	if (req.json) {
-		printJson({
-			initialized: true,
-			root,
-			files: written.map((entry) => entry.path),
-		});
-	} else {
-		for (const entry of written) {
-			printHuman(`wrote ${entry.path}`, req.quiet);
-		}
-		printHuman("init: run npm ci, then codictator install-hooks", req.quiet);
-	}
-	return ok(0);
-}
-
-async function initPreamble(
-	req: CommandRequest,
-): Promise<string | Result<number>> {
-	const human = checkHuman(commandEnv(), []);
-	if (!human.ok) {
-		return fail(
-			"CDX-E107",
-			human.error.message,
-			human.error.remediation,
-			req.json,
-		);
-	}
-	const root = await resolveRepoRoot(req.cwd);
-	if (!root.ok) {
-		return fail(
-			"CDX-E703",
-			root.error.message,
-			root.error.remediation,
-			req.json,
-		);
-	}
-	return root.value;
-}
+	"usage: codictator init [--harness <id> ...] [--profile <app|library|cli|service>] [--pack <id> ...] [--tool <role>=<command>@<pin> ...] [--repair]";
 
 export async function handleInit(req: CommandRequest): Promise<Result<number>> {
 	const flags = parseInitFlags(req.args);
@@ -168,12 +128,8 @@ export async function handleInit(req: CommandRequest): Promise<Result<number>> {
 	if (existing !== undefined && !flags.repair) {
 		return reportExisting(req, root);
 	}
-	const agents = await readStateText(root, "AGENTS.md");
-	const repoName = root.replaceAll("\\", "/").split("/").pop() ?? "repo";
-	const wrote = await writePlan(
-		root,
-		guardrailPlan(planned, flags.profile, repoName, agents),
-	);
+	const plan = await buildGuardrailPlan(root, flags, planned);
+	const wrote = await writePlan(root, plan);
 	if (!wrote.ok) {
 		return fail(
 			"CDX-E903",
@@ -186,5 +142,14 @@ export async function handleInit(req: CommandRequest): Promise<Result<number>> {
 	if (!fresh.ok) {
 		return fresh;
 	}
-	return emitInitResult(req, root, wrote.value);
+	const baseline = await ensureBaseline(root, req);
+	if (!baseline.ok) {
+		return fail(
+			baseline.error.code,
+			baseline.error.message,
+			baseline.error.remediation,
+			req.json,
+		);
+	}
+	return emitInitResult(req, root, wrote.value, baseline.value);
 }

@@ -1,0 +1,56 @@
+{
+  "artifacts": [
+    {
+      "hash": "77b22d4b2737550c9d3655f6431907bcd69cd2d943e1e5894dbdd9fa093062d6",
+      "mode": "file",
+      "owner": "codictator",
+      "path": ".codictator/bin/run.mjs"
+    },
+    {
+      "hash": "065f794d8e5e40d58a73f87accbb07afb2a808d29a7548eb388ff57344721d3a",
+      "mode": "file",
+      "owner": "codictator",
+      "path": ".codictator/config.json"
+    },
+    {
+      "hash": "a8323551f20d778bde3b1b25bf0391065ddecc81c1ceea74fc8dc130c7e843f1",
+      "mode": "file",
+      "owner": "codictator",
+      "path": ".githooks/.gitattributes"
+    },
+    {
+      "hash": "bf133a3addf3fbcdf6c755b05712288ca729a3d55b2358e77cf211829fcf8d87",
+      "mode": "file",
+      "owner": "codictator",
+      "path": ".githooks/commit-msg"
+    },
+    {
+      "hash": "1b1ff0b76ee4524f083b79ac21e3f78e9c36cc1ac97f5fff9a8bc4b12cba4d61",
+      "mode": "file",
+      "owner": "codictator",
+      "path": ".githooks/pre-commit"
+    },
+    {
+      "hash": "73788672140720f954d09cc00d6dd35ba138e5a9ae36eb2fd8f99d953eac55c6",
+      "mode": "file",
+      "owner": "codictator",
+      "path": ".githooks/pre-push"
+    },
+    {
+      "hash": "5b7666a4a49d027553813b1f1eb6b5902c49db3747ef9760dac9a25ba6e964b0",
+      "mode": "file",
+      "owner": "codictator",
+      "path": ".github/workflows/codictator.yml"
+    },
+    {
+      "hash": "6b5e085d1efdb898ece19e6323af9248cd84c7f9a8e0a0b7df68612d360496b7",
+      "mode": "file",
+      "owner": "codictator",
+      "path": "AGENTS.md"
+    }
+  ],
+  "codictator": "0.0.0",
+  "hash": "047a1e99ec623b4804ab83caef6cef889c847052dfd52d129af44d1b1a8d01e0",
+  "version": 1
+}
+

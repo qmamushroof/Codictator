@@ -57,6 +57,20 @@ test("[§5.6] health cyclomatic and spans mirror the supplies", () => {
 	assert.deepEqual(measureFunctionSpans("function broken() {"), []);
 });
 
+test("[§5.6] health spans skip braceless arrows and default objects", () => {
+	// BUG-0008: every `=>` grabbed the next `{` anywhere later, so object
+	// literals and default parameter values opened phantom 50-line spans.
+	// Only a brace body on the same line opens a span now.
+	const spans = measureFunctionSpans(
+		"const f = (a) => a + 1;\nconst g = (o = {}) => o;\nfunction h(opts = {}) {\nreturn 1;\n}",
+	);
+	assert.deepEqual(spans, [
+		{ line: 1, lines: 1 },
+		{ line: 2, lines: 1 },
+		{ line: 3, lines: 3 },
+	]);
+});
+
 test("[§5.6] health markers parse and apply fallbacks", () => {
 	const markers = parseMarkers(
 		"h2: 16\nbad line\n: empty\nsentence-words: many",

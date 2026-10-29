@@ -8,7 +8,13 @@ import { ok, type Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
-import { bindRule, findingFor, selectFiles } from "./binding.ts";
+import {
+	bindRule,
+	findingFor,
+	isTestPath,
+	type RuleBinding,
+	selectFiles,
+} from "./binding.ts";
 import { blankCode } from "./health-lex.ts";
 import {
 	baseEnforcer,
@@ -57,33 +63,47 @@ export function resolveFunctionSize(
 					}
 					continue;
 				}
-				if (!isTsFile(file)) {
+				if (!isTsFile(file) || isTestPath(file)) {
 					continue;
 				}
-				for (const span of measureFunctionSpans(text)) {
-					if (span.lines > maxLines) {
-						findings.push(
-							findingFor(binding, {
-								path: file,
-								line: span.line,
-								message: `function over the size limit at ${file}:${String(span.line)}`,
-								vars: {
-									path: file,
-									line: String(span.line),
-									limit: String(maxLines),
-									value: String(span.lines),
-								},
-							}),
-						);
-					}
-				}
+				findings.push(...oversizedSpans(binding, file, text, maxLines));
 			}
 			return findings;
 		}),
 	);
 }
 
-// SPEC §5.6 core/complexity: cyclomatic complexity stays under maxCyclomatic.
+function oversizedSpans(
+	binding: RuleBinding,
+	file: string,
+	text: string,
+	maxLines: number,
+): Array<Finding> {
+	const findings: Array<Finding> = [];
+	for (const span of measureFunctionSpans(text)) {
+		if (span.lines > maxLines) {
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					line: span.line,
+					message: `function over the size limit at ${file}:${String(span.line)}`,
+					vars: {
+						path: file,
+						line: String(span.line),
+						limit: String(maxLines),
+						value: String(span.lines),
+					},
+				}),
+			);
+		}
+	}
+	return findings;
+}
+
+// SPEC §5.6 core/complexity: cyclomatic complexity stays under
+// maxCyclomatic per function body. Whole-file counting flags every module
+// with more than a couple of branches, so the measure runs over each
+// function span the §6.1 brace matcher finds.
 export function resolveComplexity(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -118,29 +138,49 @@ export function resolveComplexity(
 					}
 					continue;
 				}
-				if (!isTsFile(file)) {
+				if (!isTsFile(file) || isTestPath(file)) {
 					continue;
 				}
-				const value = countCyclomatic(blankCode(text));
-				if (value > maxCyclomatic) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							line: 1,
-							message: `complexity over the limit in ${file}`,
-							vars: {
-								path: file,
-								line: "1",
-								limit: String(maxCyclomatic),
-								value: String(value),
-							},
-						}),
-					);
-				}
+				const lines = text.split("\n");
+				findings.push(
+					...overComplexSpans(binding, file, text, lines, maxCyclomatic),
+				);
 			}
 			return findings;
 		}),
 	);
+}
+
+function overComplexSpans(
+	binding: RuleBinding,
+	file: string,
+	text: string,
+	lines: Array<string>,
+	maxCyclomatic: number,
+): Array<Finding> {
+	const findings: Array<Finding> = [];
+	for (const span of measureFunctionSpans(text)) {
+		const body = blankCode(
+			lines.slice(span.line - 1, span.line - 1 + span.lines).join("\n"),
+		);
+		const value = countCyclomatic(body);
+		if (value > maxCyclomatic) {
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					line: span.line,
+					message: `complexity over the limit at ${file}:${String(span.line)}`,
+					vars: {
+						path: file,
+						line: String(span.line),
+						limit: String(maxCyclomatic),
+						value: String(value),
+					},
+				}),
+			);
+		}
+	}
+	return findings;
 }
 
 // SPEC §5.6 core/no-guard-removal: no deleted validation, throw or assert

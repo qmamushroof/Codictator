@@ -5,6 +5,6 @@
 	"trigger": "hardcoded corpus count in a doc",
 	"expectRules": ["core/doc-no-corpus-counts"],
 	"files": {
-		"sample.txt": "text: 1,234 rules\n"
+		"sample.txt": "text: The repository has 1,234 rules.\n"
 	}
 }

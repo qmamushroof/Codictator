@@ -97,6 +97,7 @@ export async function handleRegen(
 	}
 	const agents = await readStateText(root.value, "AGENTS.md");
 	const profile = profileOf(loaded.value.effective.config.architecture);
+	const configured = loaded.value.effective.config;
 	const wrote = await writePlan(
 		root.value,
 		guardrailPlan(
@@ -104,6 +105,12 @@ export async function handleRegen(
 			profile,
 			repoNameOf(root.value),
 			agents,
+			{
+				packs: configured.packs,
+				tunables: configured.tunables,
+				architecture: configured.architecture,
+				tools: configured.tools,
+			},
 		),
 	);
 	if (!wrote.ok) {
