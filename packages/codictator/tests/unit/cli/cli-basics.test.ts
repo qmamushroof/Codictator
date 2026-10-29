@@ -184,13 +184,22 @@ test("[§4.19] deps rejects an unknown subcommand", async () => {
 
 test("[§4.14] verify passes with no manifest", async () => {
 	// SPEC §4.14.2: without a manifest there is no drift to report, so
-	// the run passes with the unverified note.
+	// the run passes with the unverified note. Integrity exception
+	// IE-09-R5-verify-note (rule core/no-assertion-loss, path
+	// packages/codictator/tests/unit/cli/cli-basics.test.ts, reason: the
+	// note now names the evaluated scope as well since verify runs the
+	// engine (§4.19.2), so the assertion matches the extended note while
+	// still requiring the unverified marker and the pass).
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		seedConfig(repo);
 		const ran = await cli(["verify"], repo.dir);
 		assert.equal(ran.code, 0);
-		assert.ok(ran.stdout.includes("verify: pass (unverified (no manifest))"));
+		assert.ok(
+			ran.stdout.includes(
+				"verify: pass (unverified (no manifest); tracked tree)",
+			),
+		);
 	} finally {
 		repo.cleanup();
 	}

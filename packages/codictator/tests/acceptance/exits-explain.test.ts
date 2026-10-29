@@ -1,24 +1,56 @@
-// SPEC §8.2: one red test per exit code; SPEC §8.1: one red explain test
-// per error code. Exit rows assert runCommand; explain rows assert explain.
-// Both contracts still throw "not implemented", so all sixty-six fail red
-// until their implementations land.
+// SPEC §8.2: one test per exit code; SPEC §8.1: one explain test per
+// error code. Exit rows assert runCommand; explain rows assert explain.
+// Exit 2 and exit 4 pass; the remaining six run the built entry in a
+// temporary git repo whose fixture files genuinely produce each exit
+// (exit 7 via a custom pack whose code enforcer defers, so the self-test
+// fails CDX-E901 per SPEC §4.4.3).
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import { runCommand } from "../../src/cli/index.ts";
+import { exitFor } from "../../src/cli/shared.ts";
 import { explain } from "../../src/features/audit/index.ts";
+import { createTempRepo } from "../support/temp-repo.ts";
+
+function seedConfig(): Record<string, string> {
+	return {
+		".codictator/config.json": JSON.stringify({
+			version: 1,
+			codictator: "0.0.0",
+			packs: [],
+			harnesses: ["muse-code", "opencode"],
+		}),
+	};
+}
 
 test("[§8.2] exit 0 on allow or advise only", async () => {
-	// SPEC §8.2: verify with no blocking findings resolves ok.
-	const result = await runCommand({ argv: ["verify"], cwd: "/repo" });
-	assert.equal(result.ok, true);
+	// SPEC §8.2: verify over a clean repo with no drift resolves ok.
+	const repo = createTempRepo({ "README.md": "hi", ...seedConfig() });
+	try {
+		const result = await runCommand({ argv: ["verify"], cwd: repo.dir });
+		assert.equal(result.ok, true);
+		if (result.ok) {
+			assert.equal(result.value, 0);
+		}
+	} finally {
+		repo.cleanup();
+	}
 });
 
 test("[§8.2] exit 1 on blocked findings or a blocking error", async () => {
-	// SPEC §8.2: an external tool failure blocks with CDX-E207.
-	const result = await runCommand({ argv: ["verify"], cwd: "/repo" });
-	assert.equal(result.ok, false);
-	if (!result.ok) {
-		assert.equal(result.error.code, "CDX-E207");
+	// SPEC §8.2 + §4.14.2: a manifest edited outside regen blocks the run.
+	const repo = createTempRepo({
+		"README.md": "hi",
+		...seedConfig(),
+		".codictator/manifest.json": "not json\n",
+	});
+	try {
+		const result = await runCommand({ argv: ["verify"], cwd: repo.dir });
+		assert.equal(result.ok, true);
+		if (result.ok) {
+			assert.equal(result.value, 1);
+		}
+	} finally {
+		repo.cleanup();
 	}
 });
 
@@ -37,11 +69,20 @@ test("[§8.2] exit 2 on a usage error", async () => {
 });
 
 test("[§8.2] exit 3 on invalid configuration, pack or schema", async () => {
-	// SPEC §8.2: an unparseable config fails with CDX-E101.
-	const result = await runCommand({ argv: ["verify"], cwd: "/repo" });
-	assert.equal(result.ok, false);
-	if (!result.ok) {
-		assert.equal(result.error.code, "CDX-E101");
+	// SPEC §8.2 + §4.2.4 EC-1: an unparseable config fails with CDX-E101.
+	const repo = createTempRepo({
+		"README.md": "hi",
+		".codictator/config.json": "{oops\n",
+	});
+	try {
+		const result = await runCommand({ argv: ["verify"], cwd: repo.dir });
+		assert.equal(result.ok, false);
+		if (!result.ok) {
+			assert.equal(result.error.code, "CDX-E101");
+			assert.equal(exitFor(result.error.code), 3);
+		}
+	} finally {
+		repo.cleanup();
 	}
 });
 
@@ -58,29 +99,96 @@ test("[§8.2] exit 4 on a human-only command without a human", async () => {
 });
 
 test("[§8.2] exit 5 on unavailable data", async () => {
-	// SPEC §8.2: unreachable registry and snapshots fail with CDX-E401.
-	const result = await runCommand({ argv: ["deps", "check"], cwd: "/repo" });
-	assert.equal(result.ok, false);
-	if (!result.ok) {
-		assert.equal(result.error.code, "CDX-E401");
+	// SPEC §8.2 + §4.13.1: an upgrade with no snapshot and no registry
+	// data fails with CDX-E401.
+	const repo = createTempRepo({
+		"package.json": JSON.stringify({ name: "x", version: "0.0.0" }),
+	});
+	try {
+		const result = await runCommand({
+			argv: ["deps", "upgrade"],
+			cwd: repo.dir,
+		});
+		assert.equal(result.ok, false);
+		if (!result.ok) {
+			assert.equal(result.error.code, "CDX-E401");
+			assert.equal(exitFor(result.error.code), 5);
+		}
+	} finally {
+		repo.cleanup();
 	}
 });
 
 test("[§8.2] exit 6 on a missing prerequisite or environment", async () => {
-	// SPEC §8.2: a Node older than engines.node fails with CDX-E002.
-	const result = await runCommand({ argv: ["verify"], cwd: "/repo" });
-	assert.equal(result.ok, false);
-	if (!result.ok) {
-		assert.equal(result.error.code, "CDX-E002");
+	// SPEC §8.2 + §4.19.4: a Node older than engines.node fails with
+	// CDX-E002 on the CLI start path.
+	const repo = createTempRepo({ "README.md": "hi", ...seedConfig() });
+	try {
+		const result = await runCommand({
+			argv: ["verify"],
+			cwd: repo.dir,
+			nodeVersion: "v22.14.0",
+		});
+		assert.equal(result.ok, false);
+		if (!result.ok) {
+			assert.equal(result.error.code, "CDX-E002");
+			assert.equal(exitFor(result.error.code), 6);
+		}
+	} finally {
+		repo.cleanup();
 	}
 });
 
 test("[§8.2] exit 7 on an internal error", async () => {
-	// SPEC §8.2: a throwing enforcer fails closed with CDX-E901.
-	const result = await runCommand({ argv: ["verify"], cwd: "/repo" });
-	assert.equal(result.ok, false);
-	if (!result.ok) {
-		assert.equal(result.error.code, "CDX-E901");
+	// SPEC §8.2 + §4.4.3: a pack test whose code enforcer defers (owning
+	// module not wired) throws in the self-test and fails CDX-E901.
+	const repo = createTempRepo({
+		".codictator/packs/mypack/pack.json": JSON.stringify({
+			id: "mypack",
+			version: "0.0.0",
+			description: "fixture pack with a deferred enforcer",
+			rules: [
+				{
+					id: "mypack/deferred-rule",
+					family: "F12",
+					tier: "floor",
+					statement: "The deferred guard holds.",
+					reason: "Deferred guards fail closed until wired.",
+					remediation:
+						"Wire the owning module, then re-run the pack self-test.",
+					enforcer: "mypack/deferred",
+					triggers: ["pre-tool"],
+					scope: [],
+					params: {},
+					ratchet: false,
+					measureVersion: 1,
+					fixtures: { violating: ["basic"], passing: ["basic"] },
+				},
+			],
+			enforcers: [
+				{
+					id: "mypack/deferred",
+					kind: "code",
+					module: "future",
+					budgetMs: 1000,
+					args: {},
+				},
+			],
+			maxWaiverDays: 90,
+		}),
+	});
+	try {
+		const result = await runCommand({
+			argv: ["pack", "test", "mypack"],
+			cwd: repo.dir,
+		});
+		assert.equal(result.ok, false);
+		if (!result.ok) {
+			assert.equal(result.error.code, "CDX-E901");
+			assert.equal(exitFor(result.error.code), 7);
+		}
+	} finally {
+		repo.cleanup();
 	}
 });
 

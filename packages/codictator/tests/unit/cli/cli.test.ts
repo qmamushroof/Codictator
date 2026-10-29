@@ -1,10 +1,14 @@
-// SPEC §4.19.6: one red test per CLI EC row. Dispatch rows assert
-// runCommand; hook rows assert runHook; server rows assert runServer. All
-// three still throw "not implemented", so all ten fail red until Phase 9 lands.
+// SPEC §4.19.6: one test per CLI EC row. Dispatch rows assert
+// runCommand; hook rows assert runHook; server rows assert runServer.
+// EC-9 and EC-10 stay red for phase 11 (serve is unwired by design).
 import { strict as assert } from "node:assert";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import type { CliOptions } from "../../../src/cli/index.ts";
 import { runCommand, runHook, runServer } from "../../../src/cli/index.ts";
+import { createTempRepo } from "../../support/temp-repo.ts";
 
 function optionsFor(argv: ReadonlyArray<string>): CliOptions {
 	return { argv, cwd: "/repo" };
@@ -77,9 +81,93 @@ test("[§4.19 EC-6] root and tool-dir engines differ", async () => {
 });
 
 test("[§4.19 EC-7] effective-config cache stale after waiver edit", async () => {
-	// SPEC §4.19.6 EC-7: key mismatch re-resolves the config.
-	const result = await runCommand(optionsFor(["verify"]));
-	assert.equal(result.ok, true);
+	// SPEC §4.19.6 EC-7 + §4.19.3 step 3: the cache key covers config,
+	// waivers and baseline bytes, so a waiver edit mismatches the cached
+	// key and the hook re-resolves instead of trusting stale config. The
+	// test runs the hook twice in a temp repo and asserts the cached key
+	// changes while both runs record allow verdicts.
+	const repo = createTempRepo({
+		".codictator/config.json": JSON.stringify({
+			version: 1,
+			codictator: "0.0.0",
+			packs: [],
+			harnesses: ["muse-code", "opencode"],
+		}),
+	});
+	try {
+		const here = path.dirname(fileURLToPath(import.meta.url));
+		const golden = JSON.parse(
+			readFileSync(
+				path.resolve(
+					here,
+					"..",
+					"..",
+					"..",
+					"fixtures",
+					"harness",
+					"muse-code",
+					"1.4.10",
+					"pre-tool-use.json",
+				),
+				"utf8",
+			),
+		) as { payload: Record<string, unknown> };
+		const stdinText = JSON.stringify({ ...golden.payload, cwd: repo.dir });
+		const first = await runHook({
+			argv: ["hook", "muse-code", "PreToolUse"],
+			cwd: repo.dir,
+			stdinText,
+		});
+		assert.equal(first, 0);
+		const readCacheKey = (): string => {
+			const cached = JSON.parse(
+				readFileSync(
+					path.join(repo.dir, ".codictator", "cache", "effective.json"),
+					"utf8",
+				),
+			) as { key: string };
+			return cached.key;
+		};
+		const keyBefore = readCacheKey();
+		repo.writeFile(
+			".codictator/waivers.json",
+			`${JSON.stringify({
+				version: 1,
+				maxWaiverDays: 90,
+				waivers: [
+					{
+						id: "W-1",
+						rule: "core/file-size",
+						params: { maxLines: 400 },
+						reason: "generated file over the default limit",
+						created: "2026-01-01",
+						expires: "2026-03-31",
+						createdBy: "human",
+					},
+				],
+			})}\n`,
+		);
+		const second = await runHook({
+			argv: ["hook", "muse-code", "PreToolUse"],
+			cwd: repo.dir,
+			stdinText,
+		});
+		assert.equal(second, 0);
+		assert.notEqual(readCacheKey(), keyBefore);
+		const lines = readFileSync(
+			path.join(repo.dir, ".codictator", "state", "events.jsonl"),
+			"utf8",
+		)
+			.split("\n")
+			.filter((line) => line !== "");
+		assert.equal(lines.length, 2);
+		for (const line of lines) {
+			const event = JSON.parse(line) as { decision: unknown };
+			assert.equal(event.decision, "allow");
+		}
+	} finally {
+		repo.cleanup();
+	}
 });
 
 test("[§4.19 EC-8] verify outside a git repo", async () => {

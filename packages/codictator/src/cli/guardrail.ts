@@ -29,6 +29,18 @@ function repoNameOf(root: string): string {
 	return root.replaceAll("\\", "/").split("/").pop() ?? "repo";
 }
 
+// SPEC §4.14.5: regen re-renders from config, so a profile chosen at init
+// survives regeneration instead of being dropped from the rewritten config.
+function profileOf(architecture: unknown): string {
+	if (typeof architecture === "object" && architecture !== null) {
+		const profile = (architecture as { readonly profile?: unknown }).profile;
+		if (typeof profile === "string" && profile !== "") {
+			return profile;
+		}
+	}
+	return "";
+}
+
 function emitRegen(
 	req: CommandRequest,
 	root: string,
@@ -84,11 +96,12 @@ export async function handleRegen(
 		);
 	}
 	const agents = await readStateText(root.value, "AGENTS.md");
+	const profile = profileOf(loaded.value.effective.config.architecture);
 	const wrote = await writePlan(
 		root.value,
 		guardrailPlan(
 			loaded.value.effective.config.harnesses,
-			"",
+			profile,
 			repoNameOf(root.value),
 			agents,
 		),

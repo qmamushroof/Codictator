@@ -9,6 +9,7 @@ import {
 	type RuleBinding,
 	readErrorFinding,
 	readLossyText,
+	selectFiles,
 	tunableNumber,
 } from "./binding.ts";
 import { blankCode, blankComments } from "./health-lex.ts";
@@ -145,6 +146,28 @@ export async function loadScopeText(
 		return undefined;
 	}
 	return loaded.value.text;
+}
+
+// SPEC §5.12/§5.1: the gate and steering marker evaluators share one
+// scope-text reader over the self-test marker reports (§4.4.1
+// sample.txt files), so each guard file stays a pure move of resolvers.
+export async function scopeMarkerTexts(
+	ports: Ports,
+	binding: RuleBinding,
+	ctx: CheckContext,
+	findings: Array<Finding>,
+): Promise<
+	Array<{ readonly file: string; readonly markers: Map<string, string> }>
+> {
+	const out: Array<{ file: string; markers: Map<string, string> }> = [];
+	for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+		const text = await loadScopeText(ports, binding, file, findings);
+		if (text === undefined || !isMarkerFile(file)) {
+			continue;
+		}
+		out.push({ file, markers: parseMarkers(text) });
+	}
+	return out;
 }
 
 export function baseEnforcer(
