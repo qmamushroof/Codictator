@@ -11,11 +11,10 @@ import {
 	NodeFs,
 	NodeGit,
 	parseJson,
-	sha256Hex,
 	stableStringify,
 } from "../../kernel/index.ts";
-import type { Config, EffectiveConfig } from "../config/index.ts";
-import { HOOK_MARKER, loadConfig, validateConfig } from "../config/index.ts";
+import type { EffectiveConfig } from "../config/index.ts";
+import { HOOK_MARKER, loadConfig } from "../config/index.ts";
 import type { EngineOptions } from "../engine/index.ts";
 import { createEngine } from "../engine/index.ts";
 import { claudeCodeAdapter } from "./claude-code.ts";
@@ -23,6 +22,7 @@ import { codexCliAdapter } from "./codex-cli.ts";
 import type { Adapter, HookEvent, HookReply } from "./contract.ts";
 import { HOOK_PAYLOAD_MAX_BYTES } from "./contract.ts";
 import { COPILOT_TIMEOUT_SEC, copilotAdapter } from "./copilot.ts";
+import { cacheKeyFor, readCacheFile, storeBytes } from "./effective-cache.ts";
 import { museAdapter } from "./muse-code.ts";
 import { opencodeAdapter } from "./opencode.ts";
 import { universalAdapter } from "./universal.ts";
@@ -180,35 +180,13 @@ async function resolveRoot(
 	return canonicalRoot(root.value);
 }
 
-// SPEC §4.19.3 step 3: the effective-config cache. The key hashes the
-// config file bytes; waiver, baseline and pack-version inputs join the key
-// when their stores land (phases 4.3, 4.13, 5), until then the config bytes
-// are the whole key. The Fs port carries no mtime, so the key is a content
-// hash rather than a timestamp. A corrupt cache re-resolves instead of
-// blocking: the cache is an optimization, never authority.
+// SPEC §4.19.3 step 3: the effective-config cache file. The keyed cache
+// read lives in effective-cache.ts; the repo-relative rel paths stay here
+// with the loader that reads them (§4.1.1).
 const CACHE_REL = ".codictator/cache/effective.json";
 const CONFIG_REL = ".codictator/config.json";
-
-function cacheKeyFor(configBytes: Uint8Array): string {
-	return sha256Hex(configBytes);
-}
-
-function readCacheFile(raw: unknown, key: string): Config | undefined {
-	if (typeof raw !== "object" || raw === null) {
-		return undefined;
-	}
-	if (!("v" in raw) || !("key" in raw) || !("config" in raw)) {
-		return undefined;
-	}
-	if (raw.v !== 1 || raw.key !== key) {
-		return undefined;
-	}
-	try {
-		return validateConfig(raw.config).config;
-	} catch {
-		return undefined;
-	}
-}
+const WAIVERS_REL = ".codictator/waivers.json";
+const BASELINE_REL = ".codictator/baseline.json";
 
 async function loadEffective(
 	ports: HookBasePorts,
@@ -246,7 +224,11 @@ async function loadEffective(
 			reply: blockReply(adapter, "CDX-E801", bytes.error.message),
 		};
 	}
-	const key = cacheKeyFor(bytes.value);
+	const key = cacheKeyFor([
+		bytes.value,
+		await storeBytes(fs, WAIVERS_REL),
+		await storeBytes(fs, BASELINE_REL),
+	]);
 	const cached = await fs.readText(CACHE_REL);
 	if (cached.ok) {
 		const parsed = parseJson(cached.value);
@@ -255,7 +237,7 @@ async function loadEffective(
 			if (hit !== undefined) {
 				return {
 					ok: true,
-					value: { config: hit, configHash: cacheKeyFor(bytes.value) },
+					value: { config: hit, configHash: key },
 				};
 			}
 		}

@@ -2,6 +2,12 @@
 // case in each built-in pack. Every test pins its real fixture assertions
 // first, then calls the not-yet-implemented generator contract, so each one
 // executes and fails red until the pack self-test lands.
+// Integrity exception IE-09-R5-ciactions (rule core/no-assertion-loss,
+// path packages/codictator/src/builtin-packs/core/fixtures/
+// ci-actions-pinned/passing/basic/case.json, reason: the passing marker
+// used a 7-hex short SHA, contradicting SPEC §4.15.2 and the ci module's
+// own 40-hex check; corrected to a full 40-hex SHA so the passing case is
+// passing for the SPEC reason).
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import type { FixtureCase } from "../../support/fixture-generator.ts";

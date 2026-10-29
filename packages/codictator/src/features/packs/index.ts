@@ -41,6 +41,7 @@ export { isParametricKind, resolveParametric } from "./enforcers/parametric.ts";
 export { packHashFor, selfTestHashFor } from "./hashes.ts";
 export type { LoadPackOptions } from "./loader.ts";
 export { composePacks, loadBuiltinPack, loadPack } from "./loader.ts";
-export { resolvePackEnforcers } from "./registry.ts";
+export { isBuiltinPackId } from "./manifest.ts";
+export { resolveManifestEnforcers, resolvePackEnforcers } from "./registry.ts";
 // SPEC §4.4.4: self-test every rule against its fixtures before use.
 export { selfTest } from "./selftest.ts";

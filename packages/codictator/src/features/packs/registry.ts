@@ -20,7 +20,7 @@ import type { ExternalOptions, ToolDecl } from "./enforcers/external.ts";
 import { resolveExternal } from "./enforcers/external-check.ts";
 import { isParametricKind, resolveParametric } from "./enforcers/parametric.ts";
 import type { PackManifest, PackRule } from "./index.ts";
-import type { EnforcerDecl } from "./manifest.ts";
+import { type EnforcerDecl, narrowEnforcerDecl } from "./manifest.ts";
 
 export interface RegistryOptions {
 	readonly onToolEvent?: ExternalOptions["onToolEvent"];
@@ -163,4 +163,25 @@ export function resolvePackEnforcers(
 	}
 	resolved.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 	return ok(resolved);
+}
+
+// SPEC §4.19.2 + §4.3.3: repo-rooted enforcers for command evaluation. The
+// loader resolves enforcers against its own read ports; a command evaluating
+// a repo must narrow the manifest decls itself and resolve them against the
+// root-confined ports, so scope files read repo-relatively (§4.1.1).
+// External tools stay unbound here (their config.tools wiring lands with
+// the custom-pack flow); unbound externals resolve inert, never failing.
+export function resolveManifestEnforcers(
+	manifest: PackManifest,
+	ports: Ports,
+): Result<Array<Enforcer>> {
+	const decls: Array<EnforcerDecl> = [];
+	for (const entry of manifest.enforcers) {
+		const narrowed = narrowEnforcerDecl(entry);
+		if (!narrowed.ok) {
+			return err(narrowed.error);
+		}
+		decls.push(narrowed.value);
+	}
+	return resolvePackEnforcers(manifest, decls, ports, []);
 }

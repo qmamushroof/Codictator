@@ -5,6 +5,6 @@
 	"trigger": "action pinned to a floating tag",
 	"expectRules": [],
 	"files": {
-		"sample.txt": "uses: actions/checkout@11bd719\n"
+		"sample.txt": "uses: actions/checkout@11bd71901bbef0f5b0f1f3f3c0d1e8e8f5b0f1f0\n"
 	}
 }

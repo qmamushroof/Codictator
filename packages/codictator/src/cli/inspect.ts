@@ -21,6 +21,7 @@ import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { driftFindings } from "./drift.ts";
+import { evaluateScope, resolveVerifyScope } from "./evaluate.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
 	fail,
@@ -167,11 +168,35 @@ export async function handleVerify(
 		);
 	}
 	const drifted = await driftFindings(root, flags.layer);
+	const scoped = await resolveVerifyScope(configured.value.ports, flags);
+	if (!scoped.ok) {
+		return fail(
+			scoped.error.code,
+			scoped.error.message,
+			scoped.error.remediation,
+			req.json,
+		);
+	}
+	const evaluated = await evaluateScope(
+		configured.value.ports,
+		configured.value.effective.config.packs.map((entry) => entry.id),
+		scoped.value,
+		configured.value.ports.clock.now(),
+		configured.value.effective.configHash,
+	);
+	if (!evaluated.ok) {
+		return fail(
+			evaluated.error.code,
+			evaluated.error.message,
+			evaluated.error.remediation,
+			req.json,
+		);
+	}
 	return emitVerify(
 		req,
-		drifted.findings,
+		[...drifted.findings, ...evaluated.value],
 		configured.value.effective.configHash,
-		drifted.note,
+		`${drifted.note}; ${scoped.value.note}`,
 	);
 }
 

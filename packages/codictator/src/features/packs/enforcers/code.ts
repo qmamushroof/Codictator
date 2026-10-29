@@ -18,6 +18,7 @@ import {
 	resolveArchPublicEntry,
 	resolveCompilerStrict,
 } from "./arch-guards.ts";
+import { resolveCiActionsPinned, resolveCiPresent } from "./ci-guards.ts";
 import {
 	resolveComplexity,
 	resolveFunctionSize,
@@ -47,6 +48,15 @@ import {
 	resolveDocRouterLeaf,
 	resolveDocSingleOwner,
 } from "./docs-guards.ts";
+import {
+	resolveAgentAssetsPresent,
+	resolveCustomPackSelftest,
+	resolveEngineVersionMatch,
+	resolveGuardrailManifest,
+	resolveHooksActive,
+	resolvePerfBudgets,
+	resolveWaiversValid,
+} from "./gate-guards.ts";
 import { resolveDeadCode } from "./health-refs.ts";
 import {
 	resolveNoAssertionLoss,
@@ -68,6 +78,14 @@ import {
 import { resolveRemediationStepSize } from "./remediation-guards.ts";
 import { resolveNoSecretReads, resolveNoSecrets } from "./secret-scan.ts";
 import { resolveDangerousShell } from "./shell-analyse.ts";
+import {
+	resolveContextHardBand,
+	resolveContextSoftBand,
+	resolveGraphBeforeScan,
+	resolveMcpDeclared,
+	resolveReadDedupe,
+	resolveSessionToolCallLimit,
+} from "./steering-guards.ts";
 import {
 	resolveCoverageFloor,
 	resolveRedBeforeGreen,
@@ -155,6 +173,21 @@ const CODE_RESOLVERS: Readonly<Record<string, CodeResolver>> = {
 	"core/dep-one-per-capability": resolveDepOnePerCapability,
 	"core/dep-license": resolveDepLicense,
 	"core/remediation-step-size": resolveRemediationStepSize,
+	"core/context-soft-band": resolveContextSoftBand,
+	"core/context-hard-band": resolveContextHardBand,
+	"core/session-tool-call-limit": resolveSessionToolCallLimit,
+	"core/read-dedupe": resolveReadDedupe,
+	"core/graph-before-scan": resolveGraphBeforeScan,
+	"core/mcp-declared": resolveMcpDeclared,
+	"core/agent-assets-present": resolveAgentAssetsPresent,
+	"core/ci-present": resolveCiPresent,
+	"core/ci-actions-pinned": resolveCiActionsPinned,
+	"core/perf-budgets": resolvePerfBudgets,
+	"core/guardrail-manifest": resolveGuardrailManifest,
+	"core/hooks-active": resolveHooksActive,
+	"core/engine-version-match": resolveEngineVersionMatch,
+	"core/waivers-valid": resolveWaiversValid,
+	"core/custom-pack-selftest": resolveCustomPackSelftest,
 };
 
 // SPEC §4.4.3 step 4: one enforcer per referencing rule. An unknown rule

@@ -1764,7 +1764,8 @@
 		},
 		{
 			"id": "core/engine-version-match",
-			"kind": "json-key",
+			"kind": "code",
+			"module": "integrity",
 			"budgetMs": 1000,
 			"args": {}
 		},
