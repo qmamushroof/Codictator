@@ -39,7 +39,7 @@ export {
 export { NodeGit } from "./git.ts";
 export { globMatch } from "./glob.ts";
 export { normalizeText, sha256Hex, sha256Text } from "./hash.ts";
-export { readHostText } from "./host.ts";
+export { readHostText, writeHostText } from "./host.ts";
 export { parseJson, stableLineStringify, stableStringify } from "./json.ts";
 export type { NodeNetOptions } from "./net.ts";
 export {

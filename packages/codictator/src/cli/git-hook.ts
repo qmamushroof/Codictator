@@ -7,7 +7,13 @@
 
 import { HOOK_MARKER } from "../features/config/index.ts";
 import type { Env, Finding, Result } from "../kernel/index.ts";
-import { err, makeError, ok } from "../kernel/index.ts";
+import {
+	err,
+	makeError,
+	ok,
+	readHostText,
+	writeHostText,
+} from "../kernel/index.ts";
 import { evaluateScope } from "./evaluate.ts";
 import { printFinding } from "./inspect.ts";
 import type { CommandPorts, CommandRequest } from "./shared.ts";
@@ -27,10 +33,6 @@ import {
 
 const GIT_TIMEOUT_MS = 30000;
 const GIT_MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
-
-function encodeText(text: string): Uint8Array {
-	return new TextEncoder().encode(text);
-}
 
 async function runGitText(
 	ports: CommandPorts,
@@ -149,9 +151,13 @@ async function runPreCommit(
 	);
 }
 
+// SPEC §4.14.4: git hands commit-msg an absolute COMMIT_EDITMSG path, which
+// in a linked worktree lives under the main repo's .git/worktrees/<name>/
+// dir, outside the worktree root. The confined Fs port rejects absolute
+// paths (CDX-E701), so the hook uses kernel-owned host I/O; an unreadable
+// or unwritable message file blocks fail-closed.
 async function runCommitMsg(
 	req: CommandRequest,
-	ports: CommandPorts,
 	configHash: string,
 ): Promise<Result<number>> {
 	if (req.args.length !== 2 || req.args[1] === undefined) {
@@ -159,7 +165,7 @@ async function runCommitMsg(
 	}
 	const file = req.args[1];
 	const trailer = `Codictator-L3: ${configHash.slice(0, 12)}`;
-	const read = await ports.fs.readText(file);
+	const read = await readHostText(file);
 	if (!read.ok) {
 		return reportError(read.error, req.json);
 	}
@@ -169,7 +175,7 @@ async function runCommitMsg(
 		return ok(0);
 	}
 	const base = read.value.endsWith("\n") ? read.value : `${read.value}\n`;
-	const wrote = await ports.fs.write(file, encodeText(`${base}\n${trailer}\n`));
+	const wrote = await writeHostText(file, `${base}\n${trailer}\n`);
 	if (!wrote.ok) {
 		return reportError(wrote.error, req.json);
 	}
@@ -278,7 +284,7 @@ export async function handleGitHook(
 	const now = ports.clock.now();
 	const configHash = configured.value.effective.configHash;
 	if (hook === "commit-msg") {
-		return runCommitMsg(req, ports, configHash);
+		return runCommitMsg(req, configHash);
 	}
 	if (hook === "pre-push") {
 		return runPrePush(req, ports, packIds, now, configHash);
