@@ -1,10 +1,7 @@
 // SPEC §4.15.2 + §4.15.7 EC-1/EC-6: the live branch-protection read behind
-// `ci verify`. Pure over the caller's Net and Env ports: the CLI attempts it
-// only in GitHub Actions with a token, so local runs keep their shape and
-// fork/off-CI runs degrade to advise, never to allow. Every failure mode
-// (wrong env, non-200, unparseable body, timeout) resolves to undefined,
-// which evaluateProtection renders as advise; only a readable 404
-// (reported-not-protected) resolves to a blocking read (EC-7).
+// `ci verify`. Pure over Net/Env: branch rules go first, classic second;
+// unreadable resolves to undefined (advise), readable classic 404 to
+// blocking (EC-7, reported-not-protected).
 import { type Env, type Net, parseJson } from "../../kernel/index.ts";
 import type { ProtectionRead } from "./protection.ts";
 
@@ -88,10 +85,72 @@ function defaultBranchOf(body: unknown): string | undefined {
 	return typeof branch === "string" && branch !== "" ? branch : undefined;
 }
 
-// SPEC §4.15.2: a required check is verify-shaped when its context names
-// verify (the generated gate's check name carries "verify").
+// SPEC §4.15.2: a required check is verify-shaped when its context is the
+// gate's name. Matrix jobs append a parenthesised suffix (`verify
+// (ubuntu-latest)`), stripped before the exact match, so `pre-verify` fails.
+function verifyBaseOf(context: string): string {
+	return context
+		.replace(/\s*\([^)]*\)\s*$/, "")
+		.trim()
+		.toLowerCase();
+}
+
 function verifyRequiredIn(contexts: ReadonlyArray<string>): boolean {
-	return contexts.some((context) => context.toLowerCase().includes("verify"));
+	return contexts.some((context) => verifyBaseOf(context) === "verify");
+}
+
+// SPEC §4.15.2: the branch-rules endpoint answers an array of repository
+// rules; anything else falls through to classic, never assumes.
+function protectionFromRuleset(
+	rulesBody: string,
+	repoBody: unknown,
+): ProtectionRead | undefined {
+	const parsed = parseJson(rulesBody);
+	if (!parsed.ok || !Array.isArray(parsed.value)) {
+		return undefined;
+	}
+	const contexts: Array<string> = [];
+	let forcePushBlocked = false;
+	let deletionBlocked = false;
+	for (const entry of parsed.value) {
+		if (!isRecord(entry) || typeof field(entry, "type") !== "string") {
+			return undefined;
+		}
+		const type = field(entry, "type");
+		forcePushBlocked = forcePushBlocked || type === "non_fast_forward";
+		deletionBlocked = deletionBlocked || type === "deletion";
+		if (type !== "required_status_checks") {
+			continue;
+		}
+		const params = field(entry, "parameters");
+		if (!isRecord(params)) {
+			return undefined;
+		}
+		const checks = field(params, "required_status_checks");
+		if (!Array.isArray(checks)) {
+			return undefined;
+		}
+		for (const check of checks) {
+			if (!isRecord(check)) {
+				return undefined;
+			}
+			const context = field(check, "context");
+			if (typeof context !== "string") {
+				return undefined;
+			}
+			contexts.push(context);
+		}
+	}
+	const squash = isRecord(repoBody)
+		? field(repoBody, "allow_squash_merge")
+		: undefined;
+	return {
+		readable: true,
+		verifyRequired: verifyRequiredIn(contexts),
+		forcePushBlocked,
+		deletionBlocked,
+		...(typeof squash === "boolean" ? { allowSquashMerge: squash } : {}),
+	};
 }
 
 function protectionFrom(body: string): ProtectionRead | undefined {
@@ -202,6 +261,23 @@ export async function readProtection(
 	const branch = defaultBranchOf(repoParsed.value);
 	if (branch === undefined) {
 		return undefined;
+	}
+	// SPEC §4.15.2: rulesets first; unreadable or untrustworthy answers
+	// fall through to classic, only a readable ruleset resolves here.
+	const rulesSeen = await net.request({
+		method: "GET",
+		url: `${repoUrl(api, ref)}/rules/branches/${encodeURIComponent(branch)}`,
+		headers,
+		timeoutMs: REQUEST_TIMEOUT_MS,
+	});
+	if (rulesSeen.ok && rulesSeen.value.status === 200) {
+		const ruleset = protectionFromRuleset(
+			rulesSeen.value.body,
+			repoParsed.value,
+		);
+		if (ruleset !== undefined) {
+			return ruleset;
+		}
 	}
 	const seen = await net.request({
 		method: "GET",
