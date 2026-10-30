@@ -24,6 +24,7 @@ import {
 } from "../kernel/index.ts";
 import { COMMANDS, type Handler, USAGE } from "./commands.ts";
 import { loadEvalEnforcers } from "./evaluate.ts";
+import { startStdioServer } from "./serve-server.ts";
 import {
 	MIN_NODE_MAJOR,
 	nodeMajor,
@@ -280,9 +281,13 @@ export function runCommand(options: CliOptions): Promise<Result<number>> {
 	return runCommandImpl(options);
 }
 
-// SPEC §7.15: stdio server entry for the vscode extension.
-export function runServer(_options: CliOptions): Promise<number> {
-	throw new Error("not implemented: SPEC §7.15");
+// SPEC §7.15 + §4.19.5: stdio server entry for the vscode extension. The
+// loop serves one NDJSON session on this process's stdio; commands run
+// through the same table with per-call output capture (see serve-run.ts),
+// so frames stay the only stdout bytes. A closed stdin (no piped client)
+// exits 0 without serving.
+export function runServer(options: CliOptions): Promise<number> {
+	return startStdioServer(options, runCommand);
 }
 
 export type { CdxError };
