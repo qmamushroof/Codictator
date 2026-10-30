@@ -6,8 +6,16 @@
 // and every other unknown id stays CDX-E301. The loop breaker (§4.12.5)
 // and steering injection (§4.6.3) run at step 5 once their phases land;
 // until then the verdict decides.
-import type { Clock, Env, Net, Proc, Result } from "../../kernel/index.ts";
+import type {
+	Clock,
+	Env,
+	Net,
+	Ports,
+	Proc,
+	Result,
+} from "../../kernel/index.ts";
 import {
+	analyseShell,
 	NodeFs,
 	NodeGit,
 	parseJson,
@@ -15,7 +23,7 @@ import {
 } from "../../kernel/index.ts";
 import type { EffectiveConfig } from "../config/index.ts";
 import { HOOK_MARKER, loadConfig } from "../config/index.ts";
-import type { EngineOptions } from "../engine/index.ts";
+import type { Enforcer, EngineOptions, Scope } from "../engine/index.ts";
 import { createEngine } from "../engine/index.ts";
 import { claudeCodeAdapter } from "./claude-code.ts";
 import { codexCliAdapter } from "./codex-cli.ts";
@@ -54,7 +62,20 @@ export interface HookRunRequest {
 	readonly ports: HookBasePorts;
 	readonly append: HookAppend;
 	readonly budgetMs?: number;
+	// SPEC §4.19.3: the real pack enforcers, resolved against root-confined
+	// ports. Adapters never import packs (§3.3), so the composition root
+	// injects the loader; a missing loader fails closed, never allows.
+	readonly loadEnforcers?: HookEnforcerLoader;
 }
+
+// SPEC §4.19.3 step 5: pack enforcers for the hook evaluation, resolved by
+// the composition root against the root-confined ports over the pack ids
+// of the effective config. A resolution failure carries the loader's own
+// code, so the hook blocks with it.
+export type HookEnforcerLoader = (
+	ports: Ports,
+	packIds: ReadonlyArray<string>,
+) => Promise<Result<ReadonlyArray<Enforcer>>>;
 
 // SPEC §4.5.5 with §9.3: the hook time limit is min(harness timeout - 1 s,
 // hard limit). Muse Code documents no hook timeout, so the 5 s hard limit
@@ -322,9 +343,56 @@ function stopHookActive(
 	return stopActive;
 }
 
-function scopeFor(event: HookEvent): { readonly files: Array<string> } {
-	const paths = event.tool?.paths ?? [];
-	return { files: [...paths].sort() };
+// SPEC §4.3.2 + §4.7: the L1 hook scope is the one tool call, not the
+// disk tree. Harness tool paths are absolute and usually name files that
+// do not exist yet, so scoping them for disk reads would fail closed on
+// every benign call. The proposed write content and the shell command
+// text ride the scope instead, for the L1 enforcers to judge, together
+// with the lexical write/read targets: the tool file paths plus the shell
+// redirection targets parsed from the command. Absolute targets resolve
+// lexically against the repo root; anything else stays as spelled. No
+// disk is read: target existence is never probed.
+function relativizeTarget(root: string, target: string): string {
+	const slashed = target.replace(/\\/g, "/");
+	const base = root.replace(/\\/g, "/").replace(/\/+$/, "");
+	if (slashed === base) {
+		return ".";
+	}
+	if (slashed.startsWith(`${base}/`)) {
+		return slashed.slice(base.length + 1);
+	}
+	return target;
+}
+
+function hookScope(event: HookEvent, root: string): Scope {
+	const tool = event.tool;
+	const targets = new Set<string>();
+	for (const raw of tool?.paths ?? []) {
+		targets.add(relativizeTarget(root, raw));
+	}
+	// SPEC §4.7.3 EC-8: shell redirection targets (`>`, `>>`, `tee`,
+	// `Out-File`, `cp`/`mv` destinations) are write targets too. The parse
+	// is lexical only (analyseShell never touches the disk); an
+	// unparseable command contributes no targets because the
+	// dangerous-shell enforcer already blocks it fail-closed (CDX-E306).
+	const command = tool?.command;
+	if (command !== undefined && command !== "") {
+		const parsed = analyseShell(command);
+		if (parsed.ok) {
+			for (const target of parsed.value.writeTargets) {
+				targets.add(relativizeTarget(root, target));
+			}
+		}
+	}
+	return {
+		files: [],
+		sessionId: event.sessionId,
+		...(tool?.proposedContent === undefined
+			? {}
+			: { proposedContent: tool.proposedContent }),
+		...(command === undefined ? {} : { shellCommand: command }),
+		...(targets.size === 0 ? {} : { proposedPaths: [...targets].sort() }),
+	};
 }
 
 // SPEC §4.19.3: any uncaught error blocks CDX-E901; the time limit blocks
@@ -388,7 +456,37 @@ async function runHookInner(
 	if (!effective.ok) {
 		return effective.reply;
 	}
-	const engine = createEngine([], {
+	const fsMade = await NodeFs.create({ root });
+	if (!fsMade.ok) {
+		return blockReply(adapter, "CDX-E801", fsMade.error.message);
+	}
+	if (request.loadEnforcers === undefined) {
+		return blockReply(
+			adapter,
+			"CDX-E901",
+			"the hook cannot evaluate without enforcers",
+		);
+	}
+	const ports: Ports = {
+		fs: fsMade.value,
+		proc: request.ports.proc,
+		net: request.ports.net,
+		clock: request.ports.clock,
+		git: new NodeGit(request.ports.proc, root),
+		env: hookEnv(request.ports.env),
+	};
+	const loaded = await request.loadEnforcers(
+		ports,
+		effective.value.config.packs.map((entry) => entry.id),
+	);
+	if (!loaded.ok) {
+		return blockReply(
+			adapter,
+			errorCodeOf(loaded.error, "CDX-E203"),
+			errorMessageOf(loaded.error),
+		);
+	}
+	const engine = createEngine(loaded.value, {
 		configHash: effective.value.configHash,
 		append: (verdict) => request.append(root, verdict),
 	});
@@ -398,7 +496,7 @@ async function runHookInner(
 	try {
 		const pending = engine.evaluate(
 			event.trigger,
-			{ files: scopeFor(event).files, sessionId: event.sessionId },
+			hookScope(event, root),
 			request.ports.clock.now(),
 		);
 		const verdict = await Promise.race([

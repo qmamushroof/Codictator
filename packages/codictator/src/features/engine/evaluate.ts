@@ -76,6 +76,17 @@ function makeVerdictId(
 		trigger,
 		files: [...scope.files].sort(),
 		sessionId: scope.sessionId,
+		// SPEC §4.3.6: the hook input is a verdict input, so the proposed
+		// tool content joins the id; two proposals never share an event.
+		...(scope.proposedContent === undefined
+			? {}
+			: { proposedContent: scope.proposedContent }),
+		...(scope.shellCommand === undefined
+			? {}
+			: { shellCommand: scope.shellCommand }),
+		...(scope.proposedPaths === undefined
+			? {}
+			: { proposedPaths: [...scope.proposedPaths].sort() }),
 		decision,
 		findings,
 		waiversApplied,

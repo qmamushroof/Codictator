@@ -58,6 +58,40 @@ export function extractShellSources(
 	return sources;
 }
 
+// SPEC §4.7.2: the L1 hook scope carries the shell command text itself.
+// An unparseable command blocks CDX-E306 fail-closed; every deny-class
+// match blocks with the command redacted, like the file sources below.
+function checkHookCommand(
+	binding: RuleBinding,
+	scope: CheckContext["scope"],
+): Array<Finding> {
+	const findings: Array<Finding> = [];
+	const command = scope.shellCommand;
+	if (command === undefined || command === "") {
+		return findings;
+	}
+	const parsed = analyseShell(command);
+	if (!parsed.ok) {
+		findings.push(
+			findingFor(binding, {
+				code: parsed.error.code,
+				message: "shell command in tool input is unparseable",
+				vars: { path: "tool input" },
+			}),
+		);
+		return findings;
+	}
+	for (const violation of matchDangerousShell(parsed.value)) {
+		findings.push(
+			findingFor(binding, {
+				message: `${violation.detail} in tool input: ${redactSecrets(violation.raw)}`,
+				vars: { path: "tool input" },
+			}),
+		);
+	}
+	return findings;
+}
+
 export function resolveDangerousShell(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -71,7 +105,7 @@ export function resolveDangerousShell(
 			kinds: binding.triggers,
 			budgetMs: decl.budgetMs,
 			check: async (ctx: CheckContext) => {
-				const findings: Array<Finding> = [];
+				const findings: Array<Finding> = checkHookCommand(binding, ctx.scope);
 				for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 					const loaded = await readLossyText(ports.fs, file);
 					if (!loaded.ok) {

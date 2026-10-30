@@ -23,6 +23,7 @@ import {
 	SystemClock,
 } from "../kernel/index.ts";
 import { COMMANDS, type Handler, USAGE } from "./commands.ts";
+import { loadEvalEnforcers } from "./evaluate.ts";
 import {
 	MIN_NODE_MAJOR,
 	nodeMajor,
@@ -119,6 +120,10 @@ async function invokeHookEvent(
 		cwd,
 		ports,
 		append,
+		// SPEC §4.19.3 step 5: the hook evaluates the same pack enforcers
+		// the verify path loads (core plus the configured builtin packs),
+		// resolved against the runtime's root-confined ports.
+		loadEnforcers: loadEvalEnforcers,
 	});
 	return emitReply(reply.stdout, reply.stderr, reply.exitCode);
 }

@@ -12,6 +12,7 @@ import {
 	supportedHarness,
 } from "../../../src/features/adapters/index.ts";
 import { createFakePorts } from "../../support/fake-ports.ts";
+import { createTempRepo } from "../../support/temp-repo.ts";
 
 function requestFor(over: Partial<HookRunRequest> = {}): HookRunRequest {
 	const { ports, proc } = createFakePorts();
@@ -117,4 +118,44 @@ test("[§4.19] hook blocks when the repo root is unreadable", async () => {
 	);
 	assert.equal(reply.exitCode, 0);
 	assert.ok(reply.stdout.length > 0);
+});
+
+test("[§4.19.3] hook without enforcers fails closed", async () => {
+	// The composition root injects the pack enforcer loader; a direct
+	// runHookEvent call without one never evaluates, so it blocks CDX-E901
+	// instead of allowing everything the empty engine would.
+	const repo = createTempRepo({
+		".codictator/config.json": JSON.stringify({
+			version: 1,
+			codictator: "0.0.0",
+			packs: [],
+			harnesses: ["muse-code"],
+		}),
+	});
+	try {
+		const { ports, proc } = createFakePorts();
+		proc.when(["git", "rev-parse", "--show-toplevel"], {
+			code: 0,
+			stdout: `${repo.dir}\n`,
+			stderr: "",
+			timedOut: false,
+			truncated: false,
+		});
+		const reply = await runHookEvent(
+			requestFor({
+				stdinText: JSON.stringify({
+					session_id: "session-1",
+					cwd: repo.dir,
+					tool_name: "read",
+					tool_input: { file_path: "/repo/a.ts" },
+				}),
+				cwd: repo.dir,
+				ports: { proc, net: ports.net, clock: ports.clock, env: ports.env },
+			}),
+		);
+		assert.equal(reply.exitCode, 0);
+		assert.match(reply.stdout, /CDX-E901/);
+	} finally {
+		repo.cleanup();
+	}
 });
