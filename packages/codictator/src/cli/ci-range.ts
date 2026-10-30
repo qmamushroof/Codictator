@@ -74,12 +74,12 @@ async function runCiGit(
 }
 
 // SPEC §4.15.1: the range comes from --base/--head (the §4.15.6
-// external-CI form), else GITHUB_EVENT_PATH (PR base SHA, or `before`
-// for pushes). Without either there is no change to judge: L4 runs the
-// repo-wide rules only (§4.3.2). The event file is read kernel-owned —
-// it lives outside the repo, past the confined Fs port — and a set but
-// unreadable event path fails closed instead of silently skipping the
-// change scope.
+// external-CI form), else GITHUB_EVENT_PATH (PR base and head SHAs, or
+// `before`/`after` for pushes). Without either there is no change to
+// judge: L4 runs the repo-wide rules only (§4.3.2). The event file is read
+// kernel-owned — it lives outside the repo, past the confined Fs port —
+// and a set but unreadable event path fails closed instead of silently
+// skipping the change scope.
 export async function resolveCiRange(
 	ports: CommandPorts,
 	flags: CiVerifyFlags,
@@ -106,15 +106,27 @@ export async function resolveCiRange(
 		} satisfies CdxError);
 	}
 	const body = parsed.value as {
-		readonly pull_request?: { readonly base?: { readonly sha?: unknown } };
+		readonly pull_request?: {
+			readonly base?: { readonly sha?: unknown };
+			readonly head?: { readonly sha?: unknown };
+		};
 		readonly before?: unknown;
 		readonly after?: unknown;
 	};
 	const prBase = body.pull_request?.base?.sha;
+	const prHead = body.pull_request?.head?.sha;
 	const after = body.after;
 	const base =
 		typeof prBase === "string" && prBase !== "" ? prBase : body.before;
-	const head = typeof after === "string" && after !== "" ? after : undefined;
+	// SPEC §4.15.7 EC-1: pull-request events carry no top-level `after`;
+	// the head rides on pull_request.head.sha instead. A push carries
+	// `after`, which wins when present.
+	let head: string | undefined;
+	if (typeof after === "string" && after !== "") {
+		head = after;
+	} else if (typeof prHead === "string" && prHead !== "") {
+		head = prHead;
+	}
 	if (typeof base !== "string" || base === "" || head === undefined) {
 		return err({
 			code: "CDX-E303",

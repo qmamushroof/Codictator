@@ -149,9 +149,14 @@ test("[§4.15] ci verify blocks a committed secret (L4)", async () => {
 		assert.equal(range.code, 1);
 		assert.ok(ruleIds(range.stdout).includes("core/no-secrets"));
 		const eventFile = path.join(repo.dir, "event.json");
+		// The pull-request event shape carries the head on
+		// pull_request.head.sha with no top-level `after` (SPEC §4.15.7
+		// EC-1); the push shape covered it via `after` before.
 		writeFileSync(
 			eventFile,
-			JSON.stringify({ pull_request: { base: { sha: base } }, after: head }),
+			JSON.stringify({
+				pull_request: { base: { sha: base }, head: { sha: head } },
+			}),
 		);
 		const evented = await cli(["--json", "ci", "verify"], repo.dir, {
 			GITHUB_EVENT_PATH: eventFile,
