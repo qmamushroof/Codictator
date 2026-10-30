@@ -177,7 +177,9 @@ test("[§5.6] code health judges markers and source spans", async () => {
 		context(["hot/sample.txt", "src/hot.ts"]),
 		{},
 	);
-	assert.equal(hot.length, 2);
+	// SPEC §6.1: complexity runs per function body, so the branchy top-level
+	// line with no function scores nothing; only the marker flags.
+	assert.equal(hot.length, 1);
 	const guard = resolveNoGuardRemoval(
 		makeDecl("code"),
 		makeRule("test/guard"),

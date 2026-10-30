@@ -11,7 +11,7 @@ import { promises as fsp } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { makeError } from "./errors.ts";
-import { confinePath } from "./fs-confine.ts";
+import { type ConfinedPath, Confiner } from "./fs-confine.ts";
 import {
 	encodingError,
 	ioError,
@@ -38,10 +38,12 @@ function isRootPath(real: string, root: string, tempRoot: string): boolean {
 export class NodeFs implements Fs {
 	private readonly root: string;
 	private readonly tempRoot: string;
+	private readonly confiner: Confiner;
 
 	private constructor(root: string, tempRoot: string) {
 		this.root = root;
 		this.tempRoot = tempRoot;
+		this.confiner = new Confiner(root, tempRoot);
 	}
 
 	static async create(options: NodeFsOptions = {}): Promise<Result<NodeFs>> {
@@ -78,6 +80,10 @@ export class NodeFs implements Fs {
 		}
 	}
 
+	private confine(input: string): Promise<Result<ConfinedPath>> {
+		return this.confiner.confine(input);
+	}
+
 	private loadFile(real: string, rel: string): Promise<Result<Uint8Array>> {
 		return fsp.readFile(real).then(
 			(data) =>
@@ -87,7 +93,7 @@ export class NodeFs implements Fs {
 	}
 
 	async read(input: string): Promise<Result<Uint8Array>> {
-		const confined = await confinePath(input, this.root, this.tempRoot);
+		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -95,7 +101,7 @@ export class NodeFs implements Fs {
 	}
 
 	async readText(input: string): Promise<Result<string>> {
-		const confined = await confinePath(input, this.root, this.tempRoot);
+		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -140,7 +146,8 @@ export class NodeFs implements Fs {
 	}
 
 	async write(input: string, content: Uint8Array): Promise<Result<void>> {
-		const confined = await confinePath(input, this.root, this.tempRoot);
+		this.confiner.clear();
+		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -151,7 +158,8 @@ export class NodeFs implements Fs {
 	}
 
 	async append(input: string, content: Uint8Array): Promise<Result<void>> {
-		const confined = await confinePath(input, this.root, this.tempRoot);
+		this.confiner.clear();
+		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -170,7 +178,7 @@ export class NodeFs implements Fs {
 	}
 
 	async stat(input: string): Promise<Result<FsStat>> {
-		const confined = await confinePath(input, this.root, this.tempRoot);
+		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -187,7 +195,7 @@ export class NodeFs implements Fs {
 	}
 
 	async list(dir: string): Promise<Result<Array<string>>> {
-		const confined = await confinePath(dir, this.root, this.tempRoot);
+		const confined = await this.confine(dir);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -221,7 +229,7 @@ export class NodeFs implements Fs {
 	}
 
 	async glob(pattern: string, dir: string): Promise<Result<Array<string>>> {
-		const confined = await confinePath(dir, this.root, this.tempRoot);
+		const confined = await this.confine(dir);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -243,7 +251,7 @@ export class NodeFs implements Fs {
 	}
 
 	async exists(input: string): Promise<Result<boolean>> {
-		const confined = await confinePath(input, this.root, this.tempRoot);
+		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -251,7 +259,7 @@ export class NodeFs implements Fs {
 	}
 
 	async realpath(input: string): Promise<Result<string>> {
-		const confined = await confinePath(input, this.root, this.tempRoot);
+		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
@@ -268,7 +276,8 @@ export class NodeFs implements Fs {
 	}
 
 	async remove(input: string): Promise<Result<void>> {
-		const confined = await confinePath(input, this.root, this.tempRoot);
+		this.confiner.clear();
+		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}

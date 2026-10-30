@@ -20,6 +20,19 @@
 				"additionalProperties": false
 			}
 		},
+		"helpers": {
+			"type": ["array", "null"],
+			"items": {
+				"type": "object",
+				"properties": {
+					"role": { "type": "string" },
+					"present": { "type": "boolean" },
+					"detail": { "type": "string" }
+				},
+				"required": ["role", "present"],
+				"additionalProperties": false
+			}
+		},
 		"events": { "type": "integer", "minimum": 0 },
 		"corrupt": { "type": "integer", "minimum": 0 },
 		"gap": { "type": "boolean" },

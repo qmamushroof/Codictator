@@ -47,7 +47,8 @@ export function resolveHistoryEntry(
 }
 
 // SPEC §5.8 core/history-append-only: an edit to a history file flags;
-// appending stays clean.
+// appending stays clean. The marker is a report line (`edited:` at the
+// line start), never a substring, so the guard's own source never flags.
 export function resolveHistoryAppendOnly(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -59,7 +60,7 @@ export function resolveHistoryAppendOnly(
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !text.includes("edited:")) {
+				if (text === undefined || !/^[ \t]*edited:/m.test(text)) {
 					continue;
 				}
 				findings.push(
@@ -137,7 +138,9 @@ export function resolveBugRegistry(
 }
 
 // SPEC §5.8 core/bug-rows-immutable: an edit to a closed bug row flags;
-// appending a note stays clean.
+// appending a note stays clean. The marker is a report line (`edited:`
+// at the line start), never a substring, so the guard's own source never
+// flags.
 export function resolveBugRowsImmutable(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -149,7 +152,7 @@ export function resolveBugRowsImmutable(
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !text.includes("edited:")) {
+				if (text === undefined || !/^[ \t]*edited:/m.test(text)) {
 					continue;
 				}
 				findings.push(

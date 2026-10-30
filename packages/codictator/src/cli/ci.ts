@@ -8,8 +8,10 @@ import {
 } from "../features/audit/index.ts";
 import {
 	checkCi,
+	type ProtectionRead,
 	planSweep,
 	qualifyBotChange,
+	readProtection,
 	renderWorkflow,
 } from "../features/ci/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
@@ -40,6 +42,13 @@ function isIntegrityFinding(finding: Finding): boolean {
 
 function isUnverifiableFinding(finding: Finding): boolean {
 	return /advise|cannot confirm|unreadable|unverified/i.test(finding.message);
+}
+
+// SPEC §8.2 + §4.15.1: ci verify exits per §8 — 0 on allow or advise only.
+// Advise findings are exactly the unverifiable ones the summary already
+// separates (unreadable protection, fork read-only); anything else blocks.
+export function ciVerifyExit(findings: ReadonlyArray<Finding>): number {
+	return findings.some((finding) => !isUnverifiableFinding(finding)) ? 1 : 0;
 }
 
 // SPEC §4.15.1 + §4.18.4: the wired CI summary for `ci verify`, in §4.18.4
@@ -93,10 +102,22 @@ async function ciVerify(
 	const repoName = root.replaceAll("\\", "/").split("/").pop() ?? "repo";
 	const workflow = renderWorkflow(repoName);
 	const shallow = await ports.value.fs.exists(".git/shallow");
+	const baseReachable = !(shallow.ok && shallow.value);
+	// SPEC §4.15.2: the live read runs only in Actions with a token, so
+	// local runs keep no protection evidence and degrade exactly as before.
+	let protection: ProtectionRead | undefined;
+	const inActions = ports.value.env.get("GITHUB_ACTIONS") === "true";
+	const token = ports.value.env.get("GITHUB_TOKEN");
+	if (inActions && token !== undefined && token !== "") {
+		protection = await readProtection(ports.value.net, ports.value.env);
+	}
 	const findings = checkCi(
 		{ trigger: "pre-tool", scope: { files: [] }, now, configHash },
 		workflow,
-		{ baseReachable: !(shallow.ok && shallow.value) },
+		{
+			baseReachable,
+			...(protection === undefined ? {} : { protection }),
+		},
 	);
 	const summary = ciSummaryFor(findings);
 	if (req.json) {
@@ -110,7 +131,7 @@ async function ciVerify(
 		}
 		printHuman(summary, req.quiet);
 	}
-	return findings.length === 0 ? ok(0) : ok(1);
+	return ok(ciVerifyExit(findings));
 }
 
 function ciSweep(req: CommandRequest): Result<number> {

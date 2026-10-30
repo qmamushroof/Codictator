@@ -4,19 +4,20 @@
 // stay quiet when the report carries no violation, so violating fixtures
 // flag and passing fixtures stay clean (SPEC §4.4.4).
 import type { Ports } from "../../../kernel/index.ts";
-import { ok, type Result } from "../../../kernel/index.ts";
+import { isFixturePath, ok, type Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import {
 	bindRule,
 	findingFor,
+	type RuleBinding,
 	selectFiles,
 	tunableStringList,
 } from "./binding.ts";
 import {
 	baseEnforcer,
-	limitOf,
+	isMarkerFile,
 	loadScopeText,
 	parseMarkerInt,
 	parseMarkers,
@@ -32,9 +33,19 @@ const ROOT_DOCS: ReadonlySet<string> = new Set([
 	"CODE_OF_CONDUCT.md",
 ]);
 
+// Doc rules judge markdown prose and the fixture measure reports. Other
+// files carry no doc signals; reading them only pays a parse for nothing
+// and invents findings from code identifiers (a doc count in `utf8Bytes`,
+// a link-shaped string in a test fake).
+export function isDocScopeFile(file: string): boolean {
+	return isMarkerFile(file) || file.toLowerCase().endsWith(".md");
+}
+
 // SPEC §5.10 core/doc-placement: a markdown file outside its placed
 // locations flags. Mirrors the records guard (SPEC §4.9.2); the rule's
-// allowedGlobs tunable adds locations.
+// allowedGlobs tunable adds locations. Fixture goldens document
+// themselves where CONVENTIONS places them (packages/codictator/fixtures,
+// SPEC §4.5.7), like the secret scanner's fixture skip.
 export function resolveDocPlacement(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -45,42 +56,49 @@ export function resolveDocPlacement(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (!file.endsWith(".md")) {
-					continue;
+				const found = placementFinding(binding, file, allowed);
+				if (found !== undefined) {
+					findings.push(found);
 				}
-				if (file === "docs/HISTORY.md" || file === "docs/BUGS.md") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `record folder needs no top-level file: ${file}`,
-							vars: { path: file },
-						}),
-					);
-					continue;
-				}
-				if (!file.includes("/") && ROOT_DOCS.has(file)) {
-					continue;
-				}
-				if (/^docs\/[^/]+\.md$/.test(file) || /^docs\/[^/]+\/.+/.test(file)) {
-					continue;
-				}
-				if (/^packages\/[^/]+\/README\.md$/.test(file)) {
-					continue;
-				}
-				if (allowed.some((glob) => file === glob)) {
-					continue;
-				}
-				findings.push(
-					findingFor(binding, {
-						path: file,
-						message: `doc outside its placed locations: ${file}`,
-						vars: { path: file },
-					}),
-				);
 			}
 			return findings;
 		}),
 	);
+}
+
+function placementFinding(
+	binding: RuleBinding,
+	file: string,
+	allowed: ReadonlyArray<string>,
+): Finding | undefined {
+	const outside = (message: string): Finding =>
+		findingFor(binding, {
+			path: file,
+			message,
+			vars: { path: file },
+		});
+	if (!file.endsWith(".md")) {
+		return undefined;
+	}
+	if (isFixturePath(file)) {
+		return undefined;
+	}
+	if (file === "docs/HISTORY.md" || file === "docs/BUGS.md") {
+		return outside(`record folder needs no top-level file: ${file}`);
+	}
+	if (!file.includes("/") && ROOT_DOCS.has(file)) {
+		return undefined;
+	}
+	if (/^docs\/[^/]+\.md$/.test(file) || /^docs\/[^/]+\/.+/.test(file)) {
+		return undefined;
+	}
+	if (/^packages\/[^/]+\/README\.md$/.test(file)) {
+		return undefined;
+	}
+	if (allowed.some((glob) => file === glob)) {
+		return undefined;
+	}
+	return outside(`doc outside its placed locations: ${file}`);
 }
 
 // SPEC §5.10 core/doc-one-level: a doc nested below docs/<NAME>/ flags.
@@ -94,6 +112,9 @@ export function resolveDocOneLevel(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+				if (!isDocScopeFile(file)) {
+					continue;
+				}
 				const text = await loadScopeText(ports, binding, file, findings);
 				if (text === undefined) {
 					continue;
@@ -127,6 +148,9 @@ export function resolveDocRouterLeaf(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+				if (!isDocScopeFile(file)) {
+					continue;
+				}
 				const text = await loadScopeText(ports, binding, file, findings);
 				if (text === undefined) {
 					continue;
@@ -146,146 +170,13 @@ export function resolveDocRouterLeaf(
 	);
 }
 
-// SPEC §5.10 core/doc-breadth: headings or folder counts over the tunable
-// limits flag.
-export function resolveDocBreadth(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	const binding = bindRule(rule);
-	const maxH2 = limitOf(binding, "maxH2", 15);
-	const maxFiles = limitOf(binding, "maxFilesPerFolder", 40);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				const markers = parseMarkers(text);
-				const headings = parseMarkerInt(markers, "h2");
-				const folderFiles = parseMarkerInt(markers, "files-in-folder");
-				if (
-					(headings !== undefined && headings > maxH2) ||
-					(folderFiles !== undefined && folderFiles > maxFiles)
-				) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `doc over the breadth limit in ${file}`,
-							vars: {
-								path: file,
-								limit: `${String(maxH2)}/${String(maxFiles)}`,
-							},
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
-}
-
-// SPEC §5.10 core/doc-density: long sentences or paragraphs flag.
-export function resolveDocDensity(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	const binding = bindRule(rule);
-	const maxWords = limitOf(binding, "maxSentenceWords", 40);
-	const maxSentences = limitOf(binding, "maxParagraphSentences", 6);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				const markers = parseMarkers(text);
-				const words = parseMarkerInt(markers, "sentence-words");
-				const sentences = parseMarkerInt(markers, "paragraph-sentences");
-				if (
-					(words !== undefined && words > maxWords) ||
-					(sentences !== undefined && sentences > maxSentences)
-				) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `doc over the density limit in ${file}`,
-							vars: {
-								path: file,
-								limit: `${String(maxWords)}/${String(maxSentences)}`,
-							},
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
-}
-
-// SPEC §5.10 core/doc-links-valid: a link that does not resolve flags.
-export function resolveDocLinksValid(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				if (/status:\s*404/.test(text)) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `doc link does not resolve in ${file}`,
-							vars: { path: file },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
-}
-
-// SPEC §5.10 core/doc-no-inline-changelog: an inline changelog flags.
-export function resolveDocNoInlineChangelog(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !/##\s*changelog/i.test(text)) {
-					continue;
-				}
-				findings.push(
-					findingFor(binding, {
-						path: file,
-						message: `inline changelog in ${file}`,
-						vars: { path: file },
-					}),
-				);
-			}
-			return findings;
-		}),
-	);
-}
+// SPEC §4.9.2 core/doc-no-corpus-counts: a corpus count flags. The
+// sentence shape is SPEC-owned: this/the corpus|repository|docs|spec|prd|
+// folder has|contains|holds|consists of N. Anything else — validation
+// numbers in history entries, SPEC citations, code identifiers — is not
+// a corpus count, so ad-hoc digit regexes must not stand in for it.
+const CORPUS_COUNT =
+	/\b(this|the)\s+(corpus|repository|repos|docs?|spec|prd|folder)\s+(has|contains|holds|consists of)\s+\d+/i;
 
 // SPEC §5.10 core/doc-no-corpus-counts: a corpus count flags.
 export function resolveDocNoCorpusCounts(
@@ -298,27 +189,36 @@ export function resolveDocNoCorpusCounts(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+				if (!isDocScopeFile(file)) {
+					continue;
+				}
 				const text = await loadScopeText(ports, binding, file, findings);
 				if (text === undefined || /no counts/i.test(text)) {
 					continue;
 				}
-				if (
-					/\d[\d,]*\s*(?:rules|tests|files|lines|bytes|docs|packages|modules)/i.test(
-						text,
-					)
-				) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `corpus count in ${file}`,
-							vars: { path: file },
-						}),
-					);
+				const found = corpusFinding(binding, file, text);
+				if (found !== undefined) {
+					findings.push(found);
 				}
 			}
 			return findings;
 		}),
 	);
+}
+
+function corpusFinding(
+	binding: RuleBinding,
+	file: string,
+	text: string,
+): Finding | undefined {
+	if (!CORPUS_COUNT.test(text)) {
+		return undefined;
+	}
+	return findingFor(binding, {
+		path: file,
+		message: `corpus count in ${file}`,
+		vars: { path: file },
+	});
 }
 
 // SPEC §5.10 core/doc-single-owner: a fact with two owners flags.
@@ -332,6 +232,9 @@ export function resolveDocSingleOwner(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+				if (!isDocScopeFile(file)) {
+					continue;
+				}
 				const text = await loadScopeText(ports, binding, file, findings);
 				if (text === undefined) {
 					continue;

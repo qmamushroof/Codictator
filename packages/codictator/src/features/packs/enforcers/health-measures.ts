@@ -12,7 +12,13 @@ import {
 	selectFiles,
 	tunableNumber,
 } from "./binding.ts";
-import { blankCode, blankComments } from "./health-lex.ts";
+import { blankCode } from "./health-lex.ts";
+import { extractLiteralSpecifiers } from "./health-lex-imports.ts";
+import {
+	isMarkerFile,
+	parseMarkerInt,
+	parseMarkers,
+} from "./health-markers.ts";
 
 function lineStartsFor(text: string): Array<number> {
 	const starts: Array<number> = [0];
@@ -25,33 +31,41 @@ function lineStartsFor(text: string): Array<number> {
 }
 
 function lineAtIndex(starts: ReadonlyArray<number>, index: number): number {
-	let line = 1;
-	for (let cursor = 0; cursor < starts.length; cursor += 1) {
-		if ((starts[cursor] ?? 0) > index) {
-			break;
+	let low = 0;
+	let high = starts.length - 1;
+	while (low < high) {
+		const mid = (low + high + 1) >> 1;
+		if ((starts[mid] ?? 0) <= index) {
+			low = mid;
+		} else {
+			high = mid - 1;
 		}
-		line = cursor + 1;
 	}
-	return line;
+	return low + 1;
 }
 
 // SPEC §6.1: 1 + `if`, `for`, `while`, `case`, `catch`, `&&`, `||`, `??`
-// and the ternary `?` (excluding `?.`, `??` and `?:`).
+// and the ternary `?` (excluding `?.`, `??` and `?:`). Patterns live at
+// module scope so the branch words they name never count as branches of
+// the function that applies them.
+const WORDS_PATTERN = /\b(if|for|while|case|catch)\b/g;
+const ANDS_PATTERN = /&&/g;
+const ORS_PATTERN = /\|\|/g;
+const NULLISH_PATTERN = /\?\?/g;
+const TERNARY_PATTERN = /\?(?![?.:])/g;
+
+function countMatches(blanked: string, pattern: RegExp): number {
+	return blanked.match(pattern)?.length ?? 0;
+}
+
 export function countCyclomatic(blanked: string): number {
-	const words = blanked.match(/\b(if|for|while|case|catch)\b/g) ?? [];
-	const ands = blanked.match(/&&/g) ?? [];
-	const ors = blanked.match(/\|\|/g) ?? [];
-	const nullish = blanked.match(/\?\?/g) ?? [];
+	const words = countMatches(blanked, WORDS_PATTERN);
+	const ands = countMatches(blanked, ANDS_PATTERN);
+	const ors = countMatches(blanked, ORS_PATTERN);
+	const nullish = countMatches(blanked, NULLISH_PATTERN);
 	const withoutNullish = blanked.split("??").join("  ");
-	const ternary = withoutNullish.match(/\?(?![?.:])/g) ?? [];
-	return (
-		1 +
-		words.length +
-		ands.length +
-		ors.length +
-		nullish.length +
-		ternary.length
-	);
+	const ternary = countMatches(withoutNullish, TERNARY_PATTERN);
+	return 1 + words + ands + ors + nullish + ternary;
 }
 
 function matchBrace(blanked: string, open: number): number {
@@ -77,61 +91,65 @@ export interface FunctionSpan {
 
 // SPEC §6.1: size by brace matching from `function`, method and arrow
 // starts. One span per body, judged on its own.
+// SPEC §6.1: size by brace matching from `function`, method and arrow-body
+// starts. One span per body; a body brace that closes on its own line is an
+// object literal or a default value, not a body, so the search skips it. An
+// arrow or function with no body brace after it is one line; an unbalanced
+// brace is skipped. Bodies on a later line are missed (biome formats bodies
+// same-line).
+function bodyBrace(
+	blanked: string,
+	starts: Array<number>,
+	from: number,
+): { open: number; close: number } | undefined {
+	const stop = blanked.indexOf("\n", from);
+	const limit = stop < 0 ? blanked.length : stop;
+	let open = blanked.indexOf("{", from);
+	while (open >= 0 && open < limit) {
+		const close = matchBrace(blanked, open);
+		if (close < 0) {
+			return undefined;
+		}
+		if (lineAtIndex(starts, close) > lineAtIndex(starts, open)) {
+			return { open, close };
+		}
+		open = blanked.indexOf("{", open + 1);
+	}
+	return undefined;
+}
+
 export function measureFunctionSpans(text: string): Array<FunctionSpan> {
 	const blanked = blankCode(text);
 	const starts = lineStartsFor(text);
-	const froms: Array<number> = [];
+	const froms: Array<{ index: number; arrow: boolean }> = [];
 	for (const match of blanked.matchAll(/\bfunction\b|=>/g)) {
-		froms.push(match.index ?? -1);
+		froms.push({ index: match.index ?? -1, arrow: match[0] === "=>" });
 	}
 	const spans: Array<FunctionSpan> = [];
 	for (const from of froms) {
-		if (from < 0) {
+		if (from.index < 0) {
 			continue;
 		}
-		const open = blanked.indexOf("{", from);
-		if (open < 0) {
-			spans.push({ line: lineAtIndex(starts, from), lines: 1 });
+		if (blanked.indexOf("{", from.index) < 0) {
+			spans.push({ line: lineAtIndex(starts, from.index), lines: 1 });
 			continue;
 		}
-		const close = matchBrace(blanked, open);
-		if (close < 0) {
+		const body = bodyBrace(blanked, starts, from.index);
+		if (body === undefined) {
+			// A braceless arrow is one logical line; an unbalanced
+			// `function` body is skipped instead (the self-test pins both).
+			if (from.arrow) {
+				spans.push({ line: lineAtIndex(starts, from.index), lines: 1 });
+			}
 			continue;
 		}
 		spans.push({
-			line: lineAtIndex(starts, from),
-			lines: lineAtIndex(starts, close) - lineAtIndex(starts, from) + 1,
+			line: lineAtIndex(starts, from.index),
+			lines:
+				lineAtIndex(starts, body.close) - lineAtIndex(starts, from.index) + 1,
 		});
 	}
 	return spans.sort((a, b) => a.line - b.line);
-}
-
-export function parseMarkers(text: string): Map<string, string> {
-	const markers = new Map<string, string>();
-	for (const line of text.split("\n")) {
-		const colon = line.indexOf(":");
-		if (colon < 0) {
-			continue;
-		}
-		const key = line.slice(0, colon).trim().toLowerCase();
-		const value = line.slice(colon + 1).trim();
-		if (key.length > 0) {
-			markers.set(key, value);
-		}
-	}
-	return markers;
-}
-
-export function parseMarkerInt(
-	markers: Map<string, string>,
-	key: string,
-): number | undefined {
-	const raw = markers.get(key);
-	if (raw === undefined) {
-		return undefined;
-	}
-	const parsed = Number.parseInt(raw, 10);
-	return Number.isInteger(parsed) ? parsed : undefined;
 }
 
 export async function loadScopeText(
@@ -161,8 +179,15 @@ export async function scopeMarkerTexts(
 > {
 	const out: Array<{ file: string; markers: Map<string, string> }> = [];
 	for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+		// Marker reports live in sample.txt fixtures; other files carry no
+		// markers, so reading them only pays a parse for nothing. Real
+		// files still surface read errors through loadScopeText callers
+		// that judge them.
+		if (!isMarkerFile(file)) {
+			continue;
+		}
 		const text = await loadScopeText(ports, binding, file, findings);
-		if (text === undefined || !isMarkerFile(file)) {
+		if (text === undefined) {
 			continue;
 		}
 		out.push({ file, markers: parseMarkers(text) });
@@ -203,13 +228,10 @@ const TS_EXTENSIONS: ReadonlyArray<string> = [
 	".cts",
 ];
 
+export { isMarkerFile, parseMarkerInt, parseMarkers };
 export function isTsFile(path: string): boolean {
 	const lowered = path.toLowerCase();
 	return TS_EXTENSIONS.some((extension) => lowered.endsWith(extension));
-}
-
-export function isMarkerFile(path: string): boolean {
-	return path === "sample.txt" || path.endsWith("/sample.txt");
 }
 
 export function exportedNamesOf(blanked: string): Array<string> {
@@ -252,15 +274,8 @@ export function isEntryFile(path: string): boolean {
 
 export function fileImportsTarget(importing: string, target: string): boolean {
 	const needle = baseNameOf(target);
-	const specs: Array<string> = [];
-	const blanked = blankComments(importing);
-	for (const match of blanked.matchAll(
-		/\b(?:from|import\s*\(|require\s*\(|import)\s*["']([^"']+)["']/g,
-	)) {
-		specs.push(match[1] ?? "");
-	}
-	return specs.some((spec) => {
-		const last = spec.split("/").pop() ?? "";
+	return extractLiteralSpecifiers(importing).some((ref) => {
+		const last = ref.spec.split("/").pop() ?? "";
 		const stem = last.replace(/\.(ts|tsx|js|jsx|mjs|cjs|mts|cts)$/, "");
 		return stem === needle;
 	});

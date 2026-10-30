@@ -8,7 +8,7 @@ import type { Ports } from "../../../kernel/index.ts";
 import { ok, parseJson, type Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
-import type { EnforcerDecl } from "../manifest.ts";
+import { type EnforcerDecl, isRecord } from "../manifest.ts";
 import { bindRule, findingFor, selectFiles } from "./binding.ts";
 import {
 	baseEnforcer,
@@ -111,6 +111,11 @@ export function resolveArchBoundaries(
 
 // SPEC §5.7 core/arch-public-entry: a deep import past the module entry
 // flags.
+// SPEC §5.7 core/arch-public-entry: a cross-module import targets the
+// public entry, never the internals. The report is an `import:` marker
+// line (the fixture measure report carries it); mere prose mentioning
+// internals — SPEC EC tables, test titles, the rule reason — is not a
+// deep import.
 export function resolveArchPublicEntry(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -122,7 +127,19 @@ export function resolveArchPublicEntry(
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !text.includes("internals")) {
+				if (text === undefined) {
+					continue;
+				}
+				const deep = [...text.matchAll(/^[ \t]*import:[ \t]*(\S+)/gm)].some(
+					(match) =>
+						(match[1] ?? "")
+							.split("/")
+							.some(
+								(segment) =>
+									segment === "internals" || segment.startsWith("internals."),
+							),
+				);
+				if (!deep) {
 					continue;
 				}
 				findings.push(
@@ -216,6 +233,31 @@ export function resolveArchModuleSize(
 }
 
 // SPEC §5.7 core/compiler-strict: a tsconfig without strict mode flags.
+//
+// TsconfigShape narrows the generic JSON value at the parse boundary so
+// the reads below use declared properties: an un-narrowed
+// Record<string, unknown> only allows bracket access, which the linter
+// rejects in favour of literal keys.
+type TsconfigShape = {
+	compilerOptions?: { strict?: unknown };
+};
+
+function isTsconfigShape(value: unknown): value is TsconfigShape {
+	if (!isRecord(value)) {
+		return false;
+	}
+	const { compilerOptions } = value;
+	return compilerOptions === undefined || isRecord(compilerOptions);
+}
+
+function isStrictTsconfig(text: string): boolean {
+	const parsed = parseJson(text);
+	if (!parsed.ok || !isTsconfigShape(parsed.value)) {
+		return false;
+	}
+	return parsed.value.compilerOptions?.strict === true;
+}
+
 export function resolveCompilerStrict(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -233,18 +275,7 @@ export function resolveCompilerStrict(
 				if (text === undefined) {
 					continue;
 				}
-				const parsed = parseJson(text);
-				const strict =
-					parsed.ok &&
-					typeof parsed.value === "object" &&
-					parsed.value !== null &&
-					"compilerOptions" in parsed.value &&
-					typeof parsed.value.compilerOptions === "object" &&
-					parsed.value.compilerOptions !== null &&
-					"strict" in parsed.value.compilerOptions
-						? parsed.value.compilerOptions.strict
-						: undefined;
-				if (strict !== true) {
+				if (!isStrictTsconfig(text)) {
 					findings.push(
 						findingFor(binding, {
 							path: file,

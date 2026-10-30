@@ -2,22 +2,6 @@
 // the manifest drift and blocks on findings; status renders the
 // agent-readable screen (or --json for the extension).
 import { parseArgs } from "node:util";
-import {
-	CLAUDE_CODE_CAPABILITIES,
-	CODEX_CAPABILITIES,
-	COPILOT_CAPABILITIES,
-	MUSE_CAPABILITIES,
-	OPENCODE_CAPABILITIES,
-	UNIVERSAL_CAPABILITIES,
-} from "../features/adapters/index.ts";
-import {
-	buildStatusJson,
-	buildStatusText,
-	type EventLogLine,
-	type HarnessStatus,
-	readEvents,
-} from "../features/audit/index.ts";
-import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { driftFindings } from "./drift.ts";
@@ -27,7 +11,6 @@ import {
 	fail,
 	loadRepoConfig,
 	needRoot,
-	portsFor,
 	printHuman,
 	printJson,
 	usageError,
@@ -40,34 +23,6 @@ export function printFinding(finding: Finding, quiet: boolean): void {
 			: `  ${finding.path}${finding.line === undefined ? "" : `:${finding.line}`}`;
 	printHuman(`${finding.ruleId}${where}  ${finding.message}`, quiet);
 	printHuman(`Do instead: ${finding.remediation}`, quiet);
-}
-
-// SPEC §4.18.1: the repo's event lines through caller-owned ports against
-// the logical root "." (the Fs port takes repo-relative paths only).
-export async function readLogEvents(
-	root: string,
-): Promise<
-	{ events: ReadonlyArray<EventLogLine>; corrupt: number } | undefined
-> {
-	const ports = await portsFor(root);
-	if (!ports.ok) {
-		return undefined;
-	}
-	const read = await readEvents(ports.value, ".");
-	return read.ok ? read.value : undefined;
-}
-
-function terseArgs(args: ReadonlyArray<string>, count: number): boolean {
-	try {
-		const parsed = parseArgs({
-			args: [...args],
-			options: {},
-			allowPositionals: true,
-		});
-		return parsed.positionals.length === count;
-	} catch {
-		return false;
-	}
 }
 
 const LAYERS: ReadonlySet<string> = new Set(["L1", "L2", "L3", "L4", "L5"]);
@@ -200,90 +155,4 @@ export async function handleVerify(
 	);
 }
 
-function harnessStates(observed: ReadonlySet<string>): Array<HarnessStatus> {
-	const declarations = [
-		MUSE_CAPABILITIES,
-		UNIVERSAL_CAPABILITIES,
-		CLAUDE_CODE_CAPABILITIES,
-		COPILOT_CAPABILITIES,
-		CODEX_CAPABILITIES,
-		OPENCODE_CAPABILITIES,
-	];
-	return declarations.map((candidate) => ({
-		harness: candidate.harness,
-		state: observed.has(candidate.harness)
-			? ("active" as const)
-			: ("unverified" as const),
-		layers: `L0:${candidate.layers.L0} L1:${candidate.layers.L1} L2:${candidate.layers.L2} L3:${candidate.layers.L3} L4:${candidate.layers.L4} L5:${candidate.layers.L5}`,
-	}));
-}
-
-interface StatusParts {
-	readonly events: ReadonlyArray<EventLogLine>;
-	readonly corrupt: number;
-	readonly observed: ReadonlySet<string>;
-	readonly packs: Record<string, string>;
-}
-
-async function collectStatusParts(root: string): Promise<StatusParts> {
-	const log = await readLogEvents(root);
-	const events = log?.events ?? [];
-	const observed = new Set(
-		events.map((event) => event.harness ?? "").filter((h) => h !== ""),
-	);
-	const packs: Record<string, string> = {};
-	const configured = await loadRepoConfig(root);
-	if (configured.ok) {
-		for (const pack of configured.value.effective.config.packs) {
-			packs[pack.id] =
-				typeof pack.version === "string" ? pack.version : "unpinned";
-		}
-	}
-	return { events, corrupt: log?.corrupt ?? 0, observed, packs };
-}
-
-// SPEC §4.18.3: one screen with engine, packs, harness states, task, waivers,
-// ratchet, deps, integrity, escalations and remediation progress.
-export async function handleStatus(
-	req: CommandRequest,
-): Promise<Result<number>> {
-	if (!terseArgs(req.args, 0)) {
-		return usageError("usage: codictator status");
-	}
-	const root = await needRoot(req);
-	if (typeof root !== "string") {
-		return root;
-	}
-	const ports = await portsFor(root);
-	if (!ports.ok) {
-		return fail(
-			"CDX-E903",
-			ports.error.message,
-			ports.error.remediation,
-			req.json,
-		);
-	}
-	const parts = await collectStatusParts(root);
-	const input = {
-		engineVersion: ENGINE_VERSION,
-		packs: parts.packs,
-		harnesses: harnessStates(parts.observed),
-		events: parts.events.length,
-		corrupt: parts.corrupt,
-		gap: parts.events.length === 0,
-		task: undefined,
-		waivers: undefined,
-		ratchet: undefined,
-		deps: undefined,
-		integrity: undefined,
-		escalations: undefined,
-		remediation: undefined,
-		now: ports.value.clock.now(),
-	};
-	if (req.json) {
-		printJson(buildStatusJson(input));
-	} else {
-		printHuman(buildStatusText(input), req.quiet);
-	}
-	return ok(0);
-}
+export { handleStatus, readLogEvents } from "./inspect-status.ts";

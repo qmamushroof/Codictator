@@ -9,11 +9,11 @@ import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import { bindRule, findingFor, selectFiles } from "./binding.ts";
+import { blankCode } from "./health-lex.ts";
 import {
 	baseEnforcer,
 	loadScopeText,
 	parseMarkers,
-	scopeMarkerTexts,
 } from "./health-measures.ts";
 
 function arrowPair(text: string): [number, number] | undefined {
@@ -65,7 +65,8 @@ const SKIP_PATTERN =
 	/(?:test|it|describe)\s*\.\s*(?:skip|only|todo)\s*\(|^\s*(?:xit|xdescribe|xtest|fit|fdescribe)\s*\(/m;
 
 // SPEC §5.5 core/no-skipped-tests: an added skip, only, todo or focus
-// marker flags.
+// marker flags. Skips inside strings and comments are vectors and prose,
+// not skipped tests, so the pattern runs on blanked code.
 export function resolveNoSkippedTests(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -77,7 +78,7 @@ export function resolveNoSkippedTests(
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !SKIP_PATTERN.test(text)) {
+				if (text === undefined || !SKIP_PATTERN.test(blankCode(text))) {
 					continue;
 				}
 				findings.push(
@@ -97,7 +98,9 @@ const SUPPRESSION_PATTERN =
 	/eslint-disable|biome-ignore|@ts-ignore|@ts-expect-error|istanbul ignore|c8 ignore|#pragma warning disable|SuppressMessage|noqa|type: ignore|pragma: no cover/;
 
 // SPEC §5.5 core/no-new-suppressions: an added lint, type or coverage
-// suppression flags.
+// suppression flags. The report is an `added:` marker line; bare words in
+// prose, vocabulary tables, pattern sources and test vectors are not
+// added suppressions.
 export function resolveNoNewSuppressions(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -109,7 +112,13 @@ export function resolveNoNewSuppressions(
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !SUPPRESSION_PATTERN.test(text)) {
+				if (text === undefined) {
+					continue;
+				}
+				const added = [...text.matchAll(/^[ \t]*added:[ \t]*(.+)$/gm)].some(
+					(match) => SUPPRESSION_PATTERN.test(match[1] ?? ""),
+				);
+				if (!added) {
 					continue;
 				}
 				findings.push(
@@ -205,7 +214,10 @@ const COMMAND_WEAKENERS = [
 ];
 
 // SPEC §5.5 core/test-command-intact: a weakened or narrowed test command
-// flags.
+// flags. The report is a `test:` marker line; substrings in prose, CI
+// docs and the guard's own source are not test commands.
+const NARROWED_FILE = /\.(ts|tsx|js|jsx|mjs|cjs|mts|cts|py|cs|go|rs)(?![\w])/;
+
 export function resolveTestCommandIntact(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -220,18 +232,26 @@ export function resolveTestCommandIntact(
 				if (text === undefined) {
 					continue;
 				}
-				if (
-					COMMAND_WEAKENERS.some((weakener) => text.includes(weakener)) ||
-					text.includes("one-file")
-				) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `test command weakened in ${file}`,
-							vars: { path: file },
-						}),
-					);
+				const weakened = [...text.matchAll(/^[ \t]*test:[ \t]*(.+)$/gm)].some(
+					(match) => {
+						const command = match[1] ?? "";
+						return (
+							COMMAND_WEAKENERS.some((weakener) =>
+								command.includes(weakener),
+							) || NARROWED_FILE.test(command)
+						);
+					},
+				);
+				if (!weakened) {
+					continue;
 				}
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `test command weakened in ${file}`,
+						vars: { path: file },
+					}),
+				);
 			}
 			return findings;
 		}),
@@ -263,81 +283,6 @@ export function resolveNoBaselineRaise(
 								path: file,
 								value: `${String(pair[0])} -> ${String(pair[1])}`,
 							},
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
-}
-
-// SPEC §4.14.2/§4.14.3 core/no-bypass: a commit that skips the hooks
-// (--no-verify) flags at L4. The L1 command shapes live in
-// integrity/matchCommand; the marker mirror answers from the case report.
-export function resolveNoBypass(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				if ((markers.get("commit") ?? "").includes("--no-verify")) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: "commit skips the hooks with --no-verify",
-							vars: { path: file },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
-}
-
-// SPEC §5.11 core/repo-hygiene: committed build output or caches flag. The
-// .gitattributes and root-allowlist reads stay in the integrity module;
-// the marker mirror judges only the reported committed paths, matched on
-// whole segments so src/dist-info stays quiet.
-const OUTPUT_DIR_PATTERN =
-	/(^|\/)(node_modules|dist|build|bin|obj|__pycache__|\.venv|coverage)(\/|$)/i;
-
-export function resolveRepoHygiene(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const committed = (markers.get("committed") ?? "")
-					.split(",")
-					.map((entry) => entry.trim())
-					.filter((entry) => entry !== "");
-				const bad = committed.find((entry) => OUTPUT_DIR_PATTERN.test(entry));
-				if (bad !== undefined) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `committed build output or cache: ${bad}`,
-							vars: { path: bad },
 						}),
 					);
 				}

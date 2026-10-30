@@ -45,6 +45,17 @@ function escapeFinding(
 	});
 }
 
+// A `write:` line inside code is object syntax (`write: "write",` in an
+// adapter capability table, `write: (chunk) => ...` in a fake), not a
+// tool target. Real targets are paths, so anything carrying code
+// characters is not a target at all and judges nothing; failing closed
+// stays for real targets that cannot resolve.
+const CODE_CHARS = /[-"'(){}[\];,=><|&$`]/;
+
+function isPathLike(target: string): boolean {
+	return !CODE_CHARS.test(target);
+}
+
 async function checkTarget(
 	ports: Ports,
 	binding: RuleBinding,
@@ -52,6 +63,9 @@ async function checkTarget(
 	target: string,
 	findings: Array<Finding>,
 ): Promise<void> {
+	if (!isPathLike(target)) {
+		return;
+	}
 	const rel = toRepoPath(target);
 	if (!rel.ok) {
 		findings.push(escapeFinding(binding, file, target));

@@ -16,11 +16,12 @@ import type { EnforcerDecl } from "../manifest.ts";
 import {
 	bindRule,
 	findingFor,
+	type RuleBinding,
 	readErrorFinding,
 	readLossyText,
 	selectFiles,
 } from "./binding.ts";
-import { blankComments } from "./health-lex.ts";
+import { extractLiteralSpecifiers } from "./health-lex-imports.ts";
 import { baseEnforcer, isTsFile } from "./health-measures.ts";
 
 // SPEC §6.4 EC-4: a built-in, never phantom. Mirrors the §6.1 supply list
@@ -93,19 +94,6 @@ function specBase(spec: string): string {
 		return spec.split("/", 2).join("/");
 	}
 	return spec.split("/", 1)[0] ?? "";
-}
-
-function extractSpecifiers(blanked: string): Array<string> {
-	const specs: Array<string> = [];
-	for (const match of blanked.matchAll(
-		/\b(?:from|import\s*\(|require\s*\(|import)\s*["']([^"']+)["']/g,
-	)) {
-		const spec = match[1] ?? "";
-		if (spec.length > 0) {
-			specs.push(spec);
-		}
-	}
-	return [...new Set(specs)].sort();
 }
 
 function parentDir(path: string): string {
@@ -221,39 +209,49 @@ export function resolveTsNoPhantomImport(
 						),
 					);
 				}
-				const lineStarts: Array<number> = [0];
-				for (let index = 0; index < loaded.value.text.length; index += 1) {
-					if (loaded.value.text.charAt(index) === "\n") {
-						lineStarts.push(index + 1);
-					}
-				}
-				for (const spec of extractSpecifiers(
-					blankComments(loaded.value.text),
+				// Import specifiers come from the lexer, never a regex, so
+				// specifiers inside strings, comments and fixture text never
+				// count; non-literal dynamics yield nothing to judge.
+				for (const found of phantomFindings(
+					binding,
+					file,
+					loaded.value.text,
+					declared.names,
 				)) {
-					if (isRelativeSpecifier(spec) || isBuiltinSpecifier(spec)) {
-						continue;
-					}
-					if (!declared.names.has(specBase(spec))) {
-						const at = loaded.value.text.indexOf(spec);
-						let line = 1;
-						for (const start of lineStarts) {
-							if (start > at) {
-								break;
-							}
-							line += 1;
-						}
-						findings.push(
-							findingFor(binding, {
-								path: file,
-								line,
-								message: `phantom import ${spec} in ${file}:${String(line)}`,
-								vars: { path: file, line: String(line), value: spec },
-							}),
-						);
-					}
+					findings.push(found);
 				}
 			}
 			return findings;
 		}),
 	);
+}
+
+function phantomFindings(
+	binding: RuleBinding,
+	file: string,
+	text: string,
+	declared: ReadonlySet<string>,
+): Array<Finding> {
+	const findings: Array<Finding> = [];
+	const seen = new Set<string>();
+	for (const { spec, line } of extractLiteralSpecifiers(text)) {
+		if (seen.has(spec)) {
+			continue;
+		}
+		seen.add(spec);
+		if (isRelativeSpecifier(spec) || isBuiltinSpecifier(spec)) {
+			continue;
+		}
+		if (!declared.has(specBase(spec))) {
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					line,
+					message: `phantom import ${spec} in ${file}:${String(line)}`,
+					vars: { path: file, line: String(line), value: spec },
+				}),
+			);
+		}
+	}
+	return findings;
 }

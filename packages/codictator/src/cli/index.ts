@@ -18,6 +18,7 @@ import {
 	NodeGit,
 	NodeNet,
 	NodeProc,
+	ok,
 	readStdinText,
 	SystemClock,
 } from "../kernel/index.ts";
@@ -26,6 +27,7 @@ import {
 	MIN_NODE_MAJOR,
 	nodeMajor,
 	nodeTooOldMessage,
+	printHuman,
 	usageError,
 } from "./shared.ts";
 
@@ -69,6 +71,58 @@ async function appendLine(
 	);
 }
 
+// The old-node rejection: a static block when the harness has one,
+// stderr plus exit 6 otherwise.
+function oldNodeExit(harness: string, version: string): number {
+	const staticReply =
+		harness === ""
+			? undefined
+			: staticBlock(harness, "CDX-E002", nodeTooOldMessage(version));
+	if (staticReply === undefined) {
+		process.stderr.write(`${nodeTooOldMessage(version)}\n`);
+		return 6;
+	}
+	return emitReply(
+		staticReply.stdout,
+		staticReply.stderr,
+		staticReply.exitCode,
+	);
+}
+
+// A failed stdin wait fails closed: a static block when the harness has
+// one, stderr plus exit 1 otherwise.
+function blockedStdinExit(
+	harness: string,
+	code: string,
+	message: string,
+): number {
+	const blocked = staticBlock(harness, code, message);
+	if (blocked === undefined) {
+		process.stderr.write(`${code} ${message}\n`);
+		return 1;
+	}
+	return emitReply(blocked.stdout, blocked.stderr, blocked.exitCode);
+}
+
+async function invokeHookEvent(
+	harness: string,
+	event: string,
+	stdinText: string,
+	cwd: string,
+	ports: HookBasePorts,
+	append: HookAppend,
+): Promise<number> {
+	const reply = await runHookEvent({
+		harness,
+		event,
+		stdinText,
+		cwd,
+		ports,
+		append,
+	});
+	return emitReply(reply.stdout, reply.stderr, reply.exitCode);
+}
+
 function basePorts(): HookBasePorts {
 	return {
 		proc: new NodeProc(),
@@ -98,32 +152,12 @@ export async function runHook(options: CliOptions): Promise<number> {
 	const event = options.argv[2] ?? "";
 	const version = options.nodeVersion ?? process.version;
 	if (nodeMajor(version) < MIN_NODE_MAJOR) {
-		const staticReply =
-			harness === ""
-				? undefined
-				: staticBlock(harness, "CDX-E002", nodeTooOldMessage(version));
-		if (staticReply === undefined) {
-			process.stderr.write(`${nodeTooOldMessage(version)}\n`);
-			return 6;
-		}
-		return emitReply(
-			staticReply.stdout,
-			staticReply.stderr,
-			staticReply.exitCode,
-		);
+		return oldNodeExit(harness, version);
 	}
 	const ports = basePorts();
 	const append: HookAppend = (root, line) => appendLine(root, line, ports);
 	if (!supportedHarness(harness)) {
-		const reply = await runHookEvent({
-			harness,
-			event,
-			stdinText: "",
-			cwd: options.cwd,
-			ports,
-			append,
-		});
-		return emitReply(reply.stdout, reply.stderr, reply.exitCode);
+		return invokeHookEvent(harness, event, "", options.cwd, ports, append);
 	}
 	let stdinText = options.stdinText;
 	if (stdinText === undefined) {
@@ -134,28 +168,11 @@ export async function runHook(options: CliOptions): Promise<number> {
 			hookBudgetMs(harness),
 		);
 		if (!stdin.ok) {
-			const blocked = staticBlock(
-				harness,
-				stdin.error.code,
-				stdin.error.message,
-			);
-			if (blocked === undefined) {
-				process.stderr.write(`${stdin.error.code} ${stdin.error.message}\n`);
-				return 1;
-			}
-			return emitReply(blocked.stdout, blocked.stderr, blocked.exitCode);
+			return blockedStdinExit(harness, stdin.error.code, stdin.error.message);
 		}
 		stdinText = stdin.value;
 	}
-	const reply = await runHookEvent({
-		harness,
-		event,
-		stdinText,
-		cwd: options.cwd,
-		ports,
-		append,
-	});
-	return emitReply(reply.stdout, reply.stderr, reply.exitCode);
+	return invokeHookEvent(harness, event, stdinText, options.cwd, ports, append);
 }
 
 // The command table and usage live in commands.ts; dispatch below routes
@@ -164,6 +181,7 @@ interface Globals {
 	json: boolean;
 	quiet: boolean;
 	cwd: string;
+	help: boolean;
 	rest: Array<string>;
 }
 
@@ -173,6 +191,7 @@ function scanGlobals(
 ): Globals | undefined {
 	let json = false;
 	let quiet = false;
+	let help = false;
 	let override: string | undefined;
 	const rest: Array<string> = [];
 	for (let index = 0; index < argv.length; index += 1) {
@@ -181,6 +200,8 @@ function scanGlobals(
 			json = true;
 		} else if (token === "--quiet") {
 			quiet = true;
+		} else if (token === "--help" || token === "-h") {
+			help = true;
 		} else if (token === "--cwd") {
 			const next = argv[index + 1];
 			if (next === undefined) {
@@ -194,7 +215,7 @@ function scanGlobals(
 			rest.push(token);
 		}
 	}
-	return { json, quiet, cwd: override ?? cwd, rest };
+	return { json, quiet, cwd: override ?? cwd, help, rest };
 }
 
 // SPEC §4.19 + §8.2: the command entry. The node floor fails as CDX-E002
@@ -214,7 +235,14 @@ async function runCommandImpl(options: {
 		});
 	}
 	const globals = scanGlobals(options.argv, options.cwd);
-	if (globals === undefined || globals.rest.length === 0) {
+	if (globals === undefined) {
+		return usageError(USAGE);
+	}
+	if (globals.help) {
+		printHuman(USAGE, globals.quiet);
+		return ok(0);
+	}
+	if (globals.rest.length === 0) {
 		return usageError(USAGE);
 	}
 	const [command, ...args] = globals.rest as [string, ...Array<string>];

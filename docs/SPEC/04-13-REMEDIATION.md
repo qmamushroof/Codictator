@@ -7,8 +7,8 @@ Brownfield adoption and the step-by-step, never-breaking removal of everything u
 ## 4.13.1 Adoption sequence (`codictator init`)
 
 1. Detect languages, harnesses, structure, bots, CI host; propose packs, profile, module map, smoke command; the human confirms.
-2. Generate guardrails (§4.5, §4.15) and the manifest (§4.14).
-3. **Capture the baseline** (`.codictator/baseline.json`, §7.6) for every rule marked ratchet-capable in §5–§6, including stale-but-safe dependencies (`core/dep-latest-stable` keys `ecosystem:name`).
+2. Generate guardrails (§4.5, §4.15) and the manifest (§4.14): packs from `--pack` (each built-in at the engine version), helper tools from `--tool <role>=<command>@<pin>` (the role, binary and exact pin from the human's registry lookup), and the §3.3 module map when the repo is Codictator itself.
+3. **Capture the baseline** (`.codictator/baseline.json`, §7.6) for every rule marked ratchet-capable in §5–§6, including stale-but-safe dependencies (`core/dep-latest-stable` keys `ecosystem:name`). On a greenfield repo with no findings the capture is the empty baseline; an existing baseline is never overwritten.
 4. **Immediate floor remediation** of items needing no human decision (PRD §7.8): range → exact pin at the lockfile-resolved version (no version change); vulnerable or deprecated dependency with a fix in the same major. Each runs as a mechanical step (§4.13.4).
 5. Build the remediation plan (§4.13.2) and run the first `verify`.
 

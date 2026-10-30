@@ -18,10 +18,20 @@ export interface HarnessStatus {
 	readonly layers: string;
 }
 
+// SPEC §4.18.3 + §4.6.6: one helper tool per required role. `present`
+// means config.tools declares the role at an exact pin; `detail` names the
+// declared binary and pin.
+export interface HelperStatus {
+	readonly role: string;
+	readonly present: boolean;
+	readonly detail?: string | undefined;
+}
+
 export interface StatusInput {
 	readonly engineVersion: string;
 	readonly packs: Readonly<Record<string, string>>;
 	readonly harnesses: ReadonlyArray<HarnessStatus>;
+	readonly helpers?: ReadonlyArray<HelperStatus> | undefined;
 	readonly events: number;
 	readonly corrupt: number;
 	readonly gap: boolean;
@@ -35,8 +45,23 @@ export interface StatusInput {
 	readonly now: string;
 }
 
-// SPEC §4.18.3: one screen with engine, packs, harness states, task, waivers,
-// ratchet, deps, integrity, escalations and remediation progress.
+// SPEC §4.6.6: every required role renders present with its binary and
+// pin, or missing; no required roles reads "none declared".
+function helpersLine(helpers: ReadonlyArray<HelperStatus> | undefined): string {
+	if (helpers === undefined || helpers.length === 0) {
+		return "helpers: none declared";
+	}
+	const parts = helpers.map((helper) =>
+		helper.present
+			? `${helper.role} present${helper.detail === undefined ? "" : ` (${helper.detail})`}`
+			: `${helper.role} missing`,
+	);
+	return `helpers: ${parts.join(", ")}`;
+}
+
+// SPEC §4.18.3: one screen with engine, packs, harness states, helper
+// tools, task, waivers, ratchet, deps, integrity, escalations and
+// remediation progress.
 export function buildStatusText(input: StatusInput): string {
 	const packs = Object.entries(input.packs)
 		.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
@@ -49,6 +74,7 @@ export function buildStatusText(input: StatusInput): string {
 	for (const harness of input.harnesses) {
 		lines.push(`- ${harness.harness}: ${harness.state} (${harness.layers})`);
 	}
+	lines.push(helpersLine(input.helpers));
 	lines.push(`task: ${input.task ?? "none active"}`);
 	lines.push(`waivers: ${input.waivers ?? "none in force"}`);
 	lines.push(`ratchet: ${input.ratchet ?? "no baseline history"}`);
@@ -68,6 +94,10 @@ export function buildStatusJson(input: StatusInput): unknown {
 		engineVersion: input.engineVersion,
 		packs: { ...input.packs },
 		harnesses: input.harnesses.map((harness) => ({ ...harness })),
+		helpers:
+			input.helpers === undefined
+				? null
+				: input.helpers.map((helper) => ({ ...helper })),
 		events: input.events,
 		corrupt: input.corrupt,
 		gap: input.gap,

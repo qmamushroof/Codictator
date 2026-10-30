@@ -117,3 +117,34 @@ export async function confinePath(
 	}
 	return ok({ real, rel: rel.value });
 }
+
+// Per-port confinement cache: one verify evaluation pays the case-fold,
+// nearest-existing and realpath chain once per path instead of once per
+// op, which is what pushed wide evaluations past every guard budget
+// (CDX-E902). The cache lives on the owning port (cleared on write,
+// append and remove, the only tree changes the port can see), never as
+// module state, and shares nothing across evaluations.
+export class Confiner {
+	private readonly cached = new Map<string, Promise<Result<ConfinedPath>>>();
+	private readonly rootDir: string;
+	private readonly tempDir: string;
+
+	constructor(rootDir: string, tempDir: string) {
+		this.rootDir = rootDir;
+		this.tempDir = tempDir;
+	}
+
+	confine(input: string): Promise<Result<ConfinedPath>> {
+		const hit = this.cached.get(input);
+		if (hit !== undefined) {
+			return hit;
+		}
+		const pending = confinePath(input, this.rootDir, this.tempDir);
+		this.cached.set(input, pending);
+		return pending;
+	}
+
+	clear(): void {
+		this.cached.clear();
+	}
+}

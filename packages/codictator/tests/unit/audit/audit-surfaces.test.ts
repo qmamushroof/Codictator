@@ -116,6 +116,42 @@ test("[§4.18.3] status json mirrors the status input as data", () => {
 	assert.equal(json.now, FIXED_INSTANT);
 });
 
+test("[§4.18.3] status text names helper presence per required role", () => {
+	// SPEC §4.18.3 + §4.6.6: present helpers render with binary and pin;
+	// missing roles render missing; no roles reads none declared.
+	const text = buildStatusText(
+		statusInput({
+			helpers: [
+				{ role: "knowledge-graph", present: true, detail: "lat 0.13.3" },
+				{ role: "token-saver", present: false },
+			],
+		}),
+	);
+	assert.ok(
+		text.includes(
+			"helpers: knowledge-graph present (lat 0.13.3), token-saver missing",
+		),
+	);
+	const bare = buildStatusText(statusInput());
+	assert.ok(bare.includes("helpers: none declared"));
+});
+
+test("[§4.18.3] status json carries helper presence per required role", () => {
+	// SPEC §4.18.3: the extension sees the same helper rows; absent reads null.
+	const json = buildStatusJson(
+		statusInput({
+			helpers: [
+				{ role: "knowledge-graph", present: true, detail: "lat 0.13.3" },
+			],
+		}),
+	) as { helpers: unknown };
+	assert.deepEqual(json.helpers, [
+		{ role: "knowledge-graph", present: true, detail: "lat 0.13.3" },
+	]);
+	const bare = buildStatusJson(statusInput()) as { helpers: unknown };
+	assert.equal(bare.helpers, null);
+});
+
 test("[§4.18.2] replay summary names verdict, inputs and rerun", () => {
 	// SPEC §4.18.2: a pack list sorts for determinism; an empty pack map
 	// reads "none"; a missing decision reads "observed".

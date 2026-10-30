@@ -3,7 +3,13 @@
 // rule id, triggers, scope globs, remediation template and tunable defaults
 // into the enforcer closure; per-kind config arrives through decl args.
 import type { CdxError, Fs, Result } from "../../../kernel/index.ts";
-import { err, globMatch, makeError, ok } from "../../../kernel/index.ts";
+import {
+	cachedLossyText,
+	err,
+	globMatch,
+	makeError,
+	ok,
+} from "../../../kernel/index.ts";
 import { type Finding, TRIGGERS, type Trigger } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import { field, isRecord } from "../manifest.ts";
@@ -23,6 +29,40 @@ function isTrigger(value: string): value is Trigger {
 		}
 	}
 	return false;
+}
+
+// SPEC §3.1 + §5.6: the size and placement rules treat test trees as
+// non-production code, so the size enforcers skip them. Lockfiles and
+// fixture data are generated or test vectors, governed by dep-lockfile and
+// the pack self-test instead.
+const TEST_PATH_GLOBS: ReadonlyArray<string> = [
+	"**/tests/**",
+	"**/test/**",
+	"**/__tests__/**",
+	"**/*.test.*",
+];
+
+const LOCKFILE_BASENAMES: ReadonlySet<string> = new Set([
+	"package-lock.json",
+	"pnpm-lock.yaml",
+	"yarn.lock",
+	"packages.lock.json",
+	"Cargo.lock",
+	"poetry.lock",
+	"uv.lock",
+	"Gemfile.lock",
+	"composer.lock",
+	"go.sum",
+]);
+
+export function isTestPath(path: string): boolean {
+	return TEST_PATH_GLOBS.some((glob) => globMatch(glob, path));
+}
+
+export function isLockfilePath(path: string): boolean {
+	const slash = path.replaceAll("\\", "/").lastIndexOf("/");
+	const base = slash < 0 ? path : path.slice(slash + 1);
+	return LOCKFILE_BASENAMES.has(base);
 }
 
 // SPEC §4.4.3 step 4: the binding keeps the rule's own triggers, scope and
@@ -138,22 +178,14 @@ export function readErrorFinding(
 
 // One port read for every parametric kind: bytes for sizes, lossy text for
 // patterns. Lossy decoding never fails on binary input, so only I/O errors
-// fail closed; determinism comes from the port, never the content.
+// fail closed; determinism comes from the port, never the content. The
+// decode is shared per evaluation through the kernel cache (SPEC §4.3.6),
+// so N guards over one file pay one read and one decode, not N of each.
 export async function readLossyText(
 	fs: Fs,
 	path: string,
 ): Promise<Result<{ readonly bytes: number; readonly text: string }>> {
-	const loaded = await fs.read(path);
-	if (!loaded.ok) {
-		return { ok: false, error: loaded.error };
-	}
-	return {
-		ok: true,
-		value: {
-			bytes: loaded.value.length,
-			text: new TextDecoder("utf-8", { fatal: false }).decode(loaded.value),
-		},
-	};
+	return cachedLossyText(fs, path);
 }
 
 // Shared pack-author arg narrowing: every kind takes an args object, and
