@@ -6,7 +6,13 @@
 // writes it with kernel-owned host I/O and blocks fail-closed when the file
 // is unreadable.
 import { strict as assert } from "node:assert";
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+	chmodSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
