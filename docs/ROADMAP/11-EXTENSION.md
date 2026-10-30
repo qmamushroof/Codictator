@@ -11,7 +11,7 @@
 
 ## Steps
 
-- [ ] **11.1** `serve --stdio`: JSON-RPC methods of SPEC §7.15, `events/appended` notifications, the human-only answer for `run`. Verify: §4.19 EC-9, EC-10.
+- [x] **11.1** `serve --stdio`: JSON-RPC methods of SPEC §7.15, `events/appended` notifications, the human-only answer for `run`. Verify: §4.19 EC-9, EC-10.
 - [ ] **11.2** Extension shape: the CommonJS shim and ESM main, activation, the trust requirement, one server per workspace folder, version handshake, setup welcome for repos without Codictator (SPEC §4.20.1). Verify: §4.20 EC-9; unit tests with the fake `vscode` API.
 - [ ] **11.3** Active rules, Violations and Timeline views; diagnostics with rule ids; L2 verify on save (SPEC §4.20.2). Verify: §4.20 EC-1, EC-5, EC-8.
 - [ ] **11.4** Palette commands through `run`, with human-only commands opening a pre-filled terminal (SPEC §4.20.3). Verify: §4.20 EC-7.
