@@ -111,3 +111,8 @@ After compaction or in a new session, treat any summary as unverified.
 ## Multi-agent work
 
 Roles are SPEC §4.12.6. Parallel work uses one branch per task, and one agent writes to a branch at a time. A reviewer session is never one that authored the task.
+- Parallelize read-only subtasks freely — discovery, reviews of different branches, independent code questions, per-leg CI triage — with as many focused agents as needed; zero coordination overhead (see [Orchestration](#orchestration)).
+- Writers run in parallel only on disjoint file globs with separate branches/worktrees and a declared merge order (see [Tasks and branches](#tasks-and-branches)).
+- Shared choke files (`red-ledger.json`, `pack.json`, SPEC leaves, `HISTORY`, roadmap ticks) serialize: delist/edit only own titles, rebase before landing; reviewers stay fresh per [5. Review](#5-review).
+- Briefing overhead is not zero: each worker re-loads shared context, so briefs stay narrow — only the SPEC leaves and globs that worker needs (see [Orchestration](#orchestration)).
+- With narrow briefs, disjoint globs, no shared edits and merge-order-free work, marginal cost per extra worker is ≈ its own task tokens; use as many focused workers as needed, bounded by harness limits (max concurrent sessions, CPU for parallel suites, disk per worktree).
