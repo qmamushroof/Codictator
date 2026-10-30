@@ -1,7 +1,7 @@
 {
   "artifacts": [
     {
-      "hash": "77b22d4b2737550c9d3655f6431907bcd69cd2d943e1e5894dbdd9fa093062d6",
+      "hash": "4dd5a4bab32ab719eeca6b8e7b733e534651bd2e7b72a2e1dfe116f7cbe8756a",
       "mode": "file",
       "owner": "codictator",
       "path": ".codictator/bin/run.mjs"
@@ -50,7 +50,7 @@
     }
   ],
   "codictator": "0.0.0",
-  "hash": "8a13e1c7c59afe665c7186635f0064bcd4e7faba159d8694c99b1c0b92d717e8",
+  "hash": "71248df93dccae915094b3dbf20ee887512c825ae56ef361fde64a8ea42a3abf",
   "version": 1
 }
 

@@ -26,6 +26,10 @@ export interface VerifyScope {
 	readonly trigger: Trigger;
 	readonly files: ReadonlyArray<string>;
 	readonly note: string;
+	// SPEC §4.7.1: hook and CI scopes judge content that is not (only) on
+	// disk — the staged diff, the pushed diff, the commit messages in range.
+	// It rides the same redactSecrets scan as files via the tool-input path.
+	readonly proposedContent?: string;
 }
 
 // SPEC §4.3.2: the layer flag selects the trigger family. L1 and L2 are
@@ -274,7 +278,12 @@ export async function evaluateScope(
 	const engine = createEngine(loaded.value, { configHash });
 	const verdict = await engine.evaluate(
 		scope.trigger,
-		{ files: [...scope.files] },
+		{
+			files: [...scope.files],
+			...(scope.proposedContent === undefined || scope.proposedContent === ""
+				? {}
+				: { proposedContent: scope.proposedContent }),
+		},
 		now,
 	);
 	return ok([...verdict.findings]);

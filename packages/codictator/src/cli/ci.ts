@@ -3,10 +3,6 @@
 // reads are unavailable; sweep plans the single codictator/sweep PR.
 import { parseArgs } from "node:util";
 import {
-	buildCiSummary,
-	type CiSummaryInput,
-} from "../features/audit/index.ts";
-import {
 	checkCi,
 	type ProtectionRead,
 	planSweep,
@@ -16,6 +12,14 @@ import {
 } from "../features/ci/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
+import {
+	ciPackIds,
+	parseCiVerifyFlags,
+	rangeMessages,
+	resolveCiRange,
+} from "./ci-range.ts";
+import { ciSummaryFor, isUnverifiableFinding } from "./ci-summary.ts";
+import { evaluateScope, resolveVerifyScope } from "./evaluate.ts";
 import { printFinding } from "./inspect.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
@@ -28,22 +32,6 @@ import {
 	usageError,
 } from "./shared.ts";
 
-// SPEC §4.18.4: one finding as one summary line; the remediation rides along
-// so the summary stays actionable without the findings list.
-function summaryLine(finding: Finding): string {
-	return `${finding.ruleId}: ${finding.message} Do instead: ${finding.remediation}`;
-}
-
-function isIntegrityFinding(finding: Finding): boolean {
-	return (
-		finding.ruleId.includes("manifest") || finding.ruleId.includes("integrity")
-	);
-}
-
-function isUnverifiableFinding(finding: Finding): boolean {
-	return /advise|cannot confirm|unreadable|unverified/i.test(finding.message);
-}
-
 // SPEC §8.2 + §4.15.1: ci verify exits per §8 — 0 on allow or advise only.
 // Advise findings are exactly the unverifiable ones the summary already
 // separates (unreadable protection, fork read-only); anything else blocks.
@@ -51,44 +39,20 @@ export function ciVerifyExit(findings: ReadonlyArray<Finding>): number {
 	return findings.some((finding) => !isUnverifiableFinding(finding)) ? 1 : 0;
 }
 
-// SPEC §4.15.1 + §4.18.4: the wired CI summary for `ci verify`, in §4.18.4
-// order (integrity, blocking with remediation, then unverifiable). Past
-// 60 KB buildCiSummary collapses to counts with the command to see all.
-function ciSummaryFor(findings: ReadonlyArray<Finding>): string {
-	const integrity: Array<string> = [];
-	const blocking: Array<string> = [];
-	const unverifiable: Array<string> = [];
-	for (const finding of findings) {
-		const line = summaryLine(finding);
-		if (isIntegrityFinding(finding)) {
-			integrity.push(line);
-		} else if (isUnverifiableFinding(finding)) {
-			unverifiable.push(line);
-		} else {
-			blocking.push(line);
-		}
-	}
-	const input: CiSummaryInput = {
-		integrity,
-		blocking,
-		exceptions: [],
-		waivers: [],
-		deps: [],
-		remediation: [],
-		unverifiable,
-		command: "codictator ci verify",
-	};
-	return buildCiSummary(input);
-}
-
+// The verify change scope (flags, event path, commit messages) lives in
+// ci-range.ts and the summary shaping in ci-summary.ts; ciVerify only
+// folds its findings into the verdict.
 async function ciVerify(
 	req: CommandRequest,
 	root: string,
 	configHash: string,
 	now: string,
 ): Promise<Result<number>> {
-	if (req.args.length !== 1) {
-		return usageError("usage: codictator ci verify");
+	const flags = parseCiVerifyFlags(req.args.slice(1));
+	if (flags === undefined) {
+		return usageError(
+			"usage: codictator ci verify [--base <sha> --head <sha>]",
+		);
 	}
 	const ports = await portsFor(root);
 	if (!ports.ok) {
@@ -111,7 +75,7 @@ async function ciVerify(
 	if (inActions && token !== undefined && token !== "") {
 		protection = await readProtection(ports.value.net, ports.value.env);
 	}
-	const findings = checkCi(
+	const checks = checkCi(
 		{ trigger: "pre-tool", scope: { files: [] }, now, configHash },
 		workflow,
 		{
@@ -119,6 +83,70 @@ async function ciVerify(
 			...(protection === undefined ? {} : { protection }),
 		},
 	);
+	// SPEC §4.3.2 + §4.15.1 + §4.7.1: L4 is a superset of every local
+	// layer, so ci verify also evaluates the enforcers over the change:
+	// the base..head diff plus every commit message in range. Without a
+	// range there is no change to judge, so the repo-wide rules judge
+	// alone, exactly as before. A committed secret in range blocks here,
+	// not just at L3.
+	const ranged = await resolveCiRange(ports.value, flags);
+	if (!ranged.ok) {
+		return fail(
+			ranged.error.code,
+			ranged.error.message,
+			ranged.error.remediation,
+			req.json,
+		);
+	}
+	let evaluated: ReadonlyArray<Finding> = [];
+	if (ranged.value !== undefined) {
+		const scoped = await resolveVerifyScope(ports.value, {
+			staged: false,
+			all: false,
+			base: ranged.value.base,
+			head: ranged.value.head,
+			layer: "L4",
+		});
+		if (!scoped.ok) {
+			if (ciVerifyExit(checks) !== 0) {
+				// SPEC §4.15.7 EC-2: the base is unreachable, which already
+				// blocks via CDX-E503; the diff scope is unreachable too,
+				// so the checks verdict stands instead of erroring.
+			} else {
+				return fail(
+					scoped.error.code,
+					scoped.error.message,
+					scoped.error.remediation,
+					req.json,
+				);
+			}
+		} else {
+			const commitText = await rangeMessages(
+				ports.value,
+				ranged.value.base,
+				ranged.value.head,
+			);
+			const judged = await evaluateScope(
+				ports.value,
+				await ciPackIds(root),
+				commitText === ""
+					? scoped.value
+					: { ...scoped.value, proposedContent: commitText },
+				now,
+				configHash,
+			);
+			if (!judged.ok) {
+				return fail(
+					judged.error.code,
+					judged.error.message,
+					judged.error.remediation,
+					req.json,
+				);
+			}
+			evaluated = judged.value;
+		}
+	}
+	const findings = [...checks, ...evaluated];
 	const summary = ciSummaryFor(findings);
 	if (req.json) {
 		printJson({ findings, summary });

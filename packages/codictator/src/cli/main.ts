@@ -3,6 +3,7 @@
 // goes through the command table, whose printed output is already emitted
 // and whose Result maps to the §8.2 exit.
 import { isEntryModule } from "../kernel/index.ts";
+import { handleGitHook } from "./git-hook.ts";
 import { runCommand, runHook } from "./index.ts";
 import { exitFor } from "./shared.ts";
 
@@ -17,6 +18,23 @@ export async function main(
 ): Promise<number> {
 	if (argv[0] === "hook") {
 		return runHook({ argv, cwd });
+	}
+	// SPEC §4.14.4: installed git hooks exec the launcher as
+	// `run.mjs git <hook>`; the `git` word enters the git-hook runtime,
+	// whose exit code gates the commit or push like a harness reply.
+	if (argv[0] === "git") {
+		const result = await handleGitHook({
+			args: argv.slice(1),
+			json: false,
+			quiet: false,
+			cwd,
+			nodeVersion: undefined,
+			stdinText: undefined,
+		});
+		if (result.ok) {
+			return result.value;
+		}
+		return exitFor(result.error.code);
 	}
 	if (argv[0] === undefined) {
 		return usageError();
