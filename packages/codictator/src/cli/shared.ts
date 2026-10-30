@@ -148,7 +148,10 @@ export interface CommandPorts extends Ports {
 	readonly root: string;
 }
 
-export async function portsFor(root: string): Promise<Result<CommandPorts>> {
+export async function portsFor(
+	root: string,
+	env: Env = commandEnv(),
+): Promise<Result<CommandPorts>> {
 	const made = await NodeFs.create({ root });
 	if (!made.ok) {
 		return err(made.error);
@@ -160,7 +163,7 @@ export async function portsFor(root: string): Promise<Result<CommandPorts>> {
 		net: new NodeNet(),
 		clock: new SystemClock(),
 		git: new NodeGit(proc, root),
-		env: commandEnv(),
+		env,
 		root,
 	});
 }
@@ -232,8 +235,9 @@ export async function writeStateText(
 // pattern). Throws become Results carrying their SPEC row.
 export async function loadRepoConfig(
 	root: string,
+	env: Env = commandEnv(),
 ): Promise<Result<{ ports: CommandPorts; effective: EffectiveConfig }>> {
-	const ports = await portsFor(root);
+	const ports = await portsFor(root, env);
 	if (!ports.ok) {
 		return err(ports.error);
 	}

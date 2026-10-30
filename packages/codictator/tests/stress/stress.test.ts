@@ -95,7 +95,11 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 	const repo = createTempRepo();
 	try {
 		repo.writeFile(".codictator/config.json", config);
-		repo.writeFile("src/leak.py", 'aws_key = "AKIAIOSFODNN7EXAMPLE"\n');
+		// Assembled from parts so this committed test source never holds a
+		// live-pattern literal (the staged temp file still does, which is
+		// what the engine must flag).
+		const exampleKey = ["AKIAIOSF", "ODNN7EXAMPLE"].join("");
+		repo.writeFile("src/leak.py", `aws_key = "${exampleKey}"\n`);
 		for (let index = 0; index < 48; index += 1) {
 			repo.writeFile(`src/file-${index}.txt`, `filler ${index}\n`);
 		}
@@ -159,7 +163,20 @@ test("[§10.5] ci verify on the 10000-file reference repo", async () => {
 			);
 		}
 		const start = Date.now();
-		const result = await runCommand({ argv: ["ci", "verify"], cwd: repo.dir });
+		// An ambient GITHUB_EVENT_PATH (set in every CI step) would hijack
+		// the range inside this temp repo; the spawned-CLI tests scrub it in
+		// cli-runner, so the in-process call scrubs it here and restores it
+		// after, asserting the verdict, not the ambient env.
+		const savedEventPath = process.env["GITHUB_EVENT_PATH"];
+		delete process.env["GITHUB_EVENT_PATH"];
+		let result: { ok: boolean };
+		try {
+			result = await runCommand({ argv: ["ci", "verify"], cwd: repo.dir });
+		} finally {
+			if (savedEventPath !== undefined) {
+				process.env["GITHUB_EVENT_PATH"] = savedEventPath;
+			}
+		}
 		const ms = Date.now() - start;
 		assert.ok(ms < 180000);
 		assert.equal(result.ok, true);

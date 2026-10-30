@@ -35,12 +35,20 @@ export function builtCliPath(): string {
 
 export function runNodeScript(options: NodeRunOptions): Promise<CliResult> {
 	return new Promise((resolve) => {
+		// The CI event payload describes the outer CI run, never a temp
+		// repo under test. An ambient GITHUB_EVENT_PATH (set in every CI
+		// step) would hijack `ci verify`'s range inside fixture repos, so
+		// the runner scrubs it unless the case sets it explicitly.
+		const inherited = { ...process.env };
+		if (options.env?.["GITHUB_EVENT_PATH"] === undefined) {
+			delete inherited["GITHUB_EVENT_PATH"];
+		}
 		const child = execFile(
 			process.execPath,
 			[...options.nodeArgs],
 			{
 				cwd: options.cwd ?? process.cwd(),
-				env: { ...process.env, ...options.env },
+				env: { ...inherited, ...options.env },
 				timeout: options.timeoutMs ?? 30_000,
 				maxBuffer: 10 * 1024 * 1024,
 				encoding: "utf8",
