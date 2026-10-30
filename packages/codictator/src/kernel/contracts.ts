@@ -28,6 +28,16 @@ export interface CheckContext {
 export interface Scope {
 	readonly files: ReadonlyArray<string>;
 	readonly sessionId?: string;
+	// SPEC §4.3.2 + §4.7: the L1 hook scope is the one tool call, not the
+	// disk tree. The hook runtime threads the proposed write content and
+	// the shell command text here, plus the lexical write/read targets
+	// (tool file paths and shell redirection targets, relativized against
+	// the repo root); L1 enforcers judge them alongside the disk files,
+	// while L3/L4 scopes leave them unset and read the disk. Targets are
+	// lexical only and are never read from disk.
+	readonly proposedContent?: string;
+	readonly shellCommand?: string;
+	readonly proposedPaths?: ReadonlyArray<string>;
 }
 
 export interface Finding {

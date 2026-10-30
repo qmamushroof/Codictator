@@ -15,6 +15,7 @@ import type {
 	Enforcer,
 	Finding,
 	Fs,
+	Ports,
 	Result,
 	Trigger,
 } from "../kernel/index.ts";
@@ -225,15 +226,13 @@ function sharedReads(inner: Fs): Fs {
 
 // SPEC §4.4.2: the core pack is always loaded; language packs join from
 // config.packs order. A config that names core does not load it twice.
-// Every pack resolves against the root-confined ports with one shared read
-// cache, so scope files read repo-relatively (§4.1.1) exactly once per run.
-export async function evaluateScope(
-	ports: CommandPorts,
+// Every pack resolves against the caller's ports; the verify caller shares
+// one read cache across them, so scope files read repo-relatively (§4.1.1)
+// exactly once per run.
+export async function loadEvalEnforcers(
+	ports: Ports,
 	packIds: ReadonlyArray<string>,
-	scope: VerifyScope,
-	now: string,
-	configHash: string,
-): Promise<Result<Array<Finding>>> {
+): Promise<Result<Array<Enforcer>>> {
 	const core = await loadBuiltinPack("core");
 	if (!core.ok) {
 		return err(core.error);
@@ -249,16 +248,30 @@ export async function evaluateScope(
 		}
 		manifests.push(loaded.value.manifest);
 	}
-	const cached: CommandPorts = { ...ports, fs: sharedReads(ports.fs) };
 	const enforcers: Array<Enforcer> = [];
 	for (const manifest of manifests) {
-		const resolved = resolveManifestEnforcers(manifest, cached);
+		const resolved = resolveManifestEnforcers(manifest, ports);
 		if (!resolved.ok) {
 			return err(resolved.error);
 		}
 		enforcers.push(...resolved.value);
 	}
-	const engine = createEngine(enforcers, { configHash });
+	return ok(enforcers);
+}
+
+export async function evaluateScope(
+	ports: CommandPorts,
+	packIds: ReadonlyArray<string>,
+	scope: VerifyScope,
+	now: string,
+	configHash: string,
+): Promise<Result<Array<Finding>>> {
+	const cached: CommandPorts = { ...ports, fs: sharedReads(ports.fs) };
+	const loaded = await loadEvalEnforcers(cached, packIds);
+	if (!loaded.ok) {
+		return err(loaded.error);
+	}
+	const engine = createEngine(loaded.value, { configHash });
 	const verdict = await engine.evaluate(
 		scope.trigger,
 		{ files: [...scope.files] },

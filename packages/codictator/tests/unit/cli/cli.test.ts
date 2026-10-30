@@ -112,7 +112,15 @@ test("[§4.19 EC-7] effective-config cache stale after waiver edit", async () =>
 				"utf8",
 			),
 		) as { payload: Record<string, unknown> };
-		const stdinText = JSON.stringify({ ...golden.payload, cwd: repo.dir });
+		const stdinText = JSON.stringify({
+			...(golden.payload as Record<string, unknown>),
+			cwd: repo.dir,
+			tool_input: {
+				...((golden.payload as unknown as { tool_input?: unknown })
+					.tool_input as Record<string, unknown>),
+				file_path: path.join(repo.dir, "src", "index.ts"),
+			},
+		});
 		const first = await runHook({
 			argv: ["hook", "muse-code", "PreToolUse"],
 			cwd: repo.dir,

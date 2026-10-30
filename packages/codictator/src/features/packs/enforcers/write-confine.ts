@@ -92,6 +92,36 @@ async function checkTarget(
 	}
 }
 
+// SPEC §4.7.3 L1: the hook scope carries lexical write targets (the
+// tool file path and shell redirection targets), never disk files.
+// They judge without a single disk read: realpath on a not-yet-existing
+// file would fail benign writes closed, so only the lexical escape
+// (EC-1/EC-2 shape) and the .git guard apply. Anything needing the
+// filesystem (symlink escapes, EC-9) stays a disk-scope concern.
+function checkProposedTarget(
+	binding: RuleBinding,
+	target: string,
+	findings: Array<Finding>,
+): void {
+	if (!isPathLike(target)) {
+		return;
+	}
+	const rel = toRepoPath(target);
+	if (!rel.ok) {
+		findings.push(escapeFinding(binding, "tool input", target));
+		return;
+	}
+	if (isGitDirPath(rel.value)) {
+		findings.push(
+			findingFor(binding, {
+				path: "tool input",
+				message: `write target inside .git/ is only allowed through git: ${target}`,
+				vars: { path: "tool input" },
+			}),
+		);
+	}
+}
+
 export function resolveWriteConfinement(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -133,6 +163,12 @@ export function resolveWriteConfinement(
 					for (const target of [...targets].sort()) {
 						await checkTarget(ports, binding, file, target, findings);
 					}
+				}
+				// L1 hook targets are lexical only: no disk read, so benign
+				// writes to not-yet-existing files stay allowed while lexical
+				// escapes (EC-8 shape) still block.
+				for (const target of [...(ctx.scope.proposedPaths ?? [])].sort()) {
+					checkProposedTarget(binding, target, findings);
 				}
 				return findings;
 			},

@@ -70,6 +70,7 @@ import {
 export {
 	type HookAppend,
 	type HookBasePorts,
+	type HookEnforcerLoader,
 	type HookRunRequest,
 	hookBudgetMs,
 	runHookEvent,

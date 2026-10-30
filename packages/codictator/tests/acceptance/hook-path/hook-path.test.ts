@@ -128,7 +128,41 @@ function readPayload(
 	if (typeof payload !== "object" || payload === null) {
 		throw new Error("golden payload is not an object");
 	}
-	return { ...payload, cwd };
+	return relocateGoldenPaths({ ...payload, cwd }, cwd) as Record<
+		string,
+		unknown
+	>;
+}
+
+// The golden fixtures were captured against /repo while the temp repo
+// lives elsewhere. Real harnesses send in-repo tool paths, so relocate
+// the golden absolute tool paths under the temp cwd: now that L1 enforces
+// write confinement on the write target, an outside-root path must block
+// instead of allowing.
+function relocateGoldenPaths(value: unknown, cwd: string): unknown {
+	if (Array.isArray(value)) {
+		return value.map((entry) => relocateGoldenPaths(entry, cwd));
+	}
+	if (typeof value === "object" && value !== null) {
+		const out: Record<string, unknown> = {};
+		for (const [key, entry] of Object.entries(value)) {
+			if (
+				(key === "file_path" ||
+					key === "filePath" ||
+					key === "path" ||
+					key === "file" ||
+					key === "filename") &&
+				typeof entry === "string" &&
+				entry.startsWith("/repo/")
+			) {
+				out[key] = path.join(cwd, entry.slice("/repo/".length));
+			} else {
+				out[key] = relocateGoldenPaths(entry, cwd);
+			}
+		}
+		return out;
+	}
+	return value;
 }
 
 function lastEventLine(repo: TempRepo): {
@@ -392,6 +426,147 @@ test("[§4.19.3] hook path outside a Codictator repo allows silently", async () 
 		assert.equal(
 			result.stdout,
 			"{}",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+	} finally {
+		repo.cleanup();
+	}
+});
+
+test("[§4.7 EC-2] hook L1 blocks a proposed hard-coded key in a write", async () => {
+	// Dogfood probe: the L1 hook evaluates the proposed write content, so
+	// a sk-dogfood key blocks with core/no-secrets before anything lands.
+	// The key joins at runtime, so the committed source never carries the
+	// whole secret-shaped vector (SPEC §4.7 EC-4).
+	const repo = createTempRepo();
+	try {
+		installHookPath(repo, { config: true, engine: true });
+		const payload = readPayload(
+			"muse-code",
+			"1.4.10",
+			"pre-tool-use.json",
+			repo.dir,
+		);
+		const dogfoodKey = ["sk-dogfood-", "0123456789abcdef01"].join("");
+		const proposed = {
+			...payload,
+			tool_input: {
+				file_path: path.join(repo.dir, "src", "keys.ts"),
+				content: `const key = "${dogfoodKey}";\n`,
+			},
+		};
+		const result = await runHook(
+			repo,
+			"muse-code",
+			"PreToolUse",
+			proposed,
+			repo.dir,
+		);
+		assert.equal(
+			result.status,
+			0,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		const reply: unknown = JSON.parse(result.stdout);
+		if (
+			typeof reply !== "object" ||
+			reply === null ||
+			!("hookSpecificOutput" in reply)
+		) {
+			throw new Error("reply is not an object");
+		}
+		const specific = reply.hookSpecificOutput;
+		if (
+			typeof specific !== "object" ||
+			specific === null ||
+			!("permissionDecision" in specific) ||
+			!("permissionDecisionReason" in specific)
+		) {
+			throw new Error("hookSpecificOutput is not an object");
+		}
+		assert.equal(
+			specific.permissionDecision,
+			"deny",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.match(
+			String(specific.permissionDecisionReason ?? ""),
+			/core\/no-secrets/,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		const verdict = lastEventLine(repo);
+		assert.equal(
+			verdict.decision,
+			"block",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.equal(
+			verdict.trigger,
+			"pre-tool",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+	} finally {
+		repo.cleanup();
+	}
+});
+
+test("[§4.7.2] hook L1 blocks shell destruction outside the repo root", async () => {
+	// The L1 hook evaluates the shell command text, so rm -rf / blocks
+	// with core/dangerous-shell before the harness runs it.
+	const repo = createTempRepo();
+	try {
+		installHookPath(repo, { config: true, engine: true });
+		const payload = readPayload(
+			"opencode",
+			"1.19.4",
+			"tool-execute-before.json",
+			repo.dir,
+		);
+		const shell = {
+			...payload,
+			tool: "bash",
+			args: { command: "rm -rf /" },
+		};
+		const result = await runHook(
+			repo,
+			"opencode",
+			"tool.execute.before",
+			shell,
+			repo.dir,
+		);
+		assert.equal(
+			result.status,
+			0,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		const reply: unknown = JSON.parse(result.stdout);
+		if (
+			typeof reply !== "object" ||
+			reply === null ||
+			!("decision" in reply) ||
+			!("message" in reply)
+		) {
+			throw new Error("reply is not an object");
+		}
+		assert.equal(
+			reply.decision,
+			"block",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.match(
+			String(reply.message ?? ""),
+			/core\/dangerous-shell/,
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		const verdict = lastEventLine(repo);
+		assert.equal(
+			verdict.decision,
+			"block",
+			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
+		);
+		assert.equal(
+			verdict.trigger,
+			"pre-tool",
 			`stderr: ${result.stderr} stdout-len: ${result.stdout.length}`,
 		);
 	} finally {

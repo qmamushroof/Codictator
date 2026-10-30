@@ -21,6 +21,7 @@ export type {
 	Trigger,
 } from "./contracts.ts";
 export { TRIGGERS } from "./contracts.ts";
+export { isEntryModule } from "./entry.ts";
 export { NodeEnv } from "./env.ts";
 export type { CdxError } from "./errors.ts";
 export { makeError } from "./errors.ts";
