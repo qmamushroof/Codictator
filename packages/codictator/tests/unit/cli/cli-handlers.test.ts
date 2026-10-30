@@ -91,11 +91,16 @@ test("[§4.15] ci verify with extra args is a usage error", async () => {
 
 test("[§4.15] ci verify json carries the CI summary", async () => {
 	// SPEC §4.15.1 + §4.18.4: the verify decision ships with the wired
-	// CI summary in §4.18.4 order.
+	// CI summary in §4.18.4 order. Integrity exception IE-10-civerify-exit
+	// (rule core/no-assertion-loss, path
+	// packages/codictator/tests/unit/cli/cli-handlers.test.ts, reason: the
+	// temp repo yields advise-only findings (unreadable protection), which
+	// exit 0 per SPEC §8.2 "Pass (allow or advise only)" + §4.15.1 "exits
+	// per §8"; the old assertion pinned the pre-read findings.length rule).
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		const ran = await cli(["--json", "ci", "verify"], repo.dir);
-		assert.equal(ran.code, 1);
+		assert.equal(ran.code, 0);
 		const body = jsonOut(ran.stdout) as {
 			findings: Array<{ ruleId: string }>;
 			summary: string;
@@ -619,12 +624,17 @@ test("[§4.15] ci record-bot-change with a positional is a usage error", async (
 
 test("[§4.15] ci verify resolves the config hash", async () => {
 	// SPEC §4.15.1: with a readable config the verify decision carries
-	// its hash.
+	// its hash. Integrity exception IE-10-civerify-exit (rule
+	// core/no-assertion-loss, path
+	// packages/codictator/tests/unit/cli/cli-handlers.test.ts, reason: the
+	// temp repo yields advise-only findings (unreadable protection), which
+	// exit 0 per SPEC §8.2 "Pass (allow or advise only)" + §4.15.1 "exits
+	// per §8"; the old assertion pinned the pre-read findings.length rule).
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		seedConfig(repo);
 		const ran = await cli(["--json", "ci", "verify"], repo.dir);
-		assert.equal(ran.code, 1);
+		assert.equal(ran.code, 0);
 		const body = jsonOut(ran.stdout) as { summary: string };
 		assert.ok(body.summary.includes("# codictator CI summary"));
 	} finally {

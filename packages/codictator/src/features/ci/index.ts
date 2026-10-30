@@ -16,6 +16,7 @@ import {
 	type ProtectionRead,
 	resolveBaseRef,
 } from "./protection.ts";
+import { readProtection } from "./protection-read.ts";
 import {
 	type CiWorkflow,
 	FALLBACK_PINS,
@@ -42,6 +43,7 @@ export {
 	FALLBACK_PINS,
 	planSweep,
 	qualifyBotChange,
+	readProtection,
 	resolveBaseRef,
 	scheduleCronFor,
 };
