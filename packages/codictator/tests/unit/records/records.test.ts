@@ -138,7 +138,7 @@ test("[§4.9 EC-7] long sentence inside a table cell ignored", async () => {
 	assert.equal(findings.length, 0);
 });
 
-const HISTORY_BASE = `# History — 2026-10
+const HISTORY_BASE = `# History — 2026-10-05
 
 ## 2026-10-05 · first commit
 - **Kind:** docs
@@ -151,7 +151,7 @@ test("[§4.9 EC-8] history entry edited after commit blocks", async () => {
 	// SPEC §4.9.5 EC-8: block core/history-append-only.
 	const head = HISTORY_BASE.replace("why text", "rewritten why");
 	const findings = await checkHistory(
-		ctxFor(["docs/HISTORY/2026-10.md"]),
+		ctxFor(["docs/HISTORY/2026-10-05.md"]),
 		head,
 		HISTORY_BASE,
 	);
@@ -171,7 +171,7 @@ test("[§4.9 EC-9] commit with no history entry blocks", async () => {
 test("[§4.9 EC-10] two entries in one commit blocks", async () => {
 	// SPEC §4.9.5 EC-10: one commit, one entry.
 	const findings = await checkHistory(
-		ctxFor(["docs/HISTORY/2026-10.md"]),
+		ctxFor(["docs/HISTORY/2026-10-05.md"]),
 		"two entries",
 	);
 	assert.ok(findings.length > 0);
@@ -180,7 +180,7 @@ test("[§4.9 EC-10] two entries in one commit blocks", async () => {
 test("[§4.9 EC-11] amended subject after entry is caught", async () => {
 	// SPEC §4.9.5 EC-11: L3 compares at commit-msg time.
 	const findings = await checkHistory(
-		ctxFor(["docs/HISTORY/2026-10.md"]),
+		ctxFor(["docs/HISTORY/2026-10-05.md"]),
 		"Subject: amended\n",
 	);
 	assert.ok(findings.length > 0);
@@ -230,19 +230,19 @@ const ROLLOVER_ENTRY = `## 2026-11-02 · rollover entry
 - **Docs:** none
 `;
 
-test("[§4.9 EC-14] month rollover opens a new file", async () => {
-	// SPEC §4.9.5 EC-14: new month file; old file untouched.
+test("[§4.9 EC-14] day rollover opens a new file", async () => {
+	// SPEC §4.9.5 EC-14: new day file; old file untouched.
 	const findings = await checkHistory(
-		ctxFor(["docs/HISTORY/2026-11.md"]),
+		ctxFor(["docs/HISTORY/2026-11-02.md"]),
 		ROLLOVER_ENTRY,
 	);
 	assert.equal(findings.length, 0);
 });
 
-test("[§4.9 EC-15] CRLF history passes prefix check", async () => {
+test("[§4.9 EC-15] CRLF history passes suffix/prepend check", async () => {
 	// SPEC §4.9.5 EC-15: normalised text passes when only endings differ.
 	const findings = await checkHistory(
-		ctxFor(["docs/HISTORY/2026-10.md"]),
+		ctxFor(["docs/HISTORY/2026-11-02.md"]),
 		ROLLOVER_ENTRY.replace(/\n/g, "\r\n"),
 	);
 	assert.equal(findings.length, 0);
@@ -251,7 +251,7 @@ test("[§4.9 EC-15] CRLF history passes prefix check", async () => {
 test("[§4.9 EC-16] squash landing three entries blocks", async () => {
 	// SPEC §4.9.5 EC-16: one commit one entry; branch protection already blocked squash.
 	const findings = await checkHistory(
-		ctxFor(["docs/HISTORY/2026-10.md"]),
+		ctxFor(["docs/HISTORY/2026-10-05.md"]),
 		"three entries",
 	);
 	assert.ok(findings.length > 0);
@@ -260,7 +260,7 @@ test("[§4.9 EC-16] squash landing three entries blocks", async () => {
 test("[§4.9 EC-17] license readme history entry is docs kind", async () => {
 	// SPEC §4.9.5 EC-17: Kind docs; Docs lists LICENSE and README.md.
 	const findings = await checkHistory(
-		ctxFor(["LICENSE", "README.md", "docs/HISTORY/2026-10.md"]),
+		ctxFor(["LICENSE", "README.md", "docs/HISTORY/2026-10-06.md"]),
 		`## 2026-10-06 · license entry
 - **Kind:** docs
 - **Task:** T-0003
@@ -274,7 +274,7 @@ test("[§4.9 EC-17] license readme history entry is docs kind", async () => {
 test("[§4.9 EC-18] gitignore plus source is code kind", async () => {
 	// SPEC §4.9.5 EC-18: mixed docs and code gives code.
 	const findings = await checkHistory(
-		ctxFor([".gitignore", "src/a.ts", "docs/HISTORY/2026-10.md"]),
+		ctxFor([".gitignore", "src/a.ts", "docs/HISTORY/2026-10-07.md"]),
 		`## 2026-10-07 · ignore entry
 - **Kind:** code
 - **Task:** T-0004
@@ -290,7 +290,7 @@ test("[§4.9 EC-18] gitignore plus source is code kind", async () => {
 test("[§4.9 EC-19] lone open bug row is docs kind none", async () => {
 	// SPEC §4.9.5 EC-19: Kind docs, Docs none.
 	const findings = await checkHistory(
-		ctxFor(["docs/BUGS/2026.md", "docs/HISTORY/2026-10.md"]),
+		ctxFor(["docs/BUGS/2026.md", "docs/HISTORY/2026-10-08.md"]),
 		`## 2026-10-08 · registry entry
 - **Kind:** docs
 - **Task:** T-0005

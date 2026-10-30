@@ -110,12 +110,20 @@ function appendHistoryEntry(
 	date: string,
 	entry: string,
 ): string {
-	const month = date.slice(0, 7);
+	const day = date.slice(0, 10);
 	if (historyText === undefined || historyText.trim() === "") {
-		return `# History — ${month}\n\n${entry}\n`;
+		return `# History — ${day}\n\n${entry}\n`;
 	}
-	const base = historyText.endsWith("\n") ? historyText : `${historyText}\n`;
-	return `${base}\n${entry}\n`;
+	const endOfTitle = historyText.indexOf("\n");
+	if (endOfTitle < 0) {
+		return `${historyText}\n\n${entry}\n`;
+	}
+	const title = historyText.slice(0, endOfTitle);
+	const rest = historyText.slice(endOfTitle + 1).replace(/^\n+/, "");
+	if (rest === "") {
+		return `${title}\n\n${entry}\n`;
+	}
+	return `${title}\n\n${entry}\n\n${rest.endsWith("\n") ? rest : `${rest}\n`}`;
 }
 
 // SPEC §4.8.7: the PR holds the manifest edit, the regenerated lockfile and
@@ -152,7 +160,7 @@ export function planUpgradePr(input: UpgradePrInput): Result<UpgradePrPlan> {
 		input.advisoryIds ?? [],
 	);
 	const historyPath =
-		input.historyPath ?? `docs/HISTORY/${input.date.slice(0, 7)}.md`;
+		input.historyPath ?? `docs/HISTORY/${input.date.slice(0, 10)}.md`;
 	const files: Array<UpgradeFile> = [
 		{ path: input.manifestPath, text: bumped.value },
 		{

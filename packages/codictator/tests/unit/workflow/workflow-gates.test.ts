@@ -198,7 +198,7 @@ test("[§4.12] workflow write gate judges every phase class", async () => {
 		(
 			await checkWriteWithinPlan(
 				taskFor({ phase: "record" }),
-				["docs/HISTORY/2026-10.md"],
+				["docs/HISTORY/2026-10-05.md"],
 				"record",
 			)
 		).length,
