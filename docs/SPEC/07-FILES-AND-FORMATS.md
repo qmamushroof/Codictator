@@ -21,7 +21,7 @@ Owner of every file and wire format. Each JSON format ships a JSON Schema (2020-
 | `.codictator/state/` (events, sessions, markers, captures, `resume.md`) | no | runtime | §7.10 |
 | `.codictator/cache/` (effective config, graph, registry) | no | runtime | §7.12 |
 | `.githooks/*` or managed blocks in `.husky/*` | yes | `install-hooks` | §4.14.4 |
-| `docs/HISTORY/<YYYY-MM>[-n].md`, `docs/BUGS/<YYYY>[-n].md` | yes | agents via workflow; CI for bot PRs | §7.7 |
+| `docs/HISTORY/<YYYY-MM-DD>[-n].md`, `docs/BUGS/<YYYY>[-n].md` | yes | agents via workflow; CI for bot PRs | §7.7 |
 | Harness files (§4.5.4), `AGENTS.md` block, CI workflow, bot config keys | yes | `init`, `regen` | §4.5, §4.6.2, §4.15, §4.8.6 |
 
 `init` adds `.codictator/state/`, `.codictator/cache/`, `.codictator/tool/node_modules/` to `.gitignore` (manifest-owned entries).
@@ -79,7 +79,7 @@ Owner of every file and wire format. Each JSON format ships a JSON Schema (2020-
 
 ## 7.7 Record grammars
 
-**History file** `docs/HISTORY/<YYYY-MM>[-n].md`: the line `# History — <YYYY-MM>`, then one entry per commit in commit order, each preceded by a blank line. An entry is a heading and a field list in this order:
+**History file** `docs/HISTORY/<YYYY-MM-DD>[-n].md`: the line `# History — <YYYY-MM-DD>`, then one entry per commit, newest entry directly under the title, then in reverse-chronological commit order, each preceded by a blank line. An entry is a heading and a field list in this order:
 
 ```
 ## <YYYY-MM-DD> · <commit subject>

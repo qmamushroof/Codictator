@@ -16,7 +16,7 @@ Every Markdown file is classified by path, first match wins:
 | Leaf | `docs/<NAME>/*.md` | Name, navigation, size, breadth, density |
 | Single | Any other placed Markdown file | Size, breadth, density |
 
-Record folders have no router: their file names (`YYYY-MM`, `YYYY`) order them, so `core/doc-router-leaf` and leaf naming do not apply, and `docs/HISTORY.md` and `docs/BUGS.md` may not exist.
+Record folders have no router: their file names (`YYYY-MM-DD`, `YYYY`) order them, so `core/doc-router-leaf` and leaf naming do not apply, and `docs/HISTORY.md` and `docs/BUGS.md` may not exist.
 
 ## 4.9.2 Checks
 
@@ -39,7 +39,7 @@ Runs at L1 on `tool.post.write` of a `.md` file (that file plus link targets), L
 
 | Aspect | Specification |
 |---|---|
-| Where | `docs/HISTORY/<YYYY-MM>.md` for the commit's month; when an append would exceed `core/doc-size`, the next file is `<YYYY-MM>-2.md`, then `-3` |
+| Where | `docs/HISTORY/<YYYY-MM-DD>.md` for the commit's day (UTC); when an append would exceed `core/doc-size`, the next file is `<YYYY-MM-DD>-2.md`, then `-3` |
 | Unit | One entry per commit, added in that commit, whose `Subject` equals the commit subject |
 | Kind | Derived from the commit's paths after dropping record files (the entry itself, bug rows). Each remaining path takes the first matching class: `guardrail` (listed in the manifest, §4.14.1), `deps` (manifest, lockfile or toolchain file, §4.8.1), `docs` (non-record Markdown, or repo metadata without behaviour: `LICENSE*`, `NOTICE*`, `.gitattributes`, `.gitignore`, `.editorconfig`), else `code`. One class across all paths gives the kind; mixed classes give `code`. A commit touching only record files is `docs` |
 | Fields | Kind, Task and Why always; `code` adds What went wrong (`none` allowed), Trade-offs, Lessons; `docs` adds Docs (the touched non-record files, or `none`), which is the per-doc changelog; `deps` adds one Deps line per change; `guardrail` adds nothing. A fix commit adds Bug. Grammar §7.7 |
@@ -49,7 +49,7 @@ Runs at L1 on `tool.post.write` of a `.md` file (that file plus link targets), L
 | Rule | Check |
 |---|---|
 | `core/history-entry` | L3 `commit-msg`: the staged diff adds exactly one entry whose Subject equals the message subject. L4: every non-merge commit in range adds one |
-| `core/history-append-only` | For every file in `docs/HISTORY/`, the base content is a prefix of the head content (after `normalizeText`) |
+| `core/history-append-only` | For every file in `docs/HISTORY/`, the base content after the title line is a suffix of the head content (after `normalizeText`): new entries are prepended directly under the title, and existing entries are never edited |
 | `core/history-entry-complete` | Required fields for the kind present and non-empty |
 
 ## 4.9.4 Bug registry (F15)
@@ -73,13 +73,13 @@ Runs at L1 on `tool.post.write` of a `.md` file (that file plus link targets), L
 | EC-5 | Link to `02-STACK.md#2.1-toolchain` where slug is `21-toolchain` | Block, remediation gives the correct slug |
 | EC-6 | Sentence with `e.g.` mid-sentence | Not split |
 | EC-7 | 45-word sentence inside a table cell | Not counted |
-| EC-8 | History entry edited after commit | Block `core/history-append-only` |
+| EC-8 | Existing history entry edited in place | Block `core/history-append-only`; prepending a new entry directly under the title does not block |
 | EC-9 | Commit with no history entry | L3 blocks; if bypassed, L4 blocks the PR |
 | EC-10 | Two entries in one commit | Block; one commit, one entry |
 | EC-11 | Commit message subject amended after entry written | L3 compares at `commit-msg` time, so the mismatch is caught |
 | EC-12 | Fix commit naming a non-existent `BUG-0999` | Block |
 | EC-13 | Bug row deleted | Block `core/bug-rows-immutable` |
-| EC-14 | Month rollover during a session | New file for the new month; old file untouched |
+| EC-14 | Day rollover during a session | New file for the new UTC day; old file untouched |
 | EC-15 | CRLF history file on Windows | Prefix check uses normalised text; passes if only line endings differ |
 | EC-16 | Squash merge lands one commit adding three entries on the default branch | The push run blocks `core/history-entry` (one commit, one entry); `core/branch-protection` already blocked while squash was allowed |
 | EC-17 | Commit touching `LICENSE`, `README.md` and its own history entry | Kind `docs`; Docs lists `LICENSE` and `README.md` |

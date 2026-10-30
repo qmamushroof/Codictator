@@ -72,7 +72,7 @@ The review gate is SPEC §4.12.4.
 
 ## 6. Record
 
-- Append one entry to `docs/HISTORY/<YYYY-MM>.md` for the commit about to be made. Grammar is SPEC §7.7; required fields per kind are SPEC §4.9.3; its subject equals the commit subject exactly.
+- Prepend one entry directly under the title of `docs/HISTORY/<YYYY-MM-DD>.md` for the commit about to be made (SPEC §4.9.3). Grammar is SPEC §7.7; required fields per kind are SPEC §4.9.3; its subject equals the commit subject exactly.
 - Write it after review, never earlier: an entry written before review describes the plan, not the change.
 - **Why** gives the reason, not the diff. **What went wrong** names the abandoned approaches and surprises. **Trade-offs** names what was given up. **Lessons** tells the next session what it cannot see in the code.
 - A lesson that changes a rule goes into the doc that owns the rule, in the same commit.
