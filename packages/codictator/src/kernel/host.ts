@@ -1,12 +1,35 @@
-// SPEC §4.15.1: kernel-owned reads of CI-owned absolute host paths. The
-// confined Fs port (§4.1.1) cannot reach files outside the repo and the OS
-// temp dir, like the CI event payload (GITHUB_EVENT_PATH); this keeps that
-// OS access in the kernel (§3.3). Callers pass only CI-owned paths, never
-// agent input.
+// SPEC §4.15.1 + §4.14.4: kernel-owned reads and writes of absolute host
+// paths. The confined Fs port (§4.1.1) cannot reach files outside the repo
+// and the OS temp dir, like the CI event payload (GITHUB_EVENT_PATH) or the
+// COMMIT_EDITMSG file git hands the commit-msg hook (absolute, and outside
+// the worktree root in a linked worktree); this keeps that OS access in the
+// kernel (§3.3). Callers pass only git- or CI-owned paths, never agent input.
 import { promises as fsp } from "node:fs";
 import path from "node:path";
-import { encodingError, outsideError, readFailure } from "./fs-errors.ts";
+import {
+	encodingError,
+	ioError,
+	outsideError,
+	readFailure,
+} from "./fs-errors.ts";
 import { err, ok, type Result } from "./result.ts";
+
+// Relative paths fail CDX-E701; unwritable paths fail CDX-E903, so
+// callers degrade the same way as Fs.write.
+export async function writeHostText(
+	absolutePath: string,
+	content: string,
+): Promise<Result<void>> {
+	if (!path.isAbsolute(absolutePath)) {
+		return err(outsideError());
+	}
+	try {
+		await fsp.writeFile(absolutePath, content, "utf8");
+		return ok(undefined);
+	} catch (cause) {
+		return err(ioError("write", absolutePath, cause));
+	}
+}
 
 // Relative paths fail CDX-E701; missing, unreadable or non-UTF-8 files
 // fail CDX-E903 like Fs.readText, so callers degrade the same way.
