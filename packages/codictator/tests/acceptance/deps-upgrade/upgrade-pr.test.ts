@@ -89,7 +89,7 @@ test("[§4.8.7] upgrade --pr pushes pin bump and history entry to the fake host"
 	].join("\n");
 	const repo = createTempRepo({
 		"package.json": manifestText,
-		"docs/HISTORY/2026-01.md": "# History — 2026-01\n",
+		"docs/HISTORY/2026-01-01.md": "# History — 2026-01-01\n",
 	});
 	const host = createBareRepo();
 	try {
@@ -101,7 +101,7 @@ test("[§4.8.7] upgrade --pr pushes pin bump and history entry to the fake host"
 			to: "4.17.21",
 			manifestPath: "package.json",
 			manifestText,
-			historyText: "# History — 2026-01\n",
+			historyText: "# History — 2026-01-01\n",
 			date: "2026-01-01",
 			lockfilePath: "package-lock.json",
 			lockfileText: '{"lockfileVersion": 3, "packages": {}}',
@@ -133,7 +133,7 @@ test("[§4.8.7] upgrade --pr pushes pin bump and history entry to the fake host"
 		assert.ok(pushedManifest.includes('"lodash": "4.17.21"'));
 		const pushedHistory: string = execFileSync(
 			"git",
-			["--git-dir", host.dir, "show", `${branch}:docs/HISTORY/2026-01.md`],
+			["--git-dir", host.dir, "show", `${branch}:docs/HISTORY/2026-01-01.md`],
 			{ encoding: "utf8" },
 		);
 		assert.ok(pushedHistory.includes("↑ lodash 4.17.20 → 4.17.21 — none"));
@@ -151,12 +151,12 @@ test("[§4.8.7] upgrade --pr pushes pin bump and history entry to the fake host"
 		assert.ok(entry !== undefined);
 		if (entry !== undefined) {
 			assert.deepEqual(
-				checkHistoryEntryComplete(entry, "docs/HISTORY/2026-01.md"),
+				checkHistoryEntryComplete(entry, "docs/HISTORY/2026-01-01.md"),
 				[],
 			);
 		}
 		const worktreeHistory = readFileSync(
-			path.join(repo.dir, "docs", "HISTORY", "2026-01.md"),
+			path.join(repo.dir, "docs", "HISTORY", "2026-01-01.md"),
 			"utf8",
 		);
 		assert.equal(worktreeHistory, pushedHistory);

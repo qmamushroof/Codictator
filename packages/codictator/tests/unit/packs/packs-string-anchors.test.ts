@@ -111,7 +111,7 @@ test("[§5.8] history append matches report lines not code strings", async () =>
 	const report = await findingsOf(
 		resolveHistoryAppendOnly,
 		"core/history-append-only",
-		{ "sample.txt": "path: docs/HISTORY/2026-10.md\nedited: yes\n" },
+		{ "sample.txt": "path: docs/HISTORY/2026-10-05.md\nedited: yes\n" },
 	);
 	assert.equal(report, 1);
 });

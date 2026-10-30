@@ -26,7 +26,9 @@ import { FIXED_INSTANT } from "../../support/fake-clock.ts";
 
 const ENTRY =
 	"## 2026-10-05 · feature: do a thing\n\n- **Kind:** code\n- **Task:** T-0001\n- **Why:** reason\n- **What went wrong:** none\n- **Trade-offs:** none\n- **Lessons:** learned\n";
-const TITLE = "# History — 2026-10\n\n";
+const TITLE = "# History — 2026-10-05\n\n";
+const OTHER =
+	"## 2026-10-06 · feature: do another thing\n\n- **Kind:** docs\n- **Task:** T-0002\n- **Why:** reason\n- **Docs:** none\n";
 
 test("[§4.9] history parses entries and flags grammar breaks", () => {
 	const parsed = parseHistoryEntries(`${TITLE}${ENTRY}`);
@@ -85,9 +87,15 @@ test("[§4.9] history completeness follows the entry kind", () => {
 	}
 });
 
-test("[§4.9] history append-only keeps base as prefix", () => {
-	assert.deepEqual(checkHistoryAppendOnly("ab", "abc", "p"), []);
-	const edited = checkHistoryAppendOnly("ab", "ax", "p");
+test("[§4.9] history append-only keeps base entries under the title", () => {
+	const base = `${TITLE}${ENTRY}`;
+	const headed = `${TITLE}${OTHER}\n${ENTRY}`;
+	assert.deepEqual(checkHistoryAppendOnly(base, headed, "p"), []);
+	const edited = checkHistoryAppendOnly(
+		base,
+		base.replace("reason", "rewritten"),
+		"p",
+	);
 	assert.ok(
 		edited.some((finding) => finding.ruleId === "core/history-append-only"),
 	);
@@ -95,7 +103,7 @@ test("[§4.9] history append-only keeps base as prefix", () => {
 
 test("[§4.9] history kind derives from the changed paths", () => {
 	assert.equal(deriveHistoryKind([]), "docs");
-	assert.equal(deriveHistoryKind(["docs/HISTORY/2026-10.md"]), "docs");
+	assert.equal(deriveHistoryKind(["docs/HISTORY/2026-10-05.md"]), "docs");
 	assert.equal(
 		deriveHistoryKind(["package.json", "package-lock.json"]),
 		"deps",
@@ -113,14 +121,14 @@ test("[§4.9] history kind derives from the changed paths", () => {
 		files.some((finding) => finding.message.includes("no history entry")),
 	);
 	const bad = checkHistoryFiles(
-		["docs/HISTORY/2026-10.md"],
+		["docs/HISTORY/2026-10-05.md"],
 		"nothing",
 		"base",
 		"s",
 	);
 	assert.ok(bad.length > 0);
 	const appended = checkHistoryFiles(
-		["docs/HISTORY/2026-10.md"],
+		["docs/HISTORY/2026-10-05.md"],
 		`${TITLE}${ENTRY}`,
 		`${TITLE}`,
 		"feature: do a thing",
@@ -160,7 +168,7 @@ test("[§4.9] docs placement honours globs roots and harness dirs", () => {
 		),
 	);
 	assert.deepEqual(
-		checkDocOneLevel(["docs/HISTORY/2026.md", "docs/a/b.md"]),
+		checkDocOneLevel(["docs/HISTORY/2026-10-05.md", "docs/a/b.md"]),
 		[],
 	);
 });

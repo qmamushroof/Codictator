@@ -23,7 +23,7 @@ export interface HistoryParse {
 
 const ENTRY_HEADING = /^## (\d{4}-\d{2}-\d{2}) · (.+?)\s*$/;
 const FIELD_LINE = /^- \*\*([A-Za-z -]+):\*\* (.*)$/;
-const FILE_TITLE = /^# History — \d{4}-\d{2}(-\d+)?\s*$/;
+const FILE_TITLE = /^# History — \d{4}-\d{2}-\d{2}(-\d+)?\s*$/;
 
 function emptyEntry(date: string, subject: string): HistoryEntry {
 	return {
@@ -49,7 +49,8 @@ function toKind(value: string | undefined): HistoryKind | undefined {
 	return undefined;
 }
 
-// SPEC §7.7: a history file holds one entry per commit in commit order, each
+// SPEC §7.7: a history file holds one entry per commit, newest directly
+// under the title, then in reverse-chronological commit order, each
 // a heading plus its field list in the fixed order.
 export function parseHistoryEntries(text: string): HistoryParse {
 	const entries: Array<HistoryEntry> = [];
@@ -191,22 +192,37 @@ export function checkHistoryEntryComplete(
 	return findings;
 }
 
-// SPEC §4.9.3 core/history-append-only: the base content is a prefix of the
-// head content after normalisation, so entries are only appended.
+// SPEC §4.9.3 core/history-append-only: the base content after the title
+// line is a suffix of the head content after normalisation, so new entries
+// are prepended directly under the title and existing entries are never
+// edited.
+function bodyAfterTitle(text: string): string | undefined {
+	const end = text.indexOf("\n");
+	if (end < 0) {
+		return undefined;
+	}
+	if (FILE_TITLE.exec(text.slice(0, end).trim()) === null) {
+		return undefined;
+	}
+	return text.slice(end + 1);
+}
+
 export function checkHistoryAppendOnly(
 	baseText: string,
 	headText: string,
 	path: string,
 ): Array<Finding> {
-	if (normalizeText(headText).startsWith(normalizeText(baseText))) {
+	const baseBody = bodyAfterTitle(normalizeText(baseText));
+	const headBody = bodyAfterTitle(normalizeText(headText));
+	if (baseBody !== undefined && headBody?.endsWith(baseBody) === true) {
 		return [];
 	}
 	return [
 		{
 			ruleId: "core/history-append-only",
 			path,
-			message: `history file edited in place: ${path} head no longer starts with its base content`,
-			remediation: `Append the new entry to ${path} without touching earlier entries; history is append-only.`,
+			message: `history file edited in place: ${path} head no longer holds its base entries untouched under the title`,
+			remediation: `Prepend the new entry directly under the title of ${path} without touching earlier entries; history is newest-first.`,
 		},
 	];
 }
