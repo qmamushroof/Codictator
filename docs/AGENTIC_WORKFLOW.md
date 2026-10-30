@@ -96,6 +96,9 @@ The review gate is SPEC §4.12.4.
   - On red, fix forward on the branch and re-watch; never merge red, never force-push, never bypass hooks (`core/no-bypass`).
 - Never re-read an unchanged file range already in context (`core/read-dedupe`). Load MCP servers and tools only when the task needs them.
 - The same rule or test failing three consecutive times (`core/loop-breaker`) means stop. Summarise the rule, the attempts and the conflict for the human instead of trying a variation.
+- When stuck (2 failed attempts on one approach, or an unfamiliar problem with no in-repo precedent), the agent MAY use web search (if the harness offers it) to compare approaches, including open-source code.
+- Guardrails: never copy external code verbatim (licenses; [CONVENTIONS.md](CONVENTIONS.md) determinism and style rules); never add or upgrade a dependency from it without the SPEC §2 change and registry lookup (SPEC §4.8.3); SPEC still overrides anything external.
+- Never name external repos or apps in tracked files, commits, or PRs; keep sources in the subagent session report only, never in HISTORY.
 
 ## Resuming
 
