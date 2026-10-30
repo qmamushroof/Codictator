@@ -91,6 +91,9 @@ The review gate is SPEC §4.12.4.
 - Bootstrap checkpoint: write `.codictator/state/resume.md` (git-ignored, the path SPEC §7.1 reserves) with task, branch, done, next and open questions. Self-hosted: `codictator task checkpoint`.
 - A subagent at its limit returns `CHECKPOINT: <summary>` to its caller instead of clearing.
 - A subagent returning without its deliverable — no verdict, no gate numbers, mid-gate yield — is a STALL, not completion. The orchestrator immediately relaunches a continuation subagent carrying the interim evidence; no phase waits on a missing verdict.
+- After opening a PR, the task owner starts a merge-watch instead of handing the wait to the human: poll `gh pr view <n> --json mergeStateStatus` and `gh pr checks <n>` about every 4 minutes for up to about 2 hours, sleeping with shell `Start-Sleep` between polls. A wall-clock wait costs no tokens, unlike a background worker holding context for the same wait; the PR body records the watch (PR number, poll interval).
+  - Merge only when the state is CLEAN with all required checks passing — a skipped sweep is normal, not red. Then merge with `--merge`, pull `main`, and continue the next phase ([Integrate](#7-integrate)).
+  - On red, fix forward on the branch and re-watch; never merge red, never force-push, never bypass hooks (`core/no-bypass`).
 - Never re-read an unchanged file range already in context (`core/read-dedupe`). Load MCP servers and tools only when the task needs them.
 - The same rule or test failing three consecutive times (`core/loop-breaker`) means stop. Summarise the rule, the attempts and the conflict for the human instead of trying a variation.
 
