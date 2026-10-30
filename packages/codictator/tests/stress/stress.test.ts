@@ -258,7 +258,7 @@ test("[§10.5] regex safety check rejects known ReDoS patterns", async () => {
 		id: "stress-redos",
 		description: "pattern safety probe",
 		sampleBefore: "x",
-		sampleAfter: "x",
+		sampleAfter: "clean-ok",
 	});
 	assert.equal(drafted.ok, true);
 	const catastrophic = "(a+)+$";
