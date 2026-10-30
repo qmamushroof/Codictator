@@ -83,12 +83,12 @@ async function ciVerify(
 			...(protection === undefined ? {} : { protection }),
 		},
 	);
-	// SPEC §4.3.2 + §4.15.1 + §4.7.1: L4 is a superset of every local
-	// layer, so ci verify also evaluates the enforcers over the change:
-	// the base..head diff plus every commit message in range. Without a
-	// range there is no change to judge, so the repo-wide rules judge
-	// alone, exactly as before. A committed secret in range blocks here,
-	// not just at L3.
+	// SPEC §4.3.2 + §4.15.1 + §4.7.1: L4 judges the change with the gate
+	// family (pre-tool), so ci verify also evaluates those enforcers over
+	// the change: the base..head diff plus every commit message in range.
+	// Without a range there is no change to judge, so the repo-wide rules
+	// judge alone, exactly as before. A committed secret in range blocks
+	// here, not just at L3.
 	const ranged = await resolveCiRange(ports.value, flags);
 	if (!ranged.ok) {
 		return fail(
@@ -100,12 +100,18 @@ async function ciVerify(
 	}
 	let evaluated: ReadonlyArray<Finding> = [];
 	if (ranged.value !== undefined) {
+		// The L4 gate judges the fail-closed local family (pre-tool), not
+		// the review family: the review-only hygiene rules need full-tree
+		// context the range does not carry (dead-code) or test-title inputs
+		// (spec-trace), and blocked every normally-commented file (BUG-0014).
+		// They stay on the human `review` command until phase-5 finer
+		// triggers let gates select rule subsets.
 		const scoped = await resolveVerifyScope(ports.value, {
 			staged: false,
 			all: false,
 			base: ranged.value.base,
 			head: ranged.value.head,
-			layer: "L4",
+			layer: undefined,
 		});
 		if (!scoped.ok) {
 			if (ciVerifyExit(checks) !== 0) {

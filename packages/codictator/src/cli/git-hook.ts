@@ -1,8 +1,8 @@
 // SPEC §4.14.4 + §4.7: the git-hook engine path. Installed hooks exec
 // the launcher as `run.mjs git <hook>`; the launcher routes the `git` word
 // here (SPEC §4.19.3). pre-commit and pre-push evaluate the staged or pushed
-// change with the same pack enforcers `verify` loads over the review
-// trigger — new scope plumbing, no new detection logic. commit-msg appends
+// change with the pre-tool gate family `verify` loads over staged scopes —
+// new scope plumbing, no new detection logic. commit-msg appends
 // the Codictator-L3 trailer §4.14.2 checks at L4.
 
 import { HOOK_MARKER } from "../features/config/index.ts";
@@ -91,11 +91,18 @@ async function evaluateGitChange(
 	now: string,
 	configHash: string,
 ): Promise<Result<number>> {
+	// SPEC §4.3.2: gates judge the fail-closed local family (pre-tool:
+	// secrets, reads, shell, confinement), which is sound on diff scopes.
+	// The review-only hygiene rules (spec-trace, dead-code, history-entry)
+	// need full-tree context the staged or pushed diff does not carry, so
+	// they stay on the human `review` command until phase-5 finer triggers
+	// let gates select rule subsets; a review trigger here blocked every
+	// normally-commented file (BUG-0014).
 	const evaluated = await evaluateScope(
 		ports,
 		packIds,
 		{
-			trigger: "review",
+			trigger: "pre-tool",
 			files: [...files],
 			note: hook,
 			...(content === "" ? {} : { proposedContent: content }),

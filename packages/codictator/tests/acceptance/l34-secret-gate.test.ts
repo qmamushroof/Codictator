@@ -130,6 +130,29 @@ test("[§4.14] installed pre-commit hook blocks a staged secret (L3)", async () 
 	}
 });
 
+test("[§4.14] installed pre-commit hook passes a normally-commented file (L3 gate family)", async () => {
+	// BUG-0014: the gate judges the fail-closed local family, not the
+	// review-only hygiene rules. A plain-commented source file whose export
+	// is unused in the staged scope must pass: spec-trace speaks about
+	// test titles and dead-code needs the whole tree.
+	const repo = createTempRepo();
+	try {
+		seedConfig(repo);
+		installLauncher(repo);
+		const installed = await cli(["install-hooks"], repo.dir);
+		assert.equal(installed.code, 0);
+		stage(
+			repo,
+			"plain.js",
+			"// SPEC §4.7 plain comment, no brackets\nexport const x = 1;\n",
+		);
+		const passed = await runGitHook(repo, "pre-commit");
+		assert.equal(passed.code, 0);
+	} finally {
+		repo.cleanup();
+	}
+});
+
 test("[§4.15] ci verify blocks a committed secret (L4)", async () => {
 	// SPEC §4.15.1 + §4.7.1: a committed key on the branch blocks the merge
 	// gate, both over the explicit --base/--head range and over
