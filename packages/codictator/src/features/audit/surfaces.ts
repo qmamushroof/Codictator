@@ -4,6 +4,14 @@
 // this module stays kernel-only per SPEC §3.3.
 
 import type { EventLogLine } from "./index.ts";
+import type { HelperStatus } from "./token-saver-evidence.ts";
+
+export type { HelperStatus } from "./token-saver-evidence.ts";
+export {
+	summarizeTokenSaverEvidence,
+	type TokenSaverEvidence,
+	tokenSaverHelper,
+} from "./token-saver-evidence.ts";
 
 // SPEC §4.18.3: per-harness layer state for the status screen.
 export type HarnessLayerState =
@@ -16,15 +24,6 @@ export interface HarnessStatus {
 	readonly harness: string;
 	readonly state: HarnessLayerState;
 	readonly layers: string;
-}
-
-// SPEC §4.18.3 + §4.6.6: one helper tool per required role. `present`
-// means config.tools declares the role at an exact pin; `detail` names the
-// declared binary and pin.
-export interface HelperStatus {
-	readonly role: string;
-	readonly present: boolean;
-	readonly detail?: string | undefined;
 }
 
 export interface StatusInput {
@@ -46,16 +45,29 @@ export interface StatusInput {
 }
 
 // SPEC §4.6.6: every required role renders present with its binary and
-// pin, or missing; no required roles reads "none declared".
+// pin, or missing; no required roles reads "none declared". The
+// engine-satisfied token-saver row keeps its SPEC literal
+// `token-saver: engine-satisfied`; a missing role with a named gap keeps
+// the reason.
 function helpersLine(helpers: ReadonlyArray<HelperStatus> | undefined): string {
 	if (helpers === undefined || helpers.length === 0) {
 		return "helpers: none declared";
 	}
-	const parts = helpers.map((helper) =>
-		helper.present
+	const parts = helpers.map((helper) => {
+		if (
+			helper.role === "token-saver" &&
+			helper.detail !== undefined &&
+			helper.detail.startsWith("engine-satisfied")
+		) {
+			return `token-saver: ${helper.detail}`;
+		}
+		if (!helper.present && helper.detail !== undefined) {
+			return `${helper.role} missing (${helper.detail})`;
+		}
+		return helper.present
 			? `${helper.role} present${helper.detail === undefined ? "" : ` (${helper.detail})`}`
-			: `${helper.role} missing`,
-	);
+			: `${helper.role} missing`;
+	});
 	return `helpers: ${parts.join(", ")}`;
 }
 

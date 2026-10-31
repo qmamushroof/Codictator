@@ -19,6 +19,8 @@ import {
 	buildStatusJson,
 	buildStatusText,
 	readEvents,
+	summarizeTokenSaverEvidence,
+	tokenSaverHelper,
 } from "../features/audit/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import { REQUIRED_HELPERS_DEFAULT } from "../features/steering/index.ts";
@@ -149,6 +151,15 @@ async function collectStatusParts(root: string): Promise<StatusParts> {
 		}
 		helpers = requiredRoles(configured.value.effective.config.steering).map(
 			(role) => helperDetail(configured.value.effective.config.tools, role),
+		);
+		// SPEC §4.6.6 + §4.18.3: the token-saver role is satisfied by the
+		// engine itself, so with no external pin the row carries live
+		// evidence instead of probing a binary. All-absent evidence reads
+		// missing: a finding, not a pass.
+		helpers = helpers.map((helper) =>
+			helper.role === "token-saver" && !helper.present
+				? tokenSaverHelper(summarizeTokenSaverEvidence(events))
+				: helper,
 		);
 	}
 	return { events, corrupt: log?.corrupt ?? 0, observed, packs, helpers };

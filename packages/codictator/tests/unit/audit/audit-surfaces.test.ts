@@ -14,6 +14,8 @@ import {
 	buildStatusJson,
 	buildStatusText,
 	replaySummary,
+	summarizeTokenSaverEvidence,
+	tokenSaverHelper,
 } from "../../../src/features/audit/index.ts";
 import { FIXED_INSTANT } from "../../support/fake-clock.ts";
 
@@ -150,6 +152,52 @@ test("[§4.18.3] status json carries helper presence per required role", () => {
 	]);
 	const bare = buildStatusJson(statusInput()) as { helpers: unknown };
 	assert.equal(bare.helpers, null);
+});
+
+test("[§4.18.3] status text lists token-saver engine-satisfied with live evidence", () => {
+	// SPEC §4.18.3 + §4.6.6: with no external token-saver pin the engine
+	// itself satisfies the role; the row carries the budget band, the last
+	// scoped-injection hash/byte count and the read-dedupe block count.
+	const evidence = summarizeTokenSaverEvidence([
+		eventLine({
+			id: "20261101T000000-000001-a1b2c3d4e5f6",
+			kind: "injection",
+			message: "scoped injection a1b2c3 412 bytes",
+		}),
+		eventLine({
+			id: "evt-2",
+			kind: "verdict",
+			decision: "block",
+			ruleIds: ["core/read-dedupe"],
+		}),
+	]);
+	const helper = tokenSaverHelper(evidence);
+	assert.equal(helper.role, "token-saver");
+	assert.equal(helper.present, true);
+	const text = buildStatusText(statusInput({ helpers: [helper] }));
+	assert.ok(text.includes("token-saver: engine-satisfied"));
+	assert.ok(text.includes("budget unavailable"));
+	assert.ok(text.includes("injection a1b2c3d4e5f6 33B"));
+	assert.ok(text.includes("dedupe 1 blocked"));
+	const json = buildStatusJson(statusInput({ helpers: [helper] })) as {
+		helpers: unknown;
+	};
+	assert.deepEqual(json.helpers, [{ ...helper }]);
+});
+
+test("[§4.18.3] status text marks token-saver missing when all evidence is absent", () => {
+	// SPEC §4.18.3 + §4.6.6: all-absent evidence is a finding, not a pass;
+	// the row never claims engine-satisfied without live evidence.
+	const helper = tokenSaverHelper(summarizeTokenSaverEvidence([]));
+	assert.equal(helper.role, "token-saver");
+	assert.equal(helper.present, false);
+	const text = buildStatusText(statusInput({ helpers: [helper] }));
+	assert.ok(text.includes("token-saver missing"));
+	assert.ok(!text.includes("engine-satisfied"));
+	const json = buildStatusJson(statusInput({ helpers: [helper] })) as {
+		helpers: unknown;
+	};
+	assert.deepEqual(json.helpers, [{ ...helper }]);
 });
 
 test("[§4.18.2] replay summary names verdict, inputs and rerun", () => {
