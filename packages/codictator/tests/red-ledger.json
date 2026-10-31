@@ -20,10 +20,6 @@
 		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo ts-brownfield builds into temp git repo",
 		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo ts-clean builds into temp git repo",
 		"tests/unit/cli/cli.test.ts::[§4.19 EC-6] root and tool-dir engines differ",
-		"tests/unit/packs/packs.test.ts::[§4.4 EC-13] two language packs claim one extension",
-		"tests/unit/testing/fixture-generator.test.ts::[§5.6] core/duplication passing/basic",
-		"tests/unit/testing/fixture-generator.test.ts::[§5.6] core/duplication violating/basic",
-		"tests/unit/testing/fixture-generator.test.ts::[§5.6] core/no-speculative-abstraction passing/basic",
-		"tests/unit/testing/fixture-generator.test.ts::[§5.6] core/no-speculative-abstraction violating/basic"
+		"tests/unit/packs/packs.test.ts::[§4.4 EC-13] two language packs claim one extension"
 	]
 }
