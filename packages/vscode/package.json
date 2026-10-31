@@ -6,5 +6,14 @@
 	"main": "dist/extension.cjs",
 	"engines": {
 		"vscode": "^1.105.0"
+	},
+	"activationEvents": [
+		"workspaceContains:.codictator/config.json",
+		"onView:Codictator"
+	],
+	"capabilities": {
+		"untrustedWorkspaces": {
+			"supported": false
+		}
 	}
 }
