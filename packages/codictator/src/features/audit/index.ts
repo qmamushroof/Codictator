@@ -22,6 +22,9 @@ import {
 	type ReportInput,
 	replaySummary,
 	type StatusInput,
+	summarizeTokenSaverEvidence,
+	type TokenSaverEvidence,
+	tokenSaverHelper,
 } from "./surfaces.ts";
 
 export { summarize } from "./summarize.ts";
@@ -47,6 +50,9 @@ export {
 	readEvents,
 	replaySummary,
 	type StatusInput,
+	summarizeTokenSaverEvidence,
+	type TokenSaverEvidence,
+	tokenSaverHelper,
 };
 
 export type EventKind =
