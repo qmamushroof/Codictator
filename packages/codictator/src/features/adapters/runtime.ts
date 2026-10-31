@@ -5,7 +5,9 @@
 // harnesses dispatch here; universal parses fail-closed (no hook traffic)
 // and every other unknown id stays CDX-E301. The loop breaker (§4.12.5)
 // and steering injection (§4.6.3) run at step 5 once their phases land;
-// until then the verdict decides.
+// until then the verdict decides. Split with hook-dispatch.ts (routing),
+// hook-load.ts (root and config) and hook-scope.ts (L1 scope); this file
+// keeps the public contract and the run composition.
 import type {
 	Clock,
 	Env,
@@ -14,26 +16,27 @@ import type {
 	Proc,
 	Result,
 } from "../../kernel/index.ts";
-import {
-	analyseShell,
-	NodeFs,
-	NodeGit,
-	parseJson,
-	stableStringify,
-} from "../../kernel/index.ts";
-import type { EffectiveConfig } from "../config/index.ts";
-import { HOOK_MARKER, loadConfig } from "../config/index.ts";
-import type { Enforcer, EngineOptions, Scope } from "../engine/index.ts";
+import { NodeFs, NodeGit, parseJson } from "../../kernel/index.ts";
+import type { Enforcer, EngineOptions } from "../engine/index.ts";
 import { createEngine } from "../engine/index.ts";
-import { claudeCodeAdapter } from "./claude-code.ts";
-import { codexCliAdapter } from "./codex-cli.ts";
-import type { Adapter, HookEvent, HookReply } from "./contract.ts";
+import type { Adapter, HookReply } from "./contract.ts";
 import { HOOK_PAYLOAD_MAX_BYTES } from "./contract.ts";
-import { COPILOT_TIMEOUT_SEC, copilotAdapter } from "./copilot.ts";
-import { cacheKeyFor, readCacheFile, storeBytes } from "./effective-cache.ts";
-import { museAdapter } from "./muse-code.ts";
-import { opencodeAdapter } from "./opencode.ts";
-import { universalAdapter } from "./universal.ts";
+import {
+	adapterFor,
+	allowReply,
+	blockReply,
+	hookBudgetMs,
+	stopHookActive,
+	unknownHarnessReply,
+} from "./hook-dispatch.ts";
+import {
+	errorCodeOf,
+	errorMessageOf,
+	hookEnv,
+	loadEffective,
+	resolveRoot,
+} from "./hook-load.ts";
+import { hookScope } from "./hook-scope.ts";
 
 // The caller passes the root-independent ports; the runtime confines an Fs
 // to the resolved repo root itself (step 2), so nothing reads the disk
@@ -76,324 +79,6 @@ export type HookEnforcerLoader = (
 	ports: Ports,
 	packIds: ReadonlyArray<string>,
 ) => Promise<Result<ReadonlyArray<Enforcer>>>;
-
-// SPEC §4.5.5 with §9.3: the hook time limit is min(harness timeout - 1 s,
-// hard limit). Muse Code documents no hook timeout, so the 5 s hard limit
-// applies; the OpenCode bridge spawns with a 5 s timeout, so 4 s here.
-// Copilot entries carry timeoutSec and fail open on timeout, so the budget
-// is min(timeoutSec - 1 s, hard limit), which still lands on the hard limit.
-// The CLI start path bounds its stdin wait with the same budget.
-export function hookBudgetMs(harness: string, override?: number): number {
-	if (override !== undefined) {
-		return override;
-	}
-	if (harness === "opencode") {
-		return 4000;
-	}
-	if (harness === "copilot") {
-		return Math.min(COPILOT_TIMEOUT_SEC * 1000 - 1000, 5000);
-	}
-	return 5000;
-}
-
-function adapterFor(harness: string): Adapter | undefined {
-	if (harness === museAdapter.id) {
-		return museAdapter;
-	}
-	if (harness === opencodeAdapter.id) {
-		return opencodeAdapter;
-	}
-	if (harness === claudeCodeAdapter.id) {
-		return claudeCodeAdapter;
-	}
-	if (harness === copilotAdapter.id) {
-		return copilotAdapter;
-	}
-	if (harness === codexCliAdapter.id) {
-		return codexCliAdapter;
-	}
-	if (harness === universalAdapter.id) {
-		return universalAdapter;
-	}
-	return undefined;
-}
-
-// SPEC §4.19.3: unknown harness id blocks CDX-E301. No adapter owns the
-// reply shape, so the wire is the HookDecision JSON the bridge already
-// speaks (§7.8); the hook exit stays 0 so harnesses read the reply.
-function unknownHarnessReply(harness: string): HookReply {
-	return {
-		exitCode: 0,
-		stdout: JSON.stringify({
-			decision: "block",
-			message: `CDX-E301 unknown harness id "${harness}"`,
-			eventId: "static",
-		}),
-		stderr: "",
-	};
-}
-
-function blockReply(
-	adapter: Adapter,
-	code: string,
-	message: string,
-): HookReply {
-	return adapter.reply({
-		decision: "block",
-		message: `${code} ${message}`,
-		eventId: "static",
-	});
-}
-
-function allowReply(adapter: Adapter, eventId: string): HookReply {
-	return adapter.reply({ decision: "allow", eventId });
-}
-
-// SPEC §4.2.3 with §4.19.3: CODICTATOR_HOOK=1 is the launcher's own mark
-// on the hook process, authorizing evaluation; the §4.2.3 refusal targets
-// agent markers on human-only commands, not the hook reading config to
-// evaluate. The runtime loads config with every marker intact except the
-// launcher's own, so a foreign agent marker in the hook environment still
-// refuses CDX-E107 through loadConfig.
-function hookEnv(env: Env): Env {
-	return {
-		get: (name: string): string | undefined =>
-			name === HOOK_MARKER ? undefined : env.get(name),
-	};
-}
-
-// SPEC §4.19.3 step 2: the repo root from the payload cwd, else the process
-// cwd, via git rev-parse. A cwd git cannot resolve is outside any Codictator
-// repo, so the hook allows silently and the git-hook/CI backstops keep
-// enforcing (§4.2 EC-2). The resolved root is canonicalized once via the
-// kernel Fs port before config load and engine confinement: confinePath
-// realpaths files before comparing against the root, so the root side must
-// be canonical too — on macOS $TMPDIR lives under /var, which is a symlink
-// to /private/var, and an unresolved root fails every confined access
-// closed with CDX-E701. Only the kernel touches node:fs (§10.3 item 3), so
-// this goes through NodeFs (whose explicit-root create already resolves via
-// realpath) and reads the canonical root back with realpath(".").
-// realpath is idempotent when no symlinks are present, so this is a no-op
-// on Windows/Linux; a root NodeFs cannot resolve keeps the git answer, so
-// unreadable roots still fail closed with CDX-E801 downstream instead of
-// here.
-async function canonicalRoot(root: string): Promise<string> {
-	const made = await NodeFs.create({ root });
-	if (!made.ok) {
-		return root;
-	}
-	const real = await made.value.realpath(".");
-	if (!real.ok) {
-		return root;
-	}
-	return real.value;
-}
-
-async function resolveRoot(
-	ports: HookBasePorts,
-	startDir: string,
-): Promise<string | undefined> {
-	const git = new NodeGit(ports.proc, startDir);
-	const root = await git.root();
-	if (!root.ok) {
-		return undefined;
-	}
-	return canonicalRoot(root.value);
-}
-
-// SPEC §4.19.3 step 3: the effective-config cache file. The keyed cache
-// read lives in effective-cache.ts; the repo-relative rel paths stay here
-// with the loader that reads them (§4.1.1).
-const CACHE_REL = ".codictator/cache/effective.json";
-const CONFIG_REL = ".codictator/config.json";
-const WAIVERS_REL = ".codictator/waivers.json";
-const BASELINE_REL = ".codictator/baseline.json";
-
-async function loadEffective(
-	ports: HookBasePorts,
-	root: string,
-	adapter: Adapter,
-): Promise<
-	| { readonly ok: true; value: EffectiveConfig }
-	| { readonly ok: false; reply: HookReply }
-> {
-	const fsMade = await NodeFs.create({ root });
-	if (!fsMade.ok) {
-		return {
-			ok: false,
-			reply: blockReply(adapter, "CDX-E801", fsMade.error.message),
-		};
-	}
-	// SPEC §4.1.1: Fs paths are repo-relative, so every call below is
-	// relative (CONFIG_REL, CACHE_REL). loadConfig takes the same logical
-	// root for the same reason; the Fs is already confined to root.
-	const fs = fsMade.value;
-	const seen = await fs.exists(CONFIG_REL);
-	if (!seen.ok) {
-		return {
-			ok: false,
-			reply: blockReply(adapter, "CDX-E801", seen.error.message),
-		};
-	}
-	if (!seen.value) {
-		return { ok: false, reply: allowReply(adapter, "no-config") };
-	}
-	const bytes = await fs.read(CONFIG_REL);
-	if (!bytes.ok) {
-		return {
-			ok: false,
-			reply: blockReply(adapter, "CDX-E801", bytes.error.message),
-		};
-	}
-	const key = cacheKeyFor([
-		bytes.value,
-		await storeBytes(fs, WAIVERS_REL),
-		await storeBytes(fs, BASELINE_REL),
-	]);
-	const cached = await fs.readText(CACHE_REL);
-	if (cached.ok) {
-		const parsed = parseJson(cached.value);
-		if (parsed.ok) {
-			const hit = readCacheFile(parsed.value, key);
-			if (hit !== undefined) {
-				return {
-					ok: true,
-					value: { config: hit, configHash: key },
-				};
-			}
-		}
-	}
-	let effective: EffectiveConfig;
-	try {
-		// The Fs is already confined to root, so the logical root is "."
-		// and config resolution reads repo-relative paths (§4.1.1).
-		effective = await loadConfig(".", {
-			fs,
-			proc: ports.proc,
-			net: ports.net,
-			clock: ports.clock,
-			git: new NodeGit(ports.proc, root),
-			env: hookEnv(ports.env),
-		});
-	} catch (error) {
-		return {
-			ok: false,
-			reply: blockReply(
-				adapter,
-				errorCodeOf(error, "CDX-E101"),
-				errorMessageOf(error),
-			),
-		};
-	}
-	// Best effort: a cache write failure never blocks the hook; the
-	// resolved config is authoritative and the next run re-resolves.
-	const line = new TextEncoder().encode(
-		stableStringify({ v: 1, key, config: effective.config }),
-	);
-	const written = await fs.write(CACHE_REL, line);
-	if (!written.ok) {
-		return { ok: true, value: effective };
-	}
-	return { ok: true, value: effective };
-}
-
-function errorCodeOf(error: unknown, fallback: string): string {
-	if (
-		typeof error === "object" &&
-		error !== null &&
-		"code" in error &&
-		typeof error.code === "string" &&
-		error.code !== ""
-	) {
-		return error.code;
-	}
-	return fallback;
-}
-
-// SPEC §9.2 with CONVENTIONS: error text never carries payload content,
-// so pre-engine blocks use static strings only.
-function errorMessageOf(error: unknown): string {
-	if (
-		typeof error === "object" &&
-		error !== null &&
-		"message" in error &&
-		typeof error.message === "string"
-	) {
-		return error.message;
-	}
-	return "the hook runtime failed before evaluation";
-}
-
-// SPEC §4.5.4: Stop never blocks when the payload carries
-// stop_hook_active, even with open findings, so the harness never loops.
-function stopHookActive(
-	adapter: Adapter,
-	event: HookEvent,
-	raw: unknown,
-): boolean {
-	if (adapter.id !== "muse-code" || event.event !== "Stop") {
-		return false;
-	}
-	if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
-		return false;
-	}
-	const stopActive =
-		("stop_hook_active" in raw && raw.stop_hook_active === true) ||
-		("stopHookActive" in raw && raw.stopHookActive === true);
-	return stopActive;
-}
-
-// SPEC §4.3.2 + §4.7: the L1 hook scope is the one tool call, not the
-// disk tree. Harness tool paths are absolute and usually name files that
-// do not exist yet, so scoping them for disk reads would fail closed on
-// every benign call. The proposed write content and the shell command
-// text ride the scope instead, for the L1 enforcers to judge, together
-// with the lexical write/read targets: the tool file paths plus the shell
-// redirection targets parsed from the command. Absolute targets resolve
-// lexically against the repo root; anything else stays as spelled. No
-// disk is read: target existence is never probed.
-function relativizeTarget(root: string, target: string): string {
-	const slashed = target.replace(/\\/g, "/");
-	const base = root.replace(/\\/g, "/").replace(/\/+$/, "");
-	if (slashed === base) {
-		return ".";
-	}
-	if (slashed.startsWith(`${base}/`)) {
-		return slashed.slice(base.length + 1);
-	}
-	return target;
-}
-
-function hookScope(event: HookEvent, root: string): Scope {
-	const tool = event.tool;
-	const targets = new Set<string>();
-	for (const raw of tool?.paths ?? []) {
-		targets.add(relativizeTarget(root, raw));
-	}
-	// SPEC §4.7.3 EC-8: shell redirection targets (`>`, `>>`, `tee`,
-	// `Out-File`, `cp`/`mv` destinations) are write targets too. The parse
-	// is lexical only (analyseShell never touches the disk); an
-	// unparseable command contributes no targets because the
-	// dangerous-shell enforcer already blocks it fail-closed (CDX-E306).
-	const command = tool?.command;
-	if (command !== undefined && command !== "") {
-		const parsed = analyseShell(command);
-		if (parsed.ok) {
-			for (const target of parsed.value.writeTargets) {
-				targets.add(relativizeTarget(root, target));
-			}
-		}
-	}
-	return {
-		files: [],
-		sessionId: event.sessionId,
-		...(tool?.proposedContent === undefined
-			? {}
-			: { proposedContent: tool.proposedContent }),
-		...(command === undefined ? {} : { shellCommand: command }),
-		...(targets.size === 0 ? {} : { proposedPaths: [...targets].sort() }),
-	};
-}
 
 // SPEC §4.19.3: any uncaught error blocks CDX-E901; the time limit blocks
 // CDX-E902. Both replies go through the adapter so the harness gates

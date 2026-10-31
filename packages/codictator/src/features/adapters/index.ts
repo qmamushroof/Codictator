@@ -67,12 +67,12 @@ import {
 	universalAdapter,
 } from "./universal.ts";
 
+export { hookBudgetMs } from "./hook-dispatch.ts";
 export {
 	type HookAppend,
 	type HookBasePorts,
 	type HookEnforcerLoader,
 	type HookRunRequest,
-	hookBudgetMs,
 	runHookEvent,
 	staticBlock,
 	supportedHarness,

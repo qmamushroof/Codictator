@@ -32,6 +32,14 @@ import {
 } from "./shared.ts";
 
 const BUILTIN_IDS = ["core", "typescript", "dotnet", "python"];
+const ADAPTER_DECLARATIONS = [
+	MUSE_CAPABILITIES,
+	UNIVERSAL_CAPABILITIES,
+	CLAUDE_CODE_CAPABILITIES,
+	COPILOT_CAPABILITIES,
+	CODEX_CAPABILITIES,
+	OPENCODE_CAPABILITIES,
+];
 
 export async function handleGenerate(
 	req: CommandRequest,
@@ -185,11 +193,19 @@ async function packAccept(
 	return ok(0);
 }
 
+// SPEC §4.4: pack args (sub, then id), list, self-test, human-only acceptance.
+function parsePackArgs(args: ReadonlyArray<string>): string | Result<number> {
+	const sub = args[0] ?? "";
+	return sub === "list" || sub === "test" || sub === "accept"
+		? sub
+		: usageError("usage: codictator pack <list|test <id>|accept <id>>");
+}
+
 // SPEC §4.4: pack list, self-test and human-only acceptance.
 export async function handlePack(req: CommandRequest): Promise<Result<number>> {
-	const sub = req.args[0] ?? "";
-	if (sub !== "list" && sub !== "test" && sub !== "accept") {
-		return usageError("usage: codictator pack <list|test <id>|accept <id>>");
+	const sub = parsePackArgs(req.args);
+	if (typeof sub !== "string") {
+		return sub;
 	}
 	const root = await needRoot(req);
 	if (typeof root !== "string") {
@@ -206,15 +222,9 @@ export async function handlePack(req: CommandRequest): Promise<Result<number>> {
 }
 
 function adapterTest(req: CommandRequest, id: string): Result<number> {
-	const declarations = [
-		MUSE_CAPABILITIES,
-		UNIVERSAL_CAPABILITIES,
-		CLAUDE_CODE_CAPABILITIES,
-		COPILOT_CAPABILITIES,
-		CODEX_CAPABILITIES,
-		OPENCODE_CAPABILITIES,
-	];
-	const found = declarations.find((candidate) => candidate.harness === id);
+	const found = ADAPTER_DECLARATIONS.find(
+		(candidate) => candidate.harness === id,
+	);
 	if (found === undefined) {
 		return fail(
 			"CDX-E301",
@@ -257,15 +267,7 @@ export async function handleAdapter(
 	if (sub === "test") {
 		return adapterTest(req, id);
 	}
-	const declarations = [
-		MUSE_CAPABILITIES,
-		UNIVERSAL_CAPABILITIES,
-		CLAUDE_CODE_CAPABILITIES,
-		COPILOT_CAPABILITIES,
-		CODEX_CAPABILITIES,
-		OPENCODE_CAPABILITIES,
-	];
-	if (declarations.every((candidate) => candidate.harness !== id)) {
+	if (ADAPTER_DECLARATIONS.every((candidate) => candidate.harness !== id)) {
 		return fail(
 			"CDX-E301",
 			`unknown harness id "${id}"`,
