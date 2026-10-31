@@ -116,3 +116,4 @@ Roles are SPEC §4.12.6. Parallel work uses one branch per task, and one agent w
 - Shared choke files (`red-ledger.json`, `pack.json`, SPEC leaves, `HISTORY`, roadmap ticks) serialize: delist/edit only own titles, rebase before landing; reviewers stay fresh per [5. Review](#5-review).
 - Briefing overhead is not zero: each worker re-loads shared context, so briefs stay narrow — only the SPEC leaves and globs that worker needs (see [Orchestration](#orchestration)).
 - With narrow briefs, disjoint globs, no shared edits and merge-order-free work, marginal cost per extra worker is ≈ its own task tokens; use as many focused workers as needed, bounded by harness limits (max concurrent sessions, CPU for parallel suites, disk per worktree).
+- Every orchestrator turn re-scans for parallelizable work and keeps workers fanned out while blocked on a long wait (suite token, CI watch); idling sequential while fan-out is possible is the default to correct.
