@@ -134,7 +134,15 @@ function findingIds(envelope: unknown): Array<string> {
 }
 
 test("[§4.20 EC-9] setup action in a folder without config", async () => {
-	// SPEC §4.20.4 EC-9: terminal pre-filled with init; nothing runs unasked.
+	// SPEC §4.20.4 EC-9 + §4.20.1 Onboarding + §4.19.2: init is human-only,
+	// so the CLI answers CDX-E107 and the extension opens a terminal
+	// pre-filled with the init command; nothing runs unasked. Strengthened
+	// to SPEC row: the error code must be CDX-E107 (the human-only refusal,
+	// not any other failure). IE-11-2-ec9-acceptance: the prior body asserted
+	// init succeeds without a TTY, contradicting the SPEC human-only rule.
 	const result = await runCommand(optionsFor(["init", "--harness", "none"]));
-	assert.equal(result.ok, true);
+	assert.equal(result.ok, false);
+	if (!result.ok) {
+		assert.equal(result.error.code, "CDX-E107");
+	}
 });
