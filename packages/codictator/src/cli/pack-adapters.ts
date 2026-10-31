@@ -5,6 +5,7 @@ import {
 	CODEX_CAPABILITIES,
 	COPILOT_CAPABILITIES,
 	CURSOR_CAPABILITIES,
+	checkCustomContract,
 	GEMINI_CAPABILITIES,
 	MUSE_CAPABILITIES,
 	OPENCODE_CAPABILITIES,
@@ -26,7 +27,13 @@ const ADAPTER_DECLARATIONS = [
 	OPENCODE_CAPABILITIES,
 ];
 
-function adapterTest(req: CommandRequest, id: string): Result<number> {
+async function adapterTest(
+	req: CommandRequest,
+	id: string,
+): Promise<Result<number>> {
+	if (id.startsWith("custom:")) {
+		return adapterTestCustom(req, id);
+	}
 	const found = ADAPTER_DECLARATIONS.find(
 		(candidate) => candidate.harness === id,
 	);
@@ -38,6 +45,40 @@ function adapterTest(req: CommandRequest, id: string): Result<number> {
 			req.json,
 		);
 	}
+	if (req.json) {
+		printJson(found);
+	} else {
+		printHuman(
+			`${found.harness}: layers L0:${found.layers.L0} L1:${found.layers.L1} L2:${found.layers.L2} L3:${found.layers.L3} L4:${found.layers.L4} L5:${found.layers.L5}`,
+			req.quiet,
+		);
+		for (const gap of found.gaps) {
+			printHuman(`gap: ${gap}`, req.quiet);
+		}
+	}
+	return ok(0);
+}
+
+// SPEC §4.5.6: `adapter test custom:<id>` runs the adapter's shipped
+// goldens; anything short of a pass stays inert with CDX-E302.
+async function adapterTestCustom(
+	req: CommandRequest,
+	id: string,
+): Promise<Result<number>> {
+	const root = await needRoot(req);
+	if (typeof root !== "string") {
+		return root;
+	}
+	const checked = await checkCustomContract(root, id.slice("custom:".length));
+	if (!checked.ok) {
+		return fail(
+			checked.error.code,
+			checked.error.message,
+			checked.error.remediation,
+			req.json,
+		);
+	}
+	const found = checked.value.capabilities;
 	if (req.json) {
 		printJson(found);
 	} else {

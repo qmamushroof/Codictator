@@ -32,6 +32,9 @@ export function hookBudgetMs(harness: string, override?: number): number {
 }
 
 export function adapterFor(harness: string): Adapter | undefined {
+	// SPEC §4.5.6: custom adapters resolve through loadCustomAdapter (async
+	// and root-confined), never through this sync registry, so every
+	// custom: id stays unknown here until its loader joins the runtime.
 	if (harness === museAdapter.id) {
 		return museAdapter;
 	}
