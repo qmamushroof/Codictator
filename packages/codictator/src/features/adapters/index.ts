@@ -49,6 +49,16 @@ import {
 	staticBlockCursor,
 } from "./cursor.ts";
 import {
+	geminiCliAdapter,
+	parseGeminiEvent,
+	replyGemini,
+	staticBlockGemini,
+} from "./gemini-cli.ts";
+import {
+	GEMINI_CAPABILITIES,
+	normalizeGeminiToolName,
+} from "./gemini-tables.ts";
+import {
 	MUSE_CAPABILITIES,
 	museAdapter,
 	normalizeMuseToolName,
@@ -108,6 +118,8 @@ export {
 	codexCliAdapter,
 	copilotAdapter,
 	cursorAdapter,
+	GEMINI_CAPABILITIES,
+	geminiCliAdapter,
 	HOOK_PAYLOAD_MAX_BYTES,
 	isOpenCodeVersionSupported,
 	MUSE_CAPABILITIES,
@@ -116,6 +128,7 @@ export {
 	normalizeCodexToolName,
 	normalizeCopilotToolName,
 	normalizeCursorToolName,
+	normalizeGeminiToolName,
 	normalizeMuseToolName,
 	normalizeOpenCodeToolName,
 	OPENCODE_CAPABILITIES,
@@ -126,6 +139,7 @@ export {
 	parseCodexEvent,
 	parseCopilotEvent,
 	parseCursorEvent,
+	parseGeminiEvent,
 	parseMuseEvent,
 	parseOpenCodeEvent,
 	parseUniversalEvent,
@@ -133,6 +147,7 @@ export {
 	replyCodex,
 	replyCopilot,
 	replyCursor,
+	replyGemini,
 	replyMuse,
 	replyOpenCode,
 	replyUniversal,
@@ -140,6 +155,7 @@ export {
 	staticBlockCodex,
 	staticBlockCopilot,
 	staticBlockCursor,
+	staticBlockGemini,
 	staticBlockMuse,
 	staticBlockOpenCode,
 	staticBlockUniversal,
@@ -183,6 +199,9 @@ export function parseEvent(
 	if (harness === cursorAdapter.id) {
 		return cursorAdapter.parse(event, raw);
 	}
+	if (harness === geminiCliAdapter.id) {
+		return geminiCliAdapter.parse(event, raw);
+	}
 	if (harness === codexCliAdapter.id) {
 		return codexCliAdapter.parse(event, raw);
 	}
@@ -211,6 +230,9 @@ export function renderReply(
 	}
 	if (harness === cursorAdapter.id) {
 		return cursorAdapter.reply(decision);
+	}
+	if (harness === geminiCliAdapter.id) {
+		return geminiCliAdapter.reply(decision);
 	}
 	if (harness === codexCliAdapter.id) {
 		return codexCliAdapter.reply(decision);
