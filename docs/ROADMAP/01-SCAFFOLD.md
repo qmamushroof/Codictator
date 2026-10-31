@@ -19,7 +19,7 @@
 - [x] **1.6** Red-ledger runner and `npm run ledger`, written test-first. Its tests prove each failure mode of SPEC §10.7: a listed test passing, an unlisted test failing, a listed test absent, a pre-existing test newly listed. Verify: `npm test`.
 - [x] **1.7** Architecture tests for every SPEC §10.3 item under `tests/architecture/`. Item 1 waits for the arch module (phase 7) and item 5 for the phase 2 contracts; both enter the ledger red. Verify: `npm test`.
 - [x] **1.8** `.github/workflows/test.yml`: `pull_request` and `push` to `main`; permissions `contents: read`; checkout with `persist-credentials: false` and full history; matrix of the three OSes; Node from `.nvmrc`; the VALIDATION always-set plus the ledger base comparison. Every `uses:` pinned to a full commit SHA found by lookup (`core/ci-actions-pinned`). Verify: CI green on the PR.
-- [ ] **1.9** Human: protect `main` with the workflow's check required, force-push and deletion blocked, and squash merging disabled (`core/branch-protection`, SPEC §11 S33). Verify: the repo's ruleset settings page.
+- [x] **1.9** Human: protect `main` with the workflow's check required, force-push and deletion blocked, and squash merging disabled (`core/branch-protection`, SPEC §11 S33). Verify: the repo's ruleset settings page.
 
 ## Exit gate
 
