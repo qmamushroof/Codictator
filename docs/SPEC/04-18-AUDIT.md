@@ -22,7 +22,7 @@ Events never contain file content, prompt text or tool output: only paths, rule 
 
 ## 4.18.3 `status`
 
-One screen with the engine version, packs, and each harness's per-layer state (`active`, `inactive`, `unknown`, `unverified`) from capabilities and observed events. Below it: helper tool presence per required role (§4.6.6, from `config.tools` exact pins), active task and phase, waivers with days to expiry, ratchet totals and trend, dependency freshness, integrity state, open escalations and remediation progress (done / total, next step). `--json` emits the same as data for the extension.
+One screen with the engine version, packs, and each harness's per-layer state (`active`, `inactive`, `unknown`, `unverified`) from capabilities and observed events. Below it: helper tool presence per required role (§4.6.6, from `config.tools` exact pins), active task and phase, waivers with days to expiry, ratchet totals and trend, dependency freshness, integrity state, open escalations and remediation progress (done / total, next step). When the `token-saver` role is satisfied by the engine itself (§4.6.6), the helper-tool row reads `token-saver: engine-satisfied` with live evidence: current budget band (`budget/current`), last scoped-injection hash/byte count, and read-dedupe block count from the event log; all-absent evidence is a finding, not a pass. `--json` emits the same as data for the extension.
 
 ## 4.18.4 CI summary
 
