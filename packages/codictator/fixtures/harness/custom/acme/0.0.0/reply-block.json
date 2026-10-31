@@ -1,0 +1,5 @@
+{
+	"exitCode": 2,
+	"stdout": "{\"acme\":\"deny\",\"reason\":\"acme says no\",\"eventId\":\"evt-acme-1\"}",
+	"stderr": ""
+}

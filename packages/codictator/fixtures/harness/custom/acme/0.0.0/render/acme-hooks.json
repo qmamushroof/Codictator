@@ -1,0 +1,9 @@
+{
+	"version": 1,
+	"hooks": [
+		{
+			"event": "beforeWrite",
+			"command": "node .codictator/bin/run.mjs hook custom:acme beforeWrite"
+		}
+	]
+}

@@ -1,0 +1,18 @@
+{
+	"source": "custom:acme",
+	"version": "0.0.0",
+	"event": "tool.pre.write",
+	"verified": false,
+	"provenance": "Reference custom-adapter fixture for the SPEC §4.5.6 contract tests (§4.5.7); first-party fixture, no vendor release.",
+	"payload": {
+		"session_id": "sess-acme-0001",
+		"cwd": "/repo",
+		"hook_event_name": "beforeWrite",
+		"tool_name": "writeFile",
+		"tool_input": {
+			"file_path": "/repo/src/index.ts",
+			"content": "export const x = 1;\n"
+		},
+		"tool_use_id": "acme-0001"
+	}
+}
