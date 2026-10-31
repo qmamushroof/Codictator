@@ -15,5 +15,32 @@
 		"untrustedWorkspaces": {
 			"supported": false
 		}
+	},
+	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "Codictator",
+					"title": "Codictator",
+					"icon": "resources/codictator.svg"
+				}
+			]
+		},
+		"views": {
+			"Codictator": [
+				{
+					"id": "codictator-active-rules",
+					"name": "Active rules"
+				},
+				{
+					"id": "codictator-violations",
+					"name": "Violations"
+				},
+				{
+					"id": "codictator-timeline",
+					"name": "Timeline"
+				}
+			]
+		}
 	}
 }
