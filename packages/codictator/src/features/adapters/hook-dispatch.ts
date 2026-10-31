@@ -7,6 +7,7 @@ import { codexCliAdapter } from "./codex-cli.ts";
 import type { Adapter, HookEvent, HookReply } from "./contract.ts";
 import { COPILOT_TIMEOUT_SEC, copilotAdapter } from "./copilot.ts";
 import { cursorAdapter } from "./cursor.ts";
+import { geminiCliAdapter } from "./gemini-cli.ts";
 import { museAdapter } from "./muse-code.ts";
 import { opencodeAdapter } from "./opencode.ts";
 import { universalAdapter } from "./universal.ts";
@@ -45,6 +46,9 @@ export function adapterFor(harness: string): Adapter | undefined {
 	}
 	if (harness === cursorAdapter.id) {
 		return cursorAdapter;
+	}
+	if (harness === geminiCliAdapter.id) {
+		return geminiCliAdapter;
 	}
 	if (harness === codexCliAdapter.id) {
 		return codexCliAdapter;

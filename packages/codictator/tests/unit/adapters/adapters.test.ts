@@ -4,6 +4,7 @@
 // twenty-four fail red until the P0 adapters land.
 import { strict as assert } from "node:assert";
 import test from "node:test";
+import { geminiCliAdapter } from "../../../src/features/adapters/gemini-cli.ts";
 import type {
 	HookDecision,
 	HookEvent,
@@ -191,6 +192,7 @@ test("[§4.5 EC-12] regenerate with no config change", () => {
 		claudeCodeAdapter,
 		copilotAdapter,
 		cursorAdapter,
+		geminiCliAdapter,
 		codexCliAdapter,
 		universalAdapter,
 	]) {
