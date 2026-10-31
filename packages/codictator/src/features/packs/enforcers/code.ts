@@ -65,6 +65,8 @@ import {
 	resolvePerfBudgets,
 	resolveWaiversValid,
 } from "./gate-guards.ts";
+import { resolveNoSpeculativeAbstraction } from "./health-abstraction.ts";
+import { resolveDuplication } from "./health-duplication.ts";
 import { resolveDeadCode } from "./health-refs.ts";
 import {
 	resolveNoAssertionLoss,
@@ -133,6 +135,8 @@ const CODE_RESOLVERS: Readonly<Record<string, CodeResolver>> = {
 	"core/function-size": resolveFunctionSize,
 	"core/complexity": resolveComplexity,
 	"core/dead-code": resolveDeadCode,
+	"core/duplication": resolveDuplication,
+	"core/no-speculative-abstraction": resolveNoSpeculativeAbstraction,
 	"core/no-guard-removal": resolveNoGuardRemoval,
 	"core/ratchet-touched-improves": resolveRatchetTouchedImproves,
 	"ts/typecheck": resolveTsTypecheck,
