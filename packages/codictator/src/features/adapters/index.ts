@@ -41,6 +41,14 @@ import {
 } from "./copilot.ts";
 import { COPILOT_CAPABILITIES } from "./copilot-capabilities.ts";
 import {
+	CURSOR_CAPABILITIES,
+	cursorAdapter,
+	normalizeCursorToolName,
+	parseCursorEvent,
+	replyCursor,
+	staticBlockCursor,
+} from "./cursor.ts";
+import {
 	MUSE_CAPABILITIES,
 	museAdapter,
 	normalizeMuseToolName,
@@ -95,9 +103,11 @@ export {
 	CODEX_CAPABILITIES,
 	COPILOT_CAPABILITIES,
 	COPILOT_TIMEOUT_SEC,
+	CURSOR_CAPABILITIES,
 	claudeCodeAdapter,
 	codexCliAdapter,
 	copilotAdapter,
+	cursorAdapter,
 	HOOK_PAYLOAD_MAX_BYTES,
 	isOpenCodeVersionSupported,
 	MUSE_CAPABILITIES,
@@ -105,6 +115,7 @@ export {
 	normalizeClaudeCodeToolName,
 	normalizeCodexToolName,
 	normalizeCopilotToolName,
+	normalizeCursorToolName,
 	normalizeMuseToolName,
 	normalizeOpenCodeToolName,
 	OPENCODE_CAPABILITIES,
@@ -114,18 +125,21 @@ export {
 	parseClaudeCodeEvent,
 	parseCodexEvent,
 	parseCopilotEvent,
+	parseCursorEvent,
 	parseMuseEvent,
 	parseOpenCodeEvent,
 	parseUniversalEvent,
 	replyClaudeCode,
 	replyCodex,
 	replyCopilot,
+	replyCursor,
 	replyMuse,
 	replyOpenCode,
 	replyUniversal,
 	staticBlockClaudeCode,
 	staticBlockCodex,
 	staticBlockCopilot,
+	staticBlockCursor,
 	staticBlockMuse,
 	staticBlockOpenCode,
 	staticBlockUniversal,
@@ -166,6 +180,9 @@ export function parseEvent(
 	if (harness === copilotAdapter.id) {
 		return copilotAdapter.parse(event, raw);
 	}
+	if (harness === cursorAdapter.id) {
+		return cursorAdapter.parse(event, raw);
+	}
 	if (harness === codexCliAdapter.id) {
 		return codexCliAdapter.parse(event, raw);
 	}
@@ -191,6 +208,9 @@ export function renderReply(
 	}
 	if (harness === copilotAdapter.id) {
 		return copilotAdapter.reply(decision);
+	}
+	if (harness === cursorAdapter.id) {
+		return cursorAdapter.reply(decision);
 	}
 	if (harness === codexCliAdapter.id) {
 		return codexCliAdapter.reply(decision);

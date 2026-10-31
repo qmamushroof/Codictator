@@ -13,6 +13,7 @@ import {
 	claudeCodeAdapter,
 	codexCliAdapter,
 	copilotAdapter,
+	cursorAdapter,
 	museAdapter,
 	opencodeAdapter,
 	parseEvent,
@@ -189,6 +190,7 @@ test("[§4.5 EC-12] regenerate with no config change", () => {
 		opencodeAdapter,
 		claudeCodeAdapter,
 		copilotAdapter,
+		cursorAdapter,
 		codexCliAdapter,
 		universalAdapter,
 	]) {
