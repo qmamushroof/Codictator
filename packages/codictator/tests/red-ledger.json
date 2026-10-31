@@ -3,7 +3,6 @@
 	"red": [
 		"tests/acceptance/adapters/extension.test.ts::[§4.20 EC-5] timeline with 10000 events",
 		"tests/acceptance/adapters/extension.test.ts::[§4.20 EC-8] save of a file outside every module",
-		"tests/acceptance/adapters/extension.test.ts::[§4.20 EC-9] setup action in a folder without config",
 		"tests/acceptance/adapters/language-packs.test.ts::[§6.4 EC-10] mixed TS and Python repo",
 		"tests/acceptance/adapters/language-packs.test.ts::[§6.4 EC-8] namespace package without init",
 		"tests/acceptance/packaging/packaging.test.ts::[§10.2] npm tarball file list equals the allowlist",
