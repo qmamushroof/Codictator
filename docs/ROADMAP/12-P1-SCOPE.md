@@ -11,7 +11,7 @@
 
 ## Steps
 
-- [ ] **12.1** llm: presets with Meta `muse-spark-1.3` as the default suggestion, both wire formats, retries, key handling (SPEC §4.17). Verify: §4.17 EC-1–7 against the local replay server.
+- [x] **12.1** llm: presets with Meta `muse-spark-1.3` as the default suggestion, both wire formats, retries, key handling (SPEC §4.17). Verify: §4.17 EC-1–7 against the local replay server.
 - [x] **12.2** generator: templates, LLM draft with one repair round, materialisation, self-test report, `--floor` (SPEC §4.16). Verify: §4.16 EC-1–10.
 - [x] **12.3** `dotnet` pack with the NuGet driver (SPEC §6.2). Verify: §6.4 EC-6 and the §6.2 fixtures.
 - [ ] **12.4** `python` pack with the PyPI driver (SPEC §6.3). Verify: §6.4 EC-7, EC-8, EC-10 and the §6.3 fixtures.
