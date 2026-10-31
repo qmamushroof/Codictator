@@ -1,9 +1,6 @@
 {
 	"version": 1,
 	"red": [
-		"tests/unit/extension.test.ts::[§4.20] L2 on save verifies the file without blocking",
-		"tests/unit/extension.test.ts::[§4.20] active rules view groups packs with tiers and bounds",
-		"tests/unit/extension.test.ts::[§4.20] human-only command opens a terminal pre-filled",
-		"tests/unit/extension.test.ts::[§4.20] violations view shows diagnostics with rule id and remediation"
+		"tests/unit/extension.test.ts::[§4.20] human-only command opens a terminal pre-filled"
 	]
 }

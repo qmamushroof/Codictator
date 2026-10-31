@@ -21,6 +21,78 @@ export interface FakeNotification {
 	readonly actions: ReadonlyArray<string>;
 }
 
+// SPEC §4.20.2: Problems-panel diagnostics the Violations view writes.
+// Code is the rule id, message the remediation with an explain pointer.
+export interface FakeDiagnostic {
+	readonly uri: string;
+	readonly code: string;
+	readonly message: string;
+	readonly line?: number;
+}
+
+// SPEC §4.20.2 EC-1: one collection per folder, mirroring vscode's
+// DiagnosticCollection narrow port (set/delete per uri, clear per folder).
+export interface FakeDiagnosticCollection {
+	readonly name: string;
+	readonly entries: ReadonlyMap<string, ReadonlyArray<FakeDiagnostic>>;
+	set(uri: string, diagnostics: ReadonlyArray<FakeDiagnostic>): void;
+	deleteFile(uri: string): void;
+	clear(): void;
+	dispose(): void;
+}
+
+export interface FakeDisposable {
+	dispose(): void;
+}
+
+export function createFakeDisposable(onDispose?: () => void): FakeDisposable {
+	let disposed = false;
+	return {
+		dispose(): void {
+			if (!disposed) {
+				disposed = true;
+				onDispose?.();
+			}
+		},
+	};
+}
+
+// SPEC §4.20.2: the save seam for L2 on save plus the `events/appended`
+// notification seam for the Timeline view. Tests drive both directly.
+export interface FakeSaveEvent {
+	readonly folderPath: string;
+	readonly filePath: string;
+}
+
+export interface FakeEventEmitter<T> {
+	readonly fired: ReadonlyArray<T>;
+	event(listener: (data: T) => void): FakeDisposable;
+	fire(data: T): void;
+}
+
+export function createFakeEventEmitter<T>(): FakeEventEmitter<T> {
+	const fired: Array<T> = [];
+	const listeners: Array<(data: T) => void> = [];
+	return {
+		fired,
+		event(listener: (data: T) => void): FakeDisposable {
+			listeners.push(listener);
+			return createFakeDisposable(() => {
+				const at = listeners.indexOf(listener);
+				if (at >= 0) {
+					listeners.splice(at, 1);
+				}
+			});
+		},
+		fire(data: T): void {
+			fired.push(data);
+			for (const listener of [...listeners]) {
+				listener(data);
+			}
+		},
+	};
+}
+
 export interface FakeVscode {
 	folders: Array<string>;
 	configPaths: Set<string>;
@@ -31,6 +103,8 @@ export interface FakeVscode {
 	readonly terminals: Array<FakeTerminal>;
 	readonly notifications: Array<FakeNotification>;
 	readonly executedShellCommands: Array<string>;
+	readonly diagnosticCollections: ReadonlyMap<string, FakeDiagnosticCollection>;
+	readonly treeProviders: ReadonlyMap<string, ReadonlyArray<unknown>>;
 	addFolder(path: string, options: { config: boolean; engine: boolean }): void;
 	registerCommand(commandId: string): void;
 	workspaceFolderPaths(): ReadonlyArray<string>;
@@ -48,6 +122,17 @@ export interface FakeVscode {
 	supportedProtocolVersion(): string;
 	serverProtocolVersion(_folderPath: string): string | undefined;
 	extensionVersion(): string;
+	// SPEC §4.20.2 views: diagnostics per folder (EC-1), the onDidSave seam
+	// for L2 on save, the `events/appended` seam for Timeline, and the tree
+	// providers behind the Active rules / Violations / Timeline views.
+	createDiagnosticCollection(name: string): FakeDiagnosticCollection;
+	onDidSaveTextDocument(
+		listener: (event: FakeSaveEvent) => void,
+	): FakeDisposable;
+	saveDocument(folderPath: string, filePath: string): void;
+	onEventsAppended(listener: (folderPath: string) => void): FakeDisposable;
+	emitEventsAppended(folderPath: string): void;
+	registerTreeDataProvider(viewId: string, items: ReadonlyArray<unknown>): void;
 }
 
 export function createFakeVscode(): FakeVscode {
@@ -55,6 +140,10 @@ export function createFakeVscode(): FakeVscode {
 	const terminals: Array<FakeTerminal> = [];
 	const notifications: Array<FakeNotification> = [];
 	const executedShellCommands: Array<string> = [];
+	const diagnosticCollections = new Map<string, FakeDiagnosticCollection>();
+	const treeProviders = new Map<string, ReadonlyArray<unknown>>();
+	const saveListeners: Array<(event: FakeSaveEvent) => void> = [];
+	const appendedListeners: Array<(folderPath: string) => void> = [];
 	const fake: FakeVscode = {
 		folders: [],
 		configPaths: new Set(),
@@ -65,6 +154,8 @@ export function createFakeVscode(): FakeVscode {
 		terminals,
 		notifications,
 		executedShellCommands,
+		diagnosticCollections,
+		treeProviders,
 		addFolder(
 			path: string,
 			options: { config: boolean; engine: boolean },
@@ -127,6 +218,65 @@ export function createFakeVscode(): FakeVscode {
 		},
 		extensionVersion(): string {
 			return fake.extensionVersionValue;
+		},
+		createDiagnosticCollection(name: string): FakeDiagnosticCollection {
+			const entries = new Map<string, ReadonlyArray<FakeDiagnostic>>();
+			const collection: FakeDiagnosticCollection = {
+				name,
+				entries,
+				set(uri: string, diagnostics: ReadonlyArray<FakeDiagnostic>): void {
+					entries.set(uri, [...diagnostics]);
+				},
+				deleteFile(uri: string): void {
+					entries.delete(uri);
+				},
+				clear(): void {
+					entries.clear();
+				},
+				dispose(): void {
+					entries.clear();
+					diagnosticCollections.delete(name);
+				},
+			};
+			diagnosticCollections.set(name, collection);
+			return collection;
+		},
+		onDidSaveTextDocument(
+			listener: (event: FakeSaveEvent) => void,
+		): FakeDisposable {
+			saveListeners.push(listener);
+			return createFakeDisposable(() => {
+				const at = saveListeners.indexOf(listener);
+				if (at >= 0) {
+					saveListeners.splice(at, 1);
+				}
+			});
+		},
+		saveDocument(folderPath: string, filePath: string): void {
+			const event: FakeSaveEvent = { folderPath, filePath };
+			for (const listener of [...saveListeners]) {
+				listener(event);
+			}
+		},
+		onEventsAppended(listener: (folderPath: string) => void): FakeDisposable {
+			appendedListeners.push(listener);
+			return createFakeDisposable(() => {
+				const at = appendedListeners.indexOf(listener);
+				if (at >= 0) {
+					appendedListeners.splice(at, 1);
+				}
+			});
+		},
+		emitEventsAppended(folderPath: string): void {
+			for (const listener of [...appendedListeners]) {
+				listener(folderPath);
+			}
+		},
+		registerTreeDataProvider(
+			viewId: string,
+			items: ReadonlyArray<unknown>,
+		): void {
+			treeProviders.set(viewId, [...items]);
 		},
 	};
 	return fake;
