@@ -16,7 +16,7 @@
 - [x] **12.3** `dotnet` pack with the NuGet driver (SPEC §6.2). Verify: §6.4 EC-6 and the §6.2 fixtures.
 - [ ] **12.4** `python` pack with the PyPI driver (SPEC §6.3). Verify: §6.4 EC-7, EC-8, EC-10 and the §6.3 fixtures.
 - [x] **12.5** Cursor adapter (SPEC §4.5.4). Verify: its goldens and contract tests.
-- [ ] **12.6** Gemini CLI adapter (SPEC §4.5.4). Verify: its goldens and contract tests.
+- [x] **12.6** Gemini CLI adapter (SPEC §4.5.4). Verify: its goldens and contract tests.
 - [ ] **12.7** Custom adapters and `adapter test` (SPEC §4.5.6). Verify: their contract tests.
 - [ ] **12.8** `core/duplication` and `core/no-speculative-abstraction` measures. Verify: their fixture cases with no false positive on Codictator's own `src/`.
 - [ ] **12.9** Extension views Steering, Budget and Health (SPEC §4.20.2). Verify: their extension tests.
