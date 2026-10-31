@@ -49,6 +49,12 @@ import {
 	staticBlockCursor,
 } from "./cursor.ts";
 import {
+	checkCustomContract,
+	loadCustomAdapter,
+	renderCustomHarnessFiles,
+	renderCustomRegenFragment,
+} from "./custom.ts";
+import {
 	geminiCliAdapter,
 	parseGeminiEvent,
 	replyGemini,
@@ -114,6 +120,7 @@ export {
 	COPILOT_CAPABILITIES,
 	COPILOT_TIMEOUT_SEC,
 	CURSOR_CAPABILITIES,
+	checkCustomContract,
 	claudeCodeAdapter,
 	codexCliAdapter,
 	copilotAdapter,
@@ -122,6 +129,7 @@ export {
 	geminiCliAdapter,
 	HOOK_PAYLOAD_MAX_BYTES,
 	isOpenCodeVersionSupported,
+	loadCustomAdapter,
 	MUSE_CAPABILITIES,
 	museAdapter,
 	normalizeClaudeCodeToolName,
@@ -143,6 +151,8 @@ export {
 	parseMuseEvent,
 	parseOpenCodeEvent,
 	parseUniversalEvent,
+	renderCustomHarnessFiles,
+	renderCustomRegenFragment,
 	replyClaudeCode,
 	replyCodex,
 	replyCopilot,
@@ -207,6 +217,18 @@ export function parseEvent(
 	}
 	if (harness === universalAdapter.id) {
 		return universalAdapter.parse(event, raw);
+	}
+	// SPEC §4.5.6: the sync event seam cannot resolve custom adapters (the
+	// loader is async and root-confined), so every custom: id answers
+	// CDX-E301 here; callers with a root use loadCustomAdapter instead.
+	if (harness.startsWith("custom:")) {
+		return err(
+			makeError(
+				"CDX-E301",
+				`unknown harness id "${harness}"`,
+				"Install the adapter under .codictator/adapters/<id>/adapter.mjs, then load it with loadCustomAdapter.",
+			),
+		);
 	}
 	throw new Error(`not implemented: SPEC §4.5.4 adapter for ${harness}`);
 }

@@ -3,6 +3,7 @@
 // install-hooks writes the hooks and points core.hooksPath at them;
 // uninstall removes generated files with the CI warning.
 import { parseArgs } from "node:util";
+import { renderCustomRegenFragment } from "../features/adapters/index.ts";
 import {
 	EXPECTED_HOOKS_PATH,
 	HOOK_NAMES,
@@ -98,21 +99,26 @@ export async function handleRegen(
 	const agents = await readStateText(root.value, "AGENTS.md");
 	const profile = profileOf(loaded.value.effective.config.architecture);
 	const configured = loaded.value.effective.config;
-	const wrote = await writePlan(
-		root.value,
-		guardrailPlan(
-			loaded.value.effective.config.harnesses,
-			profile,
-			repoNameOf(root.value),
-			agents,
-			{
-				packs: configured.packs,
-				tunables: configured.tunables,
-				architecture: configured.architecture,
-				tools: configured.tools,
-			},
-		),
+	const customFiles = await renderCustomRegenFragment(root.value, configured);
+	if (!customFiles.ok) {
+		const error = customFiles.error;
+		return fail(error.code, error.message, error.remediation, req.json);
+	}
+	const plan = guardrailPlan(
+		loaded.value.effective.config.harnesses,
+		profile,
+		repoNameOf(root.value),
+		agents,
+		{
+			packs: configured.packs,
+			tunables: configured.tunables,
+			architecture: configured.architecture,
+			tools: configured.tools,
+		},
 	);
+	const wrote = await writePlan(root.value, {
+		files: [...plan.files, ...customFiles.value],
+	});
 	if (!wrote.ok) {
 		return fail(
 			"CDX-E903",
