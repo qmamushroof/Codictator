@@ -77,6 +77,8 @@ Rendered from pack templates (§4.4.1) into each harness's skill, subagent or co
 
 `core/agent-assets-present` requires these assets for every configured harness that supports the form, plus one helper tool for each role in `config.steering.requiredHelpers` (default `knowledge-graph`, `token-saver`; `init` proposes graphify and caveman).
 
+The `token-saver` role may instead be satisfied by the engine itself: budget bands and checkpoints (§4.6.4), scoped injection (§4.6.3) and the read cache (§4.6.5) are the token-saving machinery, so no external `config.tools` pin is required in that case; `status` then lists `token-saver: engine-satisfied` with live evidence as defined in §4.18.3 — current budget band (`budget/current`), last scoped-injection hash/byte count, and read-dedupe block count from the event log — rather than probing an external binary, and all-absent evidence is a finding, not a pass. This exception covers only `token-saver`; every other helper role still needs its `config.tools` pin.
+
 ## 4.6.7 Edge cases
 
 | EC | Case | Expected |
