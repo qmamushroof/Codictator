@@ -58,6 +58,44 @@ function cannedEventsTail(): unknown {
 	};
 }
 
+// SPEC §4.20.2: the default steering answer keeps the Steering view
+// live-shaped without a server — one injection row naming its session,
+// time and harness, so the view is never empty by construction.
+function cannedSteeringHistory(): unknown {
+	return {
+		injections: [
+			{
+				v: 1,
+				id: "00000000000000000000000000",
+				ts: "1970-01-01T00:00:00.000Z",
+				now: "1970-01-01T00:00:00.000Z",
+				kind: "injection",
+				layer: "L2",
+				trigger: "save",
+				sessionId: "session-1",
+				harness: "opencode",
+				ruleIds: [],
+				durationMs: 0,
+				configHash: "",
+				packs: {},
+			},
+		],
+	};
+}
+
+// SPEC §4.20.2 + §4.6.7 EC-4: the default budget answer mirrors the engine's
+// unavailable row — no usage data, so the Budget view reports unavailable
+// instead of estimating.
+function cannedBudgetCurrent(): unknown {
+	return {
+		available: false,
+		status: "unavailable",
+		band: "unavailable",
+		contextWindow: 0,
+		usedTokens: 0,
+	};
+}
+
 function cannedResponse(method: string): unknown {
 	switch (method) {
 		case "rules/list": {
@@ -71,6 +109,12 @@ function cannedResponse(method: string): unknown {
 		}
 		case "events/tail": {
 			return cannedEventsTail();
+		}
+		case "steering/history": {
+			return cannedSteeringHistory();
+		}
+		case "budget/current": {
+			return cannedBudgetCurrent();
 		}
 		default: {
 			return {};

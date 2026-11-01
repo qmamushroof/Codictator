@@ -39,6 +39,18 @@
 				{
 					"id": "codictator-timeline",
 					"name": "Timeline"
+				},
+				{
+					"id": "codictator-steering",
+					"name": "Steering"
+				},
+				{
+					"id": "codictator-budget",
+					"name": "Budget"
+				},
+				{
+					"id": "codictator-health",
+					"name": "Health"
 				}
 			]
 		},

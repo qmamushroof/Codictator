@@ -9,6 +9,18 @@ export {
 	resetEngineRequest,
 	setEngineRequest,
 } from "./engine-client.ts";
+export type {
+	BudgetState,
+	HealthState,
+	P1ViewsApi,
+	SteeringEntry,
+} from "./p1-views.ts";
+export {
+	currentBudget,
+	healthSummary,
+	listSteeringEntries,
+	registerSteeringBudgetHealthViews,
+} from "./p1-views.ts";
 // SPEC §4.20.4: restart and reconnect behaviour plus the Cursor-compatible
 // API floor live in reconnect.ts; main re-exports the seam.
 export {
