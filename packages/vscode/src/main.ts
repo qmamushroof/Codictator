@@ -198,6 +198,14 @@ export interface SetupWelcome {
 	readonly executed: boolean;
 }
 
+// SPEC §4.20.1 Module format: the production host entry. The CommonJS shim
+// (src/extension.cts) dynamic-imports this module and passes the host vscode
+// API object; the repo-pinned engine wiring lands with the extension phase,
+// so this throws like every other unlanded phase entry.
+export function activateWithHost(_host: unknown): Promise<void> {
+	throw new Error("not implemented: SPEC §4.20.1 host wiring");
+}
+
 // SPEC §4.20.1 Module format: the CommonJS shim dynamic-imports the ESM main
 // and passes it the vscode API object; main activates with that object.
 export function activateExtension(api: ExtensionApi): Promise<void> {

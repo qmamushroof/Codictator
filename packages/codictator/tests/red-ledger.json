@@ -5,8 +5,6 @@
 		"tests/acceptance/adapters/extension.test.ts::[§4.20 EC-8] save of a file outside every module",
 		"tests/acceptance/adapters/language-packs.test.ts::[§6.4 EC-10] mixed TS and Python repo",
 		"tests/acceptance/adapters/language-packs.test.ts::[§6.4 EC-8] namespace package without init",
-		"tests/acceptance/packaging/packaging.test.ts::[§10.2] npm tarball file list equals the allowlist",
-		"tests/acceptance/packaging/packaging.test.ts::[§10.2] vsix contains no node_modules",
 		"tests/acceptance/replay/determinism.test.ts::[§10.4] determinism dotnet verdict byte-identical across three runs",
 		"tests/acceptance/replay/determinism.test.ts::[§10.4] determinism mixed verdict byte-identical across three runs",
 		"tests/acceptance/replay/determinism.test.ts::[§10.4] determinism python verdict byte-identical across three runs",

@@ -13,9 +13,9 @@
 		"ledger": "node packages/codictator/tests/support/red-ledger-runner.ts --ledger",
 		"test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-branches=80 --test-coverage-exclude=\"**/tests/support/**\" --test-coverage-exclude=\"**/*.test.ts\" \"packages/codictator/tests/**/*.test.ts\" \"packages/vscode/tests/**/*.test.ts\"",
 		"test:stress": "node --test \"packages/codictator/tests/stress/**/*.test.ts\"",
-		"build": "tsc -b packages/codictator/tsconfig.build.json packages/vscode && node packages/codictator/scripts/copy-pack-data.mjs",
+		"build": "tsc -b packages/codictator/tsconfig.build.json packages/vscode/tsconfig.build.json && node packages/codictator/scripts/copy-pack-data.mjs",
 		"test:extension": "node -e \"console.error('extension-host runner lands with packages/vscode');process.exit(2)\"",
-		"test:packaging": "npm run build && npm pack --dry-run -w codictator"
+		"test:packaging": "npm run build && npm pack --dry-run -w codictator && node --test packages/codictator/tests/acceptance/packaging/packaging.test.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.15",

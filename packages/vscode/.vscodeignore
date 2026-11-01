@@ -1,0 +1,15 @@
+# SPEC §10.2/§9.2: deny by default. The .vsix ships only the allowlist;
+# everything else (src/, tests/, node_modules, dotfiles) stays out.
+**/*
+!dist/**
+!resources/**
+!README.md
+!LICENSE
+!package.json
+# Pin the never-ship entries even though the catch-all above excludes them,
+# so a future allowlist edit cannot silently re-include them.
+src/**
+tests/**
+node_modules/**
+**/.*
+**/.DS_Store
