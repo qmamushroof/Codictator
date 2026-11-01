@@ -734,14 +734,21 @@ test("[§4.18] explain prints the second matching event", async () => {
 	}
 });
 
-test("[§4.18] replay without an id is a usage error", async () => {
-	// SPEC §4.19.2: replay takes exactly one event id.
+test("[§4.18] replay without an id replays all", async () => {
+	// SPEC §4.19.2: bare `replay` (no event id) replays the whole event log
+	// and returns the verify-equivalent verdict.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
-		const ran = await handleReplay(req([], repo.dir));
-		assert.equal(ran.ok, true);
-		if (ran.ok) {
-			assert.equal(ran.value, 2);
+		seedConfig(repo);
+		const regen = await handleRegen(req([], repo.dir));
+		assert.equal(regen.ok, true);
+		const replayed = await handleReplay(req([], repo.dir));
+		const verified = await handleVerify(req([], repo.dir));
+		assert.equal(replayed.ok, true);
+		assert.equal(verified.ok, true);
+		if (replayed.ok && verified.ok) {
+			assert.equal(replayed.value, verified.value);
+			assert.equal(replayed.value, 0);
 		}
 	} finally {
 		repo.cleanup();
