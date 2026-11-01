@@ -19,7 +19,7 @@
 - [x] **12.6** Gemini CLI adapter (SPEC §4.5.4). Verify: its goldens and contract tests.
 - [x] **12.7** Custom adapters and `adapter test` (SPEC §4.5.6). Verify: their contract tests.
 - [x] **12.8** `core/duplication` and `core/no-speculative-abstraction` measures. Verify: their fixture cases with no false positive on Codictator's own `src/`.
-- [ ] **12.9** Extension views Steering, Budget and Health (SPEC §4.20.2). Verify: their extension tests.
+- [x] **12.9** Extension views Steering, Budget and Health (SPEC §4.20.2). Verify: their extension tests.
 
 ## Exit gate
 
