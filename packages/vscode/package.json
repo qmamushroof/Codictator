@@ -1,7 +1,11 @@
 {
 	"name": "codictator-vscode",
 	"publisher": "codictator",
-	"version": "0.1.0-rc.2",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/qmamushroof/Codictator"
+	},
+	"version": "0.1.0-rc.3",
 	"type": "module",
 	"main": "dist/extension.cjs",
 	"engines": {
