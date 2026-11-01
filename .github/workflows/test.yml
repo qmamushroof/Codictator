@@ -37,10 +37,14 @@ jobs:
         if: always()
         with:
           name: determinism-${{ matrix.os }}
-          path: |
-            test-results/determinism/*.json
-            test-results/stress-timings.json
+          path: test-results/determinism/*.json
           if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: stress-${{ matrix.os }}
+          path: test-results/stress-timings.json
+          if-no-files-found: warn
       # SPEC 10.7 query exits 1 while red entries remain; the gates are
       # npm test and the base comparison below, so only real errors fail here.
       - run: >
