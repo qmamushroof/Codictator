@@ -18,6 +18,18 @@ export {
 	shouldRestartOnLockChange,
 } from "./reconnect.ts";
 export type {
+	BudgetState,
+	HealthState,
+	P1ViewsApi,
+	SteeringEntry,
+} from "./p1-views.ts";
+export {
+	currentBudget,
+	healthSummary,
+	listSteeringEntries,
+	registerSteeringBudgetHealthViews,
+} from "./p1-views.ts";
+export type {
 	TimelineDisposable,
 	TimelineEventRow,
 	TimelineOptions,
