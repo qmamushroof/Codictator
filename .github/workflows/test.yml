@@ -29,6 +29,15 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      # SPEC §10.4: canonical verdict bytes per scenario for the cross-OS
+      # compare job; always uploaded so a red run still leaves evidence.
+      # v7 looked up 2026-11-01 via git ls-remote.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: determinism-${{ matrix.os }}
+          path: test-results/determinism/*.json
+          if-no-files-found: error
       # SPEC 10.7 query exits 1 while red entries remain; the gates are
       # npm test and the base comparison below, so only real errors fail here.
       - run: >
@@ -62,3 +71,35 @@ jobs:
             exit 0
           fi
           node packages/codictator/tests/support/red-ledger-runner.ts --base "$BASE"
+
+  # SPEC §10.4: the CI matrix compares the Linux, Windows and macOS verdict
+  # bytes of every determinism scenario, then re-runs the replay assertion.
+  determinism-compare:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      # v8 looked up 2026-11-01 via git ls-remote.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: determinism-*
+          path: determinism-compare
+      - shell: bash
+        run: |
+          for file in determinism-compare/determinism-ubuntu-latest/*.json; do
+            name="$(basename "$file")"
+            cmp --silent "$file" "determinism-compare/determinism-windows-latest/$name"
+            cmp --silent "$file" "determinism-compare/determinism-macos-latest/$name"
+          done
+          echo "determinism bytes identical across Linux, Windows and macOS"
+      - run: npm ci --ignore-scripts
+      - run: node --test packages/codictator/tests/acceptance/replay/determinism.test.ts
