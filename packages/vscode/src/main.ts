@@ -9,6 +9,14 @@ export {
 	resetEngineRequest,
 	setEngineRequest,
 } from "./engine-client.ts";
+// SPEC §4.20.4: restart and reconnect behaviour plus the Cursor-compatible
+// API floor live in reconnect.ts; main re-exports the seam.
+export {
+	apiFloorVersion,
+	isActiveInUntrustedWorkspace,
+	reconnectBackoffMs,
+	shouldRestartOnLockChange,
+} from "./reconnect.ts";
 export type {
 	TimelineDisposable,
 	TimelineEventRow,
