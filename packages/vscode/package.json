@@ -41,6 +41,36 @@
 					"name": "Timeline"
 				}
 			]
-		}
+		},
+		"commands": [
+			{
+				"command": "codictator.verify",
+				"title": "Codictator: Verify"
+			},
+			{
+				"command": "codictator.status",
+				"title": "Codictator: Status"
+			},
+			{
+				"command": "codictator.explain",
+				"title": "Codictator: Explain"
+			},
+			{
+				"command": "codictator.regen",
+				"title": "Codictator: Regen"
+			},
+			{
+				"command": "codictator.remediateNext",
+				"title": "Codictator: Remediate Next"
+			},
+			{
+				"command": "codictator.taskShow",
+				"title": "Codictator: Task Show"
+			},
+			{
+				"command": "codictator.waive",
+				"title": "Codictator: Waive"
+			}
+		]
 	}
 }
