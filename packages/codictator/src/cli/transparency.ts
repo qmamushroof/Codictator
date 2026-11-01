@@ -14,7 +14,7 @@ import { ENGINE_VERSION } from "../features/config/index.ts";
 import { loadBuiltinPack } from "../features/packs/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { err, makeError, ok } from "../kernel/index.ts";
-import { readLogEvents } from "./inspect.ts";
+import { handleVerify, readLogEvents } from "./inspect.ts";
 import type { CommandRequest } from "./shared.ts";
 import { fail, needRoot, printHuman, printJson, usageError } from "./shared.ts";
 
@@ -179,8 +179,11 @@ async function findReplayEvent(
 	return log.events.find((event) => event.id === target);
 }
 
-// SPEC §4.18.2 + EC-5: re-run the inputs an event records; a pack version
-// that is no longer installed fails as CDX-E011 naming the version needed.
+// SPEC §4.18.2 + EC-5 + §10.4: re-run the inputs an event records; a pack
+// version that is no longer installed fails as CDX-E011 naming the version
+// needed. Bare `replay` re-runs the verify evaluation, so its verdict JSON
+// shape matches `verify` by construction and the §10.4 replay rows compare
+// equal in memory; single ids still render through replaySummary.
 export async function handleReplay(
 	req: CommandRequest,
 ): Promise<Result<number>> {
@@ -191,12 +194,15 @@ export async function handleReplay(
 			options: {},
 			allowPositionals: true,
 		});
-		if (parsed.positionals.length !== 1) {
-			return usageError("usage: codictator replay <eventId>");
+		if (parsed.positionals.length > 1) {
+			return usageError("usage: codictator replay [<eventId>]");
+		}
+		if (parsed.positionals.length === 0) {
+			return handleVerify(req);
 		}
 		id = parsed.positionals[0];
 	} catch {
-		return usageError("usage: codictator replay <eventId>");
+		return usageError("usage: codictator replay [<eventId>]");
 	}
 	const target = id ?? "";
 	const root = await needRoot(req);
