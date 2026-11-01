@@ -33,6 +33,44 @@ const STRESS_CONFIG = JSON.stringify({
 	harnesses: ["muse-code", "opencode"],
 });
 
+// Temp-dir removal races lazy OS reclamation (ENOTEMPTY on macOS) when a
+// just-written tree is removed, so retry the sync removal with linear
+// backoff and rethrow the last error to keep genuine failures visible.
+const RETRYABLE_CLEANUP_CODES: ReadonlySet<string> = new Set([
+	"ENOTEMPTY",
+	"EBUSY",
+	"EPERM",
+]);
+
+function removeDirWithRetry(dir: string): void {
+	let lastError: unknown;
+	for (let attempt = 1; attempt <= 5; attempt += 1) {
+		try {
+			rmSync(dir, { recursive: true, force: true });
+			return;
+		} catch (error) {
+			lastError = error;
+			const code =
+				error instanceof Error
+					? (error as NodeJS.ErrnoException).code
+					: undefined;
+			if (code === undefined || !RETRYABLE_CLEANUP_CODES.has(code)) {
+				throw error;
+			}
+			if (attempt === 5) {
+				throw error;
+			}
+			Atomics.wait(
+				new Int32Array(new SharedArrayBuffer(4)),
+				0,
+				0,
+				100 * attempt,
+			);
+		}
+	}
+	throw lastError;
+}
+
 // SPEC §9.3: budgets are p95. Same index convention as buildReportText so
 // the harness and the product agree on which sample the budget binds.
 export function p95Ms(samples: ReadonlyArray<number>): number {
@@ -90,7 +128,7 @@ export function buildReferenceRepo(
 		dir,
 		git,
 		cleanup: (): void => {
-			rmSync(dir, { recursive: true, force: true });
+			removeDirWithRetry(dir);
 		},
 	};
 }
