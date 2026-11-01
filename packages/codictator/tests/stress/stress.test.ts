@@ -128,15 +128,21 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 	// under the 60 s hard time limit. Real staged scale on the reference
 	// repo with budget assertions, plus work evidence — a staged secret the
 	// engine evaluation must flag — so the budgets measure a real evaluation
-	// instead of a no-op. The child CLI is warmed once before the fifty-leg
-	// timer so the 5 s budget meters engine work, not spawn/startup (SPEC
-	// §9.3, same reading row 5 uses). Integrity exception IE-09-R5-staged (rule
+	// instead of a no-op. The child CLI is warmed with the identical verify
+	// command on a scratch repo before the fifty-leg timer so the 5 s
+	// budget meters engine work, not spawn/startup (SPEC §9.3, same reading
+	// row 5 uses). Integrity exception IE-09-R5-staged (rule
 	// core/no-assertion-loss, path
 	// packages/codictator/tests/stress/stress.test.ts, reason: the old
 	// setup committed every file, leaving verify --staged an empty scope;
 	// the setup stages without committing so the scenario names a
 	// genuinely staged tree).
 	const repo = buildReferenceRepo({
+		gitInit: true,
+		config: true,
+		commitBase: true,
+	});
+	const warmRepo = buildReferenceRepo({
 		gitInit: true,
 		config: true,
 		commitBase: true,
@@ -158,10 +164,13 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		}
 		repo.git(["add", "-A"]);
 		// SPEC §9.3 binds budgets to in-process work and excludes harness
-		// spawn/startup: warm the child CLI once so the fifty-leg timer
-		// measures engine work, not node/TS startup (~3.5-4.5 s per the
-		// row-5 comment). Budgets and the 10k fixture are untouched.
-		await runCli(repo.dir, ["--help"]);
+		// spawn/startup: warm the child CLI with the identical verify
+		// command on a scratch repo so the fifty-leg timer measures engine
+		// work, not first-import cost (a `--help` warm never imports the
+		// engine graph). Scratch, not the measured repo, so the warm run
+		// cannot couple to the real staged state. Budgets and the 10k
+		// fixture are untouched.
+		await runCli(warmRepo.dir, ["verify", "--staged", "--json"]);
 		const fiftyStart = Date.now();
 		const fifty = await runCli(repo.dir, ["verify", "--staged", "--json"]);
 		const fiftyMs = Date.now() - fiftyStart;
@@ -194,6 +203,7 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		);
 	} finally {
 		repo.cleanup();
+		warmRepo.cleanup();
 	}
 });
 
