@@ -1,15 +1,148 @@
 name: release
 
-# Skeleton for npm trusted-publisher trust validation (staged publish only).
-# The full release flow (tag triggers, gates, dry-runs) lands in Phase 13.5.
+# Phase 13.5. Tags only; full verify first; npm trusted publishing (OIDC)
+# with provenance for the engine package only; the extension ships via
+# `vsce` (Marketplace) and `ovsx` (Open VSX) and NEVER goes to npm.
+# Pre-release tags (vX.Y.Z-*) run a dry run: every gate and packaging step
+# runs, but no registry PUT is made. Stable tags (vX.Y.Z) publish for real.
+# SPEC: 4.15.5 (tags only, full verify, trusted publishing), 9.2 (supply
+# chain: pinned actions, ci --ignore-scripts, no install scripts).
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
 
 permissions:
   contents: read
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  publish:
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      dry_run: ${{ steps.mode.outputs.dry_run }}
+      version: ${{ steps.mode.outputs.version }}
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Resolve tag mode (stable vs pre-release dry run)
+        id: mode
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+            echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          elif [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-.+ ]]; then
+            echo "dry_run=true" >> "$GITHUB_OUTPUT"
+            echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::tag '$tag' is not semver (expected vX.Y.Z or vX.Y.Z-*)"
+            exit 1
+          fi
+      - name: Check tag matches package versions
+        run: |
+          expected="${{ steps.mode.outputs.version }}"
+          engine="$(node -p "require('./packages/codictator/package.json').version")"
+          ext="$(node -p "require('./packages/vscode/package.json').version")"
+          [ "$engine" = "$expected" ] || { echo "::error::packages/codictator is $engine, tag wants $expected"; exit 1; }
+          [ "$ext" = "$expected" ] || { echo "::error::packages/vscode is $ext, tag wants $expected"; exit 1; }
+      - name: Check pins (node pin + SHA-pinned actions)
+        run: |
+          [ -f .nvmrc ] || { echo "::error::.nvmrc missing"; exit 1; }
+          if grep -REn 'uses:[[:space:]]*[^#]*@(v[0-9]|main|master|latest)' .github/workflows/release.yml; then
+            echo "::error::release.yml references unpinned actions (SHA pins required)"
+            exit 1
+          fi
+      # Trust mechanism is static: OIDC only (no long-lived npm tokens),
+      # provenance mandatory. The npm-side trust grant itself (13.6) can
+      # only be proven by a real publish, which 13.8 does live.
+      - name: Check OIDC-only auth, provenance, and npm scope
+        run: |
+          # Self-grep guard: these patterns also match their own check
+          # lines, so strip check lines (any line running grep or printing
+          # a check verdict) before asserting on the remaining workflow.
+          scoped="$(grep -vE 'grep|::error|::warning' .github/workflows/release.yml)"
+          if printf '%s\n' "$scoped" | grep -Reni 'NPM_TOKEN|NODE_AUTH_TOKEN'; then
+            echo "::error::long-lived npm token referenced; trusted publishing (OIDC) only"
+            exit 1
+          fi
+          printf '%s\n' "$scoped" | grep -q -- '--provenance' \
+            || { echo "::error::npm publish lacks --provenance"; exit 1; }
+          # Exactly two: the dry-run and stable variants of the single
+          # engine publish step (packages/codictator only).
+          [ "$(printf '%s\n' "$scoped" | grep -c 'npm publish')" = "2" ] \
+            || { echo "::error::expected exactly two npm publish lines (dry-run + stable of packages/codictator only)"; exit 1; }
+          printf '%s\n' "$scoped" | grep -q 'working-directory: packages/codictator' \
+            || { echo "::error::npm publish must run in packages/codictator (extension never goes to npm)"; exit 1; }
+      # 13.6 claim check: read-only registry GET, safe on dry runs.
+      - name: Check npm claim (read-only, dry-run tolerant)
+        run: |
+          if npm view codictator name >/dev/null 2>&1; then
+            echo "npm claim present: codictator"
+          else
+            msg="npm package 'codictator' is not visible (13.6 claim pending)"
+            if [ "${{ steps.mode.outputs.dry_run }}" = "true" ]; then
+              echo "::warning::$msg"
+            else
+              echo "::error::$msg"
+              exit 1
+            fi
+          fi
+      # 13.6 secret check: presence only, values never printed. Missing
+      # secrets fail stable releases but only warn on dry runs, so the
+      # pre-release drill works before 13.6 is done. Marketplace uses OIDC
+      # (SPEC 4.15.5: vsce publish --oidc, no PAT), so only OVSX_PAT is gated.
+      - name: Check marketplace secrets (presence only, dry-run tolerant)
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          dry="${{ steps.mode.outputs.dry_run }}"
+          fail=0
+          for s in OVSX_PAT; do
+            if [ -z "${!s:-}" ]; then
+              msg="secret $s is not set (13.6 pending)"
+              if [ "$dry" = "true" ]; then echo "::warning::$msg"; else echo "::error::$msg"; fail=1; fi
+            else
+              echo "secret $s: set"
+            fi
+          done
+          exit $fail
+
+  verify:
+    needs: preflight
+    runs-on: ubuntu-latest
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm run test:packaging
+
+  publish-npm:
+    needs: [preflight, verify]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,8 +159,69 @@ jobs:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
           cache: npm
-      - run: npm install -g npm@latest
+      # Pinned to the packageManager version; never npm@latest.
+      - run: npm install -g npm@11.19.1
       - run: npm ci --ignore-scripts
       - run: npm run build
-      - run: npm publish --provenance --access public
+      - name: Publish engine (dry run on pre-release tags)
         working-directory: packages/codictator
+        run: |
+          if [ "${{ needs.preflight.outputs.dry_run }}" = "true" ]; then
+            echo "dry run: packaging and validating without registry PUT"
+            npm publish --dry-run --provenance --access public
+          else
+            npm publish --provenance --access public
+          fi
+
+  publish-vscode:
+    needs: [preflight, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # SPEC 4.15.5: Marketplace via vsce --oidc; Open VSX trusted
+      # publisher also mints from the OIDC identity.
+      id-token: write
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      # vsce/ovsx come from root devDependencies; --no-install fails fast
+      # if they ever go missing instead of fetching from the network.
+      - name: Package extension (.vsix, runs on dry run too)
+        working-directory: packages/vscode
+        run: npx --no-install vsce package --no-dependencies
+      # SPEC 4.15.5: Marketplace trusted publishing via `vsce publish
+      # --oidc` (publisher policy, no PAT, no fallback, 15-minute
+      # credential). OIDC identity comes from id-token: write above.
+      - name: Publish to Marketplace (stable tags only)
+        if: needs.preflight.outputs.dry_run != 'true'
+        working-directory: packages/vscode
+        run: npx --no-install vsce publish --oidc --no-dependencies
+      # Open VSX: OVSX_PAT from env for first publish, then trusted
+      # publisher (`ovsx publish --trusted-publishing`). The token travels
+      # via env only, never on argv (argv leaks into process table/logs).
+      - name: Publish to Open VSX (stable tags only)
+        if: needs.preflight.outputs.dry_run != 'true'
+        working-directory: packages/vscode
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          vsix=( *.vsix )
+          [ "${#vsix[@]}" = "1" ] || { echo "::error::expected exactly one .vsix, found ${#vsix[@]}"; exit 1; }
+          npx --no-install ovsx publish "${vsix[0]}"
+      - name: Dry-run summary (no registry PUT was made)
+        if: needs.preflight.outputs.dry_run == 'true'
+        working-directory: packages/vscode
+        run: |
+          echo "dry run for tag ${GITHUB_REF_NAME}:"
+          ls *.vsix
+          echo "would publish: codictator.codictator-vscode to Marketplace (OIDC) and Open VSX (OVSX_PAT)"
