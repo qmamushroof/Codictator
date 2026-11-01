@@ -4,7 +4,7 @@
 // when its digest differs from the last injection in the session, so the
 // digest helper lives beside the renderer.
 import { sha256Text } from "../../kernel/index.ts";
-import { isSubagentSession } from "./budgets.ts";
+import { bandForUsage, isSubagentSession } from "./budgets.ts";
 import {
 	PRECEDENCE_STATEMENT,
 	SCOPED_INJECTION_MAX_BYTES,
@@ -58,7 +58,10 @@ function budgetLine(options: InjectionOptions): string {
 		options.contextWindow !== undefined &&
 		options.contextWindow > 0
 	) {
-		return `Budget: ${options.usedTokens}/${options.contextWindow} tokens used.`;
+		// SPEC §4.6.3: the budget part names the current band, so the
+		// auditable injection event carries it to the status row (§4.18.3).
+		const band = bandForUsage(options.usedTokens, options.contextWindow);
+		return `Budget: ${band} (${options.usedTokens}/${options.contextWindow} tokens used).`;
 	}
 	return "Budget: unavailable (no usage data).";
 }

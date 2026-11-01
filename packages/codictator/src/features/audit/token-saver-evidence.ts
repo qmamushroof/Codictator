@@ -17,15 +17,45 @@ export interface HelperStatus {
 }
 
 // SPEC §4.18.3 + §4.6.6: the live evidence behind the token-saver row.
-// The budget band reads `unavailable` while no usage reaches the status
-// path (EC-4: never estimated); the injection hash is the content digest
-// carried by the last injection event id, with its message byte count;
-// the dedupe count is read-dedupe blocks in the event log.
+// The budget band is the one the rendered injection named on its budget
+// line (from HookEvent.usage against config.steering.contextWindow);
+// absent or unparseable it reads unavailable, never an estimate (EC-4).
+// The injection hash is the content digest carried by the last injection
+// event id, with its message byte count; the dedupe count is read-dedupe
+// blocks in the event log.
 export interface TokenSaverEvidence {
 	readonly budget: string;
 	readonly injectionHash: string | undefined;
 	readonly injectionBytes: number | undefined;
 	readonly dedupeBlocked: number;
+}
+
+// SPEC §4.18.3: the budget band off the last injection's budget line. The
+// renderer (steering, the threshold owner) names green, amber or red next
+// to the counts; anything else is not a band, so it reads unavailable.
+function injectionBudgetBand(message: string | undefined): string {
+	if (message === undefined) {
+		return "unavailable";
+	}
+	let band = "unavailable";
+	for (const line of message.split("\n")) {
+		const rest = line.startsWith("Budget: ")
+			? line.slice("Budget: ".length)
+			: undefined;
+		if (rest === undefined) {
+			continue;
+		}
+		if (rest.startsWith("unavailable")) {
+			band = "unavailable";
+			continue;
+		}
+		const named = rest.split(" ")[0];
+		band =
+			named === "green" || named === "amber" || named === "red"
+				? named
+				: "unavailable";
+	}
+	return band;
 }
 
 // SPEC §4.18.3: the token-saver evidence from the event log. Read-dedupe
@@ -37,6 +67,7 @@ export function summarizeTokenSaverEvidence(
 ): TokenSaverEvidence {
 	let injectionHash: string | undefined;
 	let injectionBytes: number | undefined;
+	let injectionMessage: string | undefined;
 	let dedupeBlocked = 0;
 	for (const event of events) {
 		if (event.kind === "injection") {
@@ -46,6 +77,7 @@ export function summarizeTokenSaverEvidence(
 				event.message === undefined
 					? 0
 					: new TextEncoder().encode(event.message).length;
+			injectionMessage = event.message;
 		}
 		if (
 			event.decision === "block" &&
@@ -55,7 +87,7 @@ export function summarizeTokenSaverEvidence(
 		}
 	}
 	return {
-		budget: "unavailable",
+		budget: injectionBudgetBand(injectionMessage),
 		injectionHash,
 		injectionBytes,
 		dedupeBlocked,

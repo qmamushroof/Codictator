@@ -29,6 +29,7 @@ import {
 	stopHookActive,
 	unknownHarnessReply,
 } from "./hook-dispatch.ts";
+import { emitInjectionEvent } from "./hook-injection.ts";
 import {
 	errorCodeOf,
 	errorMessageOf,
@@ -175,13 +176,29 @@ async function runHookInner(
 		configHash: effective.value.configHash,
 		append: (verdict) => request.append(root, verdict),
 	});
+	const scope = hookScope(event, root);
+	// SPEC §4.6.3 + §4.18.3: the L0 triggers render the scoped injection
+	// and land the auditable event before evaluation, so the status row
+	// reads live evidence even when the verdict blocks. An unwritable log
+	// blocks CDX-E801, like the verdict path.
+	const injected = await emitInjectionEvent({
+		event,
+		scope,
+		steering: effective.value.config.steering,
+		configHash: effective.value.configHash,
+		root,
+		append: request.append,
+	});
+	if (!injected.ok) {
+		return blockReply(adapter, injected.error.code, injected.error.message);
+	}
 	const budgetMs = hookBudgetMs(request.harness, request.budgetMs);
 	const timeoutSignal = Symbol("hook-timeout");
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	try {
 		const pending = engine.evaluate(
 			event.trigger,
-			hookScope(event, root),
+			scope,
 			request.ports.clock.now(),
 		);
 		const verdict = await Promise.race([
