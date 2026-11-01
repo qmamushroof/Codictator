@@ -182,7 +182,10 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		const thousandStart = Date.now();
 		const thousand = await runCli(repo.dir, ["verify", "--staged", "--json"]);
 		const thousandMs = Date.now() - thousandStart;
-		assert.ok(thousandMs < 60000, `thousand-staged ${thousandMs} ms over the 60 s budget`);
+		assert.ok(
+			thousandMs < 60000,
+			`thousand-staged ${thousandMs} ms over the 60 s budget`,
+		);
 		assert.equal(thousand.code, 1);
 		assert.ok(
 			findingIds(JSON.parse(thousand.stdout) as unknown).includes(
