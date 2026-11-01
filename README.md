@@ -4,7 +4,7 @@
 
 Rules files only ask. Codictator turns each rule into something that runs: context injected where the agent reads it, harness hooks that block a bad tool call before it lands, git hooks, CI checks and scheduled sweeps. Asked for a bad outcome, the agent is steered to the compliant one and told which rule applied. Nothing is hidden.
 
-> **Status: pre-release.** Product and technical specifications are complete; implementation follows the [roadmap](docs/ROADMAP.md). Nothing is published to npm or the extension marketplaces yet.
+> **Status: first release (`codictator` 0.0.1).** Install below is the proven path: npm package `codictator` plus extension `codictator.codictator-vscode` on the VS Code Marketplace and Open VSX. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
 
 ## What it enforces
 
@@ -14,15 +14,15 @@ Floor rules have no waiver and no off switch. Tunable rules can be tightened fre
 
 ## Harnesses and languages
 
-| | First release | Later in the first release |
+| | First release | Later (P1) |
 |---|---|---|
-| Harnesses | Muse Code (best-supported), OpenCode, Claude Code, GitHub Copilot, Codex CLI, plus any harness through `AGENTS.md`, git hooks and CI | Cursor, Gemini CLI |
-| Languages | TypeScript / JavaScript; language-agnostic rules apply to any repo | .NET, Python |
+| Harnesses | Muse Code (best-supported; hook I/O unverified, needs trusted folder), OpenCode (context inject partial, session events observe-only, 2.x unsupported), Claude Code, GitHub Copilot (timeouts fail open), Codex CLI (project hooks ignored in git worktrees), plus Universal via `AGENTS.md`, git hooks and CI (L1 none) | Cursor (shell events only, no usage data), Gemini CLI (compaction unverified, needs trusted folder) |
+| Languages | TypeScript / JavaScript, full including npm enforcement; language-agnostic rules apply to any repo | .NET, Python (P1) |
 | Optional LLM features | Meta Muse models suggested by default; any OpenAI- or Anthropic-compatible provider, or a local model | — |
 
 What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5](docs/SPEC/04-05-ADAPTERS.md).
 
-## Install (once released)
+## Install
 
 Requires Node.js 24 LTS or newer in every repo, whatever its language.
 

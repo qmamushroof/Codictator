@@ -37,7 +37,7 @@
 			"id": "ts/no-phantom-import",
 			"family": "TS",
 			"tier": "floor",
-			"statement": "Bare imports resolve to a declared dependency or a Node built-in.",
+			"statement": "Bare imports resolve to a declared dependency, a Node built-in, or a host-provided module (SPEC §6.4 EC-11).",
 			"reason": "Phantom imports install hallucinated packages.",
 			"remediation": "Declare {value} in {path} or fix the import.",
 			"enforcer": "ts/no-phantom-import",
@@ -46,7 +46,10 @@
 			"params": {},
 			"ratchet": false,
 			"measureVersion": 1,
-			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+			"fixtures": {
+				"violating": ["basic", "host-provided"],
+				"passing": ["basic", "host-provided"]
+			}
 		},
 		{
 			"id": "ts/security-patterns",
@@ -76,7 +79,7 @@
 			"kind": "code",
 			"module": "arch",
 			"budgetMs": 1000,
-			"args": {}
+			"args": { "hostProvided": { "packages/vscode": ["vscode"] } }
 		},
 		{
 			"id": "ts/security-patterns",
