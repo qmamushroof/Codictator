@@ -17,7 +17,7 @@
 - [x] **13.4** Scheduled `live` job checking real registry and OSV shapes and harness-capture freshness, opening an issue on drift; never a merge gate (SPEC §10.6). Verify: one manual dispatch is green.
 - [ ] **13.5** Release workflow: tags only, full verify first, npm trusted publishing with provenance, `vsce` and `ovsx` publishing (SPEC §4.15.5, §9.2). Verify: a dry run on a pre-release tag.
 - [ ] **13.6** Human: claim the `codictator` npm package and publisher ids, configure trusted publishing (Marketplace uses OIDC, no token) and the `OVSX_PAT` repository secret (SPEC §4.15.5). Verify: the release workflow's preflight step.
-- [ ] **13.7** `README.md` status and install sections match what ships, including each adapter's declared gaps. Verify: fresh-session docs review.
+- [x] **13.7** `README.md` status and install sections match what ships, including each adapter's declared gaps. Verify: fresh-session docs review.
 - [ ] **13.8** Tag the release. Verify: `npx codictator@<version> init` on each fixture repo turns green on all three OSes; the extension installs from both marketplaces.
 
 ## Exit gate
