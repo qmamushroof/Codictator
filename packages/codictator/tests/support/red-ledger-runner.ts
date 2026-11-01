@@ -176,7 +176,8 @@ function runBaseCheck(baseRef: string): {
 			headRed,
 			baseRed,
 		);
-		const outcomes = collectOutcomes(pkg, discoverTestFiles(pkg.testsDir));
+		const collected = collectOutcomes(pkg, discoverTestFiles(pkg.testsDir));
+		const outcomes = collected.outcomes;
 		const compared = runBaseComparison({
 			outcomes,
 			headRed,
@@ -191,10 +192,19 @@ function runBaseCheck(baseRef: string): {
 				lines.push(`  ${failure.mode} ${failure.testId}`);
 			}
 		}
+		lines.push(...collected.detailLines);
 	}
 	if (!failed) {
+		if (lines.length === 0) {
+			return {
+				output: `ledger base comparison clean vs ${baseRef}`,
+				exitCode: 0,
+			};
+		}
 		return {
-			output: `ledger base comparison clean vs ${baseRef}`,
+			output: [`ledger base comparison clean vs ${baseRef}`, ...lines].join(
+				"\n",
+			),
 			exitCode: 0,
 		};
 	}
@@ -270,6 +280,37 @@ function childText(error: unknown, key: string): string {
 	return "";
 }
 
+// Reporting only: last-N-lines tail of a failed child's captured output so
+// the failing TAP assert (message + stack) is visible instead of swallowed
+// by the summary report. Never affects pass/fail classification.
+const MAX_FAILURE_DETAIL_LINES = 40;
+
+function tailLines(text: string, max: number): Array<string> {
+	const lines = text.split(/\r?\n/);
+	while (lines.length > 0 && lines[lines.length - 1] === "") {
+		lines.pop();
+	}
+	return lines.slice(Math.max(0, lines.length - max));
+}
+
+function childFailureDetail(
+	relative: string,
+	child: { readonly stdout: string; readonly stderr: string },
+): Array<string> {
+	const combined = [child.stdout, child.stderr]
+		.filter((part) => part !== "")
+		.join("\n");
+	const tail =
+		combined === ""
+			? ["(no captured output)"]
+			: tailLines(combined, MAX_FAILURE_DETAIL_LINES);
+	return [
+		`--- failure detail: ${relative} (last ${MAX_FAILURE_DETAIL_LINES} lines) ---`,
+		...tail,
+		`--- end failure detail: ${relative} ---`,
+	];
+}
+
 function loadLedger(
 	testsDir: string,
 	packageName: string,
@@ -293,8 +334,12 @@ function loadLedger(
 function collectOutcomes(
 	pkg: PackagePaths,
 	files: ReadonlyArray<string>,
-): Array<TestOutcome> {
+): {
+	readonly outcomes: Array<TestOutcome>;
+	readonly detailLines: Array<string>;
+} {
 	const outcomes: Array<TestOutcome> = [];
+	const detailLines: Array<string> = [];
 	for (const file of files) {
 		const relative = toPosixPath(path.relative(pkg.dir, file));
 		const child = runTestFile(file);
@@ -325,24 +370,30 @@ function collectOutcomes(
 				passed: false,
 			});
 		}
+		if (child.exitCode !== 0) {
+			detailLines.push(...childFailureDetail(relative, child));
+		}
 	}
-	return outcomes;
+	return { outcomes, detailLines };
 }
 
 export function runSuite(): {
 	readonly output: string;
 	readonly exitCode: number;
 } {
+	const detail: Array<string> = [];
 	const reports = packagePaths().map((pkg) => {
 		const ledger = loadLedger(pkg.testsDir, pkg.name);
-		const outcomes = collectOutcomes(pkg, discoverTestFiles(pkg.testsDir));
+		const collected = collectOutcomes(pkg, discoverTestFiles(pkg.testsDir));
+		detail.push(...collected.detailLines);
 		return {
 			packageName: pkg.name,
-			verdict: evaluateRun(ledger.red, outcomes),
+			verdict: evaluateRun(ledger.red, collected.outcomes),
 		};
 	});
 	const ok = reports.every((report) => report.verdict.ok);
-	return { output: formatRunReport(reports), exitCode: ok ? 0 : 1 };
+	const output = [formatRunReport(reports), ...detail].join("\n");
+	return { output, exitCode: ok ? 0 : 1 };
 }
 
 export function queryLedger(
