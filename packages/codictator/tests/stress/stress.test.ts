@@ -13,29 +13,18 @@ import { runCommand, runHook } from "../../src/cli/index.ts";
 import { readLogEvents } from "../../src/cli/inspect.ts";
 import { draftPack } from "../../src/features/generator/index.ts";
 import { checkShell } from "../../src/features/security/index.ts";
-import { runNodeScript } from "../support/cli-runner.ts";
 import {
 	buildReferenceRepo,
 	p95Ms,
 	readLogLines,
 } from "../support/reference-repo.ts";
 
-// Runs the source CLI in a child process so its stdout stays assertable: the
-// in-process test runner shares process.stdout with reporter writes, which
-// are not always strings.
-async function runCli(
-	cwd: string,
-	argv: ReadonlyArray<string>,
-): Promise<{ readonly code: number; readonly stdout: string }> {
-	const entry = new URL("../../src/cli/main.ts", import.meta.url).href;
-	const script = `const { main } = await import(${JSON.stringify(entry)}); process.exitCode = await main(${JSON.stringify([...argv])}, ${JSON.stringify(cwd)});`;
-	const ran = await runNodeScript({
-		nodeArgs: ["--input-type=module", "-e", script],
-		cwd,
-		timeoutMs: 120000,
-	});
-	return { code: ran.code, stdout: ran.stdout };
-}
+// Runs `verify --staged --json` in-process and captures the JSON envelope
+// from the same process's stdout: runCommand returns only the exit code,
+// while handleVerify renders the findings envelope via printJson. The
+// capture patches process.stdout.write for the call window only (unit/cli
+// precedent), so the timer meters in-process engine work with no child
+// spawn or startup cost (SPEC §9.3, same reading row 5 uses).
 
 function findingIds(envelope: unknown): Array<string> {
 	if (typeof envelope !== "object" || envelope === null) {
@@ -128,10 +117,12 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 	// under the 60 s hard time limit. Real staged scale on the reference
 	// repo with budget assertions, plus work evidence — a staged secret the
 	// engine evaluation must flag — so the budgets measure a real evaluation
-	// instead of a no-op. The child CLI is warmed with the identical verify
-	// command on a scratch repo before the fifty-leg timer so the 5 s
-	// budget meters engine work, not spawn/startup (SPEC §9.3, same reading
-	// row 5 uses). Integrity exception IE-09-R5-staged (rule
+	// instead of a no-op. Both legs run through in-process runCommand with
+	// stdout capture (SPEC §9.3 binds budgets to in-process work; harness
+	// spawn and startup are excluded — the old child-spawned fifty leg
+	// measured ~3.5–4.5 s of node startup, not the product, which made the
+	// 5 s leg runner luck). No warm run: there is no spawn cost left to
+	// warm away. Integrity exception IE-09-R5-staged (rule
 	// core/no-assertion-loss, path
 	// packages/codictator/tests/stress/stress.test.ts, reason: the old
 	// setup committed every file, leaving verify --staged an empty scope;
@@ -142,11 +133,47 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		config: true,
 		commitBase: true,
 	});
-	const warmRepo = buildReferenceRepo({
-		gitInit: true,
-		config: true,
-		commitBase: true,
-	});
+	// In-process verify leg with stdout siphon: runCommand renders the
+	// --json findings envelope to process.stdout, so string chunks are
+	// copied while the timer meters engine work only (no spawn). Every
+	// chunk is still forwarded to the original writer: under `node --test`
+	// process.stdout is a Socket the runner itself ferries binary-framed
+	// test events through (stream internals call Socket.write with
+	// Buffers), so swallowing would eat runner traffic — the old runCli
+	// comment's "not always strings" warning, confirmed live. The
+	// collector mirrors the serve-run executeCaptured signature
+	// (string|Uint8Array with encoding/callback passthrough) and is
+	// restored in finally.
+	async function runVerifyStaged(
+		cwd: string,
+	): Promise<{ readonly code: number; readonly stdout: string }> {
+		let captured = "";
+		const originalWrite = process.stdout.write.bind(process.stdout);
+		const forward = originalWrite as (...args: Array<unknown>) => boolean;
+		process.stdout.write = ((
+			chunk: string | Uint8Array,
+			encoding?: unknown,
+			callback?: unknown,
+		): boolean => {
+			if (typeof chunk === "string") {
+				captured += chunk;
+			}
+			return forward(chunk, encoding, callback);
+		}) as typeof process.stdout.write;
+		try {
+			const result = await runCommand({
+				argv: ["verify", "--staged", "--json"],
+				cwd,
+			});
+			assert.equal(result.ok, true);
+			if (!result.ok) {
+				throw new Error("unreachable");
+			}
+			return { code: result.value, stdout: captured };
+		} finally {
+			process.stdout.write = originalWrite;
+		}
+	}
 	try {
 		// Assembled from parts so this committed test source never holds a
 		// live-pattern literal (the staged temp file still does, which is
@@ -163,23 +190,16 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 			);
 		}
 		repo.git(["add", "-A"]);
-		// SPEC §9.3 binds budgets to in-process work and excludes harness
-		// spawn/startup: warm the child CLI with the identical verify
-		// command on a scratch repo so the fifty-leg timer measures engine
-		// work, not first-import cost (a `--help` warm never imports the
-		// engine graph). Scratch, not the measured repo, so the warm run
-		// cannot couple to the real staged state. Budgets and the 10k
-		// fixture are untouched.
-		await runCli(warmRepo.dir, ["verify", "--staged", "--json"]);
 		const fiftyStart = Date.now();
-		const fifty = await runCli(repo.dir, ["verify", "--staged", "--json"]);
+		const fifty = await runVerifyStaged(repo.dir);
 		const fiftyMs = Date.now() - fiftyStart;
 		assert.ok(fiftyMs < 5000, `fifty-staged ${fiftyMs} ms over the 5 s budget`);
-		assert.equal(fifty.code, 1);
+		assert.equal(fifty.code, 1, `fifty-staged exit ${fifty.code}, want 1`);
 		assert.ok(
 			findingIds(JSON.parse(fifty.stdout) as unknown).includes(
 				"core/no-secrets",
 			),
+			`fifty-staged findings missing core/no-secrets: ${fifty.stdout.slice(0, 300)}`,
 		);
 		for (let index = 49; index < 999; index += 1) {
 			writeFileSync(
@@ -189,21 +209,25 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		}
 		repo.git(["add", "-A"]);
 		const thousandStart = Date.now();
-		const thousand = await runCli(repo.dir, ["verify", "--staged", "--json"]);
+		const thousand = await runVerifyStaged(repo.dir);
 		const thousandMs = Date.now() - thousandStart;
 		assert.ok(
 			thousandMs < 60000,
 			`thousand-staged ${thousandMs} ms over the 60 s budget`,
 		);
-		assert.equal(thousand.code, 1);
+		assert.equal(
+			thousand.code,
+			1,
+			`thousand-staged exit ${thousand.code}, want 1`,
+		);
 		assert.ok(
 			findingIds(JSON.parse(thousand.stdout) as unknown).includes(
 				"core/no-secrets",
 			),
+			`thousand-staged findings missing core/no-secrets: ${thousand.stdout.slice(0, 300)}`,
 		);
 	} finally {
 		repo.cleanup();
-		warmRepo.cleanup();
 	}
 });
 
