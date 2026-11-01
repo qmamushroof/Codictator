@@ -28,6 +28,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run build
       - run: npm test
       # SPEC §10.4: canonical verdict bytes per scenario for the cross-OS
       # compare job; always uploaded so a red run still leaves evidence.
@@ -54,7 +55,6 @@ jobs:
           echo "$output"
           if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then exit "$status"; fi
           printf '%s' "$output" | node -e 'let s = ""; process.stdin.on("data", (c) => { s += c; }).on("end", () => { const m = /all files\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/.exec(s); if (/does not meet threshold/.test(s) || m === null || Number(m[1]) < 90 || Number(m[2]) < 80) { process.exit(1); } })'
-      - run: npm run build
       - run: npm run test:packaging
       # SPEC §10.7 Adding rule: a test that existed at the base must not
       # become listed. The runner resolves the base revision from git and
