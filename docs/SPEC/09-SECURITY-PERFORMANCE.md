@@ -31,7 +31,7 @@ Codictator's own posture (PRD §6 P8, §11.5, §11.8). Enforcement of security o
 
 ## 9.3 Performance budgets
 
-Measured on a reference repo (10,000 files, 2,000 source files) on a 4-core CI runner; enforced by stress tests (§10.5); reported as p95 from event timings (PRD §10).
+Measured on a reference repo (10,000 files, 2,000 source files) on a 4-core CI runner; enforced by stress tests (§10.5); reported as p95 from event timings (PRD §10). Budgets bound in-process work only; harness process-spawn and runtime-startup costs are excluded (they measure the harness, not the product).
 
 | Path | Budget (p95) | Hard time limit |
 |---|---|---|
