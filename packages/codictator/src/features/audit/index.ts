@@ -9,6 +9,10 @@ import {
 	isKnownExplainId,
 	nearestExplainIds,
 } from "./explain.ts";
+import {
+	buildInjectionEvent,
+	type InjectionEventInput,
+} from "./injection-event.ts";
 import { type ReadEvents, readEvents } from "./read.ts";
 import {
 	buildCiSummary,
@@ -31,6 +35,7 @@ export { summarize } from "./summarize.ts";
 export {
 	appendEvent,
 	buildCiSummary,
+	buildInjectionEvent,
 	buildReportText,
 	buildStatusJson,
 	buildStatusText,
@@ -41,6 +46,7 @@ export {
 	type HarnessLayerState,
 	type HarnessStatus,
 	type HelperStatus,
+	type InjectionEventInput,
 	isKnownExplainId,
 	LOG_REL,
 	type NewEvent,
