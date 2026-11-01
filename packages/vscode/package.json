@@ -1,7 +1,7 @@
 {
 	"name": "codictator-vscode",
 	"publisher": "codictator",
-	"version": "0.0.0",
+	"version": "0.1.0-rc.1",
 	"type": "module",
 	"main": "dist/extension.cjs",
 	"engines": {
