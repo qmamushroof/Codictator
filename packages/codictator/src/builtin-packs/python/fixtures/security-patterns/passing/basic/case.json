@@ -1,0 +1,10 @@
+{
+	"rule": "python/security-patterns",
+	"section": "§6.3",
+	"expectation": "passing",
+	"trigger": "the module without sinks stays clean",
+	"expectRules": [],
+	"files": {
+		"sample.py": "import subprocess\n\nresult = subprocess.run([\"ls\"], check=True)\n"
+	}
+}

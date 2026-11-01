@@ -81,6 +81,9 @@ import {
 	resolveNoBypass,
 	resolveRepoHygiene,
 } from "./integrity-guards-repo.ts";
+import { resolvePythonLint, resolvePythonTypecheck } from "./py-checks.ts";
+import { resolvePythonNoPhantomImport } from "./py-phantom.ts";
+import { resolvePythonSecurityPatterns } from "./py-security-patterns.ts";
 import {
 	resolveBugRegistry,
 	resolveBugRowsImmutable,
@@ -142,6 +145,10 @@ const CODE_RESOLVERS: Readonly<Record<string, CodeResolver>> = {
 	"ts/typecheck": resolveTsTypecheck,
 	"ts/lint": resolveTsLint,
 	"ts/no-phantom-import": resolveTsNoPhantomImport,
+	"python/typecheck": resolvePythonTypecheck,
+	"python/lint": resolvePythonLint,
+	"python/no-phantom-import": resolvePythonNoPhantomImport,
+	"python/security-patterns": resolvePythonSecurityPatterns,
 	"core/no-skipped-tests": resolveNoSkippedTests,
 	"core/no-new-suppressions": resolveNoNewSuppressions,
 	"core/no-fixture-shrink": resolveNoFixtureShrink,

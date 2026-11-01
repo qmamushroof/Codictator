@@ -1,0 +1,11 @@
+{
+	"rule": "python/no-phantom-import",
+	"section": "§6.3",
+	"expectation": "violating",
+	"trigger": "top-level import of an undeclared third-party package",
+	"expectRules": ["python/no-phantom-import"],
+	"files": {
+		"sample.py": "import phantom_pkg\n\nprint(phantom_pkg.VERSION)\n",
+		"requirements.txt": "requests==2.31.0\n"
+	}
+}

@@ -19,11 +19,22 @@ export {
 } from "../../features/deps/pypi.ts";
 export type { PyProjectDeps } from "../../features/deps/pypi-pyproject.ts";
 export { parsePyprojectDependencies } from "../../features/deps/pypi-pyproject.ts";
+export type {
+	PythonExtractor,
+	PythonImportRef,
+} from "./extract.ts";
+export {
+	extractPythonImports,
+	isPythonFile,
+	PYTHON_SOURCE_EXTENSIONS,
+	pythonExtractor,
+	resolvePythonModule,
+} from "./extract.ts";
 
-// SPEC §6: python pack manifest with its driver and extractors. The
-// pack value here carries the identity the language-pack contract asserts
-// while the enforcers that consume these supplies land; its pack.json
-// lands with them, so `pack list` keeps failing closed until then.
+// SPEC §6: python pack manifest with its driver and extractors. The rules
+// stay owned by pack.json and load via `loadBuiltinPack` (SPEC §7.3); the
+// pack value here carries the identity the language-pack contract asserts,
+// like the typescript pack while its enforcers consume these supplies.
 export function pythonPack(): Pack {
 	return {
 		manifest: {

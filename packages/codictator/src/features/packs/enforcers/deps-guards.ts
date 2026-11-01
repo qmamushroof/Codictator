@@ -19,6 +19,7 @@ import {
 	parseMarkerInt,
 	parseMarkers,
 } from "./health-measures.ts";
+import { checkPythonPins, isRequirementsFile } from "./py-pins.ts";
 
 const EXACT_PIN = /^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
 const FULL_SHA = /^[0-9a-f]{40}$/i;
@@ -26,29 +27,29 @@ const FULL_SHA = /^[0-9a-f]{40}$/i;
 // SPEC §6.1 mirror of isExactNpmPin: exact, alias-exact and workspace-exact
 // pins plus pinned-content forms (file/link/git-sha/tarball) pass; ranges,
 // tags and unpinned forms block core/dep-exact-pin.
+function isGitPin(range: string): boolean {
+	const schemes = ["git+", "git://", "github:"];
+	return schemes.some((scheme) => range.startsWith(scheme));
+}
+
+function isTrivialPin(range: string): boolean {
+	const prefixes = ["file:", "link:", "http://", "https://"];
+	return prefixes.some((prefix) => range.startsWith(prefix));
+}
+
 function isExactPinLocal(range: string): boolean {
 	if (range.startsWith("workspace:")) {
 		const rest = range.slice("workspace:".length);
 		return rest !== "*" && EXACT_PIN.test(rest);
 	}
-	if (range.startsWith("file:") || range.startsWith("link:")) {
-		return true;
-	}
 	if (range.startsWith("npm:")) {
 		const at = range.lastIndexOf("@");
 		return at > 4 && EXACT_PIN.test(range.slice(at + 1));
 	}
-	if (
-		range.startsWith("git+") ||
-		range.startsWith("git://") ||
-		range.startsWith("github:")
-	) {
+	if (isGitPin(range)) {
 		return FULL_SHA.test(range.split("#")[1] ?? "");
 	}
-	if (range.startsWith("http://") || range.startsWith("https://")) {
-		return true;
-	}
-	return EXACT_PIN.test(range);
+	return isTrivialPin(range) || EXACT_PIN.test(range);
 }
 
 // SPEC §6.1 mirror of the npm capability catalogue: every package of every
@@ -155,6 +156,9 @@ export function collectPinRanges(
 }
 
 // SPEC §5.3 core/dep-exact-pin: ranges, tags and unpinned sources block.
+// SPEC §6.4 EC-7: `requirements*.txt` lines judge the same verdict through
+// the PyPI pin mirror in py-pins.ts (local, per §3.3): only `name==x.y.z`
+// pins, so a `requests>=2` line blocks.
 export function resolveDepExactPin(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -165,23 +169,33 @@ export function resolveDepExactPin(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (isMarkerFile(file) || !file.endsWith("package.json")) {
+				if (isMarkerFile(file)) {
 					continue;
 				}
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				for (const { name, range } of collectPinRanges(text)) {
-					if (!isExactPinLocal(range)) {
-						findings.push(
-							findingFor(binding, {
-								path: file,
-								message: `${name}@${range} in ${file} is not an exact pin`,
-								vars: { path: file, value: `${name}@${range}` },
-							}),
-						);
+				if (file.endsWith("package.json")) {
+					const text = await loadScopeText(ports, binding, file, findings);
+					if (text === undefined) {
+						continue;
 					}
+					for (const { name, range } of collectPinRanges(text)) {
+						if (!isExactPinLocal(range)) {
+							findings.push(
+								findingFor(binding, {
+									path: file,
+									message: `${name}@${range} in ${file} is not an exact pin`,
+									vars: { path: file, value: `${name}@${range}` },
+								}),
+							);
+						}
+					}
+					continue;
+				}
+				if (isRequirementsFile(file)) {
+					const text = await loadScopeText(ports, binding, file, findings);
+					if (text === undefined) {
+						continue;
+					}
+					checkPythonPins(binding, file, text, findings);
 				}
 			}
 			return findings;
