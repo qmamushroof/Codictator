@@ -48,13 +48,15 @@ function findingIds(envelope: unknown): Array<string> {
 
 // Row-3 per-leg timings for CI evidence (PR #67 HOLD): appended
 // best-effort after each leg's measurement, before the budget assert,
-// so a red leg still leaves its numbers. Never throws.
+// so a red leg still leaves its numbers. Records findingIds(envelope)
+// (rule IDs only, never file contents or secret values). Never throws.
 function recordTiming(entry: {
 	readonly test: string;
 	readonly leg: string;
 	readonly ms: number;
 	readonly budgetMs: number;
 	readonly pass: boolean;
+	readonly findings: ReadonlyArray<string>;
 }): void {
 	try {
 		const dir = path.join(process.cwd(), "test-results");
@@ -271,6 +273,7 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 			ms: fiftyMs,
 			budgetMs: 5000,
 			pass: fiftyMs < 5000,
+			findings: findingIds(fifty.envelope),
 		});
 		assert.ok(fiftyMs < 5000, `fifty-staged ${fiftyMs} ms over the 5 s budget`);
 		assert.equal(fifty.code, 1, `fifty-staged exit ${fifty.code}, want 1`);
@@ -294,6 +297,7 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 			ms: thousandMs,
 			budgetMs: 60000,
 			pass: thousandMs < 60000,
+			findings: findingIds(thousand.envelope),
 		});
 		assert.ok(
 			thousandMs < 60000,
