@@ -1,10 +1,12 @@
 // SPEC §6.1 ts/no-phantom-import: a bare import resolves to a declared
-// dependency or a Node built-in. Self-contained (§3.3); the built-in list
-// mirrors the §6.1 supply. Relative and built-in imports never block;
-// SPEC §6.4 EC-5 workspace siblings count as declared.
+// dependency or a Node built-in. Specifier matching lives in the
+// ts-phantom-host sibling; relative and built-in imports never block;
+// SPEC §6.4 EC-5 workspace siblings count as declared; SPEC §6.4 EC-11
+// host-provided modules count as declared inside their package dir.
 
 import type { Ports } from "../../../kernel/index.ts";
 import {
+	err,
 	makeError,
 	ok,
 	parseJson,
@@ -15,86 +17,17 @@ import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import {
 	bindRule,
-	findingFor,
 	type RuleBinding,
 	readErrorFinding,
 	readLossyText,
 	selectFiles,
 } from "./binding.ts";
-import { extractLiteralSpecifiers } from "./health-lex-imports.ts";
 import { baseEnforcer, isTsFile } from "./health-measures.ts";
-
-// SPEC §6.4 EC-4: a built-in, never phantom. Mirrors the §6.1 supply list
-// (builtin-packs/typescript), duplicated here because §3.3 forbids the
-// packs module from importing the pack supplies.
-const NODE_BUILTINS: ReadonlyArray<string> = [
-	"assert",
-	"async_hooks",
-	"buffer",
-	"child_process",
-	"cluster",
-	"console",
-	"constants",
-	"crypto",
-	"dgram",
-	"diagnostics_channel",
-	"domain",
-	"events",
-	"fs",
-	"http",
-	"http2",
-	"https",
-	"inspector",
-	"module",
-	"net",
-	"os",
-	"path",
-	"perf_hooks",
-	"process",
-	"punycode",
-	"querystring",
-	"readline",
-	"repl",
-	"stream",
-	"string_decoder",
-	"sys",
-	"timers",
-	"tls",
-	"trace_events",
-	"tty",
-	"url",
-	"util",
-	"v8",
-	"vm",
-	"wasi",
-	"worker_threads",
-	"zlib",
-];
-
-function isBuiltinSpecifier(spec: string): boolean {
-	if (spec.startsWith("node:")) {
-		return true;
-	}
-	const base = spec.split("/", 1)[0] ?? "";
-	return NODE_BUILTINS.includes(base);
-}
-
-function isRelativeSpecifier(spec: string): boolean {
-	return (
-		spec.startsWith("./") ||
-		spec.startsWith("../") ||
-		spec.startsWith("/") ||
-		spec === "." ||
-		spec === ".."
-	);
-}
-
-function specBase(spec: string): string {
-	if (spec.startsWith("@")) {
-		return spec.split("/", 2).join("/");
-	}
-	return spec.split("/", 1)[0] ?? "";
-}
+import {
+	type HostProvidedConfig,
+	narrowHostProvidedArgs,
+	phantomFindings,
+} from "./ts-phantom-host.ts";
 
 function parentDir(path: string): string {
 	const slash = path.lastIndexOf("/");
@@ -173,6 +106,49 @@ async function declaredNamesFor(
 	return { names: new Set<string>(), broken: undefined };
 }
 
+// One TS file judged for phantom imports: unreadable content and an
+// unparseable manifest fail closed; the rest is specifier matching.
+async function findingsForFile(
+	ports: Ports,
+	binding: RuleBinding,
+	grants: Readonly<HostProvidedConfig["grants"]>,
+	file: string,
+): Promise<Array<Finding>> {
+	const loaded = await readLossyText(ports.fs, file);
+	if (!loaded.ok) {
+		return [readErrorFinding(binding, file, loaded.error, "read")];
+	}
+	const declared = await declaredNamesFor(ports, file);
+	const findings: Array<Finding> = [];
+	if (declared.broken !== undefined) {
+		findings.push(
+			readErrorFinding(
+				binding,
+				declared.broken,
+				makeError(
+					"CDX-E903",
+					`package.json above ${file} is unparseable`,
+					"Fix the nearest package.json so it parses, then reload.",
+				),
+				"read",
+			),
+		);
+	}
+	// Import specifiers come from the lexer, never a regex, so
+	// specifiers inside strings, comments and fixture text never
+	// count; non-literal dynamics yield nothing to judge.
+	for (const found of phantomFindings(
+		binding,
+		file,
+		loaded.value.text,
+		declared.names,
+		grants,
+	)) {
+		findings.push(found);
+	}
+	return findings;
+}
+
 // SPEC §6.1 ts/no-phantom-import: a bare import resolves to a declared
 // dependency or a Node built-in. Relative and built-in imports never
 // block; SPEC §6.4 EC-5 workspace siblings count as declared.
@@ -182,6 +158,11 @@ export function resolveTsNoPhantomImport(
 	ports: Ports,
 ): Result<Enforcer> {
 	const binding = bindRule(rule);
+	const hostProvided = narrowHostProvidedArgs(decl.id, decl.args);
+	if (!hostProvided.ok) {
+		return err(hostProvided.error);
+	}
+	const grants = hostProvided.value.grants;
 	return ok(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
@@ -189,34 +170,11 @@ export function resolveTsNoPhantomImport(
 				if (!isTsFile(file)) {
 					continue;
 				}
-				const loaded = await readLossyText(ports.fs, file);
-				if (!loaded.ok) {
-					findings.push(readErrorFinding(binding, file, loaded.error, "read"));
-					continue;
-				}
-				const declared = await declaredNamesFor(ports, file);
-				if (declared.broken !== undefined) {
-					findings.push(
-						readErrorFinding(
-							binding,
-							declared.broken,
-							makeError(
-								"CDX-E903",
-								`package.json above ${file} is unparseable`,
-								"Fix the nearest package.json so it parses, then reload.",
-							),
-							"read",
-						),
-					);
-				}
-				// Import specifiers come from the lexer, never a regex, so
-				// specifiers inside strings, comments and fixture text never
-				// count; non-literal dynamics yield nothing to judge.
-				for (const found of phantomFindings(
+				for (const found of await findingsForFile(
+					ports,
 					binding,
+					grants,
 					file,
-					loaded.value.text,
-					declared.names,
 				)) {
 					findings.push(found);
 				}
@@ -224,34 +182,4 @@ export function resolveTsNoPhantomImport(
 			return findings;
 		}),
 	);
-}
-
-function phantomFindings(
-	binding: RuleBinding,
-	file: string,
-	text: string,
-	declared: ReadonlySet<string>,
-): Array<Finding> {
-	const findings: Array<Finding> = [];
-	const seen = new Set<string>();
-	for (const { spec, line } of extractLiteralSpecifiers(text)) {
-		if (seen.has(spec)) {
-			continue;
-		}
-		seen.add(spec);
-		if (isRelativeSpecifier(spec) || isBuiltinSpecifier(spec)) {
-			continue;
-		}
-		if (!declared.has(specBase(spec))) {
-			findings.push(
-				findingFor(binding, {
-					path: file,
-					line,
-					message: `phantom import ${spec} in ${file}:${String(line)}`,
-					vars: { path: file, line: String(line), value: spec },
-				}),
-			);
-		}
-	}
-	return findings;
 }

@@ -137,6 +137,60 @@ test("[§6.1] ts phantom imports need declared or builtin homes", async () => {
 	assert.ok(broken.some((finding) => finding.code === "CDX-E903"));
 });
 
+test("[§6.4 EC-11] ts phantom host-provided vscode passes only in its package", async () => {
+	const fakes = createFakePorts();
+	fakes.fs.seedText(
+		"packages/vscode/package.json",
+		JSON.stringify({ name: "codictator-vscode" }),
+	);
+	fakes.fs.seedText(
+		"packages/vscode/src/extension.cts",
+		'import type { ExtensionContext } from "vscode";\n',
+	);
+	fakes.fs.seedText(
+		"packages/other/src/a.ts",
+		'import type { ExtensionContext } from "vscode";\n',
+	);
+	fakes.fs.seedText(
+		"packages/vscode/src/unrelated.ts",
+		"import 'ghost-pkg';\n",
+	);
+	const allowed = resolveTsNoPhantomImport(
+		makeDecl("code", { hostProvided: { "packages/vscode": ["vscode"] } }),
+		makeRule("test/rule"),
+		fakes.ports,
+	);
+	assert.ok(allowed.ok);
+	if (!allowed.ok) {
+		return;
+	}
+	assert.deepEqual(
+		await allowed.value.check(
+			context(["packages/vscode/src/extension.cts"]),
+			{},
+		),
+		[],
+	);
+	const elsewhere = await allowed.value.check(
+		context(["packages/other/src/a.ts"]),
+		{},
+	);
+	assert.equal(elsewhere.length, 1);
+	assert.ok(elsewhere[0]?.message.includes("vscode"));
+	const unlisted = await allowed.value.check(
+		context(["packages/vscode/src/unrelated.ts"]),
+		{},
+	);
+	assert.equal(unlisted.length, 1);
+	assert.ok(unlisted[0]?.message.includes("ghost-pkg"));
+	const malformed = resolveTsNoPhantomImport(
+		makeDecl("code", { hostProvided: { "packages/vscode": "vscode" } }),
+		makeRule("test/rule"),
+		fakes.ports,
+	);
+	assert.ok(!malformed.ok);
+});
+
 test("[§5.6] code health judges markers and source spans", async () => {
 	const fakes = createFakePorts();
 	fakes.fs.seedText("sample.txt", "function-lines: 99\n");

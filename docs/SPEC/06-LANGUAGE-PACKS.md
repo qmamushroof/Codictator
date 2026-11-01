@@ -42,7 +42,7 @@ Each pack supplies the language knowledge that core rules need (drivers, extract
 |---|---|---|---|
 | `ts/typecheck` | floor | The repo's `tsc --noEmit` passes (project-wide at L4; projects containing staged files at L3) | L3, L4 |
 | `ts/lint` | floor | The repo's linter passes on scope; when none exists, `init` proposes Biome at its latest stable version | L2, L3, L4 |
-| `ts/no-phantom-import` | floor | A bare import resolves to a dependency declared in the nearest `package.json` or a Node built-in (anti-hallucination, PRD §8.3) | L1, L3, L4 |
+| `ts/no-phantom-import` | floor | A bare import resolves to a dependency declared in the nearest `package.json`, a Node built-in, or a host-provided module (EC-11; anti-hallucination, PRD §8.3) | L1, L3, L4 |
 | `ts/security-patterns` | floor | `eval(`, `new Function(`, `child_process` `exec`/`execSync` with a template or concatenated argument, `innerHTML`/`outerHTML` assignment, `document.write(`, `dangerouslySetInnerHTML`, `rejectUnauthorized: false`, `NODE_TLS_REJECT_UNAUTHORIZED`, template or concatenated SQL passed to `.query(`, `.execute(`, `.raw(` | L1, L3, L4 |
 
 ## 6.2 .NET (`dotnet`)
@@ -91,3 +91,4 @@ Pack rules: `python/typecheck` (floor), `python/lint` (floor), `python/no-phanto
 | EC-8 | Python namespace package without `__init__.py` | Resolved by directory |
 | EC-9 | JS repo without TypeScript | `checkJs` required; TypeScript proposed as a dev dependency |
 | EC-10 | Mixed TS + Python repo | Both packs load; each file judged by its pack |
+| EC-11 | `import … from "vscode"` in a file under `packages/vscode/` | Allowed: the extension host provides the module (§4.20.1), so it is never declared. The lexer has no type-awareness, so the exception is specifier-based (type and value imports alike); the same specifier anywhere else still blocks |
