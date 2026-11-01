@@ -37,7 +37,9 @@ jobs:
         if: always()
         with:
           name: determinism-${{ matrix.os }}
-          path: test-results/determinism/*.json
+          path: |
+            test-results/determinism/*.json
+            test-results/stress-timings.json
           if-no-files-found: error
       # SPEC 10.7 query exits 1 while red entries remain; the gates are
       # npm test and the base comparison below, so only real errors fail here.

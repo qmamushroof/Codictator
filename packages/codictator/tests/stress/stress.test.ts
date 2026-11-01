@@ -6,7 +6,7 @@
 // p95 <= 2 s `status`/`report` budgets (SPEC §9.3 binds budgets to
 // in-process work; harness spawn and startup costs are excluded).
 import { strict as assert } from "node:assert";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { runCommand, runHook } from "../../src/cli/index.ts";
@@ -44,6 +44,38 @@ function findingIds(envelope: unknown): Array<string> {
 		}
 	}
 	return ids;
+}
+
+// Row-3 per-leg timings for CI evidence (PR #67 HOLD): appended
+// best-effort after each leg's measurement, before the budget assert,
+// so a red leg still leaves its numbers. Never throws.
+function recordTiming(entry: {
+	readonly test: string;
+	readonly leg: string;
+	readonly ms: number;
+	readonly budgetMs: number;
+	readonly pass: boolean;
+}): void {
+	try {
+		const dir = path.join(process.cwd(), "test-results");
+		const file = path.join(dir, "stress-timings.json");
+		mkdirSync(dir, { recursive: true });
+		let rows: Array<unknown> = [];
+		try {
+			if (existsSync(file)) {
+				const parsed: unknown = JSON.parse(readFileSync(file, "utf8"));
+				if (Array.isArray(parsed)) {
+					rows = parsed;
+				}
+			}
+		} catch {
+			rows = [];
+		}
+		rows.push(entry);
+		writeFileSync(file, `${JSON.stringify(rows, null, 2)}\n`);
+	} catch {
+		// Best-effort only: timing evidence must never fail the test.
+	}
 }
 
 test("[§10.5] 200 sequential tool.pre.write hook processes within p95 budget", async () => {
@@ -233,6 +265,13 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		const fiftyStart = Date.now();
 		const fifty = await runVerifyStaged(repo.dir);
 		const fiftyMs = Date.now() - fiftyStart;
+		recordTiming({
+			test: "pre-commit staged scale",
+			leg: "fifty-staged",
+			ms: fiftyMs,
+			budgetMs: 5000,
+			pass: fiftyMs < 5000,
+		});
 		assert.ok(fiftyMs < 5000, `fifty-staged ${fiftyMs} ms over the 5 s budget`);
 		assert.equal(fifty.code, 1, `fifty-staged exit ${fifty.code}, want 1`);
 		assert.ok(
@@ -249,6 +288,13 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		const thousandStart = Date.now();
 		const thousand = await runVerifyStaged(repo.dir);
 		const thousandMs = Date.now() - thousandStart;
+		recordTiming({
+			test: "pre-commit staged scale",
+			leg: "thousand-staged",
+			ms: thousandMs,
+			budgetMs: 60000,
+			pass: thousandMs < 60000,
+		});
 		assert.ok(
 			thousandMs < 60000,
 			`thousand-staged ${thousandMs} ms over the 60 s budget`,
