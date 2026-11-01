@@ -146,8 +146,8 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 	// restored in finally.
 	async function runVerifyStaged(
 		cwd: string,
-	): Promise<{ readonly code: number; readonly stdout: string }> {
-		let captured = "";
+	): Promise<{ readonly code: number; readonly envelope: unknown }> {
+		const chunks: Array<string> = [];
 		const originalWrite = process.stdout.write.bind(process.stdout);
 		const forward = originalWrite as (...args: Array<unknown>) => boolean;
 		process.stdout.write = ((
@@ -156,7 +156,7 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 			callback?: unknown,
 		): boolean => {
 			if (typeof chunk === "string") {
-				captured += chunk;
+				chunks.push(chunk);
 			}
 			return forward(chunk, encoding, callback);
 		}) as typeof process.stdout.write;
@@ -169,10 +169,40 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 			if (!result.ok) {
 				throw new Error("unreachable");
 			}
-			return { code: result.value, stdout: captured };
+			const captured = chunks.join("");
+			try {
+				return { code: result.value, envelope: pickEnvelope(captured) };
+			} catch (error) {
+				const tail = captured.slice(-300);
+				throw new Error(
+					`verify envelope parse failed (${error instanceof Error ? error.message : String(error)}); captured tail: ${tail}`,
+				);
+			}
 		} finally {
 			process.stdout.write = originalWrite;
 		}
+	}
+	function pickEnvelope(captured: string): unknown {
+		const lines = captured.split("\n");
+		for (let index = lines.length - 1; index >= 0; index -= 1) {
+			const line = lines[index]?.trim();
+			if (!line || line.startsWith("#") || line.startsWith("TAP")) {
+				continue;
+			}
+			try {
+				const parsed: unknown = JSON.parse(line);
+				if (
+					typeof parsed === "object" &&
+					parsed !== null &&
+					Array.isArray((parsed as { findings?: unknown }).findings)
+				) {
+					return parsed;
+				}
+			} catch {
+				// Not JSON (TAP/reporter traffic) — keep scanning older lines.
+			}
+		}
+		throw new Error("no findings envelope line");
 	}
 	try {
 		// Assembled from parts so this committed test source never holds a
@@ -196,10 +226,8 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		assert.ok(fiftyMs < 5000, `fifty-staged ${fiftyMs} ms over the 5 s budget`);
 		assert.equal(fifty.code, 1, `fifty-staged exit ${fifty.code}, want 1`);
 		assert.ok(
-			findingIds(JSON.parse(fifty.stdout) as unknown).includes(
-				"core/no-secrets",
-			),
-			`fifty-staged findings missing core/no-secrets: ${fifty.stdout.slice(0, 300)}`,
+			findingIds(fifty.envelope).includes("core/no-secrets"),
+			`fifty-staged leg missing its expected rule finding; envelope head: ${JSON.stringify(fifty.envelope)?.slice(0, 300)}`,
 		);
 		for (let index = 49; index < 999; index += 1) {
 			writeFileSync(
@@ -221,10 +249,8 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 			`thousand-staged exit ${thousand.code}, want 1`,
 		);
 		assert.ok(
-			findingIds(JSON.parse(thousand.stdout) as unknown).includes(
-				"core/no-secrets",
-			),
-			`thousand-staged findings missing core/no-secrets: ${thousand.stdout.slice(0, 300)}`,
+			findingIds(thousand.envelope).includes("core/no-secrets"),
+			`thousand-staged leg missing its expected rule finding; envelope head: ${JSON.stringify(thousand.envelope)?.slice(0, 300)}`,
 		);
 	} finally {
 		repo.cleanup();
