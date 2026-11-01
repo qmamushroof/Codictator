@@ -11,7 +11,7 @@
 
 ## Steps
 
-- [ ] **13.1** Determinism across OSes: CI compares the verdict JSON of every acceptance scenario between Linux, Windows and macOS, and replays every event the suite produced (SPEC §10.4). Verify: the comparison job is green.
+- [x] **13.1** Determinism across OSes: CI compares the verdict JSON of every acceptance scenario between Linux, Windows and macOS, and replays every event the suite produced (SPEC §10.4). Verify: the comparison job is green.
 - [ ] **13.2** All stress rows of SPEC §10.5 within budget on the 10,000-file reference repo. Verify: `npm run test:stress`.
 - [x] **13.3** Packaging: tarball allowlist, no `node_modules` in the `.vsix`, no install scripts. Verify: `npm run test:packaging`.
 - [ ] **13.4** Scheduled `live` job checking real registry and OSV shapes and harness-capture freshness, opening an issue on drift; never a merge gate (SPEC §10.6). Verify: one manual dispatch is green.
