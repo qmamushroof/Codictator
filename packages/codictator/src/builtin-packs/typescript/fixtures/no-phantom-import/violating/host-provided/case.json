@@ -1,0 +1,10 @@
+{
+	"rule": "ts/no-phantom-import",
+	"section": "§6.1",
+	"expectation": "violating",
+	"trigger": "host-provided vscode import outside the vscode package",
+	"expectRules": ["ts/no-phantom-import"],
+	"files": {
+		"packages/other/src/a.ts": "import type { ExtensionContext } from \"vscode\";\n\nexport function run(context: ExtensionContext): void {\n\tvoid context;\n}\n"
+	}
+}
