@@ -4,12 +4,9 @@ How an agent runs the seven mandatory phases of SPEC §4.12.2 on this repo. SPEC
 
 ## Modes
 
-| Mode | Applies | Gates enforced by |
-|---|---|---|
-| **Bootstrap** | Until the exit gate of [ROADMAP phase 10](ROADMAP/10-SELF-HOST.md) | CI running [VALIDATION.md](VALIDATION.md), the red ledger, the fresh-session reviewer, and this file |
-| **Self-hosted** | From phase 10 on | Codictator itself: task records, hooks, git hooks and `codictator ci verify` |
+Bootstrap mode ended with the exit gate of [ROADMAP phase 10](ROADMAP/10-SELF-HOST.md). The repo is self-hosted: Codictator itself enforces the gates through task records, hooks, git hooks and `codictator ci verify`.
 
-Both modes owe the same evidence. Bootstrap keeps it in the pull request description under fixed headings (`Plan`, `Red proof`, `Validation`, `Review round n`). Self-hosted mode keeps it in the task record (SPEC §7.11), written only through the commands of SPEC §4.19.2.
+Evidence lives in the task record (SPEC §7.11), written only through the commands of SPEC §4.19.2.
 
 ## Orchestration
 
@@ -28,10 +25,10 @@ The session the human talks to is the **orchestrator**. It delegates all task wo
 
 ## Tasks and branches
 
-- A task is one roadmap step in bootstrap mode, or one `codictator task new` record in self-hosted mode. Its type is one of SPEC §4.12.1.
+- A task is one `codictator task new` record (ids are `T-####`, SPEC §4.12.1). Its type is one of SPEC §4.12.1.
 - Branch name: `<type>/<phase>-<slug>`, for example `feature/03-kernel-ports`. One open task per branch; nothing is committed to `main` directly.
 - A task too large for one session is split into steps; scope is never shrunk to fit.
-- A bootstrap commit's history entry carries `Task: none` and names the roadmap step id in **Why**.
+- A history entry names the task id in **Task:** (grammar SPEC §7.7).
 
 ## 1. Discovery
 
@@ -46,7 +43,7 @@ Planning commits the upfront guardrails of PRD §8.3 before any implementation.
 
 - State the allowed file globs, the acceptance criteria, and the declared tests by full title.
 - Declared tests normally already exist in the red ledger from phase 2. A missing one is written now and enters the ledger red (SPEC §10.7).
-- Gate: every required test kind for the scenario is declared (`core/test-kinds-by-scenario`), and the red proof holds. In bootstrap mode the proof is a green `npm test` run on a commit where every declared test is a ledger entry; record that commit.
+- Gate: every required test kind for the scenario is declared (`core/test-kinds-by-scenario`), and the red proof holds (`codictator test red`, SPEC §4.10.2).
 
 ## 3. Implementation
 
@@ -63,9 +60,9 @@ Run every always-row of [VALIDATION.md](VALIDATION.md) and every conditional row
 
 The review gate is SPEC §4.12.4.
 
-- The reviewer is a fresh session that wrote no file of this task, in any harness. In self-hosted mode it is the `codictator-review` asset submitting through `codictator review submit`.
+- The reviewer is a fresh session that wrote no file of this task, in any harness. It is the `codictator-review` asset submitting through `codictator review submit`.
 - It reads only the staged diff (`git diff --cached`), the task's SPEC references and [CONVENTIONS.md](CONVENTIONS.md). Nothing from the author's session is passed to it.
-- Findings use the shape of SPEC §7.16. Bootstrap mode pastes them into the PR description as `Review round n`.
+- Findings use the shape of SPEC §7.16.
 - Blocker and major findings are fixed by a change, which returns to validation and needs a new round. Minor and nit findings are fixed or closed as `wontfix` with a reason.
 - The gate holds when the reviewed tree equals the staged tree and no blocker or major finding is open. Reaching `core/review-round-cap` escalates to the human.
 - A docs-only change gets one fresh round with the same binding.
@@ -88,7 +85,7 @@ The review gate is SPEC §4.12.4.
 ## Context and session hygiene
 
 - Context bands and the tool-call limit are SPEC §5.1. At the soft band, finish the current unit and checkpoint. At the hard band, checkpoint and continue in a new session.
-- Bootstrap checkpoint: write `.codictator/state/resume.md` (git-ignored, the path SPEC §7.1 reserves) with task, branch, done, next and open questions. Self-hosted: `codictator task checkpoint`.
+- Checkpoint with `codictator task checkpoint`. In a harness without subagents, the orchestrator writes `.codictator/state/resume.md` (git-ignored, the path SPEC §7.1 reserves) with task, branch, done, next and open questions.
 - A subagent at its limit returns `CHECKPOINT: <summary>` to its caller instead of clearing.
 - A subagent returning without its deliverable — no verdict, no gate numbers, mid-gate yield — is a STALL, not completion. The orchestrator immediately relaunches a continuation subagent carrying the interim evidence; no phase waits on a missing verdict.
 - After opening a PR, the task owner starts a merge-watch instead of handing the wait to the human: poll `gh pr view <n> --json mergeStateStatus` and `gh pr checks <n>` about every 4 minutes for up to about 2 hours, sleeping with shell `Start-Sleep` between polls. A wall-clock wait costs no tokens, unlike a background worker holding context for the same wait; the PR body records the watch (PR number, poll interval).
@@ -106,7 +103,7 @@ The review gate is SPEC §4.12.4.
 
 After compaction or in a new session, treat any summary as unverified.
 
-1. Read [AGENTS.md](../AGENTS.md), then `.codictator/state/resume.md` (bootstrap) or `codictator context` (self-hosted).
+1. Read [AGENTS.md](../AGENTS.md), then `codictator context` (or `.codictator/state/resume.md` in a harness without subagents).
 2. Check reality: `git status`, `git log --oneline -10`, `git diff`, and `git ls-files --others --exclude-standard`, because untracked files are work too.
 3. Read the current phase leaf and brief the next subagent from its first unchecked step.
 
