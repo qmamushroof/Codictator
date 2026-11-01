@@ -183,23 +183,33 @@ test("[§10.5] pre-commit with 50 then 1000 staged files", async () => {
 		}
 	}
 	function pickEnvelope(captured: string): unknown {
+		// printJson renders the envelope with stableStringify (pretty, 2-space
+		// indent), so it spans many lines: single-line parsing never matches.
+		// Scan every brace-opened window for the object carrying findings.
 		const lines = captured.split("\n");
-		for (let index = lines.length - 1; index >= 0; index -= 1) {
-			const line = lines[index]?.trim();
-			if (!line || line.startsWith("#") || line.startsWith("TAP")) {
+		for (let start = 0; start < lines.length; start += 1) {
+			if (!lines[start]?.trimStart().startsWith("{")) {
 				continue;
 			}
-			try {
-				const parsed: unknown = JSON.parse(line);
-				if (
-					typeof parsed === "object" &&
-					parsed !== null &&
-					Array.isArray((parsed as { findings?: unknown }).findings)
-				) {
-					return parsed;
+			for (let end = lines.length - 1; end >= start; end -= 1) {
+				if (!lines[end]?.trimEnd().endsWith("}")) {
+					continue;
 				}
-			} catch {
-				// Not JSON (TAP/reporter traffic) — keep scanning older lines.
+				try {
+					const parsed: unknown = JSON.parse(
+						lines.slice(start, end + 1).join("\n"),
+					);
+					if (
+						typeof parsed === "object" &&
+						parsed !== null &&
+						Array.isArray((parsed as { findings?: unknown }).findings)
+					) {
+						return parsed;
+					}
+				} catch {
+					// Not the envelope window (TAP/reporter traffic or a
+					// non-findings error envelope) — keep shrinking.
+				}
 			}
 		}
 		throw new Error("no findings envelope line");
