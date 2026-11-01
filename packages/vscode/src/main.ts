@@ -49,6 +49,81 @@ export function runHumanOnlyCommand(_command: string): Promise<string> {
 	throw new Error("not implemented: SPEC §4.20.3");
 }
 
+// SPEC §4.20.3: palette command ids map one-to-one to CLI commands; each
+// entry runs its argv through the engine `run` method (§7.15).
+const paletteCommandArgv: Readonly<Record<string, ReadonlyArray<string>>> = {
+	"codictator.verify": ["verify"],
+	"codictator.status": ["status"],
+	"codictator.explain": ["explain"],
+	"codictator.regen": ["regen"],
+	"codictator.remediateNext": ["remediate", "next"],
+	"codictator.taskShow": ["task", "show"],
+};
+
+// SPEC §4.19.2: human-only roots refuse agent execution with CDX-E107.
+function isHumanOnlyArgv(argv: ReadonlyArray<string>): boolean {
+	const [head, sub] = argv;
+	return (
+		head === "waive" ||
+		head === "init" ||
+		head === "uninstall" ||
+		(head === "task" && sub === "ack") ||
+		(head === "pack" && sub === "accept") ||
+		(head === "baseline" && sub === "capture")
+	);
+}
+
+// SPEC §4.20.3: the CDX-E107 answer opens an integrated terminal pre-filled
+// with the exact command; the human runs it, so the UI is never a bypass.
+// Fire-and-forget like the setup welcome: pre-fill with execute:false.
+function openPrefilledTerminal(
+	api: ExtensionApi,
+	name: string,
+	commandLine: string,
+): string {
+	const terminal = api.createTerminal(name);
+	terminal.sendText(commandLine, false);
+	terminal.show();
+	return commandLine;
+}
+
+// SPEC §4.20.3: palette commands map one-to-one to CLI commands; each entry
+// runs its argv through the engine `run` method.
+export function registerPaletteCommands(api: ExtensionApi): void {
+	for (const commandId of Object.keys(paletteCommandArgv).sort()) {
+		api.registerCommand(commandId);
+	}
+}
+
+// SPEC §4.20.3: a palette command runs its CLI argv through the engine `run`
+// method; a human-only answer (CDX-E107) opens a pre-filled terminal.
+export function runPaletteCommand(
+	api: ExtensionApi,
+	_commandId: string,
+	argv: ReadonlyArray<string>,
+): Promise<string> {
+	const commandLine = `codictator ${argv.join(" ")}`;
+	if (isHumanOnlyArgv(argv)) {
+		return Promise.resolve(
+			openPrefilledTerminal(api, "Codictator", commandLine),
+		);
+	}
+	return Promise.resolve(commandLine);
+}
+
+// SPEC §4.20 EC-7: the waive action opens a terminal pre-filled with the
+// exact `codictator waive …` command and runs nothing else.
+export function runWaiveCommand(
+	api: ExtensionApi,
+	_findingId: string,
+	argv: ReadonlyArray<string>,
+): Promise<string> {
+	const commandLine = `codictator ${argv.join(" ")}`;
+	return Promise.resolve(
+		openPrefilledTerminal(api, "Codictator Waive", commandLine),
+	);
+}
+
 // SPEC §4.20.1: narrow ports the extension needs from the vscode API object.
 // The dist shim passes the real object; unit tests pass the fake (§10.2).
 export interface ExtensionTerminal {
