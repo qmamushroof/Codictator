@@ -1,10 +1,6 @@
 {
 	"version": 1,
 	"red": [
-		"tests/unit/extension.test.ts::[§4.20] human-only command opens a terminal pre-filled",
-		"tests/unit/p1-views.test.ts::[§4.20.2] budget view shows band and usage per session, or unavailable",
-		"tests/unit/p1-views.test.ts::[§4.20.2] health view shows ratchet trend, dependency freshness, integrity and remediation progress",
-		"tests/unit/p1-views.test.ts::[§4.20.2] p1 views register steering, budget and health tree views",
-		"tests/unit/p1-views.test.ts::[§4.20.2] steering view shows exactly what was injected, when and into which harness session"
+		"tests/unit/extension.test.ts::[§4.20] human-only command opens a terminal pre-filled"
 	]
 }
