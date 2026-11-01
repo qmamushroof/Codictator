@@ -405,14 +405,15 @@ test("[§4.15.6] external evidence flows through the gate", async () => {
 test("[§4.15.1] rendered workflow pins and verifies", async () => {
 	// SPEC §4.15.1 + §4.15.5: generated workflow pins actions by SHA and
 	// every job bootstraps the CLI from the local checkout (no published
-	// binary on PATH pre-publish), invoking the built entry.
+	// binary on PATH pre-publish), invoking the built entry. Four jobs
+	// (verify, record-bot-change, sweep, live) share the pins.
 	const workflow = renderWorkflow("/repo", { repoName: "app" });
 	const text = workflow.text ?? "";
 	assert.ok(text.includes(`actions/checkout@${PINNED_SHA}`));
-	assert.equal(text.split(`actions/checkout@${PINNED_SHA}`).length - 1, 3);
+	assert.equal(text.split(`actions/checkout@${PINNED_SHA}`).length - 1, 4);
 	assert.equal(
 		text.split(`actions/setup-node@${FALLBACK_PINS.setupNodeSha}`).length - 1,
-		3,
+		4,
 	);
 	assert.ok(text.includes(`# ${FALLBACK_PINS.checkoutVersion}`));
 	assert.ok(text.includes(`# ${FALLBACK_PINS.setupNodeVersion}`));
@@ -434,6 +435,13 @@ test("[§4.15.1] rendered workflow pins and verifies", async () => {
 	assert.ok(
 		text.includes("node packages/codictator/dist/cli/main.js ci sweep"),
 	);
+	assert.ok(text.includes("  live:"));
+	assert.ok(
+		text.includes(
+			"if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'",
+		),
+	);
+	assert.ok(text.includes("issues: write"));
 	assert.ok(text.includes("npm run build"));
 	assert.ok(text.includes("fetch-depth: 0"));
 	assert.ok(!text.includes("- run: codictator ci "));
