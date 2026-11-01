@@ -1,0 +1,116 @@
+{
+	"id": "python",
+	"version": "0.0.0",
+	"description": "Codictator Python built-in pack (SPEC §6.3).",
+	"rules": [
+		{
+			"id": "python/typecheck",
+			"family": "PY",
+			"tier": "floor",
+			"statement": "The repo's mypy or pyright strict check passes.",
+			"reason": "Type errors break the assumptions every other check makes.",
+			"remediation": "Fix the type error at {path}:{line}.",
+			"enforcer": "python/typecheck",
+			"triggers": ["review"],
+			"scope": [],
+			"params": {},
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "python/lint",
+			"family": "PY",
+			"tier": "floor",
+			"statement": "The repo's ruff check passes on scope.",
+			"reason": "Lint drift accumulates into unreadable code.",
+			"remediation": "Fix the lint finding at {path}:{line}.",
+			"enforcer": "python/lint",
+			"triggers": ["post-tool", "review"],
+			"scope": [],
+			"params": {},
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "python/no-phantom-import",
+			"family": "PY",
+			"tier": "floor",
+			"statement": "Top-level imports resolve to a declared dependency, the standard library, or a first-party package.",
+			"reason": "Phantom imports install hallucinated packages.",
+			"remediation": "Declare {value} in {path} or fix the import.",
+			"enforcer": "python/no-phantom-import",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		},
+		{
+			"id": "python/security-patterns",
+			"family": "PY",
+			"tier": "floor",
+			"statement": "No dangerous Python patterns: eval, exec, subprocess with shell=True, pickle.loads, unsafe yaml.load, verify=False.",
+			"reason": "These patterns are injection sinks.",
+			"remediation": "Remove the pattern at {path}:{line}; use the safe alternative.",
+			"enforcer": "python/security-patterns",
+			"triggers": ["pre-tool", "review"],
+			"scope": [],
+			"params": {},
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		}
+	],
+	"enforcers": [
+		{
+			"id": "python/lint",
+			"kind": "code",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "python/no-phantom-import",
+			"kind": "code",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "python/security-patterns",
+			"kind": "code",
+			"budgetMs": 1000,
+			"args": {}
+		},
+		{
+			"id": "python/typecheck",
+			"kind": "code",
+			"budgetMs": 1000,
+			"args": {}
+		}
+	],
+	"drivers": [],
+	"extractors": [],
+	"measures": [],
+	"capabilities": [
+		{
+			"name": "HTTP client",
+			"packages": ["requests", "httpx", "aiohttp", "urllib3"]
+		},
+		{
+			"name": "Dates",
+			"packages": ["arrow", "pendulum", "python-dateutil"]
+		},
+		{
+			"name": "Test runner",
+			"packages": ["pytest", "nose2"]
+		},
+		{
+			"name": "Lint",
+			"packages": ["ruff", "flake8", "pylint"]
+		},
+		{
+			"name": "Format",
+			"packages": ["ruff", "black", "isort"]
+		}
+	],
+	"assets": [],
+	"maxWaiverDays": 90
+}

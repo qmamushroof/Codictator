@@ -1,0 +1,10 @@
+{
+	"rule": "python/typecheck",
+	"section": "§6.3",
+	"expectation": "passing",
+	"trigger": "int annotation holding an int literal",
+	"expectRules": [],
+	"files": {
+		"sample.py": "width: int = 3\n"
+	}
+}

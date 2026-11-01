@@ -1,0 +1,12 @@
+{
+	"rule": "python/no-phantom-import",
+	"section": "§6.3",
+	"expectation": "passing",
+	"trigger": "stdlib, declared and first-party imports resolve clean",
+	"expectRules": [],
+	"files": {
+		"sample.py": "import os\nimport requests\nfrom helper import greet\n\nprint(os.name)\nprint(requests.utils.default_user_agent())\ngreet()\n",
+		"helper.py": "def greet():\n    return \"hi\"\n",
+		"requirements.txt": "requests==2.31.0\n"
+	}
+}

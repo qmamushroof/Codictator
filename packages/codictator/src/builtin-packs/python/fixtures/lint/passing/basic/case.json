@@ -1,0 +1,10 @@
+{
+	"rule": "python/lint",
+	"section": "§6.3",
+	"expectation": "passing",
+	"trigger": "every import read by the module",
+	"expectRules": [],
+	"files": {
+		"sample.py": "import os\n\nprint(os.name)\n"
+	}
+}
