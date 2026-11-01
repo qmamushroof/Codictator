@@ -168,7 +168,9 @@ jobs:
         run: |
           if [ "${{ needs.preflight.outputs.dry_run }}" = "true" ]; then
             echo "dry run: packaging and validating without registry PUT"
-            npm publish --dry-run --provenance --access public
+            # dry_run is true only for pre-release tags (vX.Y.Z-*), which
+            # need an explicit dist-tag; stable keeps the default `latest`.
+            npm publish --dry-run --provenance --access public --tag next
           else
             npm publish --provenance --access public
           fi
