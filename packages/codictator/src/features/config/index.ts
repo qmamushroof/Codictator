@@ -2,6 +2,7 @@
 
 import type { Fs, Ports } from "../../kernel/index.ts";
 import {
+	globMatch,
 	makeError,
 	NodeEnv,
 	NodeFs,
@@ -121,9 +122,18 @@ async function findManifest(fs: Fs, root: string): Promise<string | undefined> {
 			return name;
 		}
 	}
+	// The glob patterns are top-level-only: per SPEC §4.1.2 a bare `*`
+	// never crosses `/`, so a recursive walk can only ever match the top
+	// level. One listing answers every pattern without the descent (which
+	// also walks `.git`; SPEC §10.5 carries the same scoping as a
+	// non-normative hint). The returned pattern strings and their order
+	// are unchanged, so resolution semantics are identical.
+	const listed = await fs.list(root);
+	if (!listed.ok) {
+		return undefined;
+	}
 	for (const pattern of MANIFEST_GLOBS) {
-		const found = await fs.glob(pattern, root);
-		if (found.ok && found.value.length > 0) {
+		if (listed.value.some((name) => globMatch(pattern, name))) {
 			return pattern;
 		}
 	}
