@@ -22,6 +22,44 @@ export interface BareRepo {
 
 const FIXED_GIT_DATE = "2026-01-01T00:00:00+00:00";
 
+// Temp-dir removal races lazy OS reclamation (ENOTEMPTY on macOS) when a
+// just-written tree is removed, so retry the sync removal with linear
+// backoff and rethrow the last error to keep genuine failures visible.
+const RETRYABLE_CLEANUP_CODES: ReadonlySet<string> = new Set([
+	"ENOTEMPTY",
+	"EBUSY",
+	"EPERM",
+]);
+
+function removeDirWithRetry(dir: string): void {
+	let lastError: unknown;
+	for (let attempt = 1; attempt <= 5; attempt += 1) {
+		try {
+			rmSync(dir, { recursive: true, force: true });
+			return;
+		} catch (error) {
+			lastError = error;
+			const code =
+				error instanceof Error
+					? (error as NodeJS.ErrnoException).code
+					: undefined;
+			if (code === undefined || !RETRYABLE_CLEANUP_CODES.has(code)) {
+				throw error;
+			}
+			if (attempt === 5) {
+				throw error;
+			}
+			Atomics.wait(
+				new Int32Array(new SharedArrayBuffer(4)),
+				0,
+				0,
+				100 * attempt,
+			);
+		}
+	}
+	throw lastError;
+}
+
 function runGit(
 	dir: string,
 	args: ReadonlyArray<string>,
@@ -61,7 +99,7 @@ export function createTempRepo(
 			runGit(dir, ["commit", "-m", message], fixedEnv);
 		},
 		cleanup: (): void => {
-			rmSync(dir, { recursive: true, force: true });
+			removeDirWithRetry(dir);
 		},
 	};
 	const entries = Object.entries(files).sort(([a], [b]) => {
@@ -93,7 +131,7 @@ export function createBareRepo(): BareRepo {
 	return {
 		dir,
 		cleanup: (): void => {
-			rmSync(dir, { recursive: true, force: true });
+			removeDirWithRetry(dir);
 		},
 	};
 }
