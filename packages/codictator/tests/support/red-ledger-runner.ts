@@ -280,17 +280,42 @@ function childText(error: unknown, key: string): string {
 	return "";
 }
 
-// Reporting only: last-N-lines tail of a failed child's captured output so
-// the failing TAP assert (message + stack) is visible instead of swallowed
-// by the summary report. Never affects pass/fail classification.
-const MAX_FAILURE_DETAIL_LINES = 40;
+// Reporting only: not-ok-anchored excerpt of a failed child's captured
+// output so the failing TAP assert (message + stack) is visible instead of
+// swallowed by the summary report. A trailing tail demonstrably misses the
+// assert when later passing tests scroll past it, so anchor on each `not ok`
+// line plus following context, capped per file. Never affects pass/fail
+// classification.
+const FAILURE_CONTEXT_LINES = 25;
+const MAX_FAILURE_DETAIL_LINES = 120;
 
-function tailLines(text: string, max: number): Array<string> {
+function failureExcerptLines(text: string): Array<string> {
 	const lines = text.split(/\r?\n/);
 	while (lines.length > 0 && lines[lines.length - 1] === "") {
 		lines.pop();
 	}
-	return lines.slice(Math.max(0, lines.length - max));
+	const excerpt: Array<string> = [];
+	for (let index = 0; index < lines.length; index += 1) {
+		if (!/^\s*not ok\b/.test(lines[index] ?? "")) {
+			continue;
+		}
+		for (
+			let offset = 0;
+			offset <= FAILURE_CONTEXT_LINES &&
+			index + offset < lines.length &&
+			excerpt.length < MAX_FAILURE_DETAIL_LINES;
+			offset += 1
+		) {
+			excerpt.push(lines[index + offset] ?? "");
+		}
+		if (excerpt.length >= MAX_FAILURE_DETAIL_LINES) {
+			break;
+		}
+	}
+	if (excerpt.length > 0) {
+		return excerpt;
+	}
+	return lines.slice(Math.max(0, lines.length - FAILURE_CONTEXT_LINES - 1));
 }
 
 function childFailureDetail(
@@ -300,13 +325,11 @@ function childFailureDetail(
 	const combined = [child.stdout, child.stderr]
 		.filter((part) => part !== "")
 		.join("\n");
-	const tail =
-		combined === ""
-			? ["(no captured output)"]
-			: tailLines(combined, MAX_FAILURE_DETAIL_LINES);
+	const excerpt =
+		combined === "" ? ["(no captured output)"] : failureExcerptLines(combined);
 	return [
-		`--- failure detail: ${relative} (last ${MAX_FAILURE_DETAIL_LINES} lines) ---`,
-		...tail,
+		`--- failure detail: ${relative} (not ok + ${FAILURE_CONTEXT_LINES} lines context) ---`,
+		...excerpt,
 		`--- end failure detail: ${relative} ---`,
 	];
 }
