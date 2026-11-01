@@ -19,7 +19,7 @@
 - [x] **9.6** ci: generated workflow, required-check and branch-protection reads, bot-change recording, sweep, external CI (SPEC §4.15). Verify: §4.15 EC-1–10.
 - [x] **9.7** audit surfaces: `explain`, `replay`, `status`, the CI summary, `report` (SPEC §4.18.2–§4.18.5). Verify: §4.18 EC-4–7.
 - [x] **9.8** Every remaining command of SPEC §4.19.2, `init` included, with `--json` schemas, terse output and the exit codes of §8.2. Verify: §4.19 EC-1, EC-2, EC-7; the §8.1 and §8.2 tests.
-- [ ] **9.9** The stress rows of SPEC §10.5 for `pre-commit`, `ci verify` and `status` meet the §9.3 budgets. Verify: `npm run test:stress`.
+- [x] **9.9** The stress rows of SPEC §10.5 for `pre-commit`, `ci verify` and `status` meet the §9.3 budgets. Verify: `npm run test:stress`.
 
 ## Exit gate
 
