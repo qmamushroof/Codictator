@@ -702,7 +702,7 @@ test("[§4.19] shared CLI utils map versions and exits", () => {
 });
 
 test("[§4.14] ci verify blocks a trailer-less commit in range (L4)", async () => {
-	// SPEC §4.14.2 core/no-bypass at L4 (BUG-0017): a non-merge commit in
+	// SPEC §4.14.2 core/no-bypass at L4 (BUG-0018): a non-merge commit in
 	// range without the Codictator-L3 trailer blocks the merge gate, even
 	// when no other finding fires.
 	const repo = createTempRepo({ "README.md": "hi" });

@@ -1,4 +1,4 @@
-// SPEC §4.14.2 + §4.14.3 (BUG-0017): the live core/no-bypass enforcer
+// SPEC §4.14.2 + §4.14.3 (BUG-0018): the live core/no-bypass enforcer
 // judges the L1 hook scope itself — the shellCommand text and tool-form
 // file writes — not just the self-test marker fixtures. A bypass that only
 // the markers see is dead at runtime.

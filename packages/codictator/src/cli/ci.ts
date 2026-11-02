@@ -165,14 +165,30 @@ async function ciVerify(
 			ranged.value.head,
 		);
 		if (!commits.ok) {
-			return fail(
-				commits.error.code,
-				commits.error.message,
-				commits.error.remediation,
-				req.json,
-			);
+			if (ciVerifyExit(checks) !== 0) {
+				// SPEC §4.15.7 EC-2: the base is unreachable, which already
+				// blocks via CDX-E503; the trailer gate is unverifiable too,
+				// so its error folds into the findings verdict (ok(1))
+				// instead of erroring, exactly like the diff scope above.
+				trailered = [
+					{
+						ruleId: "core/no-bypass",
+						code: commits.error.code,
+						message: commits.error.message,
+						remediation: commits.error.remediation,
+					} satisfies Finding,
+				];
+			} else {
+				return fail(
+					commits.error.code,
+					commits.error.message,
+					commits.error.remediation,
+					req.json,
+				);
+			}
+		} else {
+			trailered = checkCommitTrailers(commits.value, trailerExempt);
 		}
-		trailered = checkCommitTrailers(commits.value, trailerExempt);
 	}
 	const findings = [...checks, ...evaluated, ...trailered];
 	const summary = ciSummaryFor(findings);
