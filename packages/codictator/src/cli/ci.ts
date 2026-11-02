@@ -8,8 +8,8 @@ import {
 	readProtection,
 	renderWorkflow,
 } from "../features/ci/index.ts";
-import { checkCommitTrailers } from "../features/integrity/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
+import { checkCommitTrailers } from "../features/integrity/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { ciRecordBotChange } from "./ci-bot-change.ts";

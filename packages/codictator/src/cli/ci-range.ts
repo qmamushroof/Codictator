@@ -4,8 +4,8 @@
 // from ci.ts by responsibility (core/file-size): this file owns the
 // scope, ci.ts owns the verdict.
 import { parseArgs } from "node:util";
-import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { Config } from "../features/config/index.ts";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { CommitInRange } from "../features/integrity/index.ts";
 import type { CdxError, Result } from "../kernel/index.ts";
 import { err, ok, parseJson, readHostText } from "../kernel/index.ts";
