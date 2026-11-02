@@ -1,7 +1,7 @@
 // SPEC §4.9.2 core/doc-density: a code span counts as one word.
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import { checkDocDensity } from "../../../src/features/records/docs.ts";
+import { checkDocDensity } from "../../../src/features/records/docs-prose.ts";
 
 function filler(count: number): string {
 	return Array.from({ length: count }, (_, index) => `word${index}`).join(" ");

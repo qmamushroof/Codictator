@@ -2,7 +2,7 @@
 // and masked/original indices stay aligned, so spans survive slicing.
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import { splitSentences } from "../../../src/features/records/docs.ts";
+import { splitSentences } from "../../../src/features/records/docs-prose.ts";
 
 test("[§4.9.2] doc sentences never split inside a code span", () => {
 	const sentences = splitSentences(

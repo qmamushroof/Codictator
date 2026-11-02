@@ -14,27 +14,31 @@ export {
 	type TaskRef,
 } from "./bugs.ts";
 export {
-	checkDocBreadth,
-	checkDocDensity,
-	checkDocLinksValid,
-	checkDocNoCorpusCounts,
 	checkDocNoInlineChangelog,
 	checkDocOneLevel,
 	checkDocPlacement,
-	checkDocRouterLeaf,
 	checkDocSingleOwner,
-	checkDocSize,
 	checkDocs,
 	classifyDoc,
-	DEFAULT_DOC_LIMITS,
 	type DocClass,
+} from "./docs.ts";
+export {
+	checkDocDensity,
+	checkDocLinksValid,
+	checkDocNoCorpusCounts,
+	githubSlug,
+	splitSentences,
+} from "./docs-prose.ts";
+export {
+	checkDocBreadth,
+	checkDocRouterLeaf,
+	checkDocSize,
+	DEFAULT_DOC_LIMITS,
 	type DocFile,
 	type DocLimits,
-	githubSlug,
 	type RouterLeaf,
 	type RouterTree,
-	splitSentences,
-} from "./docs.ts";
+} from "./docs-structure.ts";
 export {
 	checkHistory,
 	checkHistoryAppendOnly,
