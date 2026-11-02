@@ -236,6 +236,7 @@ function sharedReads(inner: Fs): Fs {
 export async function loadEvalEnforcers(
 	ports: Ports,
 	packIds: ReadonlyArray<string>,
+	excludeRuleIds: ReadonlySet<string> = new Set(),
 ): Promise<Result<Array<Enforcer>>> {
 	const core = await loadBuiltinPack("core");
 	if (!core.ok) {
@@ -260,7 +261,7 @@ export async function loadEvalEnforcers(
 		}
 		enforcers.push(...resolved.value);
 	}
-	return ok(enforcers);
+	return ok(enforcers.filter((enforcer) => !excludeRuleIds.has(enforcer.id)));
 }
 
 export async function evaluateScope(
@@ -269,9 +270,13 @@ export async function evaluateScope(
 	scope: VerifyScope,
 	now: string,
 	configHash: string,
+	// BUG-0014: diff-scope callers pass the diff-unsound rule ids (the gate
+	// subset); tree callers omit it and judge everything.
+	options: { readonly excludeRuleIds?: ReadonlySet<string> } = {},
 ): Promise<Result<Array<Finding>>> {
 	const cached: CommandPorts = { ...ports, fs: sharedReads(ports.fs) };
-	const loaded = await loadEvalEnforcers(cached, packIds);
+	const excluded: ReadonlySet<string> = options.excludeRuleIds ?? new Set();
+	const loaded = await loadEvalEnforcers(cached, packIds, excluded);
 	if (!loaded.ok) {
 		return err(loaded.error);
 	}

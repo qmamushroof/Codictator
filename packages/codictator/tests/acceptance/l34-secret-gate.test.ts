@@ -153,6 +153,25 @@ test("[§4.14] installed pre-commit hook passes a normally-commented file (L3 ga
 	}
 });
 
+test("[§4.3] pre-commit blocks a diff-sound review-only finding (L3 gate subset)", async () => {
+	// BUG-0014: gates judge pre-tool plus the diff-sound review subset, so
+	// a review-only rule that reads only its scope files still blocks here
+	// while spec-trace and dead-code stay on human review with the tree.
+	const repo = createTempRepo();
+	try {
+		seedConfig(repo);
+		installLauncher(repo);
+		const installed = await cli(["install-hooks"], repo.dir);
+		assert.equal(installed.code, 0);
+		stage(repo, "big.js", `${"x".repeat(1048576 + 1)}\n`);
+		const blocked = await runGitHook(repo, "pre-commit");
+		assert.equal(blocked.code, 1);
+		assert.ok(blocked.stdout.includes("core/max-file-bytes"));
+	} finally {
+		repo.cleanup();
+	}
+});
+
 test("[§4.15] ci verify blocks a committed secret (L4)", async () => {
 	// SPEC §4.15.1 + §4.7.1: a committed key on the branch blocks the merge
 	// gate, both over the explicit --base/--head range and over

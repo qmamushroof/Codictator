@@ -1,7 +1,7 @@
 // SPEC §4.14.4 + §4.7: the git-hook engine path. Installed hooks exec
 // the launcher as `run.mjs git <hook>`; the launcher routes the `git` word
 // here (SPEC §4.19.3). pre-commit and pre-push evaluate the staged or pushed
-// change with the pre-tool gate family `verify` loads over staged scopes —
+// the change with the gate rule subset `verify` loads over staged scopes —
 // new scope plumbing, no new detection logic. commit-msg appends
 // the Codictator-L3 trailer §4.14.2 checks at L4.
 
@@ -14,7 +14,7 @@ import {
 	readHostText,
 	writeHostText,
 } from "../kernel/index.ts";
-import { evaluateScope } from "./evaluate.ts";
+import { evaluateGateScope } from "./gate-scope.ts";
 import { printFinding } from "./inspect.ts";
 import type { CommandPorts, CommandRequest } from "./shared.ts";
 import {
@@ -93,18 +93,15 @@ async function evaluateGitChange(
 	now: string,
 	configHash: string,
 ): Promise<Result<number>> {
-	// SPEC §4.3.2: gates judge the fail-closed local family (pre-tool:
-	// secrets, reads, shell, confinement), which is sound on diff scopes.
-	// The review-only hygiene rules (spec-trace, dead-code, history-entry)
-	// need full-tree context the staged or pushed diff does not carry, so
-	// they stay on the human `review` command until phase-5 finer triggers
-	// let gates select rule subsets; a review trigger here blocked every
-	// normally-commented file (BUG-0014).
-	const evaluated = await evaluateScope(
+	// BUG-0014 + SPEC §4.3.2: gates judge pre-tool plus the diff-sound
+	// review subset, the phase-5 finer trigger as a rule subset. The
+	// diff-unsound rules (spec-trace, dead-code) stay on the human
+	// `review` command over the tree; a review trigger here once blocked
+	// every normally-commented file.
+	const evaluated = await evaluateGateScope(
 		ports,
 		packIds,
 		{
-			trigger: "pre-tool",
 			files: [...files],
 			note: hook,
 			...(content === "" ? {} : { proposedContent: content }),
