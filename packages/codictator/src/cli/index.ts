@@ -10,6 +10,7 @@ import {
 	supportedHarness,
 } from "../features/adapters/index.ts";
 import { appendEvent, type NewEvent } from "../features/audit/index.ts";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { CdxError, Result } from "../kernel/index.ts";
 import {
 	err,
@@ -43,6 +44,9 @@ export interface CliOptions {
 	// so the old-node rejection stays verifiable on any runner, including
 	// Node ≥24. Production callers never set it.
 	readonly nodeVersion?: string;
+	// Resolved installed engine version (§4.2.1); unset stays the pinned
+	// placeholder so tests and embedders evaluate without I/O.
+	readonly engineVersion?: string;
 }
 
 // SPEC §4.19.3 steps 3 and 5: the verdict line lands in the resolved repo's
@@ -106,36 +110,43 @@ function blockedStdinExit(
 	return emitReply(blocked.stdout, blocked.stderr, blocked.exitCode);
 }
 
+// The hook invocation resolves its stdin first: an idle pipe fails closed
+// with CDX-E902 instead of hanging past the time limit (§4.5.5), while an
+// unknown harness never had a payload and answers without I/O.
 async function invokeHookEvent(
 	harness: string,
 	event: string,
-	stdinText: string,
+	stdinText: string | undefined,
 	cwd: string,
 	ports: HookBasePorts,
 	append: HookAppend,
+	engineVersion: string,
 ): Promise<number> {
+	let text = stdinText;
+	if (text === undefined && supportedHarness(harness)) {
+		const stdin = await readStdinText(
+			HOOK_PAYLOAD_MAX_BYTES,
+			hookBudgetMs(harness),
+		);
+		if (!stdin.ok) {
+			return blockedStdinExit(harness, stdin.error.code, stdin.error.message);
+		}
+		text = stdin.value;
+	}
 	const reply = await runHookEvent({
 		harness,
 		event,
-		stdinText,
+		stdinText: text ?? "",
 		cwd,
 		ports,
 		append,
+		engineVersion,
 		// SPEC §4.19.3 step 5: the hook evaluates the same pack enforcers
 		// the verify path loads (core plus the configured builtin packs),
 		// resolved against the runtime's root-confined ports.
 		loadEnforcers: loadEvalEnforcers,
 	});
 	return emitReply(reply.stdout, reply.stderr, reply.exitCode);
-}
-
-function basePorts(): HookBasePorts {
-	return {
-		proc: new NodeProc(),
-		net: new NodeNet(),
-		clock: new SystemClock(),
-		env: new NodeEnv(),
-	};
 }
 
 function emitReply(stdout: string, stderr: string, exitCode: number): number {
@@ -160,25 +171,22 @@ export async function runHook(options: CliOptions): Promise<number> {
 	if (nodeMajor(version) < MIN_NODE_MAJOR) {
 		return oldNodeExit(harness, version);
 	}
-	const ports = basePorts();
+	const ports: HookBasePorts = {
+		proc: new NodeProc(),
+		net: new NodeNet(),
+		clock: new SystemClock(),
+		env: new NodeEnv(),
+	};
 	const append: HookAppend = (root, line) => appendLine(root, line, ports);
-	if (!supportedHarness(harness)) {
-		return invokeHookEvent(harness, event, "", options.cwd, ports, append);
-	}
-	let stdinText = options.stdinText;
-	if (stdinText === undefined) {
-		// The stdin wait shares the hook budget: an idle pipe fails closed
-		// with CDX-E902 instead of hanging past the time limit (§4.5.5).
-		const stdin = await readStdinText(
-			HOOK_PAYLOAD_MAX_BYTES,
-			hookBudgetMs(harness),
-		);
-		if (!stdin.ok) {
-			return blockedStdinExit(harness, stdin.error.code, stdin.error.message);
-		}
-		stdinText = stdin.value;
-	}
-	return invokeHookEvent(harness, event, stdinText, options.cwd, ports, append);
+	return invokeHookEvent(
+		harness,
+		event,
+		options.stdinText,
+		options.cwd,
+		ports,
+		append,
+		options.engineVersion ?? ENGINE_VERSION,
+	);
 }
 
 // The command table and usage live in commands.ts; dispatch below routes
@@ -226,11 +234,7 @@ function scanGlobals(
 
 // SPEC §4.19 + §8.2: the command entry. The node floor fails as CDX-E002
 // (exit 6); unknown commands or flags are usage errors (exit 2, no code).
-async function runCommandImpl(options: {
-	argv: ReadonlyArray<string>;
-	cwd: string;
-	nodeVersion?: string | undefined;
-}): Promise<Result<number>> {
+async function runCommandImpl(options: CliOptions): Promise<Result<number>> {
 	const version = options.nodeVersion ?? process.version;
 	if (nodeMajor(version) < MIN_NODE_MAJOR) {
 		process.stderr.write(`${nodeTooOldMessage(version)}\n`);
@@ -265,6 +269,7 @@ async function runCommandImpl(options: {
 		cwd: globals.cwd,
 		nodeVersion: options.nodeVersion,
 		stdinText: undefined,
+		engineVersion: options.engineVersion ?? ENGINE_VERSION,
 	});
 }
 

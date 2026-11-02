@@ -132,7 +132,11 @@ export async function checkFreshConfig(
 	root: string,
 	req: CommandRequest,
 ): Promise<Result<number>> {
-	const fresh = await loadRepoConfig(root);
+	const fresh = await loadRepoConfig(
+		root,
+		undefined,
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	if (!fresh.ok) {
 		return fail(
 			"CDX-E901",
@@ -199,6 +203,7 @@ export async function buildGuardrailPlan(
 	root: string,
 	flags: InitFlags,
 	planned: ReadonlyArray<string>,
+	engineVersion: string = ENGINE_VERSION,
 ): Promise<ReturnType<typeof guardrailPlan>> {
 	const agents = await readStateText(root, "AGENTS.md");
 	const repoName = root.replaceAll("\\", "/").split("/").pop() ?? "repo";
@@ -210,9 +215,16 @@ export async function buildGuardrailPlan(
 					...(flags.profile === "" ? {} : { profile: flags.profile }),
 					modules,
 				};
-	return guardrailPlan(planned, flags.profile, repoName, agents, {
-		packs: flags.packs.map((id) => ({ id, version: ENGINE_VERSION })),
-		tools: flags.tools.map((tool) => buildHelperTool(tool)),
-		...(architecture === undefined ? {} : { architecture }),
-	});
+	return guardrailPlan(
+		planned,
+		flags.profile,
+		repoName,
+		agents,
+		{
+			packs: flags.packs.map((id) => ({ id, version: engineVersion })),
+			tools: flags.tools.map((tool) => buildHelperTool(tool)),
+			...(architecture === undefined ? {} : { architecture }),
+		},
+		engineVersion,
+	);
 }

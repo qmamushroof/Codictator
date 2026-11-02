@@ -111,8 +111,11 @@ function finishConfig(config: Config): EffectiveConfig {
 }
 
 // SPEC §4.2.2: tunables tighten only; any loosening is an error.
-export function validateConfig(value: unknown): EffectiveConfig {
-	return finishConfig(validateConfigValue(value, ENGINE_VERSION));
+export function validateConfig(
+	value: unknown,
+	engineVersion: string = ENGINE_VERSION,
+): EffectiveConfig {
+	return finishConfig(validateConfigValue(value, engineVersion));
 }
 
 async function findManifest(fs: Fs, root: string): Promise<string | undefined> {
@@ -146,6 +149,7 @@ async function findManifest(fs: Fs, root: string): Promise<string | undefined> {
 export async function loadConfig(
 	repoRoot: string,
 	ports?: Ports,
+	engineVersion: string = ENGINE_VERSION,
 ): Promise<EffectiveConfig> {
 	const root = cleanRoot(repoRoot);
 	let active = ports;
@@ -212,5 +216,5 @@ export async function loadConfig(
 	// SPEC §3.3: config imports kernel only, so the CDX-E103 integrity event
 	// the SPEC §4.2.4 EC-6 row pairs with the error is emitted by the caller
 	// (engine or CLI), which may compose config with audit.
-	return finishConfig(validateConfigValue(parsed.value, ENGINE_VERSION));
+	return finishConfig(validateConfigValue(parsed.value, engineVersion));
 }

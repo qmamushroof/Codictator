@@ -72,6 +72,7 @@ export { analyseShell } from "./shell-scan.ts";
 export { readStdinText } from "./stdin.ts";
 export type { TestCaseResult } from "./test-report.ts";
 export { readTestReport } from "./test-report.ts";
+export { installedEngineVersion } from "./version.ts";
 
 export interface FsStat {
 	readonly isFile: boolean;

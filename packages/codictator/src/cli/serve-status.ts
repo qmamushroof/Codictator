@@ -103,12 +103,15 @@ interface StatusParts {
 	readonly helpers: Array<HelperStatus>;
 }
 
-async function collectStatusParts(root: string): Promise<StatusParts> {
+async function collectStatusParts(
+	root: string,
+	engineVersion: string,
+): Promise<StatusParts> {
 	const log = await readLogEvents(root);
 	const events = log?.events ?? [];
 	const packs: Record<string, string> = {};
 	let helpers: Array<HelperStatus> = [];
-	const configured = await loadRepoConfig(root);
+	const configured = await loadRepoConfig(root, undefined, engineVersion);
 	if (configured.ok) {
 		for (const pack of configured.value.effective.config.packs) {
 			packs[pack.id] =
@@ -155,10 +158,13 @@ export async function statusMethod(ctx: MethodContext): Promise<MethodOutcome> {
 			},
 		};
 	}
-	const parts = await collectStatusParts(root);
+	const parts = await collectStatusParts(
+		root,
+		ctx.engineVersion ?? ENGINE_VERSION,
+	);
 	return methodOk(
 		buildStatusJson({
-			engineVersion: ENGINE_VERSION,
+			engineVersion: ctx.engineVersion ?? ENGINE_VERSION,
 			packs: parts.packs,
 			harnesses: harnessStates(parts.observed),
 			helpers: parts.helpers,

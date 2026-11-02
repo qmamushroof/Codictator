@@ -10,6 +10,7 @@ import {
 	readProtection,
 	renderWorkflow,
 } from "../features/ci/index.ts";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import {
@@ -47,6 +48,7 @@ async function ciVerify(
 	root: string,
 	configHash: string,
 	now: string,
+	engineVersion: string,
 ): Promise<Result<number>> {
 	const flags = parseCiVerifyFlags(req.args.slice(1));
 	if (flags === undefined) {
@@ -134,7 +136,7 @@ async function ciVerify(
 			);
 			const judged = await evaluateScope(
 				ports.value,
-				await ciPackIds(root),
+				await ciPackIds(root, engineVersion),
 				commitText === ""
 					? scoped.value
 					: { ...scoped.value, proposedContent: commitText },
@@ -241,6 +243,22 @@ function ciRecordBotChange(req: CommandRequest): Result<number> {
 	return planned.findings.length === 0 ? ok(0) : ok(1);
 }
 
+// The verify evaluation context (the stored config hash plus the entry's
+// resolved engine version) is one responsibility, judged apart from the
+// subcommand dispatch below.
+async function verifyContext(
+	req: CommandRequest,
+	root: string,
+): Promise<{ configHash: string; engineVersion: string }> {
+	const engineVersion = req.engineVersion ?? ENGINE_VERSION;
+	let configHash = "unknown";
+	const configured = await loadRepoConfig(root, undefined, engineVersion);
+	if (configured.ok) {
+		configHash = configured.value.effective.configHash;
+	}
+	return { configHash, engineVersion };
+}
+
 export async function handleCi(req: CommandRequest): Promise<Result<number>> {
 	const sub = req.args[0] ?? "";
 	if (sub !== "verify" && sub !== "sweep" && sub !== "record-bot-change") {
@@ -263,12 +281,8 @@ export async function handleCi(req: CommandRequest): Promise<Result<number>> {
 	}
 	const now = ports.value.clock.now();
 	if (sub === "verify") {
-		let configHash = "unknown";
-		const configured = await loadRepoConfig(root);
-		if (configured.ok) {
-			configHash = configured.value.effective.configHash;
-		}
-		return ciVerify(req, root, configHash, now);
+		const context = await verifyContext(req, root);
+		return ciVerify(req, root, context.configHash, now, context.engineVersion);
 	}
 	if (sub === "sweep") {
 		return ciSweep(req);
