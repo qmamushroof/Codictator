@@ -135,7 +135,10 @@ function helperDetail(tools: unknown, role: string): HelperStatus {
 	return { role, present: false };
 }
 
-async function collectStatusParts(root: string): Promise<StatusParts> {
+async function collectStatusParts(
+	root: string,
+	engineVersion: string,
+): Promise<StatusParts> {
 	const log = await readLogEvents(root);
 	const events = log?.events ?? [];
 	const observed = new Set(
@@ -143,7 +146,7 @@ async function collectStatusParts(root: string): Promise<StatusParts> {
 	);
 	const packs: Record<string, string> = {};
 	let helpers: ReadonlyArray<HelperStatus> = [];
-	const configured = await loadRepoConfig(root);
+	const configured = await loadRepoConfig(root, undefined, engineVersion);
 	if (configured.ok) {
 		for (const pack of configured.value.effective.config.packs) {
 			packs[pack.id] =
@@ -199,9 +202,12 @@ export async function handleStatus(
 			req.json,
 		);
 	}
-	const parts = await collectStatusParts(root);
+	const parts = await collectStatusParts(
+		root,
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	const input = {
-		engineVersion: ENGINE_VERSION,
+		engineVersion: req.engineVersion ?? ENGINE_VERSION,
 		packs: parts.packs,
 		harnesses: harnessStates(parts.observed),
 		helpers: parts.helpers,

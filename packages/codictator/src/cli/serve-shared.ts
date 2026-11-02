@@ -7,6 +7,7 @@ import type { RpcErrorShape } from "./serve-protocol.ts";
 
 export interface MethodContext {
 	readonly root: string;
+	readonly engineVersion?: string;
 }
 
 export type MethodOutcome =

@@ -3,6 +3,7 @@
 // bind the staged tree and the reviewer session on the task record.
 import path from "node:path";
 import { parseArgs } from "node:util";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import { checkReview } from "../features/workflow/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { NodeFs, ok, parseJson } from "../kernel/index.ts";
@@ -242,7 +243,11 @@ export async function handleReview(
 		);
 	}
 	let configHash = "unknown";
-	const configured = await loadRepoConfig(root);
+	const configured = await loadRepoConfig(
+		root,
+		undefined,
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	if (configured.ok) {
 		configHash = configured.value.effective.configHash;
 	}

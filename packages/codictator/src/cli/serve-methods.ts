@@ -118,7 +118,11 @@ function ruleRow(
 // and coverage. Effective params overlay config tunables on pack defaults.
 async function rulesListMethod(ctx: MethodContext): Promise<MethodOutcome> {
 	const root = await resolveRoot(ctx.root);
-	const configured = await loadRepoConfig(root);
+	const configured = await loadRepoConfig(
+		root,
+		undefined,
+		ctx.engineVersion ?? ENGINE_VERSION,
+	);
 	// Tunables are optional in a repo config (§4.2 validation), so a
 	// missing section defaults before indexing by rule id.
 	const configuredTunables =
@@ -209,7 +213,7 @@ export async function dispatchMethod(
 			const root = await resolveRoot(ctx.root);
 			return methodOk({
 				protocolVersion: 1,
-				engineVersion: ENGINE_VERSION,
+				engineVersion: ctx.engineVersion ?? ENGINE_VERSION,
 				root,
 			});
 		}

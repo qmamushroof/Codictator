@@ -8,7 +8,7 @@
 import type { Fs } from "../../kernel/index.ts";
 import { sha256Hex } from "../../kernel/index.ts";
 import type { Config } from "../config/index.ts";
-import { validateConfig } from "../config/index.ts";
+import { ENGINE_VERSION, validateConfig } from "../config/index.ts";
 
 // A missing store hashes as these absent bytes, never as empty input, so
 // an empty file and a missing file key differently.
@@ -39,7 +39,11 @@ export function cacheKeyFor(parts: ReadonlyArray<Uint8Array>): string {
 	return sha256Hex(joined);
 }
 
-export function readCacheFile(raw: unknown, key: string): Config | undefined {
+export function readCacheFile(
+	raw: unknown,
+	key: string,
+	engineVersion: string = ENGINE_VERSION,
+): Config | undefined {
 	if (typeof raw !== "object" || raw === null) {
 		return undefined;
 	}
@@ -50,7 +54,7 @@ export function readCacheFile(raw: unknown, key: string): Config | undefined {
 		return undefined;
 	}
 	try {
-		return validateConfig(raw.config).config;
+		return validateConfig(raw.config, engineVersion).config;
 	} catch {
 		return undefined;
 	}

@@ -6,6 +6,7 @@
 import { errorRowFor } from "../features/audit/index.ts";
 import {
 	type EffectiveConfig,
+	ENGINE_VERSION,
 	loadConfig as loadConfigImpl,
 	requireHuman,
 } from "../features/config/index.ts";
@@ -36,6 +37,7 @@ export interface CommandRequest {
 	readonly cwd: string;
 	readonly nodeVersion: string | undefined;
 	readonly stdinText: string | undefined;
+	readonly engineVersion?: string;
 }
 
 export function nodeMajor(version: string): number {
@@ -236,13 +238,14 @@ export async function writeStateText(
 export async function loadRepoConfig(
 	root: string,
 	env: Env = commandEnv(),
+	engineVersion: string = ENGINE_VERSION,
 ): Promise<Result<{ ports: CommandPorts; effective: EffectiveConfig }>> {
 	const ports = await portsFor(root, env);
 	if (!ports.ok) {
 		return err(ports.error);
 	}
 	try {
-		const effective = await loadConfigImpl(".", ports.value);
+		const effective = await loadConfigImpl(".", ports.value, engineVersion);
 		return ok({ ports: ports.value, effective });
 	} catch (error) {
 		if (

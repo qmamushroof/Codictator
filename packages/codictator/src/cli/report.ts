@@ -3,6 +3,7 @@
 // injection (§4.6.3), with --all adding config hash and harness list.
 import { parseArgs } from "node:util";
 import { buildReportText } from "../features/audit/index.ts";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
 	buildManagedBlock,
 	PRECEDENCE_STATEMENT,
@@ -102,7 +103,11 @@ export async function handleContext(
 	}
 	let extra = "";
 	if (all) {
-		const configured = await loadRepoConfig(root);
+		const configured = await loadRepoConfig(
+			root,
+			undefined,
+			req.engineVersion ?? ENGINE_VERSION,
+		);
 		extra = configured.ok
 			? `\nconfig ${configured.value.effective.configHash} harnesses ${configured.value.effective.config.harnesses.join(",")}`
 			: "\nconfig unknown (unreadable)";

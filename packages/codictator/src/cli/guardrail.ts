@@ -4,6 +4,7 @@
 // uninstall removes generated files with the CI warning.
 import { parseArgs } from "node:util";
 import { renderCustomRegenFragment } from "../features/adapters/index.ts";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
 	EXPECTED_HOOKS_PATH,
 	HOOK_NAMES,
@@ -42,41 +43,34 @@ function profileOf(architecture: unknown): string {
 	return "";
 }
 
-function emitRegen(
-	req: CommandRequest,
-	root: string,
-	files: ReadonlyArray<{ path: string }>,
-): Result<number> {
-	if (req.json) {
-		printJson({
-			regenerated: true,
-			root,
-			files: files.map((entry) => entry.path),
-		});
-	} else {
-		for (const entry of files) {
-			printHuman(`regenerated ${entry.path}`, req.quiet);
-		}
-	}
-	return ok(0);
-}
-
 // SPEC §4.14.5: regen re-renders guardrails from config and rewrites the
 // manifest; user text outside managed regions survives.
-export async function handleRegen(
-	req: CommandRequest,
-): Promise<Result<number>> {
+// Regen, install-hooks and uninstall reject positionals the same way.
+function rejectPositionals(
+	args: ReadonlyArray<string>,
+	usage: string,
+): Result<number> | undefined {
 	try {
 		const parsed = parseArgs({
-			args: [...req.args],
+			args: [...args],
 			options: {},
 			allowPositionals: true,
 		});
 		if (parsed.positionals.length > 0) {
-			return usageError("usage: codictator regen");
+			return usageError(usage);
 		}
 	} catch {
-		return usageError("usage: codictator regen");
+		return usageError(usage);
+	}
+	return undefined;
+}
+
+export async function handleRegen(
+	req: CommandRequest,
+): Promise<Result<number>> {
+	const rejected = rejectPositionals(req.args, "usage: codictator regen");
+	if (rejected !== undefined) {
+		return rejected;
 	}
 	const root = await resolveRepoRoot(req.cwd);
 	if (!root.ok) {
@@ -87,7 +81,11 @@ export async function handleRegen(
 			req.json,
 		);
 	}
-	const loaded = await loadRepoConfig(root.value);
+	const loaded = await loadRepoConfig(
+		root.value,
+		undefined,
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	if (!loaded.ok) {
 		return fail(
 			loaded.error.code,
@@ -97,12 +95,16 @@ export async function handleRegen(
 		);
 	}
 	const agents = await readStateText(root.value, "AGENTS.md");
-	const profile = profileOf(loaded.value.effective.config.architecture);
 	const configured = loaded.value.effective.config;
+	const profile = profileOf(configured.architecture);
 	const customFiles = await renderCustomRegenFragment(root.value, configured);
 	if (!customFiles.ok) {
-		const error = customFiles.error;
-		return fail(error.code, error.message, error.remediation, req.json);
+		return fail(
+			customFiles.error.code,
+			customFiles.error.message,
+			customFiles.error.remediation,
+			req.json,
+		);
 	}
 	const plan = guardrailPlan(
 		loaded.value.effective.config.harnesses,
@@ -115,10 +117,13 @@ export async function handleRegen(
 			architecture: configured.architecture,
 			tools: configured.tools,
 		},
+		req.engineVersion ?? ENGINE_VERSION,
 	);
-	const wrote = await writePlan(root.value, {
-		files: [...plan.files, ...customFiles.value],
-	});
+	const wrote = await writePlan(
+		root.value,
+		{ files: [...plan.files, ...customFiles.value] },
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	if (!wrote.ok) {
 		return fail(
 			"CDX-E903",
@@ -127,7 +132,18 @@ export async function handleRegen(
 			req.json,
 		);
 	}
-	return emitRegen(req, root.value, wrote.value);
+	if (req.json) {
+		printJson({
+			regenerated: true,
+			root: root.value,
+			files: wrote.value.map((entry) => entry.path),
+		});
+	} else {
+		for (const entry of wrote.value) {
+			printHuman(`regenerated ${entry.path}`, req.quiet);
+		}
+	}
+	return ok(0);
 }
 
 function encode(text: string): Uint8Array {
@@ -185,17 +201,12 @@ async function configureHooksPath(
 export async function handleInstallHooks(
 	req: CommandRequest,
 ): Promise<Result<number>> {
-	try {
-		const parsed = parseArgs({
-			args: [...req.args],
-			options: {},
-			allowPositionals: true,
-		});
-		if (parsed.positionals.length > 0) {
-			return usageError("usage: codictator install-hooks");
-		}
-	} catch {
-		return usageError("usage: codictator install-hooks");
+	const rejected = rejectPositionals(
+		req.args,
+		"usage: codictator install-hooks",
+	);
+	if (rejected !== undefined) {
+		return rejected;
 	}
 	const root = await resolveRepoRoot(req.cwd);
 	if (!root.ok) {
@@ -253,17 +264,9 @@ async function removeGuardrails(root: string): Promise<void> {
 export async function handleUninstall(
 	req: CommandRequest,
 ): Promise<Result<number>> {
-	try {
-		const parsed = parseArgs({
-			args: [...req.args],
-			options: {},
-			allowPositionals: true,
-		});
-		if (parsed.positionals.length > 0) {
-			return usageError("usage: codictator uninstall");
-		}
-	} catch {
-		return usageError("usage: codictator uninstall");
+	const rejected = rejectPositionals(req.args, "usage: codictator uninstall");
+	if (rejected !== undefined) {
+		return rejected;
 	}
 	const human = checkHuman(commandEnv(), []);
 	if (!human.ok) {

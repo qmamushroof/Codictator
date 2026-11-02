@@ -12,6 +12,7 @@ import { exitFor } from "./shared.ts";
 
 export interface RunContext {
 	readonly root: string;
+	readonly engineVersion?: string;
 	readonly execute: (options: CliOptions) => Promise<Result<number>>;
 }
 
@@ -106,7 +107,11 @@ async function executeCaptured(
 	process.stdout.write = collectStdout;
 	process.stderr.write = collectStderr;
 	try {
-		const result = await ctx.execute({ argv: [...argv], cwd: ctx.root });
+		const result = await ctx.execute(
+			ctx.engineVersion === undefined
+				? { argv: [...argv], cwd: ctx.root }
+				: { argv: [...argv], cwd: ctx.root, engineVersion: ctx.engineVersion },
+		);
 		if (result.ok) {
 			return { exitCode: result.value, stdout, stderr };
 		}

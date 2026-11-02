@@ -17,6 +17,7 @@ import type {
 	Result,
 } from "../../kernel/index.ts";
 import { NodeFs, NodeGit, parseJson } from "../../kernel/index.ts";
+import { ENGINE_VERSION } from "../config/index.ts";
 import type { Enforcer, EngineOptions } from "../engine/index.ts";
 import { createEngine } from "../engine/index.ts";
 import type { Adapter, HookReply } from "./contract.ts";
@@ -66,6 +67,10 @@ export interface HookRunRequest {
 	readonly ports: HookBasePorts;
 	readonly append: HookAppend;
 	readonly budgetMs?: number;
+	// Resolved installed engine version (§4.2.1). The CLI entry sets it from
+	// the engine manifest; unset stays the pinned placeholder so tests
+	// evaluate without I/O.
+	readonly engineVersion?: string;
 	// SPEC §4.19.3: the real pack enforcers, resolved against root-confined
 	// ports. Adapters never import packs (§3.3), so the composition root
 	// injects the loader; a missing loader fails closed, never allows.
@@ -138,7 +143,12 @@ async function runHookInner(
 	if (stopHookActive(adapter, event, raw)) {
 		return allowReply(adapter, "stop-active");
 	}
-	const effective = await loadEffective(request.ports, root, adapter);
+	const effective = await loadEffective(
+		request.ports,
+		root,
+		adapter,
+		request.engineVersion ?? ENGINE_VERSION,
+	);
 	if (!effective.ok) {
 		return effective.reply;
 	}

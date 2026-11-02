@@ -20,14 +20,19 @@ import {
 	type RpcId,
 	successFrame,
 } from "./serve-protocol.ts";
-import { handleRun } from "./serve-run.ts";
-import type { StdioServerStdout, StdioServerStreams } from "./serve-shared.ts";
+import { handleRun, type RunContext } from "./serve-run.ts";
+import type {
+	MethodContext,
+	StdioServerStdout,
+	StdioServerStreams,
+} from "./serve-shared.ts";
 import { openLinePump } from "./serve-transport.ts";
 
 export type ServeExecute = (options: CliOptions) => Promise<Result<number>>;
 
 interface ServerState {
 	readonly root: string;
+	readonly engineVersion?: string;
 	readonly execute: ServeExecute;
 	readonly io: StdioServerStreams;
 	readonly seen: { count: number; started: boolean };
@@ -78,15 +83,22 @@ async function answerRequest(
 	state: ServerState,
 ): Promise<void> {
 	try {
+		const runCtx: RunContext =
+			state.engineVersion === undefined
+				? { root: state.root, execute: state.execute }
+				: {
+						root: state.root,
+						engineVersion: state.engineVersion,
+						execute: state.execute,
+					};
+		const methodCtx: MethodContext =
+			state.engineVersion === undefined
+				? { root: state.root }
+				: { root: state.root, engineVersion: state.engineVersion };
 		const outcome =
 			method === "run"
-				? await handleRun(params, {
-						root: state.root,
-						execute: state.execute,
-					})
-				: await dispatchMethod(method, params, {
-						root: state.root,
-					});
+				? await handleRun(params, runCtx)
+				: await dispatchMethod(method, params, methodCtx);
 		writeFrame(
 			state.io.stdout,
 			outcome.ok
@@ -151,6 +163,9 @@ export function startStdioServer(
 	}
 	const state: ServerState = {
 		root: options.cwd,
+		...(options.engineVersion === undefined
+			? {}
+			: { engineVersion: options.engineVersion }),
 		execute,
 		io: streams,
 		seen: { count: 0, started: false },

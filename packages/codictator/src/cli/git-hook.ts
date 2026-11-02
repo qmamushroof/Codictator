@@ -5,7 +5,7 @@
 // new scope plumbing, no new detection logic. commit-msg appends
 // the Codictator-L3 trailer §4.14.2 checks at L4.
 
-import { HOOK_MARKER } from "../features/config/index.ts";
+import { ENGINE_VERSION, HOOK_MARKER } from "../features/config/index.ts";
 import type { Env, Finding, Result } from "../kernel/index.ts";
 import {
 	err,
@@ -268,7 +268,11 @@ export async function handleGitHook(
 	if (typeof root !== "string") {
 		return root;
 	}
-	const configured = await loadRepoConfig(root, hookEnv(commandEnv()));
+	const configured = await loadRepoConfig(
+		root,
+		hookEnv(commandEnv()),
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	if (!configured.ok) {
 		return fail(
 			configured.error.code,
