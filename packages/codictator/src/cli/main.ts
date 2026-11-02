@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // SPEC §4.19: the built engine entry (dist/cli/main.js) the launcher
 // resolves (§4.19.3). Hook words go to the hook runtime; every other word
 // goes through the command table, whose printed output is already emitted
