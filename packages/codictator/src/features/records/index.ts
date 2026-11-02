@@ -6,13 +6,15 @@ export {
 	type BugFile,
 	type BugRow,
 	type BugStatus,
-	checkBugRegistry,
-	checkBugRowsImmutable,
-	checkBugs,
-	checkDiagnoseBeforeFix,
 	parseBugFile,
+} from "./bug-grammar.ts";
+export {
+	checkBugRegistry,
+	checkDiagnoseBeforeFix,
 	type TaskRef,
-} from "./bugs.ts";
+} from "./bug-registry.ts";
+export { checkBugRowsImmutable } from "./bug-rows-immutable.ts";
+export { checkBugs } from "./bugs.ts";
 export {
 	checkDocNoInlineChangelog,
 	checkDocOneLevel,
