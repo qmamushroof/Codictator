@@ -700,3 +700,58 @@ test("[§4.19] shared CLI utils map versions and exits", () => {
 	assert.equal(exitFor("CDX-E101"), 3);
 	assert.equal(exitFor("CDX-NOPE"), 7);
 });
+
+test("[§4.14] ci verify blocks a trailer-less commit in range (L4)", async () => {
+	// SPEC §4.14.2 core/no-bypass at L4 (BUG-0017): a non-merge commit in
+	// range without the Codictator-L3 trailer blocks the merge gate, even
+	// when no other finding fires.
+	const repo = createTempRepo({ "README.md": "hi" });
+	try {
+		seedConfig(repo);
+		repo.commit("base state");
+		const base = repo.git(["rev-parse", "HEAD"]).trim();
+		repo.writeFile("feature.txt", "a feature\n");
+		repo.commit("add a feature");
+		const head = repo.git(["rev-parse", "HEAD"]).trim();
+		const ran = await cli(
+			["--json", "ci", "verify", "--base", base, "--head", head],
+			repo.dir,
+		);
+		assert.equal(ran.code, 1);
+		const body = jsonOut(ran.stdout) as {
+			findings: Array<{ ruleId: string }>;
+		};
+		assert.ok(
+			body.findings.some((finding) => finding.ruleId === "core/no-bypass"),
+		);
+	} finally {
+		repo.cleanup();
+	}
+});
+
+test("[§4.14] ci verify allows a ranged commit carrying the trailer (L4)", async () => {
+	// SPEC §4.14.2: the trailer proves the commit-msg gate ran, so a
+	// trailer-carrying range with no other finding passes.
+	const repo = createTempRepo({ "README.md": "hi" });
+	try {
+		seedConfig(repo);
+		repo.commit("base state");
+		const base = repo.git(["rev-parse", "HEAD"]).trim();
+		repo.writeFile("feature.txt", "a feature\n");
+		repo.commit("add a feature\n\nCodictator-L3: deadbeef");
+		const head = repo.git(["rev-parse", "HEAD"]).trim();
+		const ran = await cli(
+			["--json", "ci", "verify", "--base", base, "--head", head],
+			repo.dir,
+		);
+		assert.equal(ran.code, 0);
+		const body = jsonOut(ran.stdout) as {
+			findings: Array<{ ruleId: string }>;
+		};
+		assert.ok(
+			!body.findings.some((finding) => finding.ruleId === "core/no-bypass"),
+		);
+	} finally {
+		repo.cleanup();
+	}
+});
