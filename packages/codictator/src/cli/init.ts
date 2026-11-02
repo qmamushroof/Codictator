@@ -2,6 +2,7 @@
 // block, manifest, CI workflow, hooks and launcher; existing config needs
 // --repair, unknown harnesses fail as CDX-E301 via validation.
 import { parseArgs } from "node:util";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import { isBuiltinPackId } from "../features/packs/index.ts";
 import type { Result } from "../kernel/index.ts";
 import {
@@ -124,12 +125,13 @@ export async function handleInit(req: CommandRequest): Promise<Result<number>> {
 		return root;
 	}
 	const planned = defaultHarnesses(flags);
+	const engineVersion = req.engineVersion ?? ENGINE_VERSION;
 	const existing = await readStateText(root, ".codictator/config.json");
 	if (existing !== undefined && !flags.repair) {
 		return reportExisting(req, root);
 	}
-	const plan = await buildGuardrailPlan(root, flags, planned);
-	const wrote = await writePlan(root, plan);
+	const plan = await buildGuardrailPlan(root, flags, planned, engineVersion);
+	const wrote = await writePlan(root, plan, engineVersion);
 	if (!wrote.ok) {
 		return fail(
 			"CDX-E903",

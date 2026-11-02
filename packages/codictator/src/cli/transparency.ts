@@ -232,10 +232,11 @@ export async function handleReplay(
 	}
 	const engineKey = "codictator";
 	const recorded = event.packs[engineKey];
-	if (recorded !== undefined && recorded !== ENGINE_VERSION) {
+	const engineVersion = req.engineVersion ?? ENGINE_VERSION;
+	if (recorded !== undefined && recorded !== engineVersion) {
 		return fail(
 			"CDX-E011",
-			`replay needs pack codictator@${recorded}, installed is ${ENGINE_VERSION}`,
+			`replay needs pack codictator@${recorded}, installed is ${engineVersion}`,
 			`Install codictator@${recorded}, then rerun codictator replay ${target}.`,
 			req.json,
 		);

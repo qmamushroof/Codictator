@@ -3,7 +3,8 @@
 // resolves (§4.19.3). Hook words go to the hook runtime; every other word
 // goes through the command table, whose printed output is already emitted
 // and whose Result maps to the §8.2 exit.
-import { isEntryModule } from "../kernel/index.ts";
+import { ENGINE_VERSION } from "../features/config/index.ts";
+import { installedEngineVersion, isEntryModule } from "../kernel/index.ts";
 import { handleGitHook } from "./git-hook.ts";
 import { runCommand, runHook } from "./index.ts";
 import { exitFor } from "./shared.ts";
@@ -16,9 +17,10 @@ function usageError(): number {
 export async function main(
 	argv: ReadonlyArray<string>,
 	cwd: string,
+	engineVersion: string = ENGINE_VERSION,
 ): Promise<number> {
 	if (argv[0] === "hook") {
-		return runHook({ argv, cwd });
+		return runHook({ argv, cwd, engineVersion });
 	}
 	// SPEC §4.14.4: installed git hooks exec the launcher as
 	// `run.mjs git <hook>`; the `git` word enters the git-hook runtime,
@@ -31,6 +33,7 @@ export async function main(
 			cwd,
 			nodeVersion: undefined,
 			stdinText: undefined,
+			engineVersion,
 		});
 		if (result.ok) {
 			return result.value;
@@ -40,7 +43,7 @@ export async function main(
 	if (argv[0] === undefined) {
 		return usageError();
 	}
-	const result = await runCommand({ argv, cwd });
+	const result = await runCommand({ argv, cwd, engineVersion });
 	if (result.ok) {
 		return result.value;
 	}
@@ -56,5 +59,14 @@ export async function main(
 const invokedAsScript = isEntryModule(process.argv[1], import.meta.url);
 
 if (invokedAsScript) {
-	process.exitCode = await main(process.argv.slice(2), process.cwd());
+	// SPEC §4.2.1: the built entry resolves the installed engine version
+	// from its own manifest once; every report and validation below threads
+	// it through, falling back to the pinned placeholder when unreadable.
+	const installed = await installedEngineVersion();
+	const engineVersion = installed.ok ? installed.value : ENGINE_VERSION;
+	process.exitCode = await main(
+		process.argv.slice(2),
+		process.cwd(),
+		engineVersion,
+	);
 }

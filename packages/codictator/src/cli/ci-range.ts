@@ -4,6 +4,7 @@
 // from ci.ts by responsibility (core/file-size): this file owns the
 // scope, ci.ts owns the verdict.
 import { parseArgs } from "node:util";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { Config } from "../features/config/index.ts";
 import type { CommitInRange } from "../features/integrity/index.ts";
 import type { CdxError, Result } from "../kernel/index.ts";
@@ -51,8 +52,11 @@ export function parseCiVerifyFlags(
 	}
 }
 
-export async function ciPackIds(root: string): Promise<ReadonlyArray<string>> {
-	const configured = await loadRepoConfig(root);
+export async function ciPackIds(
+	root: string,
+	engineVersion: string = ENGINE_VERSION,
+): Promise<ReadonlyArray<string>> {
+	const configured = await loadRepoConfig(root, undefined, engineVersion);
 	if (!configured.ok) {
 		return [];
 	}

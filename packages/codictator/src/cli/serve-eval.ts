@@ -1,6 +1,8 @@
 // SPEC §7.15: stdio evaluation rows. `findings/list` and `verify` run
 // the same engine evaluation the `verify` command uses; log and budget
 // rows live in serve-log.ts.
+
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import { isFixturePath } from "../kernel/index.ts";
 import {
 	evaluateScope,
@@ -64,7 +66,11 @@ async function evaluateFiles(
 	layer: string | undefined,
 ): Promise<MethodOutcome> {
 	const root = await resolveRoot(ctx.root);
-	const configured = await loadRepoConfig(root);
+	const configured = await loadRepoConfig(
+		root,
+		undefined,
+		ctx.engineVersion ?? ENGINE_VERSION,
+	);
 	if (!configured.ok) {
 		return methodFail(
 			configured.error.code,

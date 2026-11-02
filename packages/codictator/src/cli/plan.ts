@@ -69,13 +69,14 @@ function configText(
 	harnesses: ReadonlyArray<string>,
 	profile: string,
 	extras: PlanExtras = {},
+	engineVersion: string = ENGINE_VERSION,
 ): string {
 	const sorted = [...harnesses].sort();
 	const architecture =
 		extras.architecture ?? (profile === "" ? undefined : { profile });
 	const config: Record<string, unknown> = {
 		version: 1,
-		codictator: ENGINE_VERSION,
+		codictator: engineVersion,
 		packs: extras.packs ?? [],
 		harnesses: sorted,
 		tunables: extras.tunables ?? {},
@@ -124,11 +125,12 @@ export function guardrailPlan(
 	repoName: string,
 	existingAgents: string | undefined,
 	extras: PlanExtras = {},
+	engineVersion: string = ENGINE_VERSION,
 ): GuardrailPlan {
 	const files: Array<{ path: string; content: string }> = [];
 	files.push({
 		path: ".codictator/config.json",
-		content: configText(harnesses, profile, extras),
+		content: configText(harnesses, profile, extras, engineVersion),
 	});
 	files.push({ path: "AGENTS.md", content: withManagedBlock(existingAgents) });
 	const workflow = renderWorkflow(repoName);
@@ -154,6 +156,7 @@ export function guardrailPlan(
 export async function writePlan(
 	root: string,
 	plan: GuardrailPlan,
+	engineVersion: string = ENGINE_VERSION,
 ): Promise<Result<Array<{ path: string; hash: string }>>> {
 	const ports = await portsFor(root);
 	if (!ports.ok) {
@@ -171,7 +174,7 @@ export async function writePlan(
 		});
 	}
 	const manifest = buildManifest(
-		ENGINE_VERSION,
+		engineVersion,
 		written.map((entry) => ({
 			path: entry.path,
 			owner: "codictator",

@@ -9,6 +9,7 @@ import {
 	renderWorkflow,
 } from "../features/ci/index.ts";
 import { checkCommitTrailers } from "../features/integrity/index.ts";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { ciRecordBotChange } from "./ci-bot-change.ts";
@@ -50,6 +51,7 @@ async function ciVerify(
 	configHash: string,
 	now: string,
 	trailerExempt: ReadonlyArray<string>,
+	engineVersion: string,
 ): Promise<Result<number>> {
 	const flags = parseCiVerifyFlags(req.args.slice(1));
 	if (flags === undefined) {
@@ -138,7 +140,7 @@ async function ciVerify(
 			);
 			const judged = await evaluateScope(
 				ports.value,
-				await ciPackIds(root),
+				await ciPackIds(root, engineVersion),
 				commitText === ""
 					? scoped.value
 					: { ...scoped.value, proposedContent: commitText },
@@ -219,6 +221,23 @@ function ciSweep(req: CommandRequest): Result<number> {
 	return ok(0);
 }
 
+// The verify evaluation inputs (the stored config hash plus the trailer
+// exemption list) load together: one repo-config read serves both, and the
+// handleCi dispatch stays under the complexity gate.
+async function verifyInputs(
+	root: string,
+	engineVersion: string,
+): Promise<{ configHash: string; trailerExempt: ReadonlyArray<string> }> {
+	let configHash = "unknown";
+	let trailerExempt: ReadonlyArray<string> = [];
+	const configured = await loadRepoConfig(root, undefined, engineVersion);
+	if (configured.ok) {
+		configHash = configured.value.effective.configHash;
+		trailerExempt = trailerExemptFrom(configured.value.effective.config);
+	}
+	return { configHash, trailerExempt };
+}
+
 export async function handleCi(req: CommandRequest): Promise<Result<number>> {
 	const sub = req.args[0] ?? "";
 	if (sub !== "verify" && sub !== "sweep" && sub !== "record-bot-change") {
@@ -241,14 +260,16 @@ export async function handleCi(req: CommandRequest): Promise<Result<number>> {
 	}
 	const now = ports.value.clock.now();
 	if (sub === "verify") {
-		let configHash = "unknown";
-		let trailerExempt: ReadonlyArray<string> = [];
-		const configured = await loadRepoConfig(root);
-		if (configured.ok) {
-			configHash = configured.value.effective.configHash;
-			trailerExempt = trailerExemptFrom(configured.value.effective.config);
-		}
-		return ciVerify(req, root, configHash, now, trailerExempt);
+		const engineVersion = req.engineVersion ?? ENGINE_VERSION;
+		const inputs = await verifyInputs(root, engineVersion);
+		return ciVerify(
+			req,
+			root,
+			inputs.configHash,
+			now,
+			inputs.trailerExempt,
+			engineVersion,
+		);
 	}
 	if (sub === "sweep") {
 		return ciSweep(req);

@@ -10,7 +10,7 @@ import {
 	stableStringify,
 } from "../../kernel/index.ts";
 import type { EffectiveConfig } from "../config/index.ts";
-import { HOOK_MARKER, loadConfig } from "../config/index.ts";
+import { ENGINE_VERSION, HOOK_MARKER, loadConfig } from "../config/index.ts";
 import type { Adapter, HookReply } from "./contract.ts";
 import { cacheKeyFor, readCacheFile, storeBytes } from "./effective-cache.ts";
 import { allowReply, blockReply } from "./hook-dispatch.ts";
@@ -80,6 +80,7 @@ export async function loadEffective(
 	ports: HookBasePorts,
 	root: string,
 	adapter: Adapter,
+	engineVersion: string = ENGINE_VERSION,
 ): Promise<
 	| { readonly ok: true; value: EffectiveConfig }
 	| { readonly ok: false; reply: HookReply }
@@ -121,7 +122,7 @@ export async function loadEffective(
 	if (cached.ok) {
 		const parsed = parseJson(cached.value);
 		if (parsed.ok) {
-			const hit = readCacheFile(parsed.value, key);
+			const hit = readCacheFile(parsed.value, key, engineVersion);
 			if (hit !== undefined) {
 				return {
 					ok: true,
@@ -134,14 +135,18 @@ export async function loadEffective(
 	try {
 		// The Fs is already confined to root, so the logical root is "."
 		// and config resolution reads repo-relative paths (§4.1.1).
-		effective = await loadConfig(".", {
-			fs,
-			proc: ports.proc,
-			net: ports.net,
-			clock: ports.clock,
-			git: new NodeGit(ports.proc, root),
-			env: hookEnv(ports.env),
-		});
+		effective = await loadConfig(
+			".",
+			{
+				fs,
+				proc: ports.proc,
+				net: ports.net,
+				clock: ports.clock,
+				git: new NodeGit(ports.proc, root),
+				env: hookEnv(ports.env),
+			},
+			engineVersion,
+		);
 	} catch (error) {
 		return {
 			ok: false,

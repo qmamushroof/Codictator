@@ -2,6 +2,8 @@
 // Custom guardrails need the LLM draft pipeline; without config.llm the
 // command fails as CDX-E851. Pack test runs the owning self-test; builtin
 // packs need no acceptance. The stdio server lands in phase 11.
+
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
 	acceptPack,
 	loadBuiltinPack,
@@ -34,7 +36,11 @@ export async function handleGenerate(
 	if (typeof root !== "string") {
 		return root;
 	}
-	const configured = await loadRepoConfig(root);
+	const configured = await loadRepoConfig(
+		root,
+		undefined,
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	if (!configured.ok) {
 		return fail(
 			"CDX-E101",

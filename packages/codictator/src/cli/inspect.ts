@@ -2,6 +2,7 @@
 // the manifest drift and blocks on findings; status renders the
 // agent-readable screen (or --json for the extension).
 import { parseArgs } from "node:util";
+import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { driftFindings } from "./drift.ts";
@@ -113,7 +114,11 @@ export async function handleVerify(
 	if (typeof root !== "string") {
 		return root;
 	}
-	const configured = await loadRepoConfig(root);
+	const configured = await loadRepoConfig(
+		root,
+		undefined,
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	if (!configured.ok) {
 		return fail(
 			configured.error.code,
