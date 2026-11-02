@@ -24,6 +24,11 @@ import type {
 } from "./index.ts";
 import { buildMessage } from "./message.ts";
 import {
+	appendFailedFinding,
+	runEnforcer,
+	sortFindings,
+} from "./run-enforcer.ts";
+import {
 	DEFAULT_WAIVER_STORE,
 	matchWaivers,
 	type Waiver,
@@ -95,118 +100,6 @@ function makeVerdictId(
 	return `${stamp}-${sha256Text(canonical).slice(0, 12)}`;
 }
 
-function failFinding(
-	enforcerId: string,
-	code: "CDX-E801" | "CDX-E901" | "CDX-E902" | "CDX-E903",
-	detail: string,
-	remediation: string,
-): Finding {
-	return {
-		ruleId: enforcerId,
-		code,
-		message: `the guard "${enforcerId}" ${detail}; the code was not judged`,
-		remediation,
-	};
-}
-
-// SPEC §4.3.8: a throw is CDX-E901, unless the enforcer threw its CdxError
-// for unavailable data, which is CDX-E903.
-function thrownCode(error: unknown): "CDX-E901" | "CDX-E903" {
-	if (typeof error === "object" && error !== null && "code" in error) {
-		const code: unknown = error.code;
-		if (code === "CDX-E903") {
-			return "CDX-E903";
-		}
-	}
-	return "CDX-E901";
-}
-
-const TIMED_OUT = { timedOut: true };
-
-function withBudget(
-	pending: Promise<Array<Finding>>,
-	budgetMs: number,
-): Promise<Array<Finding>> {
-	let timer: ReturnType<typeof setTimeout> | undefined;
-	const timeout = new Promise<Array<Finding>>((_resolve, reject) => {
-		timer = setTimeout(() => {
-			reject(TIMED_OUT);
-		}, budgetMs);
-	});
-	return Promise.race([pending, timeout]).finally(() => {
-		if (timer !== undefined) {
-			clearTimeout(timer);
-		}
-	});
-}
-
-async function runEnforcer(
-	enforcer: Enforcer,
-	ctx: CheckContext,
-): Promise<Array<Finding>> {
-	let pending: Promise<Array<Finding>>;
-	try {
-		// Rule params arrive with the pack registry (phase 5); E2 runs
-		// enforcers with an empty param set.
-		pending = enforcer.check(ctx, {});
-	} catch (error) {
-		return [
-			failFinding(
-				enforcer.id,
-				thrownCode(error),
-				"failed with CDX-E901",
-				"Fix the guard or retry the hook, then run codictator verify.",
-			),
-		];
-	}
-	try {
-		return await withBudget(pending, enforcer.budgetMs);
-	} catch (error) {
-		if (error === TIMED_OUT) {
-			return [
-				failFinding(
-					enforcer.id,
-					"CDX-E902",
-					`exceeded its ${enforcer.budgetMs} ms budget (CDX-E902)`,
-					"Give the guard a larger budget or a smaller scope, then retry.",
-				),
-			];
-		}
-		return [
-			failFinding(
-				enforcer.id,
-				thrownCode(error),
-				"failed with CDX-E901",
-				"Fix the guard or retry the hook, then run codictator verify.",
-			),
-		];
-	}
-}
-
-function sortFindings(findings: Array<Finding>): Array<Finding> {
-	return [...findings].sort((a, b) => {
-		if (a.ruleId !== b.ruleId) {
-			return a.ruleId < b.ruleId ? -1 : 1;
-		}
-		if ((a.path ?? "") !== (b.path ?? "")) {
-			return (a.path ?? "") < (b.path ?? "") ? -1 : 1;
-		}
-		if ((a.line ?? 0) !== (b.line ?? 0)) {
-			return (a.line ?? 0) - (b.line ?? 0);
-		}
-		return a.message < b.message ? -1 : a.message > b.message ? 1 : 0;
-	});
-}
-
-function appendFailedFinding(): Finding {
-	return failFinding(
-		"core/engine",
-		"CDX-E801",
-		"could not record its verdict event (CDX-E801)",
-		"Free disk space and fix permissions on .codictator/state/, then retry.",
-	);
-}
-
 // SPEC §4.3.4: suppress findings covered by an active waiver, recording
 // the waiver ids. Synthetic fail-closed findings (CDX-E*) never suppress,
 // and an invalid floor-rule waiver blocks loudly instead of suppressing.
@@ -257,6 +150,83 @@ function ruleIdsOf(findings: ReadonlyArray<Finding>): Array<string> {
 	return [...seen].sort();
 }
 
+async function collectFindings(
+	ordered: ReadonlyArray<Enforcer>,
+	ctx: CheckContext,
+	store: WaiverStore,
+): Promise<{ kept: Array<Finding>; waiversApplied: Array<string> }> {
+	const runnable = ordered.filter((enforcer) =>
+		enforcer.kinds.includes(ctx.trigger),
+	);
+	const ran = await Promise.all(
+		runnable.map((enforcer) => runEnforcer(enforcer, ctx)),
+	);
+	return applyWaivers(sortFindings(ran.flat()), store, ctx.now);
+}
+
+function decideDecision(
+	kept: ReadonlyArray<Finding>,
+	trigger: Trigger,
+): Decision {
+	if (kept.length === 0) {
+		return "allow";
+	}
+	return ADVISORY_TRIGGERS.includes(trigger) ? "advise" : "block";
+}
+
+function buildVerdictEvent(
+	trigger: Trigger,
+	now: Instant,
+	decision: Decision,
+	kept: Array<Finding>,
+	waiversApplied: ReadonlyArray<string>,
+	configHash: string,
+	packs: Readonly<Record<string, string>>,
+	message: string,
+	clockSkew: boolean,
+): NewEvent {
+	return {
+		kind: "verdict",
+		layer: TRIGGER_LAYERS[trigger],
+		trigger,
+		ruleIds: ruleIdsOf(kept),
+		decision,
+		findings: kept,
+		durationMs: 0,
+		configHash,
+		packs,
+		message,
+		ts: now,
+		...(clockSkew ? { clockSkew: true as const } : {}),
+		...(waiversApplied.length > 0 ? { waivers: waiversApplied } : {}),
+	};
+}
+
+function blockedVerdict(
+	now: Instant,
+	trigger: Trigger,
+	scope: Scope,
+	configHash: string,
+): Verdict {
+	const blocked = [appendFailedFinding()];
+	const blockedId = makeVerdictId(
+		now,
+		trigger,
+		scope,
+		"block",
+		blocked,
+		[],
+		configHash,
+	);
+	return {
+		decision: "block",
+		findings: blocked,
+		message: buildMessage("block", blocked, blockedId),
+		eventId: blockedId,
+		waiversApplied: [],
+	};
+}
+
 // SPEC §4.3.3: pure evaluation over registered enforcers.
 export function createEngine(
 	enforcers: ReadonlyArray<Enforcer>,
@@ -282,33 +252,17 @@ export function createEngine(
 			scope: Scope,
 			now: Instant,
 		): Promise<Verdict> => {
-			// SPEC §4.3.9 EC-15: skew never changes the verdict; the event
-			// carries the flag so replay can see it.
 			const clockSkew = lastNow !== undefined && now < lastNow;
 			if (lastNow === undefined || now > lastNow) {
 				lastNow = now;
 			}
 			const ctx: CheckContext = { trigger, scope, now, configHash };
-			// SPEC §4.3.3 step 1: a rule runs when the trigger is in its
-			// kinds. Scope-glob selection arrives with the pack rule model
-			// (phase 5); path-free rules always match, so E2 runs all of them.
-			const runnable = ordered.filter((enforcer) =>
-				enforcer.kinds.includes(trigger),
-			);
-			const ran = await Promise.all(
-				runnable.map((enforcer) => runEnforcer(enforcer, ctx)),
-			);
-			const { kept, waiversApplied } = await applyWaivers(
-				sortFindings(ran.flat()),
+			const { kept, waiversApplied } = await collectFindings(
+				ordered,
+				ctx,
 				store,
-				now,
 			);
-			const decision: Decision =
-				kept.length === 0
-					? "allow"
-					: ADVISORY_TRIGGERS.includes(trigger)
-						? "advise"
-						: "block";
+			const decision = decideDecision(kept, trigger);
 			const eventId = makeVerdictId(
 				now,
 				trigger,
@@ -319,42 +273,20 @@ export function createEngine(
 				configHash,
 			);
 			const message = buildMessage(decision, kept, eventId);
-			const event: NewEvent = {
-				kind: "verdict",
-				layer: TRIGGER_LAYERS[trigger],
+			const event = buildVerdictEvent(
 				trigger,
-				ruleIds: ruleIdsOf(kept),
+				now,
 				decision,
-				findings: kept,
-				durationMs: 0,
+				kept,
+				waiversApplied,
 				configHash,
 				packs,
 				message,
-				ts: now,
-				...(clockSkew ? { clockSkew: true as const } : {}),
-				...(waiversApplied.length > 0 ? { waivers: waiversApplied } : {}),
-			};
-			// SPEC §4.3.3 step 6: the verdict event appends before the
-			// return; an append failure blocks with CDX-E801 (PRD §6 P5).
+				clockSkew,
+			);
 			const appended = await append(event);
 			if (!appended.ok) {
-				const blocked = [appendFailedFinding()];
-				const blockedId = makeVerdictId(
-					now,
-					trigger,
-					scope,
-					"block",
-					blocked,
-					[],
-					configHash,
-				);
-				return {
-					decision: "block",
-					findings: blocked,
-					message: buildMessage("block", blocked, blockedId),
-					eventId: blockedId,
-					waiversApplied: [],
-				};
+				return blockedVerdict(now, trigger, scope, configHash);
 			}
 			return { decision, findings: kept, message, eventId, waiversApplied };
 		},
