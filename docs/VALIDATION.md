@@ -29,16 +29,16 @@ All run from the repo root on Windows, macOS and Linux unchanged (PRD §6 P12).
 | A path with a SPEC §9.3 budget (hook runtime, git-hook triggers, `ci verify`, event log, shell analyser, pattern checks) or `tests/stress/**` | `npm run test:stress` |
 | A package's `files` list, `package.json` metadata, or the release workflow | `npm run test:packaging` |
 | `package.json`, `package-lock.json` or `.nvmrc` | Delete `node_modules`, then `npm ci --ignore-scripts` and the always-set |
-| Anything, once self-hosted | `npx codictator verify --staged` |
+| Anything | `npx codictator verify --staged` |
 
-A conditional row that matched and was not run means the change is unvalidated. Before self-hosting, doc rules are checked by the reviewer against SPEC §4.9.2; afterwards `codictator verify` checks them.
+A conditional row that matched and was not run means the change is unvalidated. `codictator verify` checks doc rules (SPEC §4.9.2).
 
 ## Red ledger
 
 The ledger's file, pass condition and add/remove rules are SPEC §10.7. `npm test` applies it, `npm run ledger` queries it, and the CI base comparison enforces its adding rule.
 
-The ledger is red proof for bootstrap tasks: the declared tests are listed on the planning commit and that commit's run is green. Once self-hosted, `codictator test red` and `test green` (SPEC §4.10.2) record the proofs, and CI re-runs them.
+Red and green proofs are recorded with `codictator test red` and `test green` (SPEC §4.10.2), and CI re-runs them.
 
 ## CI
 
-The bootstrap workflow runs the install and the always-set, plus the ledger base comparison, on `ubuntu-latest`, `windows-latest` and `macos-latest` with the Node version pinned in `.nvmrc` (SPEC §2.4). It is the required check on `main`. From phase 10 the generated Codictator workflow runs beside it (SPEC §4.15.5).
+The CI workflow runs the install and the always-set, plus the ledger base comparison, on `ubuntu-latest`, `windows-latest` and `macos-latest` with the Node version pinned in `.nvmrc` (SPEC §2.4). It is the required check on `main`. The generated Codictator workflow runs beside it (SPEC §4.15.5).
