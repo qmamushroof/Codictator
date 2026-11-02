@@ -35,7 +35,7 @@ function repoRoot(): string {
 // npm_execpath when the gate runs under `npm run`, else the cli beside
 // the running node (Windows layout first, then the POSIX lib layout).
 function npmCli(): string {
-	const fromEnv = process.env["npm_execpath"];
+	const fromEnv = process.env.npm_execpath;
 	if (typeof fromEnv === "string" && fromEnv !== "" && existsSync(fromEnv)) {
 		return fromEnv;
 	}
@@ -114,16 +114,16 @@ function readManifest(dir: string): Record<string, unknown> {
 // compromised dependency cannot execute on `npm ci` or consumer install.
 function assertNoInstallHooks(dir: string): void {
 	const manifest = readManifest(dir);
-	const scripts = manifest["scripts"];
+	const scripts = manifest.scripts;
 	if (scripts === undefined) {
 		return;
 	}
 	assert.equal(typeof scripts, "object");
 	assert.ok(scripts !== null);
 	const hooks = scripts as Record<string, unknown>;
-	assert.equal(hooks["preinstall"], undefined);
-	assert.equal(hooks["install"], undefined);
-	assert.equal(hooks["postinstall"], undefined);
+	assert.equal(hooks.preinstall, undefined);
+	assert.equal(hooks.install, undefined);
+	assert.equal(hooks.postinstall, undefined);
 }
 
 function isAllowedTarballPath(entryPath: string): boolean {
@@ -142,7 +142,7 @@ test("[§10.2] npm tarball file list equals the allowlist", () => {
 	// package.json), and no manifest carries an install hook. The real
 	// `npm pack --dry-run --json` must exit 0 with every path allowlisted.
 	const manifest = readManifest(packageRoot());
-	assert.deepEqual(manifest["files"], [
+	assert.deepEqual(manifest.files, [
 		"dist/",
 		"schema/",
 		"README.md",
