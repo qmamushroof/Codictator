@@ -22,7 +22,8 @@ import {
 	trailerExemptFrom,
 } from "./ci-range.ts";
 import { ciSummaryFor, isUnverifiableFinding } from "./ci-summary.ts";
-import { evaluateScope, resolveVerifyScope } from "./evaluate.ts";
+import { resolveVerifyScope } from "./evaluate.ts";
+import { evaluateGateScope } from "./gate-scope.ts";
 import { printFinding } from "./inspect.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
@@ -89,11 +90,11 @@ async function ciVerify(
 		},
 	);
 	// SPEC §4.3.2 + §4.15.1 + §4.7.1: L4 judges the change with the gate
-	// family (pre-tool), so ci verify also evaluates those enforcers over
-	// the change: the base..head diff plus every commit message in range.
-	// Without a range there is no change to judge, so the repo-wide rules
-	// judge alone, exactly as before. A committed secret in range blocks
-	// here, not just at L3.
+	// rule subset (pre-tool plus diff-sound review, BUG-0014), so ci verify
+	// also evaluates those enforcers over the change: the base..head diff
+	// plus every commit message in range. Without a range there is no
+	// change to judge, so the repo-wide rules judge alone, exactly as
+	// before. A committed secret in range blocks here, not just at L3.
 	const ranged = await resolveCiRange(ports.value, flags);
 	if (!ranged.ok) {
 		return fail(
@@ -106,12 +107,12 @@ async function ciVerify(
 	let evaluated: ReadonlyArray<Finding> = [];
 	let trailered: ReadonlyArray<Finding> = [];
 	if (ranged.value !== undefined) {
-		// The L4 gate judges the fail-closed local family (pre-tool), not
-		// the review family: the review-only hygiene rules need full-tree
-		// context the range does not carry (dead-code) or test-title inputs
-		// (spec-trace), and blocked every normally-commented file (BUG-0014).
-		// They stay on the human `review` command until phase-5 finer
-		// triggers let gates select rule subsets.
+		// BUG-0014 + SPEC §4.3.2: the L4 gate judges pre-tool plus the
+		// diff-sound review subset, the phase-5 finer trigger as a rule
+		// subset. The diff-unsound rules (spec-trace, dead-code) stay on
+		// the human `review` command over the tree; they need full-tree
+		// context the range does not carry or test-title inputs, and once
+		// blocked every normally-commented file.
 		const scoped = await resolveVerifyScope(ports.value, {
 			staged: false,
 			all: false,
@@ -138,12 +139,19 @@ async function ciVerify(
 				ranged.value.base,
 				ranged.value.head,
 			);
-			const judged = await evaluateScope(
+			const judged = await evaluateGateScope(
 				ports.value,
 				await ciPackIds(root, engineVersion),
 				commitText === ""
-					? scoped.value
-					: { ...scoped.value, proposedContent: commitText },
+					? {
+							files: [...scoped.value.files],
+							note: scoped.value.note,
+						}
+					: {
+							files: [...scoped.value.files],
+							note: scoped.value.note,
+							proposedContent: commitText,
+						},
 				now,
 				configHash,
 			);

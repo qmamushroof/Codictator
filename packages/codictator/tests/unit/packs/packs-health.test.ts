@@ -42,6 +42,27 @@ test("[§5.6] health blanking keeps offsets while hiding code", () => {
 	);
 });
 
+test("[§6.1] health blanking reads template holes as code", () => {
+	// ts/lint counts unused bindings over blanked output, so a binding
+	// used only inside `${}` must survive blanking while the literal
+	// around it does not. The runtime hole expression stays readable,
+	// including a nested template inside the hole.
+	const src =
+		"const trailer = `Codictator-L3: $" +
+		"{configHash.slice(0, 12)}`;\n" +
+		"const nested = `a$" +
+		"{x + `b$" +
+		"{y}c`}d`;\n";
+	const blanked = blankCode(src);
+	assert.equal(blanked.length, src.length);
+	assert.ok(blanked.includes("trailer"));
+	assert.ok(blanked.includes("configHash"));
+	assert.ok(blanked.includes("nested"));
+	assert.ok(blanked.includes("x"));
+	assert.ok(blanked.includes("y"));
+	assert.ok(!blanked.includes("Codictator-L3:"));
+});
+
 test("[§5.6] health cyclomatic and spans mirror the supplies", () => {
 	assert.equal(countCyclomatic("if (a) {} for (;;) {}"), 3);
 	assert.equal(countCyclomatic("a && b || c ?? d ? e : f"), 5);

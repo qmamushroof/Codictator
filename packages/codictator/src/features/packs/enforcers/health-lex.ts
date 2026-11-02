@@ -2,12 +2,15 @@
 // enforcers. Char-for-char, so every index still maps to the original line.
 // Char-for-char blanking of comments and strings: keywords inside them
 // never count, and every index still maps to the original line.
-type LexState = "code" | "line" | "block" | "sq" | "dq" | "tpl";
-
-interface LexScan {
-	index: number;
-	state: LexState;
-}
+// Template scanning lives in health-lex-template.ts; blanking here stays
+// in one pass over the shared scan state.
+import {
+	type LexScan,
+	type LexState,
+	stepCodeBrace,
+	stepEscape,
+	stepTemplate,
+} from "./health-lex-template.ts";
 
 function copyChars(text: string): Array<string> {
 	const out: Array<string> = new Array<string>(text.length);
@@ -115,21 +118,6 @@ function stepBlockComment(
 	scan.index += 1;
 }
 
-function stepEscape(
-	text: string,
-	out: Array<string>,
-	scan: LexScan,
-	blank: boolean,
-): void {
-	if (blank) {
-		out[scan.index] = " ";
-		if (scan.index + 1 < text.length && text.charAt(scan.index + 1) !== "\n") {
-			out[scan.index + 1] = " ";
-		}
-	}
-	scan.index += 2;
-}
-
 function stepQuoted(
 	text: string,
 	out: Array<string>,
@@ -151,10 +139,16 @@ function stepQuoted(
 }
 
 // One pass over the text; comment openers always blank, string
-// contents blank only for blankCode.
+// contents blank only for blankCode. Template holes (`${ ... }`) scan
+// as code, so identifiers used only inside a hole still count.
 function runBlank(text: string, blankStrings: boolean): string {
 	const out = copyChars(text);
-	const scan: LexScan = { index: 0, state: "code" };
+	const scan: LexScan = {
+		index: 0,
+		state: "code",
+		braceDepth: 0,
+		templateTops: [],
+	};
 	while (scan.index < text.length) {
 		const char = text.charAt(scan.index);
 		const next = text.charAt(scan.index + 1);
@@ -165,7 +159,11 @@ function runBlank(text: string, blankStrings: boolean): string {
 			if (stepCodeQuote(text, out, scan, blankStrings)) {
 				continue;
 			}
-			scan.index += 1;
+			stepCodeBrace(text, scan);
+			continue;
+		}
+		if (scan.state === "tpl") {
+			stepTemplate(text, out, scan, blankStrings);
 			continue;
 		}
 		if (scan.state === "line") {
