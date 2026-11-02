@@ -4,7 +4,7 @@
 
 Rules files only ask. Codictator turns each rule into something that runs: context injected where the agent reads it, harness hooks that block a bad tool call before it lands, git hooks, CI checks and scheduled sweeps. Asked for a bad outcome, the agent is steered to the compliant one and told which rule applied. Nothing is hidden.
 
-> **Status: first release (`codictator` 0.0.1).** Install below is the proven path: npm package `codictator` plus extension `codictator.codictator-vscode` on the VS Code Marketplace and Open VSX. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
+> **Status: 0.1.0 versioned in this repo, not yet published.** Packages `codictator` and `codictator-vscode` are at 0.1.0, but neither npm, the VS Code Marketplace, nor Open VSX carries the release yet ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md), steps 13.6/13.8 pending). Until publication, install from source below. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
 
 ## What it enforces
 
@@ -24,14 +24,19 @@ What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5
 
 ## Install
 
+> Not yet published: `codictator` is not on npm, and the extension is not on the VS Code Marketplace or Open VSX. Until [phase 13](docs/ROADMAP/13-RELEASE.md) is green, install from source.
+
 Requires Node.js 24 LTS or newer in every repo, whatever its language.
 
 ```sh
-npm install --save-dev --save-exact codictator
-npx codictator init
+git clone <repo-url> codictator && cd codictator
+npm ci --ignore-scripts
+npm run build
 ```
 
-The VS Code extension `codictator.codictator-vscode` (VS Code Marketplace and Open VSX) shows live what is enforced, how the agent is steered, violations and the timeline. It runs the engine pinned in your repo.
+At publication the install path becomes `npm install --save-dev --save-exact codictator@0.1.0` followed by `npx codictator init` on each repo.
+
+The VS Code extension `codictator.codictator-vscode` will ship on the VS Code Marketplace and Open VSX with the release. It shows live what is enforced, how the agent is steered, violations and the timeline. It runs the engine pinned in your repo.
 
 ## Principles
 
