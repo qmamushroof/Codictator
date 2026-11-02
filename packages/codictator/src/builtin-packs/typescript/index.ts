@@ -5,12 +5,8 @@
 // consume (import extractor, measures, titles, patterns, naming, strict).
 import type { Pack } from "../../kernel/index.ts";
 
-export {
-	extractImports,
-	matchWordAt,
-	skipTrivia,
-	typescriptExtractor,
-} from "./extract.ts";
+export { extractImports, typescriptExtractor } from "./extract.ts";
+export { matchWordAt, skipTrivia } from "./extract-words.ts";
 export {
 	blankCode,
 	isTypeScriptFile,
