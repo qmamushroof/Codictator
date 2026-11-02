@@ -36,7 +36,7 @@ A phase is done when every step is ticked, `npm run ledger -- --covers <Covers r
 - Built-in pack content grows with its consumers. A `typescript` pack supply (extractor, measures, patterns, driver) lands in the phase whose module uses it.
 - A fixture test asserts a real finding of its rule, never the fail-closed `CDX-E9xx` finding (SPEC §4.3.8). A stub enforcer must not make a violating fixture pass.
 - Stress rows of SPEC §10.5 leave the ledger in the phase that delivers their path; [phase 13](13-RELEASE.md) re-checks them all.
-- Bootstrap mode applies until [phase 10](10-SELF-HOST.md) closes ([AGENTIC_WORKFLOW.md §Modes](../AGENTIC_WORKFLOW.md#modes)).
+- Bootstrap mode is retired since [phase 10](10-SELF-HOST.md) closed ([AGENTIC_WORKFLOW.md §Modes](../AGENTIC_WORKFLOW.md#modes)).
 
 ## Scope and cut order
 
