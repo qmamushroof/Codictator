@@ -5,8 +5,6 @@ import {
 	checkArch as checkArchImpl,
 	checkArchProfile,
 	checkModuleSize,
-	deriveModules,
-	isPublicEntryTarget,
 	type ModuleSizeLimits,
 	type ModuleSizeSummary,
 } from "./checks.ts";
@@ -23,6 +21,7 @@ import {
 	serializeGraphCache,
 	updateGraphCache,
 } from "./graph.ts";
+import { deriveModules, isPublicEntryTarget } from "./module-mapping.ts";
 import {
 	ARCH_PROFILES,
 	type ArchProfile,
