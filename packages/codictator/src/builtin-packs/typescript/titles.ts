@@ -3,7 +3,7 @@
 // the spec trace fails it (§6.4 EC-3). Filters map to the runner flags:
 // `--test-name-pattern` (node:test), `-t` (Vitest, Jest).
 
-import { matchWordAt, skipTrivia } from "./extract.ts";
+import { matchWordAt, skipTrivia } from "./extract-words.ts";
 import { lineAtIndex, lineStartsFor } from "./lex.ts";
 
 export interface TestTitle {
@@ -93,6 +93,43 @@ interface Frame {
 	readonly depth: number;
 }
 
+function isSuiteName(base: string): boolean {
+	return base === "describe" || base === "xdescribe" || base === "fdescribe";
+}
+
+function popSuitesForDepth(stack: Array<Frame>, depth: number): void {
+	while (stack.length > 0) {
+		const top = stack[stack.length - 1];
+		if (top !== undefined && top.depth < depth) {
+			break;
+		}
+		stack.pop();
+	}
+}
+
+function recordTitle(
+	stack: Array<Frame>,
+	found: Array<TestTitle>,
+	starts: ReadonlyArray<number>,
+	index: number,
+	depth: number,
+	isSuite: boolean,
+	title: { readonly title: string; readonly literal: boolean },
+): void {
+	if (isSuite) {
+		if (title.literal) {
+			stack.push({ title: title.title, depth });
+		}
+		return;
+	}
+	found.push({
+		suite: stack.map((frame) => frame.title),
+		title: title.title,
+		line: lineAtIndex(starts, index),
+		literal: title.literal,
+	});
+}
+
 // Describes nest by brace depth; a closing brace past the entry depth pops
 // the suite, so sibling suites never leak into each other.
 export function extractTestTitles(text: string): Array<TestTitle> {
@@ -110,13 +147,7 @@ export function extractTestTitles(text: string): Array<TestTitle> {
 		}
 		if (char === "}") {
 			depth -= 1;
-			while (stack.length > 0) {
-				const top = stack[stack.length - 1];
-				if (top !== undefined && top.depth < depth) {
-					break;
-				}
-				stack.pop();
-			}
+			popSuitesForDepth(stack, depth);
 			index += 1;
 			continue;
 		}
@@ -126,8 +157,6 @@ export function extractTestTitles(text: string): Array<TestTitle> {
 			continue;
 		}
 		const base = call.split(".", 1)[0] ?? call;
-		const isSuite =
-			base === "describe" || base === "xdescribe" || base === "fdescribe";
 		const open = skipTrivia(text, index + call.length);
 		if (text.charAt(open) !== "(") {
 			index += 1;
@@ -135,18 +164,7 @@ export function extractTestTitles(text: string): Array<TestTitle> {
 		}
 		const arg = skipTrivia(text, open + 1);
 		const title = readTitleAt(text, arg);
-		if (isSuite) {
-			if (title.literal) {
-				stack.push({ title: title.title, depth });
-			}
-		} else {
-			found.push({
-				suite: stack.map((frame) => frame.title),
-				title: title.title,
-				line: lineAtIndex(starts, index),
-				literal: title.literal,
-			});
-		}
+		recordTitle(stack, found, starts, index, depth, isSuiteName(base), title);
 		index = title.next;
 	}
 	return found;
