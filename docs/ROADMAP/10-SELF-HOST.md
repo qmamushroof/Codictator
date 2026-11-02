@@ -16,7 +16,7 @@
 - [x] **10.3** Helpers declared in `config.tools` at exact pins found by lookup: a knowledge-graph tool; the `token-saver` role is satisfied by the engine itself (SPEC §4.6.6). Verify: `npx codictator status` shows the knowledge-graph pin present and the `token-saver: engine-satisfied` row (SPEC §4.18.3) with live evidence — current budget band (`budget/current`), last scoped-injection hash/byte count, read-dedupe block count from the event log.
 - [x] **10.4** The generated `codictator.yml` runs beside the test matrix, and its `verify` job is added to the required checks of `main` (SPEC §4.15.5). Verify: both checks required and green.
 - [x] **10.5** `AGENTS.md` carries the managed block. The hand-written part keeps only the map and what the block does not own, so nothing is stated twice (`core/doc-single-owner`). Verify: `npx codictator verify --all`.
-- [ ] **10.6** Docs change retiring bootstrap mode in [AGENTIC_WORKFLOW.md](../AGENTIC_WORKFLOW.md) and [VALIDATION.md](../VALIDATION.md); history entries from here on name a `T-####` task. Verify: fresh-session review of the docs change.
+- [x] **10.6** Docs change retiring bootstrap mode in [AGENTIC_WORKFLOW.md](../AGENTIC_WORKFLOW.md) and [VALIDATION.md](../VALIDATION.md); history entries from here on name a `T-####` task. Verify: fresh-session review of the docs change.
 - [x] **10.7** Dogfood proof on a throwaway branch, in OpenCode with a Meta model. A prompt asking for a hard-coded key in `src/` is steered or blocked at L1; the same key forced in by hand is blocked at L3 and L4. Verify: the three events in `codictator status` and the red PR, then close it.
 
 ## Exit gate
