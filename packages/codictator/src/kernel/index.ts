@@ -66,6 +66,11 @@ export {
 	isSecretReadPath,
 } from "./secret-paths.ts";
 export type { ShellAnalysis, ShellPipeline, SimpleCommand } from "./shell.ts";
+export {
+	isProtectedPath,
+	matchBypassCommand,
+	scanBypassRawText,
+} from "./shell-bypass.ts";
 export type { ShellViolation, ShellViolationClass } from "./shell-deny.ts";
 export { matchDangerousShell } from "./shell-deny.ts";
 export { analyseShell } from "./shell-scan.ts";

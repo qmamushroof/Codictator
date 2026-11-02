@@ -40,8 +40,9 @@ export function runNodeScript(options: NodeRunOptions): Promise<CliResult> {
 		// step) would hijack `ci verify`'s range inside fixture repos, so
 		// the runner scrubs it unless the case sets it explicitly.
 		const inherited = { ...process.env };
-		if (options.env?.["GITHUB_EVENT_PATH"] === undefined) {
-			delete inherited["GITHUB_EVENT_PATH"];
+		const { GITHUB_EVENT_PATH: explicitEventPath } = options.env ?? {};
+		if (explicitEventPath === undefined) {
+			Reflect.deleteProperty(inherited, "GITHUB_EVENT_PATH");
 		}
 		const child = execFile(
 			process.execPath,

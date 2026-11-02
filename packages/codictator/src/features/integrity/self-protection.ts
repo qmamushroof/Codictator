@@ -2,11 +2,22 @@
 // by the kernel shell analyser, so wrappers (bash -c, env assignments,
 // $(…) nesting) do not hide them; a raw token scan backstops unparseable
 // input fail-closed. There is no flag or file that turns Codictator off.
-import { analyseShell, parseJson } from "../../kernel/index.ts";
+import {
+	analyseShell,
+	isProtectedPath,
+	matchBypassCommand,
+	parseJson,
+	scanBypassRawText,
+} from "../../kernel/index.ts";
 import type { CheckContext, Finding } from "../engine/index.ts";
-import { isProtectedPath, matchCommand, noBypass } from "./bypass-commands.ts";
 
 export { isProtectedPath };
+
+const NO_BYPASS = "core/no-bypass";
+
+function noBypass(message: string, remediation: string): Finding {
+	return { ruleId: NO_BYPASS, message, remediation };
+}
 
 const TOOL_WRITE_VERBS = new Set([
 	"write",
@@ -21,31 +32,6 @@ const TOOL_WRITE_VERBS = new Set([
 ]);
 
 const SHELLS = new Set(["bash", "sh", "dash", "zsh", "env", "sudo", "doas"]);
-
-// SPEC §4.7.2 backstop: raw tokens catch bypass shapes the structured parse
-// missed; parse failure alone never becomes an allow.
-function rawBypassScan(text: string): string | undefined {
-	const lowered = ` ${text.toLowerCase()} `;
-	if (lowered.includes("--no-verify")) {
-		return "raw --no-verify flag bypasses the git gates";
-	}
-	if (/(^|\s)git\s.*\scommit\s.*\s-n(\s|$)/.test(`${text} `)) {
-		return "raw git commit -n bypasses the git gates";
-	}
-	if (lowered.includes("core.hookspath")) {
-		return "raw core.hooksPath override moves hooks away from the installed dir";
-	}
-	if (
-		/(^|\s)husky=0(\s|;|$)/.test(lowered) ||
-		/(^|\s)skip=[^\s]+/.test(lowered)
-	) {
-		return "raw HUSKY=0/SKIP= assignment disables the hooks";
-	}
-	if (lowered.includes("workflow disable")) {
-		return "raw workflow disable turns off the merge gate";
-	}
-	return undefined;
-}
 
 function candidatesFor(command: ReadonlyArray<string>): Array<string> {
 	const out = [command.join(" ")];
@@ -185,7 +171,7 @@ export function checkSelfProtection(
 		}
 		for (const pipeline of parsed.value.pipelines) {
 			for (const cmd of pipeline.commands) {
-				const hit = matchCommand(cmd);
+				const hit = matchBypassCommand(cmd);
 				if (hit !== undefined && !seen.has(hit)) {
 					seen.add(hit);
 					return [
@@ -198,7 +184,7 @@ export function checkSelfProtection(
 			}
 		}
 	}
-	const raw = rawBypassScan(candidates[0] ?? "");
+	const raw = scanBypassRawText(candidates[0] ?? "");
 	if (raw !== undefined) {
 		return [
 			noBypass(

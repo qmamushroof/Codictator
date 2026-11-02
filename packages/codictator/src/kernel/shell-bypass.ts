@@ -1,10 +1,9 @@
-// SPEC §4.14.3 command table: the bypass shapes matched against each
-// parsed command. Pure over kernel shell types; the caller collects the
-// commands so wrappers (bash -c, env, $(…)) are analysed, not trusted.
-import type { SimpleCommand } from "../../kernel/index.ts";
-import type { Finding } from "../engine/index.ts";
-
-export const NO_BYPASS = "core/no-bypass";
+// SPEC §4.14.3 self-protection detectors: the bypass command table, the
+// raw-text backstop and the guardrail path table. The detectors live in the
+// kernel so every module judges the same shapes without importing a feature
+// module (§3.3; the security/index.ts pattern). Shaping findings stays with
+// the callers: integrity for direct checks, packs for the live enforcer.
+import type { SimpleCommand } from "./shell.ts";
 
 // SPEC §4.19.2 human-only commands: blocked for agents by the shell guard.
 const HUMAN_ONLY = new Set([
@@ -41,21 +40,17 @@ export function isProtectedPath(path: string): boolean {
 	);
 }
 
-export function noBypass(message: string, remediation: string): Finding {
-	return { ruleId: NO_BYPASS, message, remediation };
-}
-
-function matchGit(cmd: SimpleCommand): string | undefined {
-	if (cmd.name !== "git") {
-		return undefined;
-	}
-	const args = cmd.argv;
+function matchGitHooksPath(args: ReadonlyArray<string>): string | undefined {
 	if (args[0] === "-c" && args[1]?.includes("core.hooksPath") === true) {
 		return "git -c core.hooksPath overrides the installed hooks";
 	}
 	if (args[0] === "config" && args.some((a) => a.includes("core.hooksPath"))) {
 		return "git config core.hooksPath moves hooks away from the installed dir";
 	}
+	return undefined;
+}
+
+function matchGitNoVerify(args: ReadonlyArray<string>): string | undefined {
 	if (
 		args[0] === "commit" &&
 		args.some((a) => a === "-n" || a === "--no-verify")
@@ -65,10 +60,25 @@ function matchGit(cmd: SimpleCommand): string | undefined {
 	if (args[0] === "push" && args.includes("--no-verify")) {
 		return "git push --no-verify skips the pre-push gate";
 	}
+	return undefined;
+}
+
+function matchGitRm(args: ReadonlyArray<string>): string | undefined {
 	if (args[0] === "rm" && args.some((a) => isProtectedPath(a))) {
 		return "git rm on a protected guardrail path";
 	}
 	return undefined;
+}
+
+function matchGit(cmd: SimpleCommand): string | undefined {
+	if (cmd.name !== "git") {
+		return undefined;
+	}
+	return (
+		matchGitHooksPath(cmd.argv) ??
+		matchGitNoVerify(cmd.argv) ??
+		matchGitRm(cmd.argv)
+	);
 }
 
 function matchDestructive(cmd: SimpleCommand): string | undefined {
@@ -145,7 +155,10 @@ function matchHumanOnly(cmd: SimpleCommand): string | undefined {
 	return undefined;
 }
 
-export function matchCommand(cmd: SimpleCommand): string | undefined {
+// SPEC §4.14.3 command table: the bypass shapes matched against each
+// parsed command. The caller collects the commands so wrappers (bash -c,
+// env, $(…)) are analysed, not trusted.
+export function matchBypassCommand(cmd: SimpleCommand): string | undefined {
 	return (
 		matchGit(cmd) ??
 		matchDestructive(cmd) ??
@@ -153,4 +166,29 @@ export function matchCommand(cmd: SimpleCommand): string | undefined {
 		matchNpm(cmd) ??
 		matchHumanOnly(cmd)
 	);
+}
+
+// SPEC §4.7.2 backstop: raw tokens catch bypass shapes the structured parse
+// missed; parse failure alone never becomes an allow.
+export function scanBypassRawText(text: string): string | undefined {
+	const lowered = ` ${text.toLowerCase()} `;
+	if (lowered.includes("--no-verify")) {
+		return "raw --no-verify flag bypasses the git gates";
+	}
+	if (/(^|\s)git\s.*\scommit\s.*\s-n(\s|$)/.test(`${text} `)) {
+		return "raw git commit -n bypasses the git gates";
+	}
+	if (lowered.includes("core.hookspath")) {
+		return "raw core.hooksPath override moves hooks away from the installed dir";
+	}
+	if (
+		/(^|\s)husky=0(\s|;|$)/.test(lowered) ||
+		/(^|\s)skip=[^\s]+/.test(lowered)
+	) {
+		return "raw HUSKY=0/SKIP= assignment disables the hooks";
+	}
+	if (lowered.includes("workflow disable")) {
+		return "raw workflow disable turns off the merge gate";
+	}
+	return undefined;
 }

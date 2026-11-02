@@ -1,23 +1,25 @@
 // SPEC §4.15: CI verify, sweep and bot-change recording. Verify fails
 // closed on an unreachable base (CDX-E503) and advises where protection
 // reads are unavailable; sweep plans the single codictator/sweep PR.
-import { parseArgs } from "node:util";
 import {
 	checkCi,
 	type ProtectionRead,
 	planSweep,
-	qualifyBotChange,
 	readProtection,
 	renderWorkflow,
 } from "../features/ci/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
+import { checkCommitTrailers } from "../features/integrity/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
+import { ciRecordBotChange } from "./ci-bot-change.ts";
 import {
 	ciPackIds,
 	parseCiVerifyFlags,
+	rangeCommits,
 	rangeMessages,
 	resolveCiRange,
+	trailerExemptFrom,
 } from "./ci-range.ts";
 import { ciSummaryFor, isUnverifiableFinding } from "./ci-summary.ts";
 import { evaluateScope, resolveVerifyScope } from "./evaluate.ts";
@@ -48,6 +50,7 @@ async function ciVerify(
 	root: string,
 	configHash: string,
 	now: string,
+	trailerExempt: ReadonlyArray<string>,
 	engineVersion: string,
 ): Promise<Result<number>> {
 	const flags = parseCiVerifyFlags(req.args.slice(1));
@@ -101,6 +104,7 @@ async function ciVerify(
 		);
 	}
 	let evaluated: ReadonlyArray<Finding> = [];
+	let trailered: ReadonlyArray<Finding> = [];
 	if (ranged.value !== undefined) {
 		// The L4 gate judges the fail-closed local family (pre-tool), not
 		// the review family: the review-only hygiene rules need full-tree
@@ -153,8 +157,42 @@ async function ciVerify(
 			}
 			evaluated = judged.value;
 		}
+		// SPEC §4.14.2 core/no-bypass at L4: every non-merge commit in range
+		// carries the Codictator-L3 trailer. An unreadable range fails
+		// closed: skipping the gate would let a trailer-less commit
+		// through (EC-3, EC-4).
+		const commits = await rangeCommits(
+			ports.value,
+			ranged.value.base,
+			ranged.value.head,
+		);
+		if (!commits.ok) {
+			if (ciVerifyExit(checks) !== 0) {
+				// SPEC §4.15.7 EC-2: the base is unreachable, which already
+				// blocks via CDX-E503; the trailer gate is unverifiable too,
+				// so its error folds into the findings verdict (ok(1))
+				// instead of erroring, exactly like the diff scope above.
+				trailered = [
+					{
+						ruleId: "core/no-bypass",
+						code: commits.error.code,
+						message: commits.error.message,
+						remediation: commits.error.remediation,
+					} satisfies Finding,
+				];
+			} else {
+				return fail(
+					commits.error.code,
+					commits.error.message,
+					commits.error.remediation,
+					req.json,
+				);
+			}
+		} else {
+			trailered = checkCommitTrailers(commits.value, trailerExempt);
+		}
 	}
-	const findings = [...checks, ...evaluated];
+	const findings = [...checks, ...evaluated, ...trailered];
 	const summary = ciSummaryFor(findings);
 	if (req.json) {
 		printJson({ findings, summary });
@@ -183,80 +221,21 @@ function ciSweep(req: CommandRequest): Result<number> {
 	return ok(0);
 }
 
-interface BotChangeFlags {
-	readonly author: string;
-	readonly files: ReadonlyArray<string>;
-	readonly fork: boolean;
-}
-
-function parseRecordFlags(req: CommandRequest): BotChangeFlags | undefined {
-	try {
-		const parsed = parseArgs({
-			args: [...req.args.slice(1)],
-			options: {
-				author: { type: "string" },
-				files: { type: "string", multiple: true, default: [] },
-				fork: { type: "boolean", default: false },
-			},
-			allowPositionals: true,
-		});
-		if (parsed.positionals.length > 0) {
-			return undefined;
-		}
-		if (
-			(parsed.values.author ?? "") === "" ||
-			(parsed.values.files ?? []).length === 0
-		) {
-			return undefined;
-		}
-		return {
-			author: parsed.values.author ?? "",
-			files: [...(parsed.values.files ?? [])],
-			fork: parsed.values.fork ?? false,
-		};
-	} catch {
-		return undefined;
-	}
-}
-
-function ciRecordBotChange(req: CommandRequest): Result<number> {
-	const flags = parseRecordFlags(req);
-	if (flags === undefined) {
-		return usageError(
-			"usage: codictator ci record-bot-change --author <bot> --files <f> ... [--fork]",
-		);
-	}
-	const planned = qualifyBotChange({
-		author: flags.author,
-		filesChanged: flags.files,
-		isFork: flags.fork,
-		trailerExempt: [],
-	});
-	if (req.json) {
-		printJson(planned);
-	} else {
-		printHuman(
-			`bot change qualifies: ${planned.qualifies}, write commit: ${planned.writeCommit}`,
-			req.quiet,
-		);
-	}
-	return planned.findings.length === 0 ? ok(0) : ok(1);
-}
-
-// The verify evaluation context (the stored config hash plus the entry's
-// resolved engine version) is one responsibility, judged apart from the
-// subcommand dispatch below.
-async function verifyContext(
-	req: CommandRequest,
+// The verify evaluation inputs (the stored config hash plus the trailer
+// exemption list) load together: one repo-config read serves both, and the
+// handleCi dispatch stays under the complexity gate.
+async function verifyInputs(
 	root: string,
-): Promise<{ configHash: string; engineVersion: string }> {
-	const engineVersion = req.engineVersion ?? ENGINE_VERSION;
+	engineVersion: string,
+): Promise<{ configHash: string; trailerExempt: ReadonlyArray<string> }> {
 	let configHash = "unknown";
+	let trailerExempt: ReadonlyArray<string> = [];
 	const configured = await loadRepoConfig(root, undefined, engineVersion);
 	if (configured.ok) {
 		configHash = configured.value.effective.configHash;
+		trailerExempt = trailerExemptFrom(configured.value.effective.config);
 	}
-	return { configHash, engineVersion };
+	return { configHash, trailerExempt };
 }
 
 export async function handleCi(req: CommandRequest): Promise<Result<number>> {
@@ -281,8 +260,16 @@ export async function handleCi(req: CommandRequest): Promise<Result<number>> {
 	}
 	const now = ports.value.clock.now();
 	if (sub === "verify") {
-		const context = await verifyContext(req, root);
-		return ciVerify(req, root, context.configHash, now, context.engineVersion);
+		const engineVersion = req.engineVersion ?? ENGINE_VERSION;
+		const inputs = await verifyInputs(root, engineVersion);
+		return ciVerify(
+			req,
+			root,
+			inputs.configHash,
+			now,
+			inputs.trailerExempt,
+			engineVersion,
+		);
 	}
 	if (sub === "sweep") {
 		return ciSweep(req);

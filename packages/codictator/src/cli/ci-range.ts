@@ -4,7 +4,9 @@
 // from ci.ts by responsibility (core/file-size): this file owns the
 // scope, ci.ts owns the verdict.
 import { parseArgs } from "node:util";
+import type { Config } from "../features/config/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
+import type { CommitInRange } from "../features/integrity/index.ts";
 import type { CdxError, Result } from "../kernel/index.ts";
 import { err, ok, parseJson, readHostText } from "../kernel/index.ts";
 import type { CommandPorts } from "./shared.ts";
@@ -187,4 +189,112 @@ export async function rangeMessages(
 		`${base}..${head}`,
 	]);
 	return bodies ?? "";
+}
+
+// SPEC §4.14.2 core/no-bypass at L4: the trailer exemption is the
+// config.integrity.trailerExempt bot list. A missing or misshapen value
+// narrows to empty, so unknown authors need the trailer (fail-closed).
+export function trailerExemptFrom(config: Config): ReadonlyArray<string> {
+	const integrity: unknown = config.integrity;
+	if (typeof integrity !== "object" || integrity === null) {
+		return [];
+	}
+	if (!("trailerExempt" in integrity)) {
+		return [];
+	}
+	const value: unknown = integrity.trailerExempt;
+	if (!Array.isArray(value)) {
+		return [];
+	}
+	return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+const COMMIT_FIELD = "\x1f";
+const COMMIT_RECORD = "\x1e";
+
+// SPEC §4.14.2 core/no-bypass at L4: fields split positionally off the
+// first three separators, so a separator smuggled in a body cannot shift
+// the sha, parents or author. A short record fails closed instead of
+// skipping.
+interface CommitFields {
+	readonly sha: string;
+	readonly parents: ReadonlyArray<string>;
+	readonly author: string;
+	readonly body: string;
+}
+
+function splitCommitFields(record: string): CommitFields | undefined {
+	const first = record.indexOf(COMMIT_FIELD);
+	const second = first < 0 ? -1 : record.indexOf(COMMIT_FIELD, first + 1);
+	const third = second < 0 ? -1 : record.indexOf(COMMIT_FIELD, second + 1);
+	if (first < 0 || second < 0 || third < 0) {
+		return undefined;
+	}
+	const sha = record.slice(0, first);
+	const author = record.slice(second + 1, third);
+	if (sha === "" || author === "") {
+		return undefined;
+	}
+	return {
+		sha,
+		parents: record
+			.slice(first + 1, second)
+			.split(" ")
+			.filter((parent) => parent !== ""),
+		author,
+		body: record.slice(third + 1),
+	};
+}
+
+function parseCommitRange(text: string): Result<ReadonlyArray<CommitInRange>> {
+	const unparseable: Result<ReadonlyArray<CommitInRange>> = err({
+		code: "CDX-E303",
+		message:
+			"CI commit range is unparseable, so the trailer gate is unverified",
+		remediation:
+			"Re-run with --base <sha> --head <sha> for the change under review.",
+	} satisfies CdxError);
+	const records = text.split(COMMIT_RECORD);
+	if (records.length > 0 && (records[records.length - 1] ?? "").trim() === "") {
+		records.pop();
+	}
+	const commits: Array<CommitInRange> = [];
+	for (const record of records) {
+		const fields = splitCommitFields(record);
+		if (fields === undefined) {
+			return unparseable;
+		}
+		commits.push({
+			sha: fields.sha,
+			message: fields.body,
+			author: fields.author,
+			isMerge: fields.parents.length > 1,
+		});
+	}
+	return ok(commits);
+}
+
+// SPEC §4.14.2 core/no-bypass at L4: list the range's commits for the
+// trailer check. An unreadable range fails closed: skipping the gate would
+// let a trailer-less commit through, the defect this wiring fixes.
+export async function rangeCommits(
+	ports: CommandPorts,
+	base: string,
+	head: string,
+): Promise<Result<ReadonlyArray<CommitInRange>>> {
+	const listed = await runCiGit(ports, [
+		"git",
+		"log",
+		`--format=%H${COMMIT_FIELD}%P${COMMIT_FIELD}%an${COMMIT_FIELD}%B${COMMIT_RECORD}`,
+		`${base}..${head}`,
+	]);
+	if (listed === undefined) {
+		return err({
+			code: "CDX-E503",
+			message: `cannot list commits in ${base}..${head}, so the trailer gate is unverified`,
+			remediation:
+				"Re-run with a reachable --base <sha> --head <sha> for the change under review.",
+		} satisfies CdxError);
+	}
+	return parseCommitRange(listed);
 }
