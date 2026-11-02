@@ -1,6 +1,6 @@
 # Conventions
 
-Rules for Codictator's own TypeScript and docs. Each cites the SPEC id or rule that owns its threshold; where a rule id is cited, Codictator enforces it on this repo once self-hosted, and review enforces it before that.
+Rules for Codictator's own TypeScript and docs. Each cites the SPEC id or rule that owns its threshold; where a rule id is cited, Codictator enforces it on this repo, and review enforces it.
 
 ## Placement
 
