@@ -73,6 +73,46 @@ function sarifLocation(result: Record<string, unknown>): {
 	return { path: uri, line };
 }
 
+function collectSarifEntry(
+	entry: unknown,
+	run: Record<string, unknown>,
+	findings: Array<ParsedToolFinding>,
+	escapes: { count: number },
+): void {
+	if (!isRecord(entry)) {
+		return;
+	}
+	const toolRule = sarifRuleId(entry, run);
+	if (toolRule === undefined) {
+		return;
+	}
+	const location = sarifLocation(entry);
+	const detail: unknown = field(entry, "message");
+	pushEntry(findings, escapes, {
+		toolRule,
+		path: location.path,
+		line: location.line,
+		message: isRecord(detail) ? field(detail, "text") : undefined,
+	});
+}
+
+function collectSarifRun(
+	run: unknown,
+	findings: Array<ParsedToolFinding>,
+	escapes: { count: number },
+): void {
+	if (!isRecord(run)) {
+		return;
+	}
+	const results: unknown = field(run, "results");
+	if (!Array.isArray(results)) {
+		return;
+	}
+	for (const entry of results) {
+		collectSarifEntry(entry, run, findings, escapes);
+	}
+}
+
 export function parseSarif(text: string): Result<ParsedToolOutput> {
 	const parsed = parseJson(text);
 	if (!parsed.ok) {
@@ -88,30 +128,7 @@ export function parseSarif(text: string): Result<ParsedToolOutput> {
 	const findings: Array<ParsedToolFinding> = [];
 	const escapes = { count: 0 };
 	for (const run of runs) {
-		if (!isRecord(run)) {
-			continue;
-		}
-		const results: unknown = field(run, "results");
-		if (!Array.isArray(results)) {
-			continue;
-		}
-		for (const entry of results) {
-			if (!isRecord(entry)) {
-				continue;
-			}
-			const toolRule = sarifRuleId(entry, run);
-			if (toolRule === undefined) {
-				continue;
-			}
-			const location = sarifLocation(entry);
-			const detail: unknown = field(entry, "message");
-			pushEntry(findings, escapes, {
-				toolRule,
-				path: location.path,
-				line: location.line,
-				message: isRecord(detail) ? field(detail, "text") : undefined,
-			});
-		}
+		collectSarifRun(run, findings, escapes);
 	}
 	return ok({ findings, escapes: escapes.count });
 }

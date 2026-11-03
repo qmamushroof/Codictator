@@ -109,6 +109,33 @@ interface Stripped {
 	readonly bare: boolean;
 }
 
+const SUDO_VALUE_FLAGS: ReadonlySet<string> = new Set([
+	"-u",
+	"--user",
+	"-g",
+	"--group",
+]);
+
+function stripSudoPrefix(rest: ReadonlyArray<string>): {
+	readonly rest: ReadonlyArray<string>;
+	readonly scripts: ReadonlyArray<string>;
+	readonly bare: boolean;
+} {
+	const skipped = skipFlagValues(rest.slice(1), SUDO_VALUE_FLAGS);
+	if (
+		skipped.length > 0 &&
+		(skipped[0] === "-c" || skipped[0] === "--command")
+	) {
+		const script = skipped[1];
+		return {
+			rest: [],
+			scripts: script === undefined ? [] : [script],
+			bare: true,
+		};
+	}
+	return { rest: skipped, scripts: [], bare: false };
+}
+
 function stripPrefixes(words: ReadonlyArray<string>): Stripped {
 	let rest = [...words];
 	let raised = false;
@@ -124,16 +151,11 @@ function stripPrefixes(words: ReadonlyArray<string>): Stripped {
 		}
 		const lowered = baseName(head).toLowerCase();
 		if (lowered === "sudo" || lowered === "su") {
+			const sudo = stripSudoPrefix(rest);
 			raised = true;
-			rest = skipFlagValues(
-				rest.slice(1),
-				new Set(["-u", "--user", "-g", "--group"]),
-			);
-			if (rest.length > 0 && (rest[0] === "-c" || rest[0] === "--command")) {
-				const script = rest[1];
-				if (script !== undefined) {
-					scripts.push(script);
-				}
+			rest = [...sudo.rest];
+			scripts.push(...sudo.scripts);
+			if (sudo.bare) {
 				return { rest: [], raised, scripts, bare: true };
 			}
 			continue;

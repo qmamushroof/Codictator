@@ -30,17 +30,21 @@ export interface SemVer {
 // SPEC §6.1: an exact pin is a full x.y.z with an optional -pre suffix;
 // compare follows npm version order (numeric parts first, release beats
 // prerelease, prerelease identifiers numeric then lexical).
-export function parseNpmVersion(value: string): SemVer | undefined {
-	const match =
-		/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/.exec(
-			value,
-		);
-	if (match === null) {
-		return undefined;
-	}
-	const major = Number(match[1] ?? "");
-	const minor = Number(match[2] ?? "");
-	const patch = Number(match[3] ?? "");
+// The pattern lives at module scope so its quantifiers never count as
+// branches of the function that applies it.
+const NPM_VERSION_PATTERN =
+	/^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
+
+function versionPart(match: RegExpExecArray, index: number): number {
+	return Number(match[index] ?? "");
+}
+
+function narrowVersionParts(
+	match: RegExpExecArray,
+): { major: number; minor: number; patch: number } | undefined {
+	const major = versionPart(match, 1);
+	const minor = versionPart(match, 2);
+	const patch = versionPart(match, 3);
 	if (
 		!Number.isSafeInteger(major) ||
 		!Number.isSafeInteger(minor) ||
@@ -48,11 +52,23 @@ export function parseNpmVersion(value: string): SemVer | undefined {
 	) {
 		return undefined;
 	}
+	return { major, minor, patch };
+}
+
+export function parseNpmVersion(value: string): SemVer | undefined {
+	const match = NPM_VERSION_PATTERN.exec(value);
+	if (match === null) {
+		return undefined;
+	}
+	const parts = narrowVersionParts(match);
+	if (parts === undefined) {
+		return undefined;
+	}
 	const pre = match[4];
 	if (pre === undefined || pre === "") {
-		return { major, minor, patch, prerelease: undefined };
+		return { ...parts, prerelease: undefined };
 	}
-	return { major, minor, patch, prerelease: pre.split(".") };
+	return { ...parts, prerelease: pre.split(".") };
 }
 
 export function isNpmPrerelease(value: string): boolean {
@@ -89,12 +105,13 @@ function compareIdentifiers(left: string, right: string): -1 | 0 | 1 {
 	return 0;
 }
 
-export function compareNpmVersions(left: SemVer, right: SemVer): -1 | 0 | 1 {
-	for (const pair of [
+function compareVersionCore(left: SemVer, right: SemVer): -1 | 0 | 1 {
+	const pairs: ReadonlyArray<readonly [number, number]> = [
 		[left.major, right.major],
 		[left.minor, right.minor],
 		[left.patch, right.patch],
-	] as const) {
+	];
+	for (const pair of pairs) {
 		if (pair[0] < pair[1]) {
 			return -1;
 		}
@@ -102,29 +119,50 @@ export function compareNpmVersions(left: SemVer, right: SemVer): -1 | 0 | 1 {
 			return 1;
 		}
 	}
-	if (left.prerelease === undefined && right.prerelease === undefined) {
-		return 0;
-	}
-	if (left.prerelease === undefined) {
-		return 1;
-	}
-	if (right.prerelease === undefined) {
+	return 0;
+}
+
+function prereleaseOrderAt(
+	left: ReadonlyArray<string>,
+	right: ReadonlyArray<string>,
+	index: number,
+): -1 | 0 | 1 | undefined {
+	const leftId = left[index];
+	const rightId = right[index];
+	if (leftId === undefined) {
 		return -1;
 	}
-	const length = Math.max(left.prerelease.length, right.prerelease.length);
+	if (rightId === undefined) {
+		return 1;
+	}
+	const order = compareIdentifiers(leftId, rightId);
+	return order === 0 ? undefined : order;
+}
+
+function comparePrerelease(
+	left: ReadonlyArray<string> | undefined,
+	right: ReadonlyArray<string> | undefined,
+): -1 | 0 | 1 {
+	if (left === undefined) {
+		return right === undefined ? 0 : 1;
+	}
+	if (right === undefined) {
+		return -1;
+	}
+	const length = Math.max(left.length, right.length);
 	for (let index = 0; index < length; index += 1) {
-		const leftId = left.prerelease[index];
-		const rightId = right.prerelease[index];
-		if (leftId === undefined) {
-			return -1;
-		}
-		if (rightId === undefined) {
-			return 1;
-		}
-		const order = compareIdentifiers(leftId, rightId);
-		if (order !== 0) {
+		const order = prereleaseOrderAt(left, right, index);
+		if (order !== undefined) {
 			return order;
 		}
 	}
 	return 0;
+}
+
+export function compareNpmVersions(left: SemVer, right: SemVer): -1 | 0 | 1 {
+	const core = compareVersionCore(left, right);
+	if (core !== 0) {
+		return core;
+	}
+	return comparePrerelease(left.prerelease, right.prerelease);
 }

@@ -2,10 +2,12 @@
 // the code-health enforcers. Lexer-light mirrors of the §6.1 algorithms;
 // the packs module cannot import the pack supplies (§3.3).
 import type { Ports } from "../../../kernel/index.ts";
+import { ok, type Result } from "../../../kernel/index.ts";
 import type { CheckContext, Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import {
+	bindRule,
 	type RuleBinding,
 	readErrorFinding,
 	readLossyText,
@@ -207,6 +209,19 @@ export function baseEnforcer(
 		budgetMs: decl.budgetMs,
 		check,
 	};
+}
+
+// SPEC §5.6: the resolver preamble shared by the marker-driven enforcers:
+// one binding, one budget-carrying enforcer, one async check over it. The
+// check receives the binding, so resolvers keep no preamble of their own
+// and the shared run below the duplication floor stays in one place.
+export function checkEnforcer(
+	decl: EnforcerDecl,
+	rule: PackRule,
+	check: (binding: RuleBinding, ctx: CheckContext) => Promise<Array<Finding>>,
+): Result<Enforcer> {
+	const binding = bindRule(rule);
+	return ok(baseEnforcer(rule, binding, decl, (ctx) => check(binding, ctx)));
 }
 
 export function limitOf(

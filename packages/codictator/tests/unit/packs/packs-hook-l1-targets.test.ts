@@ -133,13 +133,13 @@ test("[§4.7.1] L1 proposed read target of a secret path blocks", async () => {
 	if (!resolved.ok) {
 		return;
 	}
-	const secret = await resolved.value.check(ctxForProposed([".env"]));
+	const secret = await resolved.value.check(ctxForProposed([".env"]), {});
 	assert.equal(
 		secret.filter((finding) => finding.ruleId === "core/no-secret-reads")
 			.length,
 		1,
 	);
-	const benign = await resolved.value.check(ctxForProposed(["src/ok.ts"]));
+	const benign = await resolved.value.check(ctxForProposed(["src/ok.ts"]), {});
 	assert.equal(
 		benign.filter((finding) => finding.ruleId === "core/no-secret-reads")
 			.length,

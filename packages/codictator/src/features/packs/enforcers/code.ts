@@ -56,10 +56,10 @@ import {
 	resolveDocLinksValid,
 	resolveDocNoInlineChangelog,
 } from "./docs-guards-measures.ts";
+import { resolveEngineVersionMatch } from "./engine-version-guards.ts";
 import {
 	resolveAgentAssetsPresent,
 	resolveCustomPackSelftest,
-	resolveEngineVersionMatch,
 	resolveGuardrailManifest,
 	resolveHooksActive,
 	resolvePerfBudgets,

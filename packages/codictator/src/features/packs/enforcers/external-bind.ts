@@ -38,12 +38,15 @@ function stringList(value: unknown): Array<string> | undefined {
 	return undefined;
 }
 
-// SPEC §7.2: a tools entry needs an id, an argv command and an exact pin
-// with its probe. CDX-E206 when the pin is missing (§8).
-export function narrowToolDecl(entry: unknown): Result<ToolDecl> {
-	if (!isRecord(entry)) {
-		return toolError("CDX-E203", "a config.tools entry must be an object");
-	}
+function narrowTimeoutMs(timeout: unknown): number {
+	return typeof timeout === "number" && Number.isInteger(timeout) && timeout > 0
+		? timeout
+		: DEFAULT_TIMEOUT_MS;
+}
+
+function narrowToolIdentity(
+	entry: Record<string, unknown>,
+): Result<{ id: string; command: Array<string> }> {
 	const id: unknown = field(entry, "id");
 	const command = stringList(field(entry, "command")) ?? [];
 	if (typeof id !== "string" || id.length === 0 || command.length === 0) {
@@ -52,6 +55,13 @@ export function narrowToolDecl(entry: unknown): Result<ToolDecl> {
 			"a config.tools entry needs a non-empty id and command argv",
 		);
 	}
+	return ok({ id, command });
+}
+
+function narrowToolVersion(
+	entry: Record<string, unknown>,
+	id: string,
+): Result<{ pin: string; probe: Array<string>; pattern: string }> {
 	const version: unknown = field(entry, "version");
 	if (!isRecord(version)) {
 		return toolError("CDX-E206", `tool "${id}" has no exact version pin`);
@@ -72,26 +82,66 @@ export function narrowToolDecl(entry: unknown): Result<ToolDecl> {
 			`tool "${id}" needs a probe argv and a pattern`,
 		);
 	}
+	return ok({ pin, probe, pattern });
+}
+
+// SPEC §7.2: a tools entry needs an id, an argv command and an exact pin
+// with its probe. CDX-E206 when the pin is missing (§8).
+export function narrowToolDecl(entry: unknown): Result<ToolDecl> {
+	if (!isRecord(entry)) {
+		return toolError("CDX-E203", "a config.tools entry must be an object");
+	}
+	const identity = narrowToolIdentity(entry);
+	if (!identity.ok) {
+		return identity;
+	}
+	const version = narrowToolVersion(entry, identity.value.id);
+	if (!version.ok) {
+		return version;
+	}
 	const role: unknown = field(entry, "role");
 	if (typeof role === "string" && role !== "enforcer") {
 		return toolError(
 			"CDX-E203",
-			`tool "${id}" is a helper and cannot back an enforcer`,
+			`tool "${identity.value.id}" is a helper and cannot back an enforcer`,
 		);
 	}
 	const timeout: unknown = field(entry, "timeoutMs");
 	const envPass = stringList(field(entry, "envPass")) ?? [];
 	return ok({
-		id,
-		command,
-		version: { pin, probe, pattern },
+		id: identity.value.id,
+		command: identity.value.command,
+		version: version.value,
 		role: typeof role === "string" ? role : undefined,
-		timeoutMs:
-			typeof timeout === "number" && Number.isInteger(timeout) && timeout > 0
-				? timeout
-				: DEFAULT_TIMEOUT_MS,
+		timeoutMs: narrowTimeoutMs(timeout),
 		envPass,
 	});
+}
+
+function narrowOutputFormat(
+	value: unknown,
+	withId: (detail: string) => Result<never>,
+): Result<"sarif" | "json" | "regex" | "exit-code"> {
+	if (
+		value === "sarif" ||
+		value === "json" ||
+		value === "regex" ||
+		value === "exit-code"
+	) {
+		return ok(value);
+	}
+	return withId("needs an output format of sarif, json, regex or exit-code");
+}
+
+function narrowOutputSource(
+	value: unknown,
+	withId: (detail: string) => Result<never>,
+): Result<"stdout" | "{out}"> {
+	const source: unknown = value ?? "stdout";
+	if (source === "stdout" || source === "{out}") {
+		return ok(source);
+	}
+	return withId("needs an output source of stdout or {out}");
 }
 
 function narrowOutput(declId: string, value: unknown): Result<ExternalOutput> {
@@ -100,27 +150,36 @@ function narrowOutput(declId: string, value: unknown): Result<ExternalOutput> {
 	}
 	const withId = (detail: string): Result<never> =>
 		toolError("CDX-E203", `pack enforcer "${declId}" ${detail}`);
-	const format: unknown = field(value, "format");
-	if (
-		format !== "sarif" &&
-		format !== "json" &&
-		format !== "regex" &&
-		format !== "exit-code"
-	) {
-		return withId("needs an output format of sarif, json, regex or exit-code");
+	const format = narrowOutputFormat(field(value, "format"), withId);
+	if (!format.ok) {
+		return format;
 	}
-	const source: unknown = field(value, "source") ?? "stdout";
-	if (source !== "stdout" && source !== "{out}") {
-		return withId("needs an output source of stdout or {out}");
+	const source = narrowOutputSource(field(value, "source"), withId);
+	if (!source.ok) {
+		return source;
 	}
-	const output = source === "{out}" ? "{out}" : "stdout";
-	if (format === "json") {
-		return narrowJsonSelect(withId, format, output, field(value, "select"));
+	if (format.value === "json") {
+		return narrowJsonSelect(
+			withId,
+			format.value,
+			source.value,
+			field(value, "select"),
+		);
 	}
-	if (format === "regex") {
-		return narrowRegexPattern(withId, format, output, field(value, "pattern"));
+	if (format.value === "regex") {
+		return narrowRegexPattern(
+			withId,
+			format.value,
+			source.value,
+			field(value, "pattern"),
+		);
 	}
-	return ok({ format, source: output, select: undefined, pattern: undefined });
+	return ok({
+		format: format.value,
+		source: source.value,
+		select: undefined,
+		pattern: undefined,
+	});
 }
 
 function narrowJsonSelect(

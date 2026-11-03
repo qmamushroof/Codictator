@@ -8,10 +8,12 @@ import {
 	isFixturePath,
 	isSecretReadPath,
 	matchDangerousShell,
+	ok,
 	type Ports,
+	type Result,
 	redactSecrets,
 } from "../../../kernel/index.ts";
-import type { CheckContext, Finding } from "../../engine/index.ts";
+import type { CheckContext, Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import {
@@ -22,6 +24,7 @@ import {
 	readLossyText,
 	selectFiles,
 } from "./binding.ts";
+import { baseEnforcer } from "./health-measures.ts";
 import { extractShellSources } from "./shell-analyse.ts";
 
 function firstDiffLine(before: string, after: string): number {
@@ -127,21 +130,15 @@ export function resolveNoSecrets(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
-) {
+): Result<Enforcer> {
 	const binding: RuleBinding = bindRule(rule);
-	return {
-		ok: true as const,
-		value: {
-			id: rule.id,
-			kinds: binding.triggers,
-			budgetMs: decl.budgetMs,
-			check: async (ctx: CheckContext): Promise<Array<Finding>> => {
-				const findings = await scanScopeFiles(ports, binding, ctx.scope);
-				findings.push(...scanToolInput(binding, ctx.scope));
-				return findings;
-			},
-		},
-	};
+	return ok(
+		baseEnforcer(rule, binding, decl, async (ctx) => {
+			const findings = await scanScopeFiles(ports, binding, ctx.scope);
+			findings.push(...scanToolInput(binding, ctx.scope));
+			return findings;
+		}),
+	);
 }
 
 function readLineTarget(line: string): string | undefined {
@@ -176,71 +173,90 @@ function checkProposedSecretReads(
 	return findings;
 }
 
+function scanReadLineTargets(
+	binding: RuleBinding,
+	file: string,
+	text: string,
+	findings: Array<Finding>,
+): void {
+	for (const line of text.split("\n")) {
+		const target = readLineTarget(line);
+		if (target !== undefined && isSecretReadPath(target)) {
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					message: `secret material must not reach the agent context: ${target}`,
+					vars: { path: file },
+				}),
+			);
+		}
+	}
+}
+
+function scanShellSecretReads(
+	binding: RuleBinding,
+	file: string,
+	text: string,
+	findings: Array<Finding>,
+): void {
+	for (const source of extractShellSources(text, file)) {
+		const parsed = analyseShell(source);
+		if (!parsed.ok) {
+			continue;
+		}
+		for (const violation of matchDangerousShell(parsed.value)) {
+			if (violation.class !== "secret-read") {
+				continue;
+			}
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					message: `shell command reads secret material in ${file}: ${redactSecrets(violation.raw)}`,
+					vars: { path: file },
+				}),
+			);
+		}
+	}
+}
+
+async function scanFileSecretReads(
+	ports: Ports,
+	binding: RuleBinding,
+	file: string,
+	findings: Array<Finding>,
+): Promise<void> {
+	if (isSecretReadPath(file)) {
+		findings.push(
+			findingFor(binding, {
+				path: file,
+				message: `secret material must not reach the agent context: ${file}`,
+				vars: { path: file },
+			}),
+		);
+	}
+	const loaded = await readLossyText(ports.fs, file);
+	if (!loaded.ok) {
+		findings.push(readErrorFinding(binding, file, loaded.error, "read"));
+		return;
+	}
+	scanReadLineTargets(binding, file, loaded.value.text, findings);
+	scanShellSecretReads(binding, file, loaded.value.text, findings);
+}
+
 export function resolveNoSecretReads(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
-) {
+): Result<Enforcer> {
 	const binding: RuleBinding = bindRule(rule);
-	return {
-		ok: true as const,
-		value: {
-			id: rule.id,
-			kinds: binding.triggers,
-			budgetMs: decl.budgetMs,
-			check: async (ctx: CheckContext): Promise<Array<Finding>> => {
-				const findings: Array<Finding> = [];
-				for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-					if (isSecretReadPath(file)) {
-						findings.push(
-							findingFor(binding, {
-								path: file,
-								message: `secret material must not reach the agent context: ${file}`,
-								vars: { path: file },
-							}),
-						);
-					}
-					const loaded = await readLossyText(ports.fs, file);
-					if (!loaded.ok) {
-						findings.push(
-							readErrorFinding(binding, file, loaded.error, "read"),
-						);
-						continue;
-					}
-					for (const line of loaded.value.text.split("\n")) {
-						const target = readLineTarget(line);
-						if (target !== undefined && isSecretReadPath(target)) {
-							findings.push(
-								findingFor(binding, {
-									path: file,
-									message: `secret material must not reach the agent context: ${target}`,
-									vars: { path: file },
-								}),
-							);
-						}
-					}
-					for (const source of extractShellSources(loaded.value.text, file)) {
-						const parsed = analyseShell(source);
-						if (!parsed.ok) {
-							continue;
-						}
-						for (const violation of matchDangerousShell(parsed.value)) {
-							if (violation.class !== "secret-read") {
-								continue;
-							}
-							findings.push(
-								findingFor(binding, {
-									path: file,
-									message: `shell command reads secret material in ${file}: ${redactSecrets(violation.raw)}`,
-									vars: { path: file },
-								}),
-							);
-						}
-					}
-				}
-				findings.push(...checkProposedSecretReads(binding, ctx.scope));
-				return findings;
-			},
-		},
-	};
+	return ok(
+		baseEnforcer(rule, binding, decl, async (ctx) => {
+			const findings: Array<Finding> = [];
+			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+				await scanFileSecretReads(ports, binding, file, findings);
+			}
+			findings.push(...checkProposedSecretReads(binding, ctx.scope));
+			return findings;
+		}),
+	);
 }

@@ -53,29 +53,41 @@ function stripWorkspacePrefix(range: string): string | undefined {
 	return undefined;
 }
 
-export function classifyNpmRange(range: string): NpmPinForm {
-	const workspace = stripWorkspacePrefix(range);
-	if (workspace !== undefined) {
-		return EXACT_PIN.test(workspace) ? "workspace-exact" : "workspace-range";
-	}
-	if (range.startsWith("file:")) {
-		return "file";
-	}
-	if (range.startsWith("link:")) {
-		return "link";
-	}
-	if (range.startsWith("npm:")) {
-		const at = range.lastIndexOf("@");
-		const version = at < 4 ? "" : range.slice(at + 1);
-		return EXACT_PIN.test(version) ? "alias-exact" : "alias-range";
-	}
-	if (
+function classifyWorkspaceRange(workspace: string): NpmPinForm {
+	return EXACT_PIN.test(workspace) ? "workspace-exact" : "workspace-range";
+}
+
+function classifyAliasRange(range: string): NpmPinForm {
+	const at = range.lastIndexOf("@");
+	const version = at < 4 ? "" : range.slice(at + 1);
+	return EXACT_PIN.test(version) ? "alias-exact" : "alias-range";
+}
+
+function isGitRange(range: string): boolean {
+	return (
 		range.startsWith("git+") ||
 		range.startsWith("git://") ||
 		range.startsWith("github:")
-	) {
-		const hash = range.split("#")[1] ?? "";
-		return FULL_SHA.test(hash) ? "git-sha" : "git-unpinned";
+	);
+}
+
+function classifyGitRange(range: string): NpmPinForm {
+	const hash = range.split("#")[1] ?? "";
+	return FULL_SHA.test(hash) ? "git-sha" : "git-unpinned";
+}
+
+function isTagName(range: string): boolean {
+	return (
+		range === "*" ||
+		range === "latest" ||
+		range === "" ||
+		/^[a-zA-Z][0-9A-Za-z.-]*$/.test(range)
+	);
+}
+
+function classifyBareRange(range: string): NpmPinForm {
+	if (isGitRange(range)) {
+		return classifyGitRange(range);
 	}
 	if (range.startsWith("http://") || range.startsWith("https://")) {
 		return "tarball-url";
@@ -83,15 +95,24 @@ export function classifyNpmRange(range: string): NpmPinForm {
 	if (EXACT_PIN.test(range)) {
 		return "exact";
 	}
-	if (
-		range === "*" ||
-		range === "latest" ||
-		range === "" ||
-		/^[a-zA-Z][0-9A-Za-z.-]*$/.test(range)
-	) {
-		return "tag";
+	return isTagName(range) ? "tag" : "range";
+}
+
+export function classifyNpmRange(range: string): NpmPinForm {
+	const workspace = stripWorkspacePrefix(range);
+	if (workspace !== undefined) {
+		return classifyWorkspaceRange(workspace);
 	}
-	return "range";
+	if (range.startsWith("file:")) {
+		return "file";
+	}
+	if (range.startsWith("link:")) {
+		return "link";
+	}
+	if (range.startsWith(`${NPM_ECOSYSTEM}:`)) {
+		return classifyAliasRange(range);
+	}
+	return classifyBareRange(range);
 }
 
 // SPEC §4.8.5: ranges, tags, *, latest and unpinned git/alias/workspace
