@@ -29,7 +29,7 @@ import {
 const packs = ["core", "typescript", "python"] as const;
 const expectedCounts: Record<string, number> = {
 	core: 166,
-	typescript: 10,
+	typescript: 11,
 	python: 8,
 };
 

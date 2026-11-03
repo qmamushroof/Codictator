@@ -92,3 +92,4 @@ Pack rules: `python/typecheck` (floor), `python/lint` (floor), `python/no-phanto
 | EC-9 | JS repo without TypeScript | `checkJs` required; TypeScript proposed as a dev dependency |
 | EC-10 | Mixed TS + Python repo | Both packs load; each file judged by its pack |
 | EC-11 | `import … from "vscode"` in a file under `packages/vscode/` | Allowed: the extension host provides the module (§4.20.1), so it is never declared. The lexer has no type-awareness, so the exception is specifier-based (type and value imports alike); the same specifier anywhere else still blocks |
+| EC-12 | `export const`/`export let` binding with no further use in its own file | Not a `ts/lint` finding: an exported name is module public API whose importers live outside the file (and outside a diff scope), so only `core/dead-code` on the tree judges unused exports |
