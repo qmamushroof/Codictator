@@ -4,7 +4,7 @@
 
 Rules files only ask. Codictator turns each rule into something that runs: context injected where the agent reads it, harness hooks that block a bad tool call before it lands, git hooks, CI checks and scheduled sweeps. Asked for a bad outcome, the agent is steered to the compliant one and told which rule applied. Nothing is hidden.
 
-> **Status: 0.1.0 versioned in this repo, not yet published.** Packages `codictator` and `codictator-vscode` are at 0.1.0, but neither npm, the VS Code Marketplace, nor Open VSX carries the release yet ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md), steps 13.6/13.8 pending). Until publication, install from source below. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
+> **Status: 0.1.3 published on npm, the VS Code Marketplace, and Open VSX.** Packages `codictator` and `codictator-vscode` are at 0.1.3 ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md) green). Install from the registries below; source builds remain an alternative. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
 
 ## What it enforces
 
@@ -24,9 +24,11 @@ What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5
 
 ## Install
 
-> Not yet published: `codictator` is not on npm, and the extension is not on the VS Code Marketplace or Open VSX. Until [phase 13](docs/ROADMAP/13-RELEASE.md) is green, install from source.
+> Install from the registries first and use source only as an alternative: `codictator` is on npm, and the extension is on the VS Code Marketplace and Open VSX ([phase 13](docs/ROADMAP/13-RELEASE.md) green).
 
 Requires Node.js 24 LTS or newer in every repo, whatever its language.
+
+Alternative — from source:
 
 ```sh
 git clone <repo-url> codictator && cd codictator
@@ -34,9 +36,9 @@ npm ci --ignore-scripts
 npm run build
 ```
 
-At publication the install path becomes `npm install --save-dev --save-exact codictator@0.1.0` followed by `npx codictator init` on each repo.
+The install path is `npm install --save-dev --save-exact codictator@0.1.3` followed by `npx codictator init` on each repo.
 
-The VS Code extension `codictator.codictator-vscode` will ship on the VS Code Marketplace and Open VSX with the release. It shows live what is enforced, how the agent is steered, violations and the timeline. It runs the engine pinned in your repo.
+The VS Code extension `codictator.codictator-vscode` ships on the VS Code Marketplace and Open VSX with the release. It shows live what is enforced, how the agent is steered, violations and the timeline. It runs the engine pinned in your repo.
 
 ## Principles
 
