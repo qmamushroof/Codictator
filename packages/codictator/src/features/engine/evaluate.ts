@@ -158,9 +158,12 @@ async function collectFindings(
 	const runnable = ordered.filter((enforcer) =>
 		enforcer.kinds.includes(ctx.trigger),
 	);
-	const ran = await Promise.all(
-		runnable.map((enforcer) => runEnforcer(enforcer, ctx)),
-	);
+	// SPEC §4.3.3 step 2: bounded concurrency — one guard at a time keeps every
+	// guard's event-loop share (no E902 herd); sortFindings keeps the verdict byte-identical (§4.3.6).
+	const ran: Array<Array<Finding>> = [];
+	for (const enforcer of runnable) {
+		ran.push(await runEnforcer(enforcer, ctx));
+	}
 	return applyWaivers(sortFindings(ran.flat()), store, ctx.now);
 }
 
