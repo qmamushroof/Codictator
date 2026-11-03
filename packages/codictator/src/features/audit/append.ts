@@ -147,14 +147,25 @@ function fitLine(event: NewEvent, now: string, id: string): Result<string> {
 		);
 	}
 	const empty = stableLineStringify(withOptionals(base, event, ""));
-	let allowance = MAX_LINE_BYTES - byteLength(empty) - 2;
+	const allowance = MAX_LINE_BYTES - byteLength(empty) - 2;
+	return truncateToFit(base, event, message, allowance);
+}
+
+// Halve the budget until the marked message fits, else fail closed.
+function truncateToFit(
+	base: Record<string, unknown>,
+	event: NewEvent,
+	message: string,
+	allowance: number,
+): Result<string> {
+	let budget = allowance;
 	for (let round = 0; round < 32; round += 1) {
-		if (allowance < 0) {
+		if (budget < 0) {
 			return err(
 				e801("append event", "the message cannot be truncated to fit 64 KB"),
 			);
 		}
-		const kept = truncateUtf8(message, allowance);
+		const kept = truncateUtf8(message, budget);
 		const omitted = byteLength(message) - byteLength(kept);
 		const candidate = stableLineStringify(
 			withOptionals(base, event, `${kept}[truncated ${omitted} bytes]`),
@@ -162,7 +173,7 @@ function fitLine(event: NewEvent, now: string, id: string): Result<string> {
 		if (byteLength(candidate) <= MAX_LINE_BYTES) {
 			return ok(candidate);
 		}
-		allowance = Math.floor(allowance / 2);
+		budget = Math.floor(budget / 2);
 	}
 	return err(
 		e801("append event", "the message cannot be truncated to fit 64 KB"),

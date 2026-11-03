@@ -32,24 +32,32 @@ export interface ReviewCheckDetail {
 
 const SEVERITIES: ReadonlyArray<string> = ["blocker", "major", "minor", "nit"];
 
+function invalidFindingReason(finding: ReviewFinding): string | undefined {
+	if (
+		typeof finding.id !== "string" ||
+		typeof finding.severity !== "string" ||
+		typeof finding.path !== "string" ||
+		typeof finding.message !== "string" ||
+		finding.id.length === 0 ||
+		finding.message.length === 0
+	) {
+		return "a finding misses id, severity, path or message";
+	}
+	if (!SEVERITIES.includes(finding.severity)) {
+		return `severity "${finding.severity}" is not blocker, major, minor or nit`;
+	}
+	return undefined;
+}
+
 function malformedReason(file: ReviewFindingsFile): string | undefined {
 	if (!Array.isArray(file.findings)) {
 		return "findings is not a list";
 	}
 	const seen = new Set<string>();
 	for (const finding of file.findings) {
-		if (
-			typeof finding.id !== "string" ||
-			typeof finding.severity !== "string" ||
-			typeof finding.path !== "string" ||
-			typeof finding.message !== "string" ||
-			finding.id.length === 0 ||
-			finding.message.length === 0
-		) {
-			return "a finding misses id, severity, path or message";
-		}
-		if (!SEVERITIES.includes(finding.severity)) {
-			return `severity "${finding.severity}" is not blocker, major, minor or nit`;
+		const reason = invalidFindingReason(finding);
+		if (reason !== undefined) {
+			return reason;
 		}
 		if (seen.has(finding.id)) {
 			return `duplicate finding id "${finding.id}"`;
