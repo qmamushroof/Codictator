@@ -1,0 +1,8 @@
+{
+	"expectation": "passing",
+	"expectRules": [],
+	"files": { "sample.ts": "export const MS_PER_DAY = 86_400_000;\n" },
+	"rule": "ts/lint",
+	"section": "§6.1",
+	"trigger": "exported binding used cross-file, not in its own file"
+}
