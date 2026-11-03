@@ -5,6 +5,7 @@
 // new scope plumbing, no new detection logic. commit-msg appends
 // the Codictator-L3 trailer §4.14.2 checks at L4.
 
+import path from "node:path";
 import { ENGINE_VERSION, HOOK_MARKER } from "../features/config/index.ts";
 import type { Env, Finding, Result } from "../kernel/index.ts";
 import {
@@ -148,11 +149,14 @@ async function runPreCommit(
 	);
 }
 
-// SPEC §4.14.4: git hands commit-msg an absolute COMMIT_EDITMSG path, which
-// in a linked worktree lives under the main repo's .git/worktrees/<name>/
-// dir, outside the worktree root. The confined Fs port rejects absolute
-// paths (CDX-E701), so the hook uses kernel-owned host I/O; an unreadable
-// or unwritable message file blocks fail-closed.
+// SPEC §4.14.4: git hands commit-msg the COMMIT_EDITMSG path, absolute in a
+// linked worktree (under the main repo's .git/worktrees/<name>/ dir, outside
+// the worktree root) but relative to the repo root (`.git/COMMIT_EDITMSG`)
+// in the main worktree. The confined Fs port rejects absolute paths
+// (CDX-E701), so the hook uses kernel-owned host I/O — which itself
+// requires absolute paths — resolving a relative handoff against the
+// invocation cwd first; an unreadable or unwritable message file blocks
+// fail-closed.
 async function runCommitMsg(
 	req: CommandRequest,
 	configHash: string,
@@ -160,7 +164,8 @@ async function runCommitMsg(
 	if (req.args.length !== 2 || req.args[1] === undefined) {
 		return usageError("usage: codictator git commit-msg <file>");
 	}
-	const file = req.args[1];
+	const raw = req.args[1];
+	const file = path.isAbsolute(raw) ? raw : path.resolve(req.cwd, raw);
 	const trailer = `Codictator-L3: ${configHash.slice(0, 12)}`;
 	const read = await readHostText(file);
 	if (!read.ok) {

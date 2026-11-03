@@ -8,6 +8,7 @@
 import { strict as assert } from "node:assert";
 import {
 	chmodSync,
+	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	rmSync,
@@ -125,6 +126,33 @@ test("[§4.14.4] commit-msg with an unwritable message file blocks", async () =>
 		rmSync(outside, { recursive: true, force: true });
 	}
 });
+
+test("[§4.14.4] commit-msg resolves a relative message path against cwd", async () => {
+	// SPEC §4.14.4: git hands a relative `.git/COMMIT_EDITMSG` path in the
+	// main worktree, which kernel host I/O rejects (CDX-E701) unless the
+	// hook resolves it against the invocation cwd first.
+	const repo = createTempRepo();
+	try {
+		seedConfig(repo);
+		mkdirSync(path.join(repo.dir, ".git"), { recursive: true });
+		writeFileSync(
+			path.join(repo.dir, ".git", "COMMIT_EDITMSG"),
+			"subject line\n",
+			"utf8",
+		);
+		const ran = await handleGitHook(
+			req(["commit-msg", ".git/COMMIT_EDITMSG"], repo.dir),
+		);
+		assert.equal(ran.ok, true);
+		assert.match(
+			readFileSync(path.join(repo.dir, ".git", "COMMIT_EDITMSG"), "utf8"),
+			/^Codictator-L3: /m,
+		);
+	} finally {
+		repo.cleanup();
+	}
+});
+
 test("[§4.14.4] commit-msg with an unreadable message file blocks", async () => {
 	// Fail-closed (PRD §12 #12): a missing message file is an error, never
 	// a silent allow.
