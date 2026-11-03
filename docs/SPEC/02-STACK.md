@@ -36,7 +36,7 @@ Versions verified against the npm registry and nodejs.org on 2026-10-26 and chos
 | `@types/node` | 24.19.2 | 2026-10-09 | Types for the pinned Node major |
 | `@biomejs/biome` | 2.5.15 | 2026-09-30 | Lint and format |
 | `@types/vscode` | 1.105.0 | 2025-10-09 | Must equal the extension's engine floor (§2.3) so no newer API is used |
-| `@vscode/vsce` | 4.0.0 | 2026-09-14 | Packages and publishes to the VS Code Marketplace; no platform alternative |
+| `@vscode/vsce` | 4.0.0 | 2026-09-14 | Packages and publishes to the VS Code Marketplace; no platform alternative. One-time exemption for 4.1.0 only, a dev-only packaging tool for the first release (SPEC §11 S36); this version only, 4.1.0 otherwise matures 2026-11-04 |
 | `ovsx` | 1.3.0 | 2026-10-16 | Publishes to Open VSX (PRD §12 #24) |
 | `@vscode/test-electron` | 3.1.0 | 2026-07-24 | Runs extension integration tests in a real extension host |
 
