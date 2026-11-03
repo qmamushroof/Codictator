@@ -5,7 +5,11 @@
 // any newer syntax could load, and only node: built-ins are imported. It
 // sets CODICTATOR_HOOK=1 in the engine process, then resolves the engine at
 // <root>/node_modules/codictator/dist/cli/main.js else
-// <root>/.codictator/tool/node_modules/codictator/dist/cli/main.js. A
+// <root>/.codictator/tool/node_modules/codictator/dist/cli/main.js. The
+// launcher reads the resolved engine's manifest version and passes it
+// as main's third argument, so hook validation sees the installed
+// version (SPEC §4.2.1 EC-11); an unreadable manifest falls back to
+// the two-argument call. A
 // missing engine answers the harness's embedded static CDX-E003 block
 // reply; outside hook it prints CDX-E003 and exits 6. Git hooks arrive
 // as a `git` first word and route to the engine like hook words do, so
@@ -13,7 +17,7 @@
 // Version arbitration
 // between the root and tool-dir engines (SPEC §4.19 EC-6) belongs to the
 // phase 9 CLI: until then the first candidate that exists wins.
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -126,6 +130,32 @@ function firstExisting(candidates) {
 	return null;
 }
 
+// SPEC §4.2.1 EC-11: the engine entry validates config.codictator
+// against the installed engine version, so the launcher reads it from
+// the resolved engine's own manifest and passes it as main's third
+// argument. Any unreadable or version-less manifest answers null and
+// the caller falls back to the two-argument call, which keeps the
+// pinned placeholder — fail-closed downstream, never an allow.
+function installedEngineVersion(enginePath) {
+	try {
+		const manifestPath = path.join(
+			path.dirname(path.dirname(path.dirname(enginePath))),
+			"package.json",
+		);
+		const parsed = JSON.parse(readFileSync(manifestPath, "utf8"));
+		if (parsed === null || typeof parsed !== "object") {
+			return null;
+		}
+		const version = parsed.version;
+		if (typeof version !== "string" || version === "") {
+			return null;
+		}
+		return version;
+	} catch (ignored) {
+		return null;
+	}
+}
+
 function reportMissing(harness) {
 	const missing = staticReply(
 		harness,
@@ -160,7 +190,11 @@ function runEngine(enginePath, args, harness) {
 				if (engine === null || typeof engine.main !== "function") {
 					throw new Error("engine entry has no main");
 				}
-				return engine.main(args, process.cwd());
+				const version = installedEngineVersion(enginePath);
+				if (version === null) {
+					return engine.main(args, process.cwd());
+				}
+				return engine.main(args, process.cwd(), version);
 			},
 			(error) => {
 				throw error;
