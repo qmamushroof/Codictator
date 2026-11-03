@@ -130,6 +130,33 @@ test("[§4.14] installed pre-commit hook blocks a staged secret (L3)", async () 
 	}
 });
 
+test("[§4.7.1] pre-commit passes a removal-only secret diff (BUG-0022)", async () => {
+	// BUG-0022: the L3 gate judges added lines only (SPEC §4.7.1), so a
+	// commit deleting a flagged literal passes while staging one still
+	// blocks. The vector is committed past the hook, then its removal is
+	// staged: the cached diff holds the key on a `-` line only.
+	const repo = createTempRepo();
+	try {
+		seedConfig(repo);
+		installLauncher(repo);
+		const installed = await cli(["install-hooks"], repo.dir);
+		assert.equal(installed.code, 0);
+		stage(repo, "leak.txt", `const key = "${VECTOR}";\n`);
+		repo.git(["commit", "--no-verify", "-m", "add key past the gate"]);
+		writeFileSync(path.join(repo.dir, "leak.txt"), "const key = '';\n", "utf8");
+		repo.git(["add", "leak.txt"]);
+		const removed = await runGitHook(repo, "pre-commit");
+		assert.equal(removed.code, 0);
+		repo.git(["commit", "--no-verify", "-m", "remove key"]);
+		stage(repo, "leak.txt", `const key = "${VECTOR}";\n`);
+		const blocked = await runGitHook(repo, "pre-commit");
+		assert.equal(blocked.code, 1);
+		assert.ok(blocked.stdout.includes("core/no-secrets"));
+	} finally {
+		repo.cleanup();
+	}
+});
+
 test("[§4.14] installed pre-commit hook passes a normally-commented file (L3 gate family)", async () => {
 	// BUG-0014: the gate judges the fail-closed local family, not the
 	// review-only hygiene rules. A plain-commented source file whose export

@@ -14,7 +14,7 @@ import {
 	readHostText,
 	writeHostText,
 } from "../kernel/index.ts";
-import { evaluateGateScope } from "./gate-scope.ts";
+import { addedLines, evaluateGateScope } from "./gate-scope.ts";
 import { printFinding } from "./inspect.ts";
 import type { CommandPorts, CommandRequest } from "./shared.ts";
 import {
@@ -104,7 +104,7 @@ async function evaluateGitChange(
 		{
 			files: [...files],
 			note: hook,
-			...(content === "" ? {} : { proposedContent: content }),
+			...(content === "" ? {} : { proposedContent: addedLines(content) }),
 		},
 		now,
 		configHash,
