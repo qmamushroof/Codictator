@@ -11,12 +11,10 @@ import { normalizeToolName } from "./contract.ts";
 
 type RawRecord = Record<string, unknown>;
 
-function isRecord(value: unknown): value is RawRecord {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readString(
-	record: RawRecord,
+// SPEC §4.5.3: first non-empty string under any of the keys. Shared with
+// the sibling adapters, so the field readers never drift apart.
+export function readString(
+	record: Record<string, unknown>,
 	keys: ReadonlyArray<string>,
 ): string | undefined {
 	for (const key of keys) {
@@ -26,6 +24,10 @@ function readString(
 		}
 	}
 	return undefined;
+}
+
+function isRecord(value: unknown): value is RawRecord {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function readToolInput(raw: RawRecord): RawRecord {
@@ -55,34 +57,31 @@ function collectPaths(input: RawRecord): Array<string> {
 	return [...found].sort();
 }
 
+// SPEC §4.5.3: event names map to triggers through one table, so adding a
+// harness alias is a row, not a branch.
+const CLAUDE_EVENT_TABLE: Readonly<Record<string, Trigger>> = {
+	PreToolUse: "pre-tool",
+	"tool.pre.write": "pre-tool",
+	"tool.pre.shell": "pre-tool",
+	"tool.pre.read": "pre-tool",
+	"tool.pre.search": "pre-tool",
+	"tool.pre.other": "pre-tool",
+	PostToolUse: "post-tool",
+	"tool.post.write": "post-tool",
+	Stop: "post-tool",
+	stop: "post-tool",
+	SessionStart: "startup",
+	"session.start": "startup",
+	SubagentStart: "startup",
+	"subagent.start": "startup",
+	UserPromptSubmit: "prompt",
+	"prompt.submit": "prompt",
+	PostCompact: "compact",
+	"compact.post": "compact",
+};
+
 function mapClaudeEvent(event: string): Trigger | undefined {
-	switch (event) {
-		case "PreToolUse":
-		case "tool.pre.write":
-		case "tool.pre.shell":
-		case "tool.pre.read":
-		case "tool.pre.search":
-		case "tool.pre.other":
-			return "pre-tool";
-		case "PostToolUse":
-		case "tool.post.write":
-		case "Stop":
-		case "stop":
-			return "post-tool";
-		case "SessionStart":
-		case "session.start":
-		case "SubagentStart":
-		case "subagent.start":
-			return "startup";
-		case "UserPromptSubmit":
-		case "prompt.submit":
-			return "prompt";
-		case "PostCompact":
-		case "compact.post":
-			return "compact";
-		default:
-			return undefined;
-	}
+	return CLAUDE_EVENT_TABLE[event];
 }
 
 function blockError(harness: string, detail: string): CdxError {

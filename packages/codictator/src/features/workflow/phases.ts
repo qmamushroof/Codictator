@@ -82,53 +82,59 @@ function e606TwoTasks(open: ReadonlyArray<string>, task: TaskRecord): Finding {
 
 // SPEC §4.12.2 exit gates: the evidence each phase owes before the next
 // phase opens. Implementation and integrate owe no exit evidence.
+function missingDiscoveryEvidence(task: TaskRecord): Array<string> {
+	const missing: Array<string> = [];
+	if (task.spec.length === 0) {
+		missing.push("spec refs");
+	}
+	if (task.type === "fix" && (task.diagnosis ?? "").length === 0) {
+		missing.push("diagnosis");
+	}
+	return missing;
+}
+
+function missingPlanningEvidence(task: TaskRecord): Array<string> {
+	const missing: Array<string> = [];
+	if (task.files.allow.length === 0) {
+		missing.push("files.allow globs");
+	}
+	if (task.acceptanceCriteria.length === 0) {
+		missing.push("acceptance criteria");
+	}
+	if ((task.tests ?? []).length === 0) {
+		missing.push("declared tests");
+	}
+	if (task.redProof === undefined) {
+		missing.push("red proof");
+	}
+	return missing;
+}
+
+function missingRecordEvidence(task: TaskRecord): Array<string> {
+	const missing: Array<string> = [];
+	if (task.historyStaged !== true) {
+		missing.push("staged history entry");
+	}
+	if (task.type === "fix" && task.bugRowUpdated !== true) {
+		missing.push("bug row update");
+	}
+	return missing;
+}
+
 function missingExitEvidence(task: TaskRecord, phase: string): Array<string> {
 	switch (phase) {
-		case "discovery": {
-			const missing: Array<string> = [];
-			if (task.spec.length === 0) {
-				missing.push("spec refs");
-			}
-			if (task.type === "fix" && (task.diagnosis ?? "").length === 0) {
-				missing.push("diagnosis");
-			}
-			return missing;
-		}
-		case "planning": {
-			const missing: Array<string> = [];
-			if (task.files.allow.length === 0) {
-				missing.push("files.allow globs");
-			}
-			if (task.acceptanceCriteria.length === 0) {
-				missing.push("acceptance criteria");
-			}
-			if ((task.tests ?? []).length === 0) {
-				missing.push("declared tests");
-			}
-			if (task.redProof === undefined) {
-				missing.push("red proof");
-			}
-			return missing;
-		}
-		case "validation": {
+		case "discovery":
+			return missingDiscoveryEvidence(task);
+		case "planning":
+			return missingPlanningEvidence(task);
+		case "validation":
 			return task.greenProof === undefined ? ["green proof"] : [];
-		}
-		case "review": {
+		case "review":
 			return missingReviewEvidence(task);
-		}
-		case "record": {
-			const missing: Array<string> = [];
-			if (task.historyStaged !== true) {
-				missing.push("staged history entry");
-			}
-			if (task.type === "fix" && task.bugRowUpdated !== true) {
-				missing.push("bug row update");
-			}
-			return missing;
-		}
-		default: {
+		case "record":
+			return missingRecordEvidence(task);
+		default:
 			return [];
-		}
 	}
 }
 

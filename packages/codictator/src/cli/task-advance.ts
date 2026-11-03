@@ -143,23 +143,28 @@ async function taskMutate(
 
 // SPEC §4.19.2 + §4.12: task lifecycle reads and writes; only ack is
 // human-only, and only it clears an escalation.
-export async function handleTask(req: CommandRequest): Promise<Result<number>> {
-	const root = await needTaskRoot(req);
-	if (typeof root !== "string") {
-		return root;
-	}
-	const sub = req.args[0] ?? "";
-	if (sub === "new") {
-		return taskNew(req, root);
-	}
-	if (sub === "show") {
-		return taskShow(req, root);
-	}
+type TaskSubcommand = (
+	req: CommandRequest,
+	root: string,
+) => Promise<Result<number>>;
+
+const SINGLE_SUBCOMMANDS: Readonly<Record<string, TaskSubcommand>> = {
+	new: (req, root) => taskNew(req, root),
+	show: (req, root) => taskShow(req, root),
+	checkpoint: (req, root) => taskCheckpoint(req, root),
+};
+
+async function runTaskSub(
+	req: CommandRequest,
+	root: string,
+	sub: string,
+): Promise<Result<number>> {
 	if (sub === "phase" && req.args[1] === "next") {
 		return taskPhaseNext(req, root);
 	}
-	if (sub === "checkpoint") {
-		return taskCheckpoint(req, root);
+	const single = SINGLE_SUBCOMMANDS[sub];
+	if (single !== undefined) {
+		return single(req, root);
 	}
 	if (sub === "ack" || sub === "amend" || sub === "close") {
 		return taskMutate(req, root, sub);
@@ -167,6 +172,14 @@ export async function handleTask(req: CommandRequest): Promise<Result<number>> {
 	return usageError(
 		"usage: codictator task <new|show|amend|phase next|checkpoint|close|ack> ...",
 	);
+}
+
+export async function handleTask(req: CommandRequest): Promise<Result<number>> {
+	const root = await needTaskRoot(req);
+	if (typeof root !== "string") {
+		return root;
+	}
+	return runTaskSub(req, root, req.args[0] ?? "");
 }
 
 async function taskShow(

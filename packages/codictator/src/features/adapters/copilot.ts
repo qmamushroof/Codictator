@@ -2,9 +2,11 @@
 // agent). Parse, reply and staticBlock are pure; hookIoVerified stays false
 // until a first-party capture lands (§4.5.7), and the hooks-file schema
 // below follows the SPEC row verbatim for the same reason.
+
 import type { Result } from "../../kernel/index.ts";
 import { err, makeError, ok, stableStringify } from "../../kernel/index.ts";
 import type { Trigger } from "../engine/index.ts";
+import { readString } from "./claude-shaped.ts";
 import type {
 	Adapter,
 	FileArtifact,
@@ -51,27 +53,25 @@ export function normalizeCopilotToolName(name: string): ToolKind {
 	return normalizeToolName(COPILOT_TOOL_TABLE, name);
 }
 
+// SPEC §4.5.4: event names map to triggers through one table, so adding a
+// harness alias is a row, not a branch.
+const COPILOT_EVENT_TABLE: Readonly<Record<string, Trigger>> = {
+	preToolUse: "pre-tool",
+	"tool.pre.write": "pre-tool",
+	"tool.pre.shell": "pre-tool",
+	"tool.pre.read": "pre-tool",
+	"tool.pre.search": "pre-tool",
+	"tool.pre.other": "pre-tool",
+	postToolUse: "post-tool",
+	"tool.post.write": "post-tool",
+	sessionStart: "startup",
+	"session.start": "startup",
+	userPromptSubmitted: "prompt",
+	"prompt.submit": "prompt",
+};
+
 function mapCopilotEvent(event: string): Trigger | undefined {
-	switch (event) {
-		case "preToolUse":
-		case "tool.pre.write":
-		case "tool.pre.shell":
-		case "tool.pre.read":
-		case "tool.pre.search":
-		case "tool.pre.other":
-			return "pre-tool";
-		case "postToolUse":
-		case "tool.post.write":
-			return "post-tool";
-		case "sessionStart":
-		case "session.start":
-			return "startup";
-		case "userPromptSubmitted":
-		case "prompt.submit":
-			return "prompt";
-		default:
-			return undefined;
-	}
+	return COPILOT_EVENT_TABLE[event];
 }
 
 interface CopilotRecord {
@@ -81,19 +81,6 @@ interface CopilotRecord {
 
 function isRecord(value: unknown): value is CopilotRecord {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readString(
-	record: CopilotRecord,
-	keys: ReadonlyArray<string>,
-): string | undefined {
-	for (const key of keys) {
-		const value: unknown = record[key];
-		if (typeof value === "string" && value.length > 0) {
-			return value;
-		}
-	}
-	return undefined;
 }
 
 function blockError(detail: string): ReturnType<typeof makeError> {

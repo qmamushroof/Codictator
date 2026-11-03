@@ -44,52 +44,71 @@ function block(ruleId: string, message: string, remediation: string): Finding {
 
 // SPEC §4.15.2: reported not required → block; unreadable → advise (PRD
 // §11.1). The same read feeds core/branch-protection below.
-export function evaluateProtection(read?: ProtectionRead): Array<Finding> {
-	if (read === undefined || !read.readable) {
-		return [
-			advise(
-				"core/ci-required-check",
-				"cannot confirm the verify check is required: branch protection is unreadable",
-				"Grant the workflow read access to rulesets/branch protection, or confirm the required check by hand (EC-1, EC-6).",
-			),
-			advise(
-				"core/branch-protection",
-				"cannot confirm force-push, deletion and squash settings: branch protection is unreadable",
-				"Grant the workflow read access to the repo settings and rulesets, or confirm them by hand (§4.15.2).",
-			),
-		];
-	}
-	const findings: Array<Finding> = [];
+function unreadableFindings(): Array<Finding> {
+	return [
+		advise(
+			"core/ci-required-check",
+			"cannot confirm the verify check is required: branch protection is unreadable",
+			"Grant the workflow read access to rulesets/branch protection, or confirm the required check by hand (EC-1, EC-6).",
+		),
+		advise(
+			"core/branch-protection",
+			"cannot confirm force-push, deletion and squash settings: branch protection is unreadable",
+			"Grant the workflow read access to the repo settings and rulesets, or confirm them by hand (§4.15.2).",
+		),
+	];
+}
+
+function requiredCheckFinding(read: ProtectionRead): Finding | undefined {
 	if (read.verifyRequired !== true) {
-		findings.push(
-			block(
-				"core/ci-required-check",
-				"the verify check is not a required check on the default branch",
-				"Add verify to the required checks of the branch ruleset (§4.15 EC-7).",
-			),
+		return block(
+			"core/ci-required-check",
+			"the verify check is not a required check on the default branch",
+			"Add verify to the required checks of the branch ruleset (§4.15 EC-7).",
 		);
 	}
+	return undefined;
+}
+
+function squashFinding(read: ProtectionRead): Finding | undefined {
 	const squashExcluded =
 		read.allowSquashMerge === false ||
 		(read.rulesetMergeMethods !== undefined &&
 			!read.rulesetMergeMethods.includes("squash"));
 	if (!squashExcluded) {
-		findings.push(
-			block(
-				"core/branch-protection",
-				"squash merging is allowed and no ruleset excludes it",
-				"Set allow_squash_merge to false and exclude squash from the ruleset allowed_merge_methods (§4.9.3, EC-11, S33).",
-			),
+		return block(
+			"core/branch-protection",
+			"squash merging is allowed and no ruleset excludes it",
+			"Set allow_squash_merge to false and exclude squash from the ruleset allowed_merge_methods (§4.9.3, EC-11, S33).",
 		);
 	}
+	return undefined;
+}
+
+function hardeningFinding(read: ProtectionRead): Finding | undefined {
 	if (read.forcePushBlocked !== true || read.deletionBlocked !== true) {
-		findings.push(
-			block(
-				"core/branch-protection",
-				"force-push or deletion is not blocked on the default branch",
-				"Block force-pushes and deletions on the default branch in settings and rulesets (§4.15.2).",
-			),
+		return block(
+			"core/branch-protection",
+			"force-push or deletion is not blocked on the default branch",
+			"Block force-pushes and deletions on the default branch in settings and rulesets (§4.15.2).",
 		);
+	}
+	return undefined;
+}
+
+export function evaluateProtection(read?: ProtectionRead): Array<Finding> {
+	if (read === undefined || !read.readable) {
+		return unreadableFindings();
+	}
+	const findings: Array<Finding> = [];
+	for (const maybe of [
+		requiredCheckFinding(read),
+		squashFinding(read),
+		hardeningFinding(read),
+	]) {
+		if (maybe !== undefined) {
+			findings.push(maybe);
+		}
 	}
 	return findings;
 }
@@ -118,11 +137,15 @@ export function resolveBaseRef(input: BaseRefInput): Result<string> {
 	) {
 		return ok(input.before);
 	}
+	return ok(baseFromDefault(input));
+}
+
+function baseFromDefault(input: BaseRefInput): string {
 	if (input.eventName === "push") {
-		return ok(`merge-base(${input.defaultBranch ?? "main"},HEAD)`);
+		return `merge-base(${input.defaultBranch ?? "main"},HEAD)`;
 	}
-	return ok(
-		input.pullBaseSha ?? `merge-base(${input.defaultBranch ?? "main"},HEAD)`,
+	return (
+		input.pullBaseSha ?? `merge-base(${input.defaultBranch ?? "main"},HEAD)`
 	);
 }
 

@@ -71,6 +71,21 @@ function helpersLine(helpers: ReadonlyArray<HelperStatus> | undefined): string {
 	return `helpers: ${parts.join(", ")}`;
 }
 
+// SPEC §4.18.3: trailing status rows with their fallbacks, so the screen
+// builder stays a straight-line assembly.
+function tailStatusLines(input: StatusInput): Array<string> {
+	return [
+		`task: ${input.task ?? "none active"}`,
+		`waivers: ${input.waivers ?? "none in force"}`,
+		`ratchet: ${input.ratchet ?? "no baseline history"}`,
+		`deps: ${input.deps ?? "freshness unknown"}`,
+		`integrity: ${input.integrity ?? "unverified"}`,
+		`escalations: ${input.escalations ?? "none open"}`,
+		`remediation: ${input.remediation ?? "no plan"}`,
+		`events: ${input.events} observed, ${input.corrupt} corrupt${input.gap ? "; gap in coverage, log was deleted mid-session" : ""}`,
+	];
+}
+
 // SPEC §4.18.3: one screen with engine, packs, harness states, helper
 // tools, task, waivers, ratchet, deps, integrity, escalations and
 // remediation progress.
@@ -87,16 +102,7 @@ export function buildStatusText(input: StatusInput): string {
 		lines.push(`- ${harness.harness}: ${harness.state} (${harness.layers})`);
 	}
 	lines.push(helpersLine(input.helpers));
-	lines.push(`task: ${input.task ?? "none active"}`);
-	lines.push(`waivers: ${input.waivers ?? "none in force"}`);
-	lines.push(`ratchet: ${input.ratchet ?? "no baseline history"}`);
-	lines.push(`deps: ${input.deps ?? "freshness unknown"}`);
-	lines.push(`integrity: ${input.integrity ?? "unverified"}`);
-	lines.push(`escalations: ${input.escalations ?? "none open"}`);
-	lines.push(`remediation: ${input.remediation ?? "no plan"}`);
-	lines.push(
-		`events: ${input.events} observed, ${input.corrupt} corrupt${input.gap ? "; gap in coverage, log was deleted mid-session" : ""}`,
-	);
+	lines.push(...tailStatusLines(input));
 	return lines.join("\n");
 }
 
