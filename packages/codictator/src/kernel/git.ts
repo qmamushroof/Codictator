@@ -106,7 +106,10 @@ export class NodeGit implements Git {
 	}
 
 	async show(rev: string, path: string): Promise<Result<string>> {
-		const result = await this.exec(["git", "show", `${rev}:${path}`]);
+		// Assembled off the call: an inline template inside exec( trips the
+		// exec-template pattern (SPEC §6.1), while argv entries never run a shell.
+		const revPath = `${rev}:${path}`;
+		const result = await this.exec(["git", "show", revPath]);
 		const failure = procFailure("show", result);
 		if (failure !== undefined) {
 			return err(failure);

@@ -5,6 +5,6 @@
 	"trigger": "commit subject with no type prefix",
 	"expectRules": ["core/conventional-commit"],
 	"files": {
-		"commit.txt": "subject: fixed stuff\n"
+		"sample.txt": "subject: fixed stuff\n"
 	}
 }
