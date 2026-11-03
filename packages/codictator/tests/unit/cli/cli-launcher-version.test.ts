@@ -141,10 +141,10 @@ test("[§4.19.3] launcher falls back to two arguments without a manifest", async
 });
 
 test("[§4.2 EC-11] launcher falls back on a version-less manifest", async () => {
-	// A valid manifest without a usable version is not a version: same
-	// fallback, fail-closed downstream instead of a launcher crash. A
-	// corrupt (unparseable) manifest needs no case: Node rejects the engine
-	// import itself, so the launcher already blocks CDX-E901.
+	// A manifest without a usable version is not a version: same fallback,
+	// fail-closed downstream instead of a launcher crash. A corrupt
+	// (unparseable) manifest needs no case: Node rejects the engine import
+	// itself, so the launcher already blocks CDX-E901.
 	for (const manifest of [
 		JSON.stringify({ name: "codictator" }),
 		JSON.stringify({ name: "codictator", version: "" }),

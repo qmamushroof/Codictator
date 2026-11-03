@@ -131,23 +131,39 @@ function firstExisting(candidates) {
 }
 
 // SPEC §4.2.1 EC-11: the engine entry validates config.codictator
-// against the installed engine version, so the launcher reads it from
-// the resolved engine's own manifest and passes it as main's third
-// argument. Any unreadable or version-less manifest answers null and
-// the caller falls back to the two-argument call, which keeps the
-// pinned placeholder — fail-closed downstream, never an allow.
+// against the installed engine version, so the launcher extracts it
+// from the resolved engine's own manifest text and passes it as
+// main's third argument. A version-field scan keeps JSON parsing in
+// the kernel per §10.3 item 6 (and a regex literal would confuse the
+// blankCode lexer the ts/lint gate runs on); any unreadable or
+// version-less manifest answers null and the caller falls back to
+// the two-argument call, which keeps the pinned placeholder —
+// fail-closed downstream, never an allow.
 function installedEngineVersion(enginePath) {
 	try {
 		const manifestPath = path.join(
 			path.dirname(path.dirname(path.dirname(enginePath))),
 			"package.json",
 		);
-		const parsed = JSON.parse(readFileSync(manifestPath, "utf8"));
-		if (parsed === null || typeof parsed !== "object") {
+		const text = readFileSync(manifestPath, "utf8");
+		const marker = "\"version\":";
+		const at = text.indexOf(marker);
+		if (at === -1) {
 			return null;
 		}
-		const version = parsed.version;
-		if (typeof version !== "string" || version === "") {
+		let index = at + marker.length;
+		while (text[index] === " " || text[index] === "\t" || text[index] === "\n" || text[index] === "\r") {
+			index += 1;
+		}
+		if (text[index] !== "\"") {
+			return null;
+		}
+		const end = text.indexOf("\"", index + 1);
+		if (end === -1) {
+			return null;
+		}
+		const version = text.slice(index + 1, end);
+		if (version === "") {
 			return null;
 		}
 		return version;
