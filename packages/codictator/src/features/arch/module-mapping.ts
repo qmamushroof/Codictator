@@ -2,13 +2,13 @@
 // derivation of the module map from file paths, and the dependsOn, deny and
 // profile predicates every cross-module edge is judged against.
 import type { Finding } from "../engine/index.ts";
+import { isArchProfile } from "./arch-profiles.ts";
 import {
 	moduleBase,
 	normalizeSeparators,
 	resolveRelativeSpecifier,
 } from "./graph.ts";
 import type { ModuleNode } from "./index.ts";
-import { isArchProfile } from "./profiles.ts";
 
 export interface ArchDenyRule {
 	readonly from: string;

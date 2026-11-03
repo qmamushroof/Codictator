@@ -2,6 +2,8 @@
 // fitness checks plus the checkArch orchestration over the module-mapping
 // and edge-checks modules.
 import type { CheckContext, Finding } from "../engine/index.ts";
+import { isArchProfile } from "./arch-profiles.ts";
+import { findModuleCycle } from "./cycle-walk.ts";
 import {
 	checkResolvedEdge,
 	type ResolvedEdge,
@@ -13,49 +15,12 @@ import {
 	deriveModules,
 	mappedFinding,
 } from "./module-mapping.ts";
-import { isArchProfile } from "./profiles.ts";
 
 export interface ArchCheckOptions {
 	readonly modules?: ReadonlyArray<ModuleNode>;
 	readonly profile?: string;
 	readonly layerDirs?: ReadonlyArray<string>;
 	readonly deny?: ReadonlyArray<ArchDenyRule>;
-}
-
-function moduleCycle(
-	names: ReadonlyArray<string>,
-	depends: ReadonlyMap<string, ReadonlyArray<string>>,
-): Array<string> | undefined {
-	const visiting = new Set<string>();
-	const done = new Set<string>();
-	const walk = (
-		name: string,
-		trail: ReadonlyArray<string>,
-	): Array<string> | undefined => {
-		if (done.has(name)) {
-			return undefined;
-		}
-		if (visiting.has(name)) {
-			return [...trail.slice(trail.indexOf(name)), name];
-		}
-		visiting.add(name);
-		for (const dep of depends.get(name) ?? []) {
-			const found = walk(dep, [...trail, name]);
-			if (found !== undefined) {
-				return found;
-			}
-		}
-		visiting.delete(name);
-		done.add(name);
-		return undefined;
-	};
-	for (const name of names) {
-		const found = walk(name, []);
-		if (found !== undefined) {
-			return found;
-		}
-	}
-	return undefined;
 }
 
 // SPEC §4.11.4 core/arch-no-cycles: Tarjan over the resolved module edges;
@@ -115,7 +80,7 @@ function cycleFindingFor(
 function checkCycles(edges: ReadonlyArray<ResolvedEdge>): Array<Finding> {
 	const { depends, edgeAt } = collectArchGraph(edges);
 	const names = [...depends.keys()].sort();
-	const cycle = moduleCycle(names, depends);
+	const cycle = findModuleCycle(names, depends);
 	if (cycle === undefined) {
 		return [];
 	}

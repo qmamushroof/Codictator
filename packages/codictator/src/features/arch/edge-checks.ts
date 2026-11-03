@@ -2,6 +2,7 @@
 // edge resolves to its modules or an external class, then each resolved edge
 // is judged for public entry, declared edges and layer direction.
 import type { Finding } from "../engine/index.ts";
+import { isArchProfile } from "./arch-profiles.ts";
 import {
 	assignModule,
 	isBuiltinSpecifier,
@@ -10,6 +11,7 @@ import {
 	resolveImportTarget,
 } from "./graph.ts";
 import type { ModuleNode } from "./index.ts";
+import { layerMayImport, resolveLayer } from "./layer-rules.ts";
 import {
 	type ArchDenyRule,
 	dependsAllowed,
@@ -18,7 +20,6 @@ import {
 	moduleEntry,
 	profileAllowsEdge,
 } from "./module-mapping.ts";
-import { isArchProfile, layerMayImport, resolveLayer } from "./profiles.ts";
 
 function isExternalEntrySpecifier(spec: string): boolean {
 	const target = normalizeSeparators(spec);

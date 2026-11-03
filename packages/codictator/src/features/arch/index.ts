@@ -1,6 +1,11 @@
 // SPEC §4.11: profiles, import graph, boundary checks.
 import type { CheckContext, Finding } from "../engine/index.ts";
 import {
+	ARCH_PROFILES,
+	type ArchProfile,
+	isArchProfile,
+} from "./arch-profiles.ts";
+import {
 	type ArchCheckOptions,
 	checkArch as checkArchImpl,
 	checkArchProfile,
@@ -8,6 +13,10 @@ import {
 	type ModuleSizeLimits,
 	type ModuleSizeSummary,
 } from "./checks.ts";
+import {
+	CODICTATOR_MODULES,
+	CODICTATOR_PROFILE,
+} from "./codictator-modules.ts";
 import {
 	buildGraph as buildGraphImpl,
 	EMPTY_GRAPH_CACHE,
@@ -21,17 +30,9 @@ import {
 	serializeGraphCache,
 	updateGraphCache,
 } from "./graph.ts";
+import { layerMayImport, resolveLayer } from "./layer-rules.ts";
+import { validateModuleMap } from "./module-map-validation.ts";
 import { deriveModules, isPublicEntryTarget } from "./module-mapping.ts";
-import {
-	ARCH_PROFILES,
-	type ArchProfile,
-	CODICTATOR_MODULES,
-	CODICTATOR_PROFILE,
-	isArchProfile,
-	layerMayImport,
-	resolveLayer,
-	validateModuleMap,
-} from "./profiles.ts";
 
 export interface ImportRef {
 	readonly from: string;
