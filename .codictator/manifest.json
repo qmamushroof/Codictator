@@ -7,7 +7,7 @@
       "path": ".codictator/bin/run.mjs"
     },
     {
-      "hash": "2422284de8f3225050a8dbd5b502a523ed008e6d87a0ab9a2c3af8e905720a00",
+      "hash": "e7cea5146084fb52155dad9836532e1ed5122761bb79c3a9a300f30114856b62",
       "mode": "file",
       "owner": "codictator",
       "path": ".codictator/config.json"
@@ -49,8 +49,8 @@
       "path": "AGENTS.md"
     }
   ],
-  "codictator": "0.1.2",
-  "hash": "e8012bd357afb4450277c1c3f881521d72e67455c28fd737426d915e09471f46",
+  "codictator": "0.1.3",
+  "hash": "a0ed08fee5ae3b85edb00d4b5d27ad71135c86ecb3837b08a1c000bbdd7cd75d",
   "version": 1
 }
 
