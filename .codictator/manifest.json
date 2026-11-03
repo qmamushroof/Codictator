@@ -1,13 +1,13 @@
 {
   "artifacts": [
     {
-      "hash": "4dd5a4bab32ab719eeca6b8e7b733e534651bd2e7b72a2e1dfe116f7cbe8756a",
+      "hash": "61c57f8722d3c53b5083cf29b22f8e40656eab4e3793a466f7586c03c0206f85",
       "mode": "file",
       "owner": "codictator",
       "path": ".codictator/bin/run.mjs"
     },
     {
-      "hash": "065f794d8e5e40d58a73f87accbb07afb2a808d29a7548eb388ff57344721d3a",
+      "hash": "2422284de8f3225050a8dbd5b502a523ed008e6d87a0ab9a2c3af8e905720a00",
       "mode": "file",
       "owner": "codictator",
       "path": ".codictator/config.json"
@@ -49,8 +49,8 @@
       "path": "AGENTS.md"
     }
   ],
-  "codictator": "0.0.0",
-  "hash": "54a6e593e8558f3f6a65e9c883bc4ac2476931d8e758d674ab0e29e4fb89dc20",
+  "codictator": "0.1.2",
+  "hash": "e8012bd357afb4450277c1c3f881521d72e67455c28fd737426d915e09471f46",
   "version": 1
 }
 
