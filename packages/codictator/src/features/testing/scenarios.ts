@@ -99,6 +99,100 @@ function reachableModules(
 	return reached;
 }
 
+function coversChangedModule(
+	input: TestKindsInput,
+	globs: ReadonlyArray<string>,
+	test: ChangedTest,
+	changed: ReadonlySet<string>,
+): boolean {
+	if (!globs.some((glob) => globMatch(glob, test.path))) {
+		return false;
+	}
+	const reached = reachableModules(test, input.importMap);
+	return [...changed].some((module) => reached.has(module));
+}
+
+function coveringTests(
+	input: TestKindsInput,
+	kind: TestKind,
+	changed: ReadonlySet<string>,
+): Array<ChangedTest> {
+	const globs = input.kindGlobs[kind] ?? [];
+	return input.changedTests.filter((test) =>
+		coversChangedModule(input, globs, test, changed),
+	);
+}
+
+function architectureFinding(
+	input: TestKindsInput,
+	changed: ReadonlySet<string>,
+): Finding | undefined {
+	const unmapped = [...changed].filter(
+		(module) => !input.mappedModules.includes(module),
+	);
+	if (unmapped.length === 0) {
+		return undefined;
+	}
+	return kindFinding(
+		`architecture test missing: ${unmapped.join(", ")} map to no architecture module`,
+		`Map ${unmapped.join(", ")} in config.architecture so the arch guard covers them.`,
+	);
+}
+
+function missingKindFinding(
+	input: TestKindsInput,
+	kind: TestKind,
+	changed: ReadonlySet<string>,
+): Finding {
+	const globs = input.kindGlobs[kind] ?? [];
+	return kindFinding(
+		`${kind} test missing for changed ${[...changed].join(", ") || "files"}`,
+		`Add a ${kind} test under ${globs.join(", ") || "its kind globs"} importing a changed module.`,
+	);
+}
+
+function budgetFindings(
+	kind: TestKind,
+	covering: ReadonlyArray<ChangedTest>,
+	budgets: Readonly<Record<string, boolean>>,
+): Array<Finding> {
+	const findings: Array<Finding> = [];
+	for (const test of covering) {
+		if (budgets[test.path] !== true) {
+			findings.push(
+				kindFinding(
+					`${kind} test without a budget line: ${test.path}`,
+					`Declare a codictator:budget line (p95, p99, rps or maxMs) in ${test.path}.`,
+				),
+			);
+		}
+	}
+	return findings;
+}
+
+function collectKindFindings(
+	input: TestKindsInput,
+	kind: TestKind,
+	changed: ReadonlySet<string>,
+	findings: Array<Finding>,
+): void {
+	if (kind === "architecture") {
+		const missing = architectureFinding(input, changed);
+		if (missing !== undefined) {
+			findings.push(missing);
+		}
+		return;
+	}
+	const covering = coveringTests(input, kind, changed);
+	if (covering.length === 0) {
+		findings.push(missingKindFinding(input, kind, changed));
+		return;
+	}
+	if (kind === "stress" || kind === "load") {
+		findings.push(...budgetFindings(kind, covering, input.budgets));
+	}
+}
+
 // A kind is satisfied by a changed test file under its kind globs that
 // imports (transitively, depth 2) a changed module. Architecture is
 // satisfied when config.architecture maps every changed module, because
@@ -108,50 +202,7 @@ export function checkTestKinds(input: TestKindsInput): Array<Finding> {
 	const findings: Array<Finding> = [];
 	const changed = new Set(input.changedModules);
 	for (const kind of input.required) {
-		if (kind === "architecture") {
-			const unmapped = [...changed].filter(
-				(module) => !input.mappedModules.includes(module),
-			);
-			if (unmapped.length === 0) {
-				continue;
-			}
-			findings.push(
-				kindFinding(
-					`architecture test missing: ${unmapped.join(", ")} map to no architecture module`,
-					`Map ${unmapped.join(", ")} in config.architecture so the arch guard covers them.`,
-				),
-			);
-			continue;
-		}
-		const globs = input.kindGlobs[kind] ?? [];
-		const covering = input.changedTests.filter((test) => {
-			if (!globs.some((glob) => globMatch(glob, test.path))) {
-				return false;
-			}
-			const reached = reachableModules(test, input.importMap);
-			return [...changed].some((module) => reached.has(module));
-		});
-		if (covering.length === 0) {
-			findings.push(
-				kindFinding(
-					`${kind} test missing for changed ${[...changed].join(", ") || "files"}`,
-					`Add a ${kind} test under ${globs.join(", ") || "its kind globs"} importing a changed module.`,
-				),
-			);
-			continue;
-		}
-		if (kind === "stress" || kind === "load") {
-			for (const test of covering) {
-				if (input.budgets[test.path] !== true) {
-					findings.push(
-						kindFinding(
-							`${kind} test without a budget line: ${test.path}`,
-							`Declare a codictator:budget line (p95, p99, rps or maxMs) in ${test.path}.`,
-						),
-					);
-				}
-			}
-		}
+		collectKindFindings(input, kind, changed, findings);
 	}
 	return findings;
 }

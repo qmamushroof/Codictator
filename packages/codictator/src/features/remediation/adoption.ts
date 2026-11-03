@@ -40,41 +40,65 @@ export interface BrownfieldDetection {
 	readonly findings: ReadonlyArray<Finding>;
 }
 
+function collectManifestLoosePins(
+	manifest: BrownfieldManifest,
+	loosePins: Array<LoosePin>,
+): void {
+	const parsed = parsePackageJson(manifest.text);
+	if (!parsed.ok) {
+		return;
+	}
+	for (const dep of parsed.value.dependencies) {
+		if (dep.kind !== "peer" && !isExactNpmPin(dep.range)) {
+			loosePins.push({
+				path: manifest.path,
+				name: dep.name,
+				range: dep.range,
+			});
+		}
+	}
+}
+
+function compareLoosePins(left: LoosePin, right: LoosePin): number {
+	if (left.path !== right.path) {
+		return left.path < right.path ? -1 : 1;
+	}
+	if (left.name !== right.name) {
+		return left.name < right.name ? -1 : 1;
+	}
+	return 0;
+}
+
+function collectLoosePins(
+	manifests: ReadonlyArray<BrownfieldManifest>,
+): Array<LoosePin> {
+	const loosePins: Array<LoosePin> = [];
+	for (const manifest of manifests) {
+		collectManifestLoosePins(manifest, loosePins);
+	}
+	loosePins.sort(compareLoosePins);
+	return loosePins;
+}
+
+function missingManifestLockfiles(
+	manifests: ReadonlyArray<BrownfieldManifest>,
+	lockfiles: Readonly<Record<string, string | null>>,
+): Array<string> {
+	return manifests
+		.filter((manifest) => lockfiles[manifest.path] === null)
+		.map((manifest) => manifest.path)
+		.sort();
+}
+
 // SPEC §4.13.1 steps 1–2: brownfield signals are loose pins (floor) and
 // manifests without a committed lockfile. Bot detection follows §4.8.6.
 export function detectBrownfield(input: BrownfieldInput): BrownfieldDetection {
 	const bot = detectUpgradeBots(input.files);
-	const loosePins: Array<LoosePin> = [];
-	for (const manifest of input.manifests) {
-		const parsed = parsePackageJson(manifest.text);
-		if (!parsed.ok) {
-			continue;
-		}
-		for (const dep of parsed.value.dependencies) {
-			if (dep.kind !== "peer" && !isExactNpmPin(dep.range)) {
-				loosePins.push({
-					path: manifest.path,
-					name: dep.name,
-					range: dep.range,
-				});
-			}
-		}
-	}
-	loosePins.sort((left, right) =>
-		left.path < right.path
-			? -1
-			: left.path > right.path
-				? 1
-				: left.name < right.name
-					? -1
-					: left.name > right.name
-						? 1
-						: 0,
+	const loosePins = collectLoosePins(input.manifests);
+	const missingLockfiles = missingManifestLockfiles(
+		input.manifests,
+		input.lockfiles,
 	);
-	const missingLockfiles = input.manifests
-		.filter((manifest) => input.lockfiles[manifest.path] === null)
-		.map((manifest) => manifest.path)
-		.sort();
 	const evaluated = evaluateDepVerdicts({
 		manifests: input.manifests.map((manifest) => {
 			const parsed = parsePackageJson(manifest.text);

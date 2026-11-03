@@ -116,7 +116,7 @@ function resolveEnforcer(pack: Pack, rule: PackRule): Enforcer | undefined {
 	return undefined;
 }
 
-async function selfTestRule(pack: Pack, rule: PackRule): Promise<Result<void>> {
+function checkRuleMetadata(rule: PackRule): Result<void> {
 	if (rule.fixtures.violating.length === 0) {
 		return err(
 			makeError(
@@ -141,16 +141,13 @@ async function selfTestRule(pack: Pack, rule: PackRule): Promise<Result<void>> {
 			return err(checked.error);
 		}
 	}
-	const enforcer = resolveEnforcer(pack, rule);
-	if (enforcer === undefined) {
-		return err(
-			makeError(
-				"CDX-E205",
-				`rule "${rule.id}" names unknown enforcer "${rule.enforcer}"`,
-				"Declare the enforcer in the pack or use a built-in parametric enforcer (§4.4.6), then re-run the self-test.",
-			),
-		);
-	}
+	return ok(undefined);
+}
+
+async function checkViolatingFixtures(
+	enforcer: Enforcer,
+	rule: PackRule,
+): Promise<Result<void>> {
 	for (const name of rule.fixtures.violating) {
 		const ran = await runCase(enforcer, rule, name);
 		if (!ran.ok) {
@@ -166,6 +163,13 @@ async function selfTestRule(pack: Pack, rule: PackRule): Promise<Result<void>> {
 			);
 		}
 	}
+	return ok(undefined);
+}
+
+async function checkPassingFixtures(
+	enforcer: Enforcer,
+	rule: PackRule,
+): Promise<Result<void>> {
 	for (const name of rule.fixtures.passing) {
 		const ran = await runCase(enforcer, rule, name);
 		if (!ran.ok) {
@@ -182,6 +186,28 @@ async function selfTestRule(pack: Pack, rule: PackRule): Promise<Result<void>> {
 		}
 	}
 	return ok(undefined);
+}
+
+async function selfTestRule(pack: Pack, rule: PackRule): Promise<Result<void>> {
+	const metadata = checkRuleMetadata(rule);
+	if (!metadata.ok) {
+		return err(metadata.error);
+	}
+	const enforcer = resolveEnforcer(pack, rule);
+	if (enforcer === undefined) {
+		return err(
+			makeError(
+				"CDX-E205",
+				`rule "${rule.id}" names unknown enforcer "${rule.enforcer}"`,
+				"Declare the enforcer in the pack or use a built-in parametric enforcer (§4.4.6), then re-run the self-test.",
+			),
+		);
+	}
+	const violating = await checkViolatingFixtures(enforcer, rule);
+	if (!violating.ok) {
+		return err(violating.error);
+	}
+	return checkPassingFixtures(enforcer, rule);
 }
 
 // SPEC §4.4.4: self-test every rule against its fixtures before use. Rules

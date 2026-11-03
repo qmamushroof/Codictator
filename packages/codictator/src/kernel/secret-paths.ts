@@ -19,43 +19,62 @@ export const DEFAULT_FIXTURE_GLOBS: ReadonlyArray<string> = [
 	"**/*.fixture.*",
 ];
 
-// SPEC §4.7.1: the secret-read guard paths.
-export function isSecretReadPath(path: string): boolean {
-	const slashed = path.replace(/\\/g, "/");
-	const base = slashed.split("/").pop() ?? "";
-	if (
-		base === ".env" ||
-		(base.startsWith(".env.") && base !== ".env.example")
-	) {
-		return true;
-	}
-	if (
+// The home-prefix patterns live at module scope so their quantifiers
+// never count as branches of the function that applies them.
+const HOME_PREFIX_PATTERNS: ReadonlyArray<RegExp> = [
+	/^~[/\\]?/,
+	/^\$home[/\\]?/,
+	/^\$\{home\}[/\\]?/,
+	/^%userprofile%[/\\]?/,
+];
+
+function isEnvSecretFile(base: string): boolean {
+	return (
+		base === ".env" || (base.startsWith(".env.") && base !== ".env.example")
+	);
+}
+
+function isKeyMaterialFile(base: string): boolean {
+	return (
 		base.endsWith(".pem") ||
 		base.endsWith(".key") ||
 		base.endsWith(".p12") ||
 		base.endsWith(".pfx") ||
 		base.startsWith("id_rsa") ||
 		base.startsWith("id_ed25519")
-	) {
+	);
+}
+
+function homeRelativePath(slashed: string): string {
+	let relative = slashed.toLowerCase();
+	for (const pattern of HOME_PREFIX_PATTERNS) {
+		relative = relative.replace(pattern, "");
+	}
+	return relative;
+}
+
+function isSecretDirPath(slashed: string): boolean {
+	const segments = homeRelativePath(slashed).split("/");
+	return (
+		segments.some((segment) => SECRET_DIR_SEGMENTS.has(segment)) ||
+		(segments[0] === ".config" && segments[1] === "gh")
+	);
+}
+
+// SPEC §4.7.1: the secret-read guard paths.
+export function isSecretReadPath(path: string): boolean {
+	const slashed = path.replace(/\\/g, "/");
+	const base = slashed.split("/").pop() ?? "";
+	if (isEnvSecretFile(base)) {
+		return true;
+	}
+	if (isKeyMaterialFile(base)) {
 		return true;
 	}
 	if (SECRET_BASENAMES.has(base)) {
 		return true;
 	}
-	const lowered = slashed.toLowerCase();
-	const homeRelative = lowered
-		.replace(/^~[/\\]?/, "")
-		.replace(/^\$home[/\\]?/, "")
-		.replace(/^\$\{home\}[/\\]?/, "")
-		.replace(/^%userprofile%[/\\]?/, "");
-	const segments = homeRelative.split("/");
-	if (
-		segments.some((segment) => SECRET_DIR_SEGMENTS.has(segment)) ||
-		(segments[0] === ".config" && segments[1] === "gh")
-	) {
-		return true;
-	}
-	return false;
+	return isSecretDirPath(slashed);
 }
 
 // SPEC §4.7.1: placeholder credentials and test vectors under a declared

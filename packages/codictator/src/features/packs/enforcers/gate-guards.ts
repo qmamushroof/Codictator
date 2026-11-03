@@ -7,23 +7,53 @@
 // core/ci-required-check resolves in ci-guards.ts now that its marker table
 // names the SPEC §4.15.2 verify check (integrity exception IE-09-R6-cireq).
 import type { Ports } from "../../../kernel/index.ts";
-import { ok, parseJson, type Result } from "../../../kernel/index.ts";
+import { ok, type Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import {
 	bindRule,
 	findingFor,
-	readErrorFinding,
-	selectFiles,
+	type RuleBinding,
 	tunableStringList,
 } from "./binding.ts";
 import {
 	baseEnforcer,
-	loadScopeText,
 	parseMarkerInt,
 	scopeMarkerTexts,
 } from "./health-measures.ts";
+
+// The marker-driven guards below share one scope loop: bind the rule once,
+// walk the marker reports, and let each guard judge one file's markers. The
+// loop lives here so the resolvers hold only their own verdict and the
+// shared run the duplication gate flags stays in one place.
+function markerGuard(
+	decl: EnforcerDecl,
+	rule: PackRule,
+	ports: Ports,
+	judge: (
+		binding: RuleBinding,
+		file: string,
+		markers: Map<string, string>,
+		findings: Array<Finding>,
+	) => void,
+): Result<Enforcer> {
+	const binding = bindRule(rule);
+	return ok(
+		baseEnforcer(rule, binding, decl, async (ctx) => {
+			const findings: Array<Finding> = [];
+			for (const { file, markers } of await scopeMarkerTexts(
+				ports,
+				binding,
+				ctx,
+				findings,
+			)) {
+				judge(binding, file, markers, findings);
+			}
+			return findings;
+		}),
+	);
+}
 
 // SPEC §4.6.6 core/agent-assets-present: every required helper must be
 // present; the tunable defaults to knowledge-graph and token-saver (§5.12).
@@ -37,35 +67,24 @@ export function resolveAgentAssetsPresent(
 		"knowledge-graph",
 		"token-saver",
 	];
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const present = new Set(
-					(markers.get("helpers") ?? "")
-						.split(",")
-						.map((entry) => entry.trim())
-						.filter((entry) => entry !== ""),
-				);
-				const missing = required.filter((name) => !present.has(name));
-				if (missing.length > 0) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `required helper assets missing: ${missing.join(", ")}`,
-							vars: { path: file, detail: missing.join(", ") },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerGuard(decl, rule, ports, (guard, file, markers, findings) => {
+		const present = new Set(
+			(markers.get("helpers") ?? "")
+				.split(",")
+				.map((entry) => entry.trim())
+				.filter((entry) => entry !== ""),
+		);
+		const missing = required.filter((name) => !present.has(name));
+		if (missing.length > 0) {
+			findings.push(
+				findingFor(guard, {
+					path: file,
+					message: `required helper assets missing: ${missing.join(", ")}`,
+					vars: { path: file, detail: missing.join(", ") },
+				}),
+			);
+		}
+	});
 }
 
 // SPEC §9.3 core/perf-budgets: a measured p95 past the declared budget
@@ -75,37 +94,25 @@ export function resolvePerfBudgets(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const rawP95 = markers.get("hook-p95-ms") ?? "";
-				const rawBudget = markers.get("budget-ms") ?? "";
-				const p95 = Number.parseFloat(rawP95);
-				const budget = Number.parseFloat(rawBudget);
-				if (Number.isFinite(p95) && Number.isFinite(budget) && p95 > budget) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `hook p95 of ${rawP95}ms is over the ${rawBudget}ms budget`,
-							vars: {
-								path: file,
-								detail: `hook p95 ${rawP95}ms`,
-								limit: `${rawBudget}ms`,
-							},
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerGuard(decl, rule, ports, (guard, file, markers, findings) => {
+		const rawP95 = markers.get("hook-p95-ms") ?? "";
+		const rawBudget = markers.get("budget-ms") ?? "";
+		const p95 = Number.parseFloat(rawP95);
+		const budget = Number.parseFloat(rawBudget);
+		if (Number.isFinite(p95) && Number.isFinite(budget) && p95 > budget) {
+			findings.push(
+				findingFor(guard, {
+					path: file,
+					message: `hook p95 of ${rawP95}ms is over the ${rawBudget}ms budget`,
+					vars: {
+						path: file,
+						detail: `hook p95 ${rawP95}ms`,
+						limit: `${rawBudget}ms`,
+					},
+				}),
+			);
+		}
+	});
 }
 
 // SPEC §4.14.2 core/guardrail-manifest: a missing manifest flags.
@@ -114,30 +121,18 @@ export function resolveGuardrailManifest(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const manifest = markers.get("manifest") ?? "";
-				if (manifest === "" || manifest === "missing") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: "guardrail manifest missing",
-							vars: { path: file, detail: "the guardrail manifest" },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerGuard(decl, rule, ports, (guard, file, markers, findings) => {
+		const manifest = markers.get("manifest") ?? "";
+		if (manifest === "" || manifest === "missing") {
+			findings.push(
+				findingFor(guard, {
+					path: file,
+					message: "guardrail manifest missing",
+					vars: { path: file, detail: "the guardrail manifest" },
+				}),
+			);
+		}
+	});
 }
 
 // SPEC §4.14.2 core/hooks-active: hooks not installed flags.
@@ -146,79 +141,18 @@ export function resolveHooksActive(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const hooks = markers.get("hooks") ?? "";
-				if (hooks === "" || hooks === "not installed") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: "git hooks not installed",
-							vars: { path: file, detail: "the git hooks" },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
-}
-
-// SPEC §4.14.2 core/engine-version-match: the declared version must equal
-// the installed engine; a pack ahead of the engine flags.
-export function resolveEngineVersionMatch(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (file !== "engine.json" && !file.endsWith("/engine.json")) {
-					continue;
-				}
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				const parsed = parseJson(text);
-				if (!parsed.ok) {
-					findings.push(readErrorFinding(binding, file, parsed.error, "parse"));
-					continue;
-				}
-				const record = (
-					typeof parsed.value === "object" && parsed.value !== null
-						? parsed.value
-						: {}
-				) as { readonly engine?: unknown; readonly pack?: unknown };
-				const engine = record.engine;
-				const pack = record.pack;
-				if (typeof engine !== "string" || typeof pack !== "string") {
-					continue;
-				}
-				if (engine !== pack) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `pack version ${pack} does not match the engine ${engine}`,
-							vars: { path: file, value: engine },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerGuard(decl, rule, ports, (guard, file, markers, findings) => {
+		const hooks = markers.get("hooks") ?? "";
+		if (hooks === "" || hooks === "not installed") {
+			findings.push(
+				findingFor(guard, {
+					path: file,
+					message: "git hooks not installed",
+					vars: { path: file, detail: "the git hooks" },
+				}),
+			);
+		}
+	});
 }
 
 // SPEC §4.3.4 core/waivers-valid: a waiver past the pack's maxWaiverDays
@@ -228,31 +162,19 @@ export function resolveWaiversValid(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const days = parseMarkerInt(markers, "waiver-days");
-				const max = parseMarkerInt(markers, "max") ?? 90;
-				if (days !== undefined && days > max) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `waiver at ${String(days)} days is past the ${String(max)} day bound`,
-							vars: { path: file, detail: `waiver at ${String(days)} days` },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerGuard(decl, rule, ports, (guard, file, markers, findings) => {
+		const days = parseMarkerInt(markers, "waiver-days");
+		const max = parseMarkerInt(markers, "max") ?? 90;
+		if (days !== undefined && days > max) {
+			findings.push(
+				findingFor(guard, {
+					path: file,
+					message: `waiver at ${String(days)} days is past the ${String(max)} day bound`,
+					vars: { path: file, detail: `waiver at ${String(days)} days` },
+				}),
+			);
+		}
+	});
 }
 
 // SPEC §4.4.7 core/custom-pack-selftest: a changed custom pack whose
@@ -262,29 +184,17 @@ export function resolveCustomPackSelftest(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const changed = markers.get("changed") ?? "";
-				const tested = markers.get("self-test") ?? "";
-				if (changed === "yes" && tested !== "passed") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: "changed custom pack with no passing self-test",
-							vars: { path: file, detail: "the changed custom pack" },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerGuard(decl, rule, ports, (guard, file, markers, findings) => {
+		const changed = markers.get("changed") ?? "";
+		const tested = markers.get("self-test") ?? "";
+		if (changed === "yes" && tested !== "passed") {
+			findings.push(
+				findingFor(guard, {
+					path: file,
+					message: "changed custom pack with no passing self-test",
+					vars: { path: file, detail: "the changed custom pack" },
+				}),
+			);
+		}
+	});
 }

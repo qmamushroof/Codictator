@@ -77,33 +77,50 @@ function recordResult(
 	return false;
 }
 
-export function parseTap(tap: string, filePath: string): TapFileResult {
-	const stack: Array<OpenSubtest> = [];
-	const outcomes: Array<TapOutcome> = [];
-	for (const rawLine of tap.split("\n")) {
-		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
-		const trimmed = line.trimStart();
-		if (trimmed.startsWith("# Subtest: ")) {
-			openChild(stack);
-			stack.push({
-				name: unescapeTapName(trimmed.slice("# Subtest: ".length).trimEnd()),
-				indent: countIndent(line),
-				hasChildren: false,
-			});
-			continue;
-		}
-		if (trimmed.startsWith("#")) {
-			continue;
-		}
-		const match = /^( *)(not )?ok [0-9]+ - (.*)$/.exec(line);
-		if (match === null) {
-			continue;
-		}
-		const indent = (match[1] ?? "").length;
-		const passed = match[2] === undefined;
-		const name = unescapeTapName((match[3] ?? "").trimEnd());
-		recordResult(stack, indent, name, passed, outcomes);
+// The result pattern lives at module scope so its quantifiers never count
+// as branches of the function that applies it.
+const TAP_RESULT_PATTERN = /^( *)(not )?ok [0-9]+ - (.*)$/;
+
+function recordTapResult(
+	stack: Array<OpenSubtest>,
+	outcomes: Array<TapOutcome>,
+	line: string,
+): void {
+	const match = TAP_RESULT_PATTERN.exec(line);
+	if (match === null) {
+		return;
 	}
+	const indent = (match[1] ?? "").length;
+	const passed = match[2] === undefined;
+	const name = unescapeTapName((match[3] ?? "").trimEnd());
+	recordResult(stack, indent, name, passed, outcomes);
+}
+
+function recordTapLine(
+	stack: Array<OpenSubtest>,
+	outcomes: Array<TapOutcome>,
+	line: string,
+): void {
+	const trimmed = line.trimStart();
+	if (trimmed.startsWith("# Subtest: ")) {
+		openChild(stack);
+		stack.push({
+			name: unescapeTapName(trimmed.slice("# Subtest: ".length).trimEnd()),
+			indent: countIndent(line),
+			hasChildren: false,
+		});
+		return;
+	}
+	if (trimmed.startsWith("#")) {
+		return;
+	}
+	recordTapResult(stack, outcomes, line);
+}
+
+function finishTapFile(
+	outcomes: Array<TapOutcome>,
+	filePath: string,
+): TapFileResult {
 	const leaves = outcomes.filter((outcome) => outcome.title !== filePath);
 	const fileLevelFailed = outcomes.some(
 		(outcome) => outcome.title === filePath && !outcome.passed,
@@ -112,4 +129,14 @@ export function parseTap(tap: string, filePath: string): TapFileResult {
 		outcomes: leaves,
 		loadFailed: fileLevelFailed && leaves.length === 0,
 	};
+}
+
+export function parseTap(tap: string, filePath: string): TapFileResult {
+	const stack: Array<OpenSubtest> = [];
+	const outcomes: Array<TapOutcome> = [];
+	for (const rawLine of tap.split("\n")) {
+		const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+		recordTapLine(stack, outcomes, line);
+	}
+	return finishTapFile(outcomes, filePath);
 }

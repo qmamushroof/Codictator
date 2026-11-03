@@ -34,54 +34,76 @@ export interface NpmPackument {
 	readonly versions: Readonly<Record<string, NpmDocVersion>>;
 }
 
-function narrowPackument(name: string, value: unknown): NpmPackument {
-	const empty: NpmPackument = {
-		name,
-		unpublished: true,
-		times: {},
-		versions: {},
-	};
-	if (!isJsonRecord(value)) {
-		return empty;
-	}
+function isPublishTime(
+	version: string,
+	published: unknown,
+): published is string {
+	return (
+		version !== "created" &&
+		version !== "modified" &&
+		typeof published === "string"
+	);
+}
+
+function narrowTimeTable(
+	value: Record<string, unknown>,
+): Record<string, string> {
 	const times: Record<string, string> = {};
 	const timeTable = recordField(value, "time");
-	if (timeTable !== undefined) {
-		for (const [version, published] of Object.entries(timeTable)) {
-			if (
-				version !== "created" &&
-				version !== "modified" &&
-				typeof published === "string"
-			) {
-				times[version] = published;
-			}
+	if (timeTable === undefined) {
+		return times;
+	}
+	for (const [version, published] of Object.entries(timeTable)) {
+		if (isPublishTime(version, published)) {
+			times[version] = published;
 		}
 	}
+	return times;
+}
+
+function narrowVersionDetail(detail: unknown): NpmDocVersion | undefined {
+	if (!isJsonRecord(detail)) {
+		return undefined;
+	}
+	const enginesTable = recordField(detail, "engines");
+	return {
+		deprecated:
+			typeof field(detail, "deprecated") === "string" ||
+			field(detail, "deprecated") === true,
+		license: stringField(detail, "license"),
+		engines:
+			enginesTable === undefined
+				? undefined
+				: stringField(enginesTable, "node"),
+	};
+}
+
+function narrowVersionTable(
+	value: Record<string, unknown>,
+): Record<string, NpmDocVersion> {
 	const versions: Record<string, NpmDocVersion> = {};
 	const versionTable = recordField(value, "versions");
-	if (versionTable !== undefined) {
-		for (const [version, detail] of Object.entries(versionTable)) {
-			if (!isJsonRecord(detail)) {
-				continue;
-			}
-			const enginesTable = recordField(detail, "engines");
-			const engines =
-				enginesTable === undefined
-					? undefined
-					: stringField(enginesTable, "node");
-			versions[version] = {
-				deprecated:
-					typeof field(detail, "deprecated") === "string" ||
-					field(detail, "deprecated") === true,
-				license: stringField(detail, "license"),
-				engines,
-			};
+	if (versionTable === undefined) {
+		return versions;
+	}
+	for (const [version, detail] of Object.entries(versionTable)) {
+		const narrowed = narrowVersionDetail(detail);
+		if (narrowed !== undefined) {
+			versions[version] = narrowed;
 		}
 	}
-	if (Object.keys(versions).length === 0) {
-		return empty;
+	return versions;
+}
+
+function narrowPackument(name: string, value: unknown): NpmPackument {
+	if (!isJsonRecord(value)) {
+		return { name, unpublished: true, times: {}, versions: {} };
 	}
-	return { name, unpublished: false, times, versions };
+	const versions = narrowVersionTable(value);
+	if (Object.keys(versions).length === 0) {
+		return { name, unpublished: true, times: {}, versions: {} };
+	}
+	return { name, unpublished: false, times: narrowTimeTable(value), versions };
 }
 
 export interface RegistryFetchOptions {
