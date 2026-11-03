@@ -189,7 +189,10 @@ export function resolveConventionalCommit(
 			const findings: Array<Finding> = [];
 			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
+				// Commit subjects arrive as marker reports (SPEC §4.4.1
+				// sample.txt fixtures); source files carry `subject:` lines
+				// of their own (parameters, YAML keys), which are not commits.
+				if (text === undefined || !isMarkerFile(file)) {
 					continue;
 				}
 				const subject = parseMarkers(text).get("subject") ?? "";
