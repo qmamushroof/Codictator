@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | **Depends on** | Phases 11 and 12 (or 12 cut) |
-| **Delivers** | The first published release of `codictator` on npm and `codictator.codictator-vscode` on the VS Code Marketplace and Open VSX |
+| **Delivered** | 0.1.3: `codictator` on npm and `codictator.codictator-vscode` on the VS Code Marketplace and Open VSX |
 | **Read** | SPEC §4.15.5, §9, §10.2, §10.4–§10.6, §11 S28; PRD §9, §10 |
 | **Covers** | `§10.2`, `§10.4`, `§10.5`, and every remaining ledger entry not belonging to a cut P1 item |
 
@@ -18,7 +18,7 @@
 - [x] **13.5** Release workflow: tags only, full verify first, npm trusted publishing with provenance, `vsce` and `ovsx` publishing (SPEC §4.15.5, §9.2). Verify: a dry run on a pre-release tag.
 - [x] **13.6** Human: claim the `codictator` npm package and publisher ids, configure trusted publishing (Marketplace uses OIDC, no token) and the `OVSX_PAT` repository secret (SPEC §4.15.5). Verify: the release workflow's preflight step.
 - [x] **13.7** `README.md` status and install sections match what ships, including each adapter's declared gaps. Verify: fresh-session docs review.
-- [x] **13.8** Tag the release. Verify: `npx codictator@<version> init` on each fixture repo turns green on all three OSes; the extension installs from both marketplaces.
+- [x] **13.8** Tag the release. Verify: `npx codictator@0.1.3 init` on each fixture repo turns green on all three OSes; the extension installs from both marketplaces.
 
 ## Exit gate
 

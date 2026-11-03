@@ -12,7 +12,7 @@ What a machine needs to build Codictator and to dogfood it in OpenCode with Meta
 
 ## Build and test
 
-Until [phase 1](ROADMAP/01-SCAFFOLD.md) lands there is no `package.json`; after it:
+Clone, install, and test:
 
 ```sh
 git clone <repo-url> codictator && cd codictator
