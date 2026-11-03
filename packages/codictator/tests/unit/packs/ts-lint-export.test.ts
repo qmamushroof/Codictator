@@ -63,9 +63,6 @@ test("[§6.4 EC-12] ts/lint skips exported bindings but flags unused locals and 
 		await lintFiles([
 			{ name: "flags.ts", text: "const unused = 1;\nvar legacy = 2;\n" },
 		]),
-		[
-			"var binding legacy in flags.ts:2",
-			"unused binding unused in flags.ts:1",
-		],
+		["var binding legacy in flags.ts:2", "unused binding unused in flags.ts:1"],
 	);
 });
