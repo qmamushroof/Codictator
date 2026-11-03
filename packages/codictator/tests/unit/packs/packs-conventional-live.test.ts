@@ -1,4 +1,4 @@
-// SPEC §5.11 + §4.4.1 (BUG-0021): core/conventional-commit judges the
+// SPEC §5.11 + §4.4.1 (BUG-0024): core/conventional-commit judges the
 // commit-subject marker reports (sample.txt), never source files. A source
 // file carrying a `subject:` line — a `subject: string` parameter, a YAML
 // key, prose — is not a commit subject; only marker reports judge.
@@ -59,7 +59,7 @@ function liveEnforcer(files: Record<string, string>): Enforcer {
 }
 
 test("[§5.11] source file with a subject parameter stays clean", async () => {
-	// BUG-0021: the upgrade.ts `subject: string` parameter parsed as a
+	// BUG-0024: the upgrade.ts `subject: string` parameter parsed as a
 	// commit subject and blocked verify --all; only marker reports judge.
 	const findings = await liveEnforcer({
 		"src/upgrade.ts":
