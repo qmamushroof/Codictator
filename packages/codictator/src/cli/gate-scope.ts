@@ -74,6 +74,18 @@ function mergeGateFindings(
 	return merged.sort(compareGateFindings);
 }
 
+// BUG-0022 + SPEC §4.7.1: the L3 gate judges added lines only, so a commit
+// deleting a flagged literal passes while staging one still blocks. A diff
+// carries its removed lines as `-` rows; scanning the raw diff would match
+// those and make the removal uncommittable.
+export function addedLines(diff: string): string {
+	return diff
+		.split("\n")
+		.filter((line) => line.startsWith("+") && !line.startsWith("+++"))
+		.map((line) => line.slice(1))
+		.join("\n");
+}
+
 // BUG-0014 + SPEC §4.3.2: the gate evaluation over a diff scope. The
 // pre-tool leg keeps today's fail-closed local verdict byte for byte; the
 // review leg adds the diff-sound review subset over the same files, so the
