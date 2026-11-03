@@ -36,7 +36,7 @@ npm ci --ignore-scripts
 npm run build
 ```
 
-The install path is `npm install --save-dev --save-exact codictator@0.1.3` followed by `npx codictator init` on each repo.
+The install path is `npm install --save-dev --save-exact codictator` followed by `npx codictator init` on each repo.
 
 The VS Code extension `codictator.codictator-vscode` ships on the VS Code Marketplace and Open VSX with the release. It shows live what is enforced, how the agent is steered, violations and the timeline. It runs the engine pinned in your repo.
 
