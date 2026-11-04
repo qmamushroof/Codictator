@@ -12,6 +12,8 @@ Brownfield adoption and the step-by-step, never-breaking removal of everything u
 4. **Immediate floor remediation** of items needing no human decision (PRD §7.8): range → exact pin at the lockfile-resolved version (no version change); vulnerable or deprecated dependency with a fix in the same major. Each runs as a mechanical step (§4.13.4).
 5. Build the remediation plan (§4.13.2) and run the first `verify`.
 
+`--repair` rewrites an existing config instead of refusing when one exists.
+
 ## 4.13.2 The plan
 
 `.codictator/plan/remediation.json` (schema §7.13), committed; `codictator remediate plan` regenerates it deterministically from current findings, keeping finished steps. A step: `id` (`S-####`), `kind`, `target` (rule ids and metric keys), `scope` (paths or packages), `executor` (`codictator` or `agent`), `dependsOn`, `sizeBudget` (files, changed lines), `expectedDelta` (per target key), `status` (`pending`, `active`, `done`, `failed`, `split`, `blocked`), `attempts`, `children`, `taskId`.
