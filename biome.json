@@ -9,6 +9,11 @@
 			"includes": [".codictator/bin/**", ".codictator/*.json"],
 			"formatter": { "enabled": false },
 			"linter": { "enabled": false }
+		},
+		{
+			"includes": ["packages/vscode/resources/**"],
+			"formatter": { "enabled": false },
+			"linter": { "enabled": false }
 		}
 	],
 	"linter": {
