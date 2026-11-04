@@ -71,6 +71,7 @@ Every error is a `CdxError { code, message, detail?, remediation }` (§4.1.2). C
 | `CDX-E901` | Enforcer or runtime threw | 7 |
 | `CDX-E902` | Budget or time limit exceeded | 1 (blocks) |
 | `CDX-E903` | Required data or tool for an enforcer unavailable | 5 |
+| `CDX-E904` | Zero effective enforcers for the trigger | 1 (blocks; L2 advises) |
 
 ## 8.2 Exit codes (all commands except `hook`)
 
