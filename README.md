@@ -24,20 +24,17 @@ What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5
 
 ## Install
 
-> Install from the registries first and use source only as an alternative: `codictator` is on npm, and the extension is on the VS Code Marketplace and Open VSX ([phase 13](docs/ROADMAP/13-RELEASE.md) green).
+> One command does everything ([SPEC §4.19.6](docs/SPEC/04-19-CLI.md)). Run it yourself: `setup` is human-only and refuses under agent control (`CDX-E107`).
 
 Requires Node.js 24 LTS or newer and a git repo, whatever its language ([SPEC §4.19.4](docs/SPEC/04-19-CLI.md)).
 
 ```sh
-npm install --save-dev --save-exact codictator
-npx codictator init          # human-only: refuses under agent control (CDX-E107)
-npm ci                       # install the pinned engine
-npx codictator install-hooks # write the git hooks
+npx codictator setup
 ```
 
-`init` prints `wrote <path>` per file, then `init: run npm ci, then codictator install-hooks`; `install-hooks` prints `hooks installed at .githooks; ...`. Add `.codictator/state/`, `.codictator/cache/` and `.codictator/tool/node_modules/` to `.gitignore` ([SPEC §7.1](docs/SPEC/07-FILES-AND-FORMATS.md)). Then `npx codictator verify` should print `verify: pass (...)`, and each commit hook prints `<hook>: pass`. Details live in [LOCAL_SETUP](docs/LOCAL_SETUP.md).
+`setup` runs adoption end to end: guardrails (`setup: guardrails written from the init path`), engine install (`setup: npm ci passed in ...`), git hooks (`setup: hooks installed`), a first evaluation (`verify: pass (...)`), then the extension handoff (`setup complete: ...`, with `code --install-extension codictator.codictator-vscode`). Its flags mirror `init` (`--harness`, `--profile`, `--pack`, `--tool`, `--repair`); without `--pack` you get core rules only, and setup prints the exact line to add a language pack (`npx codictator setup --repair --pack typescript`).
 
-The VS Code extension installs with `code --install-extension codictator.codictator-vscode`. It shows live what is enforced, how the agent is steered, violations and the timeline. It runs the engine pinned in your repo.
+Prefer the steps separately, or building from source? The registry sequence is `npm install --save-dev --save-exact codictator`, then `npx codictator init`, `npm ci`, `npx codictator install-hooks` (with `.gitignore` per [SPEC §7.1](docs/SPEC/07-FILES-AND-FORMATS.md)); contributors build from source per [LOCAL_SETUP](docs/LOCAL_SETUP.md).
 
 ## Principles
 
