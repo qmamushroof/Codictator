@@ -1,10 +1,7 @@
 # Codictator: deterministic, cross-harness guardrail engine for AI coding agents
 
-## Before anything else
-
-1. Any change to this repo follows [docs/AGENTIC_WORKFLOW.md](docs/AGENTIC_WORKFLOW.md), all seven phases, in order.
-2. The current build phase is the first leaf of [docs/ROADMAP.md](docs/ROADMAP.md) with an unchecked step; read only that leaf and its how-to.
-3. Resuming after compaction or a new session: [docs/AGENTIC_WORKFLOW.md §Resuming](docs/AGENTIC_WORKFLOW.md#resuming) before acting on any summary.
+Every change follows [docs/AGENTIC_WORKFLOW.md](docs/AGENTIC_WORKFLOW.md): all seven phases, in order, starting from the first [docs/ROADMAP.md](docs/ROADMAP.md) leaf with an unchecked step.
+After compaction or a new session, follow that file's Resuming section before acting on any summary.
 
 ## Documentation map
 
