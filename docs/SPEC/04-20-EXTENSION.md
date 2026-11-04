@@ -22,7 +22,7 @@ An activity-bar container "Codictator" with tree views; the budget is text in th
 
 | View | Source method | Content | Priority |
 |---|---|---|---|
-| Active rules | `rules/list` | Packs → rules with tier, effective params, bounds, waivers with days left, per-harness layer coverage including gaps; with zero rules the view shows one "No packs configured" item whose action opens an integrated terminal pre-filled with `npx codictator@<extension version> setup` for the human to run, executing nothing on its own | P0 |
+| Active rules | `rules/list` | Packs → rules with tier, effective params, bounds, waivers with days left, per-harness layer coverage including gaps; with zero packs the view shows one "No packs configured" item whose action opens an integrated terminal pre-filled with `npx codictator@<extension version> setup` for the human to run, executing nothing on its own | P0 |
 | Violations | `findings/list` + diagnostics | Problems-panel diagnostics with rule id as code, remediation as message, link to `explain` | P0 |
 | Timeline | `events/tail`, `events/appended` | Blocks, waivers, upgrades, integrity events, escalations, newest first | P0 |
 | Steering | `steering/history` | Exactly what was injected, when, into which harness session | P1 |
