@@ -26,19 +26,18 @@ What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5
 
 > Install from the registries first and use source only as an alternative: `codictator` is on npm, and the extension is on the VS Code Marketplace and Open VSX ([phase 13](docs/ROADMAP/13-RELEASE.md) green).
 
-Requires Node.js 24 LTS or newer in every repo, whatever its language.
-
-Alternative — from source:
+Requires Node.js 24 LTS or newer and a git repo, whatever its language ([SPEC §4.19.4](docs/SPEC/04-19-CLI.md)).
 
 ```sh
-git clone <repo-url> codictator && cd codictator
-npm ci --ignore-scripts
-npm run build
+npm install --save-dev --save-exact codictator
+npx codictator init          # human-only: refuses under agent control (CDX-E107)
+npm ci                       # install the pinned engine
+npx codictator install-hooks # write the git hooks
 ```
 
-The install path is `npm install --save-dev --save-exact codictator` followed by `npx codictator init` on each repo.
+`init` prints `wrote <path>` per file, then `init: run npm ci, then codictator install-hooks`; `install-hooks` prints `hooks installed at .githooks; ...`. Add `.codictator/state/`, `.codictator/cache/` and `.codictator/tool/node_modules/` to `.gitignore` ([SPEC §7.1](docs/SPEC/07-FILES-AND-FORMATS.md)). Then `npx codictator verify` should print `verify: pass (...)`, and each commit hook prints `<hook>: pass`. Details live in [LOCAL_SETUP](docs/LOCAL_SETUP.md).
 
-The VS Code extension `codictator.codictator-vscode` ships on the VS Code Marketplace and Open VSX with the release. It shows live what is enforced, how the agent is steered, violations and the timeline. It runs the engine pinned in your repo.
+The VS Code extension installs with `code --install-extension codictator.codictator-vscode`. It shows live what is enforced, how the agent is steered, violations and the timeline. It runs the engine pinned in your repo.
 
 ## Principles
 
