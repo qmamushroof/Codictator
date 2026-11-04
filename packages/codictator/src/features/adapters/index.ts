@@ -64,6 +64,7 @@ import {
 	GEMINI_CAPABILITIES,
 	normalizeGeminiToolName,
 } from "./gemini-tables.ts";
+import { renderHarnessFiles, withCodictatorOwner } from "./harness-files.ts";
 import {
 	MUSE_CAPABILITIES,
 	museAdapter,
@@ -153,6 +154,7 @@ export {
 	parseUniversalEvent,
 	renderCustomHarnessFiles,
 	renderCustomRegenFragment,
+	renderHarnessFiles,
 	replyClaudeCode,
 	replyCodex,
 	replyCopilot,
@@ -171,6 +173,7 @@ export {
 	staticBlockUniversal,
 	UNIVERSAL_CAPABILITIES,
 	universalAdapter,
+	withCodictatorOwner,
 };
 
 // SPEC §4.5.3: native harness payload to the normalised event. Payloads
