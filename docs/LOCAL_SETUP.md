@@ -12,15 +12,16 @@ What a machine needs to build Codictator and to dogfood it in OpenCode with Meta
 
 ## Build and test
 
-Clone, install, and test:
+Clone, install, build, and test:
 
 ```sh
 git clone <repo-url> codictator && cd codictator
 npm ci --ignore-scripts
+npm run build
 npm test
 ```
 
-Every other command is in [VALIDATION.md](VALIDATION.md).
+Then `npm run typecheck` and `npm run lint`. Every other command is in [VALIDATION.md](VALIDATION.md).
 
 ## OpenCode with the Meta Model API
 
