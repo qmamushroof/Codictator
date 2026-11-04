@@ -22,7 +22,7 @@ An activity-bar container "Codictator" with tree views; the budget is text in th
 
 | View | Source method | Content | Priority |
 |---|---|---|---|
-| Active rules | `rules/list` | Packs → rules with tier, effective params, bounds, waivers with days left, per-harness layer coverage including gaps | P0 |
+| Active rules | `rules/list` | Packs → rules with tier, effective params, bounds, waivers with days left, per-harness layer coverage including gaps; with zero rules the view shows one "No packs configured" item whose action opens an integrated terminal pre-filled with `npx codictator@<extension version> setup` for the human to run, executing nothing on its own | P0 |
 | Violations | `findings/list` + diagnostics | Problems-panel diagnostics with rule id as code, remediation as message, link to `explain` | P0 |
 | Timeline | `events/tail`, `events/appended` | Blocks, waivers, upgrades, integrity events, escalations, newest first | P0 |
 | Steering | `steering/history` | Exactly what was injected, when, into which harness session | P1 |
@@ -48,3 +48,4 @@ Palette commands map one-to-one to CLI commands via `run` (`verify`, `status`, `
 | EC-7 | User clicks "waive" on a finding | Terminal opens with the `codictator waive …` command; nothing else |
 | EC-8 | Save of a file outside every module | Diagnostic from `core/arch-module-mapped` |
 | EC-9 | Trusted folder without `.codictator/config.json`; user clicks "Set up Codictator" | Terminal opens pre-filled with the `setup` command; nothing runs without the human; after `setup` the views connect |
+| EC-10 | Trusted folder with `.codictator/config.json` but zero packs enabled | Active rules shows its empty-state item (EC-9 covers folders without a config); the action opens an integrated terminal pre-filled with `npx codictator@<extension version> setup` and executes nothing; after `setup` adds packs the views list rules |
