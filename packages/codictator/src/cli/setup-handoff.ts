@@ -1,6 +1,7 @@
 // SPEC §4.19.6 step 8: pack-less handoff text. Split from setup.ts
 // (orchestration) by responsibility so setup.ts stays below the
 // core/file-size 300 cap; the effective pack list mirrors the plan data.
+import { parseJson } from "../kernel/index.ts";
 import type { InitFlags } from "./init-plan.ts";
 import { readStateText } from "./shared.ts";
 
@@ -43,14 +44,10 @@ export async function hasEffectivePacks(
 	if (text === undefined) {
 		return false;
 	}
-	try {
-		const parsed: unknown = JSON.parse(text);
-		if (typeof parsed !== "object" || parsed === null) {
-			return false;
-		}
-		const packs = (parsed as { packs?: unknown }).packs;
-		return Array.isArray(packs) && packs.length > 0;
-	} catch {
+	const parsed = parseJson(text);
+	if (!parsed.ok || typeof parsed.value !== "object" || parsed.value === null) {
 		return false;
 	}
+	const packs = (parsed.value as { packs?: unknown }).packs;
+	return Array.isArray(packs) && packs.length > 0;
 }
