@@ -88,5 +88,6 @@
 				"title": "Codictator: Waive"
 			}
 		]
-	}
+	},
+	"icon": "resources/codictator-128.png"
 }

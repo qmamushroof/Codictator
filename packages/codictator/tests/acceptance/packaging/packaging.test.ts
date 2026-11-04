@@ -241,3 +241,60 @@ test("[§10.2] vsix contains no node_modules", () => {
 		rmSync(outDir, { recursive: true, force: true });
 	}
 });
+
+test("[§10.2] vsix ships the extension icon and resources", () => {
+	// SPEC §10.2: the marketplace icon and the activity-bar icon resolve
+	// to files the .vsix actually ships. The manifest icon points at the
+	// 128px PNG, the activity-bar container keeps its SVG, both files
+	// exist as 128x128 RGBA (PNG color type 6), the ignore allowlists
+	// resources/, and `vsce ls` lists both entries.
+	const manifest = readManifest(vscodeRoot()) as {
+		readonly icon?: unknown;
+		readonly contributes?: unknown;
+	};
+	assert.equal(manifest.icon, "resources/codictator-128.png");
+	assert.equal(typeof manifest.contributes, "object");
+	assert.ok(manifest.contributes !== null);
+	const contributes = manifest.contributes as {
+		readonly viewsContainers?: unknown;
+	};
+	assert.equal(typeof contributes.viewsContainers, "object");
+	assert.ok(contributes.viewsContainers !== null);
+	const containers = contributes.viewsContainers as {
+		readonly activitybar?: unknown;
+	};
+	assert.ok(Array.isArray(containers.activitybar));
+	assert.equal(containers.activitybar.length, 1);
+	const first = containers.activitybar[0];
+	assert.equal(typeof first, "object");
+	assert.ok(first !== null);
+	assert.equal(
+		(first as { readonly icon?: unknown }).icon,
+		"resources/codictator.svg",
+	);
+	const svg = path.join(vscodeRoot(), "resources", "codictator.svg");
+	const png = path.join(vscodeRoot(), "resources", "codictator-128.png");
+	assert.ok(existsSync(svg));
+	assert.ok(existsSync(png));
+	assert.ok(statSync(svg).size > 0);
+	assert.ok(statSync(png).size > 0);
+	const bytes = readFileSync(png);
+	assert.deepEqual(
+		[...bytes.subarray(0, 8)],
+		[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+	);
+	assert.equal(bytes.readUInt32BE(16), 128);
+	assert.equal(bytes.readUInt32BE(20), 128);
+	assert.equal(bytes[24], 8);
+	assert.equal(bytes[25], 6);
+	const ignore = readFileSync(path.join(vscodeRoot(), ".vscodeignore"), "utf8");
+	assert.ok(ignore.includes("!resources/**"));
+	const listed = runFile(
+		process.execPath,
+		[vsceEntry(), "ls", "--no-dependencies"],
+		vscodeRoot(),
+	);
+	assert.equal(listed.code, 0);
+	assert.ok(listed.stdout.includes("resources/codictator-128.png"));
+	assert.ok(listed.stdout.includes("resources/codictator.svg"));
+});
