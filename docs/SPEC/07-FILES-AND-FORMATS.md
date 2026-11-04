@@ -8,23 +8,23 @@ Owner of every file and wire format. Each JSON format ships a JSON Schema (2020-
 
 | Path | Committed | Written by | Format |
 |---|---|---|---|
-| `.codictator/config.json` | yes | human (`init`, hand edit) | §7.2 |
+| `.codictator/config.json` | yes | human via the adoption path (§4.13.1, §4.19.6); hand edit | §7.2 |
 | `.codictator/waivers.json` | yes | `waive` | §7.5 |
-| `.codictator/baseline.json` | yes | `init`, L3 tighten, `baseline capture` | §7.6 |
-| `.codictator/manifest.json` | yes | `init`, `regen` | §7.14 |
+| `.codictator/baseline.json` | yes | adoption path (§4.13.1, §4.19.6); L3 tighten; `baseline capture` | §7.6 |
+| `.codictator/manifest.json` | yes | adoption path (§4.13.1, §4.19.6); `regen` | §7.14 |
 | `.codictator/tasks/T-####.json` | yes | `task`, `test`, `review` commands | §7.11 |
 | `.codictator/plan/remediation.json` | yes | `remediate plan` | §7.13 |
 | `.codictator/packs/<id>/` | yes | human or `generate` | §7.3, §7.4 |
 | `.codictator/adapters/<id>/` | yes | human | §4.5.6 |
-| `.codictator/bin/run.mjs` | yes | `init`, `regen` | §4.19.3 |
-| `.codictator/tool/` (`package.json`, lockfile) | yes, `node_modules` ignored | `init` (non-npm repos) | §4.19.4 |
+| `.codictator/bin/run.mjs` | yes | adoption path (§4.13.1, §4.19.6); `regen` | §4.19.3 |
+| `.codictator/tool/` (`package.json`, lockfile) | yes, `node_modules` ignored | adoption path (§4.13.1, §4.19.6; non-npm repos) | §4.19.4 |
 | `.codictator/state/` (events, sessions, markers, captures, `resume.md`) | no | runtime | §7.10 |
 | `.codictator/cache/` (effective config, graph, registry) | no | runtime | §7.12 |
 | `.githooks/*` or managed blocks in `.husky/*` | yes | `install-hooks` | §4.14.4 |
 | `docs/HISTORY/<YYYY-MM-DD>[-n].md`, `docs/BUGS/<YYYY>[-n].md` | yes | agents via workflow; CI for bot PRs | §7.7 |
-| Harness files (§4.5.4), `AGENTS.md` block, CI workflow, bot config keys | yes | `init`, `regen` | §4.5, §4.6.2, §4.15, §4.8.6 |
+| Harness files (§4.5.4), `AGENTS.md` block, CI workflow, bot config keys | yes | adoption path (§4.13.1, §4.19.6); `regen` | §4.5, §4.6.2, §4.15, §4.8.6 |
 
-`init` adds `.codictator/state/`, `.codictator/cache/`, `.codictator/tool/node_modules/` to `.gitignore` (manifest-owned entries).
+The adoption path guarantees the manifest-owned `.gitignore` entries (`.codictator/state/`, `.codictator/cache/`, `.codictator/tool/node_modules/`) via the init path (§4.13.1).
 
 ## 7.2 `config.json`
 

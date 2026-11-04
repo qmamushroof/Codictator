@@ -11,7 +11,7 @@
 | Package | `packages/vscode`, name `codictator-vscode`, publisher `codictator` (§11 S28); `engines.vscode: ^1.105.0`; zero runtime dependencies |
 | Module format | Entry `dist/extension.cjs` (emitted from `src/extension.cts`) is a CommonJS shim that dynamic-imports the ESM `dist/main.js` and passes it the `vscode` API object; source uses `import type` from `vscode` only, so it stays erasable-syntax and testable with a fake API (§11 S6) |
 | Activation | `workspaceContains:.codictator/config.json`, or opening the Codictator view |
-| Onboarding | In a trusted folder without `.codictator/config.json`, the view shows a welcome with one action, "Set up Codictator". `init` is human-only, so the action opens an integrated terminal pre-filled with `npx codictator@<extension version> init`; the human runs it (PRD §7.10) |
+| Onboarding | In a trusted folder without `.codictator/config.json`, the view shows a welcome with one action, "Set up Codictator". `setup` is human-only, so the action opens an integrated terminal pre-filled with `npx codictator@<extension version> setup`; the human runs it (PRD §7.10) |
 | Trust | `capabilities.untrustedWorkspaces.supported: false` — it executes the repo's engine, so it runs only in trusted workspaces |
 | Engine | Spawns `node <root>/.codictator/bin/run.mjs serve --stdio` per workspace folder with a config; never bundles or downloads an engine. No engine installed → a notification offering to run `npm ci` (or the tool-dir install) in a terminal |
 | Protocol | Checks `initialize.protocolVersion`; an unsupported version shows "update the extension" or "update codictator" and stays inert |
@@ -47,4 +47,4 @@ Palette commands map one-to-one to CLI commands via `run` (`verify`, `status`, `
 | EC-6 | Cursor (VS Code 1.105 base) | Full function; no API newer than 1.105 used (types pinned to 1.105.0) |
 | EC-7 | User clicks "waive" on a finding | Terminal opens with the `codictator waive …` command; nothing else |
 | EC-8 | Save of a file outside every module | Diagnostic from `core/arch-module-mapped` |
-| EC-9 | Trusted folder without `.codictator/config.json`; user clicks "Set up Codictator" | Terminal opens pre-filled with the `init` command; nothing runs without the human; after `init` the views connect |
+| EC-9 | Trusted folder without `.codictator/config.json`; user clicks "Set up Codictator" | Terminal opens pre-filled with the `setup` command; nothing runs without the human; after `setup` the views connect |
