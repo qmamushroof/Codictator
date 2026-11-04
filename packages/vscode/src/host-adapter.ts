@@ -4,7 +4,14 @@
 // source erasable (§11 S6). main.ts re-exports this seam so the entry keeps
 // its shape (§4.20) and existing imports keep working.
 import { isRecord } from "./engine-client.ts";
+import type { ExtensionHostFs } from "./fs-ports.ts";
+import { configPathFor, enginePathFor, existsFile } from "./fs-ports.ts";
 import { registerSteeringBudgetHealthViews as registerP1Views } from "./p1-views.ts";
+
+// SPEC §4.20.1 Engine: the fs port lives in fs-ports.ts; the seam is
+// re-exported here so existing imports keep working.
+export type { ExtensionHostFs } from "./fs-ports.ts";
+export { configPathFor, enginePathFor, existsFile } from "./fs-ports.ts";
 
 // SPEC §4.20.1: narrow ports the extension needs from the vscode API object.
 // The dist shim passes the real object; unit tests pass the fake (§10.2).
@@ -126,16 +133,21 @@ function registerTreeDataProviderOf(
 }
 
 // SPEC §4.20.1 Module format: F-01 builds the narrow-port adapter from a
-// duck-typed host shape so activateWithHost stays a thin entry.
-export function buildExtensionApi(host: unknown): ExtensionApi {
+// duck-typed host shape so activateWithHost stays a thin entry. The fs port
+// is optional so existing single-argument callers keep working; without it
+// both exists checks stay false and no server spawns.
+export function buildExtensionApi(
+	host: unknown,
+	fs?: ExtensionHostFs,
+): ExtensionApi {
 	const window = sectionOf(host, "window");
 	const workspace = sectionOf(host, "workspace");
 	return {
 		registerCommand: registerCommandOf(host),
 		registerTreeDataProvider: registerTreeDataProviderOf(host),
 		workspaceFolderPaths: () => workspacePathsOf(workspace),
-		configExists: () => false,
-		engineExists: () => false,
+		configExists: (folderPath) => existsFile(fs, configPathFor(folderPath)),
+		engineExists: (folderPath) => existsFile(fs, enginePathFor(folderPath)),
 		createTerminal: (name) => terminalOf(window, name),
 		showWarningMessage: (message, actions) =>
 			messageOf(window, "showWarningMessage", message, actions),

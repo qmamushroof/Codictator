@@ -181,3 +181,20 @@ export function arrayFieldOf(value: unknown, name: string): Array<unknown> {
 	const found = value[name];
 	return Array.isArray(found) ? found : [];
 }
+
+// SPEC §4.20.1 Engine: narrow NDJSON framing without the kernel. The
+// vscode extension is dependency-free (SPEC §11 S2; it never bundles the
+// engine), so the stdio client parses each stdout line through this guard
+// instead of a bare JSON.parse: a malformed line or non-object JSON reads
+// as undefined and the caller drops it without settling a waiter.
+export function parseJsonLine(
+	line: string,
+): Record<string, unknown> | undefined {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(line);
+	} catch {
+		return undefined;
+	}
+	return isRecord(parsed) ? parsed : undefined;
+}
