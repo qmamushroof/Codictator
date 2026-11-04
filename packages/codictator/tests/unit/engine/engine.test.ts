@@ -4,6 +4,7 @@
 // so all eighteen fail red until Phase 4 lands.
 import { strict as assert } from "node:assert";
 import test from "node:test";
+import type { NewEvent } from "../../../src/features/audit/index.ts";
 import type {
 	CheckContext,
 	Finding,
@@ -13,7 +14,7 @@ import {
 	createEngine,
 	isWaived,
 } from "../../../src/features/engine/index.ts";
-import { err, stableStringify } from "../../../src/kernel/index.ts";
+import { err, ok, stableStringify } from "../../../src/kernel/index.ts";
 import { FakeClock, FIXED_INSTANT } from "../../support/fake-clock.ts";
 
 function checkCtx(files: ReadonlyArray<string> = []): CheckContext {
@@ -25,16 +26,76 @@ function checkCtx(files: ReadonlyArray<string> = []): CheckContext {
 	};
 }
 
-test("[§4.3 EC-1] no rule matches the trigger", async () => {
-	const engine = createEngine([]);
-	// SPEC §4.3.9 EC-1: allow, with the event still recorded.
+test("[§4.3 EC-1] no rule matches a feedback-only trigger", async () => {
+	const seen: Array<NewEvent> = [];
+	const engine = createEngine([], {
+		append: (event) => {
+			seen.push(event);
+			return Promise.resolve(ok(undefined));
+		},
+	});
+	// SPEC §4.3.9 EC-1: tool.post.write and stop arrive as post-tool, which
+	// never gates, so zero enforcers allow with the event still recorded.
 	const verdict = await engine.evaluate(
-		"startup",
+		"post-tool",
 		{ files: [] },
 		FIXED_INSTANT,
 	);
 	assert.equal(verdict.decision, "allow");
 	assert.equal(verdict.findings.length, 0);
+	assert.equal(seen.length, 1);
+});
+
+test("[§4.3 EC-19] zero effective enforcers block with CDX-E904", async () => {
+	const seen: Array<NewEvent> = [];
+	const engine = createEngine([], {
+		append: (event) => {
+			seen.push(event);
+			return Promise.resolve(ok(undefined));
+		},
+	});
+	// SPEC §4.3.9 EC-19: no rule selected for a gating trigger, so the
+	// verdict fails closed with a synthetic CDX-E904 finding that names the
+	// guard, not the code, and the event is still recorded.
+	const verdict = await engine.evaluate(
+		"pre-tool",
+		{ files: [] },
+		FIXED_INSTANT,
+	);
+	assert.equal(verdict.decision, "block");
+	assert.ok(
+		verdict.findings.some((finding) => finding.code === "CDX-E904"),
+		"expected a synthetic CDX-E904 finding",
+	);
+	assert.ok(verdict.message.includes("CDX-E904"));
+	assert.ok(verdict.message.includes("Do instead:"));
+	assert.equal(seen.length, 1);
+});
+
+test("[§4.3 EC-19] filtered-out rules still fail closed with CDX-E904", async () => {
+	const engine = createEngine([
+		{
+			id: "core/x",
+			kinds: ["startup"],
+			budgetMs: 1000,
+			check: async () => [],
+		},
+	]);
+	// SPEC §4.3.9 EC-19: every selected rule filtered out for this trigger
+	// (the guard only runs at startup). The block holds even on the
+	// advisory prompt trigger; only L2 advises.
+	for (const trigger of ["pre-tool", "prompt", "review"] as const) {
+		const verdict = await engine.evaluate(
+			trigger,
+			{ files: [] },
+			FIXED_INSTANT,
+		);
+		assert.equal(verdict.decision, "block");
+		assert.ok(
+			verdict.findings.some((finding) => finding.code === "CDX-E904"),
+			`expected a synthetic CDX-E904 finding at ${trigger}`,
+		);
+	}
 });
 
 test("[§4.3 EC-2] enforcer throws", async () => {

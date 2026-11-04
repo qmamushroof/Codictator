@@ -4,7 +4,7 @@
 // whether a waiver suppresses a finding now: rule plus path scope, expiry
 // against the clock, and one renewal. Invalid entries are inert, so an
 // invalid waiver never suppresses (fail closed, PRD §12 #12).
-import type { Instant } from "../../kernel/index.ts";
+import type { Finding, Instant } from "../../kernel/index.ts";
 import {
 	err,
 	globMatch,
@@ -245,4 +245,46 @@ export function isWaived(
 		return Promise.resolve(err(matched.error));
 	}
 	return Promise.resolve(ok(matched.value.length > 0));
+}
+
+// SPEC §4.3.4: suppress findings covered by an active waiver, recording
+// the waiver ids. Synthetic fail-closed findings (CDX-E*) never suppress,
+// and an invalid floor-rule waiver blocks loudly instead of suppressing.
+export async function applyWaivers(
+	findings: ReadonlyArray<Finding>,
+	store: WaiverStore,
+	now: Instant,
+): Promise<{ kept: Array<Finding>; waiversApplied: Array<string> }> {
+	const kept: Array<Finding> = [];
+	const applied = new Set<string>();
+	for (const finding of findings) {
+		if (finding.code?.startsWith("CDX-E") === true) {
+			kept.push(finding);
+			continue;
+		}
+		const matched = matchWaivers(
+			store,
+			finding.ruleId,
+			finding.path ?? "",
+			now,
+		);
+		if (!matched.ok) {
+			kept.push(finding);
+			kept.push({
+				ruleId: finding.ruleId,
+				code: matched.error.code,
+				message: matched.error.message,
+				remediation: matched.error.remediation,
+			});
+			continue;
+		}
+		if (matched.value.length === 0) {
+			kept.push(finding);
+			continue;
+		}
+		for (const waiver of matched.value) {
+			applied.add(waiver.id);
+		}
+	}
+	return { kept, waiversApplied: [...applied].sort() };
 }

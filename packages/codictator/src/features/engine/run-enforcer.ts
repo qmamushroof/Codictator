@@ -1,12 +1,19 @@
-// SPEC §4.3.8 fail closed: an enforcer that throws, exceeds its budget, or
-// lacks data yields a synthetic finding and the verdict blocks. Sorted
-// enforcer and finding order keeps the verdict a pure function of its
-// inputs (SPEC §4.3.6).
-import type { CheckContext, Enforcer, Finding } from "./index.ts";
+// SPEC §4.3.3 step 2 with §4.3.8 fail closed: run the trigger's enforcers
+// under budget, then apply waivers to the findings. Sorted enforcer and
+// finding order keeps the verdict a pure function of its inputs (§4.3.6).
+// An enforcer that throws, exceeds its budget, or lacks data yields a
+// synthetic finding and the verdict blocks.
+import type { CheckContext, Enforcer, Finding, Trigger } from "./index.ts";
+import { applyWaivers, type WaiverStore } from "./waivers.ts";
+
+// SPEC §4.3.9 EC-1: the feedback-only triggers (tool.post.write and stop
+// both arrive here as post-tool) allow with the event recorded when no
+// enforcer runs; every other trigger with zero enforcers fails closed.
+const FEEDBACK_ONLY_TRIGGERS: ReadonlyArray<Trigger> = ["post-tool"];
 
 function failFinding(
 	enforcerId: string,
-	code: "CDX-E801" | "CDX-E901" | "CDX-E902" | "CDX-E903",
+	code: "CDX-E801" | "CDX-E901" | "CDX-E902" | "CDX-E903" | "CDX-E904",
 	detail: string,
 	remediation: string,
 ): Finding {
@@ -126,4 +133,55 @@ export function appendFailedFinding(): Finding {
 		"could not record its verdict event (CDX-E801)",
 		"Free disk space and fix permissions on .codictator/state/, then retry.",
 	);
+}
+
+// SPEC §4.3.8: zero effective enforcers fail closed with a synthetic CDX-E904
+// finding. No guard ran, so the finding names the engine, not a rule.
+export function zeroEnforcerFinding(): Finding {
+	return failFinding(
+		"core/engine",
+		"CDX-E904",
+		"has no effective enforcer for this trigger (CDX-E904)",
+		"Configure a pack with a rule for this trigger, then run codictator verify.",
+	);
+}
+
+// SPEC §4.3.3 steps 1-3: run the trigger's enforcers, then apply waivers to
+// the findings. Zero effective enforcers fail closed with the synthetic
+// CDX-E904 finding, except the feedback-only triggers, which allow with the
+// event recorded (§4.3.9 EC-1/EC-19).
+export async function collectFindings(
+	ordered: ReadonlyArray<Enforcer>,
+	ctx: CheckContext,
+	store: WaiverStore,
+): Promise<{
+	kept: Array<Finding>;
+	waiversApplied: Array<string>;
+	zeroEnforcers: boolean;
+}> {
+	const runnable = ordered.filter((enforcer) =>
+		enforcer.kinds.includes(ctx.trigger),
+	);
+	if (runnable.length === 0) {
+		if (FEEDBACK_ONLY_TRIGGERS.includes(ctx.trigger)) {
+			return { kept: [], waiversApplied: [], zeroEnforcers: false };
+		}
+		return {
+			kept: [zeroEnforcerFinding()],
+			waiversApplied: [],
+			zeroEnforcers: true,
+		};
+	}
+	// SPEC §4.3.3 step 2: bounded concurrency — one guard at a time keeps every
+	// guard's event-loop share (no E902 herd); sortFindings keeps the verdict byte-identical (§4.3.6).
+	const ran: Array<Array<Finding>> = [];
+	for (const enforcer of runnable) {
+		ran.push(await runEnforcer(enforcer, ctx));
+	}
+	const { kept, waiversApplied } = await applyWaivers(
+		sortFindings(ran.flat()),
+		store,
+		ctx.now,
+	);
+	return { kept, waiversApplied, zeroEnforcers: false };
 }

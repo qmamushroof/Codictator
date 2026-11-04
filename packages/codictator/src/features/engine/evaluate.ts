@@ -23,14 +23,9 @@ import type {
 	Verdict,
 } from "./index.ts";
 import { buildMessage } from "./message.ts";
-import {
-	appendFailedFinding,
-	runEnforcer,
-	sortFindings,
-} from "./run-enforcer.ts";
+import { appendFailedFinding, collectFindings } from "./run-enforcer.ts";
 import {
 	DEFAULT_WAIVER_STORE,
-	matchWaivers,
 	type Waiver,
 	type WaiverStore,
 } from "./waivers.ts";
@@ -100,71 +95,12 @@ function makeVerdictId(
 	return `${stamp}-${sha256Text(canonical).slice(0, 12)}`;
 }
 
-// SPEC §4.3.4: suppress findings covered by an active waiver, recording
-// the waiver ids. Synthetic fail-closed findings (CDX-E*) never suppress,
-// and an invalid floor-rule waiver blocks loudly instead of suppressing.
-async function applyWaivers(
-	findings: ReadonlyArray<Finding>,
-	store: WaiverStore,
-	now: Instant,
-): Promise<{ kept: Array<Finding>; waiversApplied: Array<string> }> {
-	const kept: Array<Finding> = [];
-	const applied = new Set<string>();
-	for (const finding of findings) {
-		if (finding.code?.startsWith("CDX-E") === true) {
-			kept.push(finding);
-			continue;
-		}
-		const matched = matchWaivers(
-			store,
-			finding.ruleId,
-			finding.path ?? "",
-			now,
-		);
-		if (!matched.ok) {
-			kept.push(finding);
-			kept.push({
-				ruleId: finding.ruleId,
-				code: matched.error.code,
-				message: matched.error.message,
-				remediation: matched.error.remediation,
-			});
-			continue;
-		}
-		if (matched.value.length === 0) {
-			kept.push(finding);
-			continue;
-		}
-		for (const waiver of matched.value) {
-			applied.add(waiver.id);
-		}
-	}
-	return { kept, waiversApplied: [...applied].sort() };
-}
-
 function ruleIdsOf(findings: ReadonlyArray<Finding>): Array<string> {
 	const seen = new Set<string>();
 	for (const finding of findings) {
 		seen.add(finding.ruleId);
 	}
 	return [...seen].sort();
-}
-
-async function collectFindings(
-	ordered: ReadonlyArray<Enforcer>,
-	ctx: CheckContext,
-	store: WaiverStore,
-): Promise<{ kept: Array<Finding>; waiversApplied: Array<string> }> {
-	const runnable = ordered.filter((enforcer) =>
-		enforcer.kinds.includes(ctx.trigger),
-	);
-	// SPEC §4.3.3 step 2: bounded concurrency — one guard at a time keeps every
-	// guard's event-loop share (no E902 herd); sortFindings keeps the verdict byte-identical (§4.3.6).
-	const ran: Array<Array<Finding>> = [];
-	for (const enforcer of runnable) {
-		ran.push(await runEnforcer(enforcer, ctx));
-	}
-	return applyWaivers(sortFindings(ran.flat()), store, ctx.now);
 }
 
 function decideDecision(
@@ -175,6 +111,13 @@ function decideDecision(
 		return "allow";
 	}
 	return ADVISORY_TRIGGERS.includes(trigger) ? "advise" : "block";
+}
+
+// SPEC §4.3.8 + §4.3.9 EC-19: zero effective enforcers block, except the
+// never-gating L2 layer, which advises. No engine trigger maps to L2 yet
+// (see TRIGGER_LAYERS), so every trigger blocks until that phase lands.
+function decideZeroEnforcer(trigger: Trigger): Decision {
+	return TRIGGER_LAYERS[trigger] === "L2" ? "advise" : "block";
 }
 
 function buildVerdictEvent(
@@ -230,6 +173,65 @@ function blockedVerdict(
 	};
 }
 
+// SPEC §4.3.3 steps 4-6: decide the verdict from the collected findings,
+// build the agent message, append the verdict event before returning, and
+// fail closed when the append fails (PRD §6 P5).
+async function finishEvaluation(
+	input: {
+		readonly trigger: Trigger;
+		readonly scope: Scope;
+		readonly now: Instant;
+		readonly configHash: string;
+		readonly packs: Readonly<Record<string, string>>;
+		readonly kept: Array<Finding>;
+		readonly waiversApplied: Array<string>;
+		readonly zeroEnforcers: boolean;
+		readonly clockSkew: boolean;
+	},
+	append: (event: NewEvent) => Promise<Result<void>>,
+): Promise<Verdict> {
+	const decision = input.zeroEnforcers
+		? decideZeroEnforcer(input.trigger)
+		: decideDecision(input.kept, input.trigger);
+	const eventId = makeVerdictId(
+		input.now,
+		input.trigger,
+		input.scope,
+		decision,
+		input.kept,
+		input.waiversApplied,
+		input.configHash,
+	);
+	const message = buildMessage(decision, input.kept, eventId);
+	const event = buildVerdictEvent(
+		input.trigger,
+		input.now,
+		decision,
+		input.kept,
+		input.waiversApplied,
+		input.configHash,
+		input.packs,
+		message,
+		input.clockSkew,
+	);
+	const appended = await append(event);
+	if (!appended.ok) {
+		return blockedVerdict(
+			input.now,
+			input.trigger,
+			input.scope,
+			input.configHash,
+		);
+	}
+	return {
+		decision,
+		findings: input.kept,
+		message,
+		eventId,
+		waiversApplied: input.waiversApplied,
+	};
+}
+
 // SPEC §4.3.3: pure evaluation over registered enforcers.
 export function createEngine(
 	enforcers: ReadonlyArray<Enforcer>,
@@ -260,38 +262,25 @@ export function createEngine(
 				lastNow = now;
 			}
 			const ctx: CheckContext = { trigger, scope, now, configHash };
-			const { kept, waiversApplied } = await collectFindings(
+			const { kept, waiversApplied, zeroEnforcers } = await collectFindings(
 				ordered,
 				ctx,
 				store,
 			);
-			const decision = decideDecision(kept, trigger);
-			const eventId = makeVerdictId(
-				now,
-				trigger,
-				scope,
-				decision,
-				kept,
-				waiversApplied,
-				configHash,
+			return finishEvaluation(
+				{
+					trigger,
+					scope,
+					now,
+					configHash,
+					packs,
+					kept,
+					waiversApplied,
+					zeroEnforcers,
+					clockSkew,
+				},
+				append,
 			);
-			const message = buildMessage(decision, kept, eventId);
-			const event = buildVerdictEvent(
-				trigger,
-				now,
-				decision,
-				kept,
-				waiversApplied,
-				configHash,
-				packs,
-				message,
-				clockSkew,
-			);
-			const appended = await append(event);
-			if (!appended.ok) {
-				return blockedVerdict(now, trigger, scope, configHash);
-			}
-			return { decision, findings: kept, message, eventId, waiversApplied };
 		},
 	};
 }
