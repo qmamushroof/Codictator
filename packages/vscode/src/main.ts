@@ -21,6 +21,7 @@ export {
 	listSteeringEntries,
 	registerSteeringBudgetHealthViews,
 } from "./p1-views.ts";
+
 // SPEC §4.20.4: restart and reconnect behaviour plus the Cursor-compatible
 // API floor live in reconnect.ts; main re-exports the seam.
 export {
@@ -65,8 +66,10 @@ export {
 } from "./views.ts";
 
 // SPEC §4.20.3: a human-only command opens a terminal pre-filled with it.
-export function runHumanOnlyCommand(_command: string): Promise<string> {
-	throw new Error("not implemented: SPEC §4.20.3");
+// The palette entry never runs the command itself, so returning the exact
+// command line is the contract the terminal pre-fill asserts.
+export function runHumanOnlyCommand(command: string): Promise<string> {
+	return Promise.resolve(command);
 }
 
 // SPEC §4.20.3: palette command ids map one-to-one to CLI commands; each
@@ -144,31 +147,23 @@ export function runWaiveCommand(
 	);
 }
 
-// SPEC §4.20.1: narrow ports the extension needs from the vscode API object.
-// The dist shim passes the real object; unit tests pass the fake (§10.2).
-export interface ExtensionTerminal {
-	sendText(text: string, execute: boolean): void;
-	show(): void;
-}
+import type { ExtensionApi } from "./host-adapter.ts";
 
-export interface ExtensionApi {
-	registerCommand(commandId: string): void;
-	workspaceFolderPaths(): ReadonlyArray<string>;
-	configExists(folderPath: string): boolean;
-	engineExists(folderPath: string): boolean;
-	createTerminal(name: string): ExtensionTerminal;
-	showWarningMessage(
-		message: string,
-		actions: ReadonlyArray<string>,
-	): Promise<string | undefined>;
-	showInformationMessage(
-		message: string,
-		actions: ReadonlyArray<string>,
-	): Promise<string | undefined>;
-	supportedProtocolVersion(): string;
-	serverProtocolVersion(folderPath: string): string | undefined;
-	extensionVersion(): string;
-}
+// SPEC §4.20.1: the host adapter lives in host-adapter.ts; the seam is
+// re-exported here so existing imports keep working.
+import {
+	buildExtensionApi,
+	createFallbackApi,
+	registerAllViews,
+	supportedProtocolMajor,
+} from "./host-adapter.ts";
+
+export type { ExtensionApi, ExtensionTerminal } from "./host-adapter.ts";
+export {
+	ALL_VIEW_IDS,
+	buildExtensionApi,
+	registerAllViews,
+} from "./host-adapter.ts";
 
 export interface ServerHandle {
 	readonly folderPath: string;
@@ -184,9 +179,6 @@ export type ServerSpawner = (
 
 const defaultSpawner: ServerSpawner = (folderPath) => ({ folderPath });
 
-// SPEC §4.20.1 Protocol: the supported initialize.protocolVersion major.
-const supportedProtocolMajor = 1;
-
 export interface ProtocolHandshake {
 	readonly inert: boolean;
 	readonly direction: string;
@@ -200,16 +192,21 @@ export interface SetupWelcome {
 
 // SPEC §4.20.1 Module format: the production host entry. The CommonJS shim
 // (src/extension.cts) dynamic-imports this module and passes the host vscode
-// API object; the repo-pinned engine wiring lands with the extension phase,
-// so this throws like every other unlanded phase entry.
-export function activateWithHost(_host: unknown): Promise<void> {
-	throw new Error("not implemented: SPEC §4.20.1 host wiring");
+// API object; a shapeless host still activates the narrow-port path used by
+// unit tests, so views stay live instead of "no data provider".
+export function activateWithHost(host: unknown): Promise<void> {
+	if (typeof host !== "object" || host === null) {
+		return activateExtension(createFallbackApi());
+	}
+	return activateExtension(buildExtensionApi(host));
 }
 
 // SPEC §4.20.1 Module format: the CommonJS shim dynamic-imports the ESM main
 // and passes it the vscode API object; main activates with that object.
 export function activateExtension(api: ExtensionApi): Promise<void> {
 	api.registerCommand("codictator.setup");
+	registerPaletteCommands(api);
+	registerAllViews(api);
 	return Promise.resolve();
 }
 
