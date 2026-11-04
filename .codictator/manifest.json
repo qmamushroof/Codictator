@@ -43,14 +43,14 @@
       "path": ".github/workflows/codictator.yml"
     },
     {
-      "hash": "6b5e085d1efdb898ece19e6323af9248cd84c7f9a8e0a0b7df68612d360496b7",
+      "hash": "ec67ecc2529e1c17fbb56de84c29c0c56851f7c985d6e2f37b93daf7586595ea",
       "mode": "file",
       "owner": "codictator",
       "path": "AGENTS.md"
     }
   ],
   "codictator": "0.1.3",
-  "hash": "a0ed08fee5ae3b85edb00d4b5d27ad71135c86ecb3837b08a1c000bbdd7cd75d",
+  "hash": "c40891e2d282849232536f765bd182e51d2bf01f46f5e899b2affb8f2aaadcb8",
   "version": 1
 }
 
