@@ -3,7 +3,10 @@
 // install-hooks writes the hooks and points core.hooksPath at them;
 // uninstall removes generated files with the CI warning.
 import { parseArgs } from "node:util";
-import { renderCustomRegenFragment } from "../features/adapters/index.ts";
+import {
+	renderCustomRegenFragment,
+	withCodictatorOwner,
+} from "../features/adapters/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
 	EXPECTED_HOOKS_PATH,
@@ -117,10 +120,15 @@ export async function handleRegen(
 			tools: configured.tools,
 		},
 		req.engineVersion ?? ENGINE_VERSION,
+		root.value,
 	);
+	// SPEC §4.14.1: custom fragments keep the historical codictator owner.
+	const customOwned = withCodictatorOwner(customFiles.value);
 	const wrote = await writePlan(
 		root.value,
-		{ files: [...plan.files, ...customFiles.value] },
+		{
+			files: [...plan.files, ...customOwned],
+		},
 		req.engineVersion ?? ENGINE_VERSION,
 	);
 	if (!wrote.ok) {

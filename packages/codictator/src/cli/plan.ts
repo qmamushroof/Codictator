@@ -1,6 +1,7 @@
 // SPEC §4.14.1 + §4.14.5: guardrail plan builders. The file list (config,
 // steering block, CI workflow, hooks, launcher) and the manifest write are
 // shared by init and regen, so regeneration stays byte-identical.
+import { renderHarnessFiles } from "../features/adapters/index.ts";
 import { renderWorkflow } from "../features/ci/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
@@ -104,7 +105,12 @@ function withManagedBlock(existing: string | undefined): string {
 }
 
 export interface GuardrailPlan {
-	readonly files: ReadonlyArray<{ path: string; content: string }>;
+	readonly files: ReadonlyArray<{
+		path: string;
+		content: string;
+		owner: string;
+		mode: "file";
+	}>;
 }
 
 // SPEC §4.14.5 + §4.19.2: init and regen carry the generator-owned config
@@ -126,30 +132,71 @@ export function guardrailPlan(
 	existingAgents: string | undefined,
 	extras: PlanExtras = {},
 	engineVersion: string = ENGINE_VERSION,
+	root = ".",
 ): GuardrailPlan {
-	const files: Array<{ path: string; content: string }> = [];
+	const files: Array<{
+		path: string;
+		content: string;
+		owner: string;
+		mode: "file";
+	}> = [];
 	files.push({
 		path: ".codictator/config.json",
 		content: configText(harnesses, profile, extras, engineVersion),
+		owner: "codictator",
+		mode: "file",
 	});
-	files.push({ path: "AGENTS.md", content: withManagedBlock(existingAgents) });
+	files.push({
+		path: "AGENTS.md",
+		content: withManagedBlock(existingAgents),
+		owner: "codictator",
+		mode: "file",
+	});
 	const workflow = renderWorkflow(repoName);
 	files.push({
 		path: ".github/workflows/codictator.yml",
 		content: workflow.text ?? "",
+		owner: "codictator",
+		mode: "file",
 	});
 	for (const hook of HOOK_NAMES) {
 		files.push({
 			path: `${EXPECTED_HOOKS_PATH}/${hook}`,
 			content: renderHookScript(hook),
+			owner: "codictator",
+			mode: "file",
 		});
 	}
 	const plan = hookInstallPlan({});
 	files.push({
 		path: `${EXPECTED_HOOKS_PATH}/.gitattributes`,
 		content: plan.gitattributes,
+		owner: "codictator",
+		mode: "file",
 	});
-	files.push({ path: ".codictator/bin/run.mjs", content: LAUNCHER_TEXT });
+	files.push({
+		path: ".codictator/bin/run.mjs",
+		content: LAUNCHER_TEXT,
+		owner: "codictator",
+		mode: "file",
+	});
+	// SPEC §4.13.1 step 2 + §4.5: every configured built-in harness owns
+	// its rendered files; universal renders nothing, custom:* stays with
+	// renderCustomHarnessFiles. Renders ignore the input, so the "." default
+	// keeps the init path working unchanged. SPEC §4.6.2 + core/guardrail-manifest:
+	// one row per path, first occurrence wins: base files go first so the
+	// plan's managed AGENTS.md beats any harness-rendered AGENTS.md, then
+	// harness files follow in sorted harness-id order, skipping paths
+	// already emitted (cursor/gemini-cli AGENTS.md, codex-cli/muse-code
+	// .agents/skills overlap), so writePlan writes each path once.
+	const seen = new Set(files.map((entry) => entry.path));
+	const sortedHarnesses = [...new Set(harnesses)].sort();
+	for (const artifact of renderHarnessFiles(sortedHarnesses, root)) {
+		if (!seen.has(artifact.path)) {
+			seen.add(artifact.path);
+			files.push({ ...artifact, mode: "file" });
+		}
+	}
 	return { files };
 }
 
@@ -175,12 +222,15 @@ export async function writePlan(
 	}
 	const manifest = buildManifest(
 		engineVersion,
-		written.map((entry) => ({
-			path: entry.path,
-			owner: "codictator",
-			mode: "file" as const,
-			hash: entry.hash,
-		})),
+		written.map((entry, index) => {
+			const planned = plan.files[index];
+			return {
+				path: entry.path,
+				owner: planned === undefined ? "codictator" : planned.owner,
+				mode: planned === undefined ? "file" : planned.mode,
+				hash: entry.hash,
+			};
+		}),
 	);
 	const saved = await ports.value.fs.write(
 		".codictator/manifest.json",
