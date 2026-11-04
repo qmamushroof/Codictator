@@ -6,12 +6,13 @@ import { ENGINE_VERSION } from "../features/config/index.ts";
 import { captureBaseline } from "../features/remediation/index.ts";
 import type { Result } from "../kernel/index.ts";
 import {
+	err,
 	ok,
 	parseJson,
 	resolveRepoRoot,
 	stableStringify,
 } from "../kernel/index.ts";
-import { buildHelperTool, guardrailPlan } from "./plan.ts";
+import { buildHelperTool, guardrailPlan, writePlan } from "./plan.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
 	checkHuman,
@@ -194,6 +195,47 @@ export async function initPreamble(
 		);
 	}
 	return root.value;
+}
+
+export interface InitSequence {
+	readonly written: ReadonlyArray<{ path: string }>;
+	readonly baseline: boolean;
+}
+
+// SPEC §4.13.1: the shared write-then-guard tail of the init path: plan,
+// write, fresh-config guard, baseline guard. init and setup run the same
+// tail; one helper owns it.
+export async function runInitSequence(
+	root: string,
+	req: CommandRequest,
+	flags: InitFlags,
+	planned: ReadonlyArray<string>,
+	engineVersion: string,
+): Promise<Result<InitSequence>> {
+	const plan = await buildGuardrailPlan(root, flags, planned, engineVersion);
+	const wrote = await writePlan(root, plan, engineVersion);
+	if (!wrote.ok) {
+		return fail<InitSequence>(
+			"CDX-E903",
+			wrote.error.message,
+			wrote.error.remediation,
+			req.json,
+		);
+	}
+	const fresh = await checkFreshConfig(root, req);
+	if (!fresh.ok) {
+		return err(fresh.error);
+	}
+	const baseline = await ensureBaseline(root, req);
+	if (!baseline.ok) {
+		return fail<InitSequence>(
+			baseline.error.code,
+			baseline.error.message,
+			baseline.error.remediation,
+			req.json,
+		);
+	}
+	return ok({ written: wrote.value, baseline: baseline.value });
 }
 
 // The plan assembly handleInit writes: read-only inputs in, GuardrailPlan
