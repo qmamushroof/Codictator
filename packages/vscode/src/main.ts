@@ -1,14 +1,43 @@
 // SPEC §4.20.1: the extension entry (a dist/extension.cjs shim plus
 // dist/main.js) lands with the extension phase; this stub exposes the package
 // id meanwhile so the package has a compiled input.
+import type { ExtensionApi } from "./host-adapter.ts";
+import { supportedProtocolMajor } from "./host-adapter.ts";
+
 export const extensionId: string = "codictator-vscode";
 
+// SPEC §4.20.1 Engine: activation wiring lives in engine-activation.ts; main
+// re-exports the seam so existing imports keep working.
+export type {
+	EngineSpawner,
+	ServerHandle,
+	ServerSpawner,
+} from "./engine-activation.ts";
+export {
+	activateExtension,
+	activateWithHost,
+	notifyMissingEngine,
+	registerPaletteCommands,
+	serversForFolders,
+} from "./engine-activation.ts";
 export type { EngineRequest } from "./engine-client.ts";
 export {
 	engineRequestFor,
 	resetEngineRequest,
 	setEngineRequest,
 } from "./engine-client.ts";
+export type {
+	ExtensionApi,
+	ExtensionHostFs,
+	ExtensionTerminal,
+} from "./host-adapter.ts";
+export {
+	ALL_VIEW_IDS,
+	buildExtensionApi,
+	configPathFor,
+	enginePathFor,
+	registerAllViews,
+} from "./host-adapter.ts";
 export type {
 	BudgetState,
 	HealthState,
@@ -21,7 +50,6 @@ export {
 	listSteeringEntries,
 	registerSteeringBudgetHealthViews,
 } from "./p1-views.ts";
-
 // SPEC §4.20.4: restart and reconnect behaviour plus the Cursor-compatible
 // API floor live in reconnect.ts; main re-exports the seam.
 export {
@@ -30,6 +58,12 @@ export {
 	reconnectBackoffMs,
 	shouldRestartOnLockChange,
 } from "./reconnect.ts";
+export type { StdioEngineHandle } from "./stdio-client.ts";
+export {
+	engineArgvFor,
+	routeEngineRequests,
+	spawnStdioEngine,
+} from "./stdio-client.ts";
 export type {
 	TimelineDisposable,
 	TimelineEventRow,
@@ -72,17 +106,6 @@ export function runHumanOnlyCommand(command: string): Promise<string> {
 	return Promise.resolve(command);
 }
 
-// SPEC §4.20.3: palette command ids map one-to-one to CLI commands; each
-// entry runs its argv through the engine `run` method (§7.15).
-const paletteCommandArgv: Readonly<Record<string, ReadonlyArray<string>>> = {
-	"codictator.verify": ["verify"],
-	"codictator.status": ["status"],
-	"codictator.explain": ["explain"],
-	"codictator.regen": ["regen"],
-	"codictator.remediateNext": ["remediate", "next"],
-	"codictator.taskShow": ["task", "show"],
-};
-
 // SPEC §4.19.2: human-only roots refuse agent execution with CDX-E107.
 function isHumanOnlyArgv(argv: ReadonlyArray<string>): boolean {
 	const [head, sub] = argv;
@@ -108,14 +131,6 @@ function openPrefilledTerminal(
 	terminal.sendText(commandLine, false);
 	terminal.show();
 	return commandLine;
-}
-
-// SPEC §4.20.3: palette commands map one-to-one to CLI commands; each entry
-// runs its argv through the engine `run` method.
-export function registerPaletteCommands(api: ExtensionApi): void {
-	for (const commandId of Object.keys(paletteCommandArgv).sort()) {
-		api.registerCommand(commandId);
-	}
 }
 
 // SPEC §4.20.3: a palette command runs its CLI argv through the engine `run`
@@ -147,69 +162,6 @@ export function runWaiveCommand(
 	);
 }
 
-import type { ExtensionApi } from "./host-adapter.ts";
-
-// SPEC §4.20.1: the host adapter lives in host-adapter.ts; the seam is
-// re-exported here so existing imports keep working.
-import {
-	buildExtensionApi,
-	createFallbackApi,
-	registerAllViews,
-	supportedProtocolMajor,
-} from "./host-adapter.ts";
-
-export type { ExtensionApi, ExtensionTerminal } from "./host-adapter.ts";
-export {
-	ALL_VIEW_IDS,
-	buildExtensionApi,
-	registerAllViews,
-} from "./host-adapter.ts";
-
-export interface ServerHandle {
-	readonly folderPath: string;
-}
-
-// SPEC §4.20.1 Engine: the spawn seam. Production passes a child-process
-// spawn; unit tests pass a fake or rely on the default, which records
-// nothing and spawns nothing, so no real process starts under node:test.
-export type ServerSpawner = (
-	folderPath: string,
-	args: ReadonlyArray<string>,
-) => ServerHandle;
-
-const defaultSpawner: ServerSpawner = (folderPath) => ({ folderPath });
-
-export interface ProtocolHandshake {
-	readonly inert: boolean;
-	readonly direction: string;
-}
-
-export interface SetupWelcome {
-	readonly terminalName: string;
-	readonly prefilledCommand: string;
-	readonly executed: boolean;
-}
-
-// SPEC §4.20.1 Module format: the production host entry. The CommonJS shim
-// (src/extension.cts) dynamic-imports this module and passes the host vscode
-// API object; a shapeless host still activates the narrow-port path used by
-// unit tests, so views stay live instead of "no data provider".
-export function activateWithHost(host: unknown): Promise<void> {
-	if (typeof host !== "object" || host === null) {
-		return activateExtension(createFallbackApi());
-	}
-	return activateExtension(buildExtensionApi(host));
-}
-
-// SPEC §4.20.1 Module format: the CommonJS shim dynamic-imports the ESM main
-// and passes it the vscode API object; main activates with that object.
-export function activateExtension(api: ExtensionApi): Promise<void> {
-	api.registerCommand("codictator.setup");
-	registerPaletteCommands(api);
-	registerAllViews(api);
-	return Promise.resolve();
-}
-
 // SPEC §4.20.1 Activation: workspaceContains config, or the Codictator view.
 export function activationEvents(): ReadonlyArray<string> {
 	return ["workspaceContains:.codictator/config.json", "onView:Codictator"];
@@ -221,25 +173,15 @@ export function untrustedWorkspaceSupport(): boolean {
 	return false;
 }
 
-// SPEC §4.20.1 Engine: one stdio server per folder that has a config.
-export function serversForFolders(
-	api: ExtensionApi,
-	spawn: ServerSpawner = defaultSpawner,
-): Promise<Array<ServerHandle>> {
-	const servers: Array<ServerHandle> = [];
-	for (const folderPath of api.workspaceFolderPaths()) {
-		if (api.configExists(folderPath)) {
-			servers.push(
-				spawn(folderPath, [
-					"node",
-					`${folderPath}/.codictator/bin/run.mjs`,
-					"serve",
-					"--stdio",
-				]),
-			);
-		}
-	}
-	return Promise.resolve(servers);
+export interface ProtocolHandshake {
+	readonly inert: boolean;
+	readonly direction: string;
+}
+
+export interface SetupWelcome {
+	readonly terminalName: string;
+	readonly prefilledCommand: string;
+	readonly executed: boolean;
 }
 
 // SPEC §4.20.1 Protocol: an unsupported version stays inert and names which
@@ -275,23 +217,4 @@ export function runSetupWelcome(
 		prefilledCommand,
 		executed: false,
 	});
-}
-
-// SPEC §4.20.1 Engine: no engine installed → a notification offering the
-// install in a terminal.
-export async function notifyMissingEngine(
-	api: ExtensionApi,
-	folderPath: string,
-): Promise<string | undefined> {
-	const installAction = "Install in a terminal";
-	const chosen = await api.showWarningMessage(
-		`Codictator engine not found for ${folderPath}. Run npm ci in a terminal to install it.`,
-		[installAction, "Dismiss"],
-	);
-	if (chosen === installAction) {
-		const terminal = api.createTerminal("Codictator Install");
-		terminal.sendText("npm ci", true);
-		terminal.show();
-	}
-	return chosen;
 }

@@ -1,0 +1,17 @@
+{
+	"rule": "core/doc-placement",
+	"section": "§5.10",
+	"expectation": "passing",
+	"trigger": "harness and agent dirs are placed locations",
+	"expectRules": [],
+	"files": {
+		".agents/NOTES.md": "# Notes\n\nAgent notes live here.\n",
+		".claude/NOTES.md": "# Notes\n\nAgent notes live here.\n",
+		".github/NOTES.md": "# Notes\n\nAgent notes live here.\n",
+		".cursor/NOTES.md": "# Notes\n\nAgent notes live here.\n",
+		".gemini/NOTES.md": "# Notes\n\nAgent notes live here.\n",
+		".opencode/NOTES.md": "# Notes\n\nAgent notes live here.\n",
+		".muse/NOTES.md": "# Notes\n\nAgent notes live here.\n",
+		".codictator/NOTES.md": "# Notes\n\nAgent notes live here.\n"
+	}
+}

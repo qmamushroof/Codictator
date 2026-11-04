@@ -4,7 +4,12 @@
 // stay quiet when the report carries no violation, so violating fixtures
 // flag and passing fixtures stay clean (SPEC §4.4.4).
 import type { Ports } from "../../../kernel/index.ts";
-import { isFixturePath, ok, type Result } from "../../../kernel/index.ts";
+import {
+	globMatch,
+	isFixturePath,
+	ok,
+	type Result,
+} from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
@@ -32,6 +37,16 @@ const ROOT_DOCS: ReadonlySet<string> = new Set([
 	"SECURITY.md",
 	"CODE_OF_CONDUCT.md",
 ]);
+
+const HARNESS_DIRS = [
+	".agents",
+	".claude",
+	".github",
+	".cursor",
+	".gemini",
+	".opencode",
+	".muse",
+] as const;
 
 // Doc rules judge markdown prose and the fixture measure reports. Other
 // files carry no doc signals; reading them only pays a parse for nothing
@@ -95,7 +110,13 @@ function placementFinding(
 	if (/^packages\/[^/]+\/README\.md$/.test(file)) {
 		return undefined;
 	}
-	if (allowed.some((glob) => file === glob)) {
+	if (
+		HARNESS_DIRS.some((dir) => file.startsWith(`${dir}/`)) ||
+		file.startsWith(".codictator/")
+	) {
+		return undefined;
+	}
+	if (allowed.some((glob) => globMatch(glob, file))) {
 		return undefined;
 	}
 	return outside(`doc outside its placed locations: ${file}`);
