@@ -13,11 +13,10 @@ import {
 } from "../features/integrity/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { err, ok, resolveRepoRoot } from "../kernel/index.ts";
+import { initPreamble } from "./init-plan.ts";
 import { guardrailPlan, writePlan } from "./plan.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
-	checkHuman,
-	commandEnv,
 	fail,
 	loadRepoConfig,
 	portsFor,
@@ -150,7 +149,7 @@ function encode(text: string): Uint8Array {
 	return new TextEncoder().encode(text);
 }
 
-async function writeHookFiles(root: string): Promise<Result<true>> {
+export async function writeHookFiles(root: string): Promise<Result<true>> {
 	const ports = await portsFor(root);
 	if (!ports.ok) {
 		return err(ports.error);
@@ -175,7 +174,7 @@ async function writeHookFiles(root: string): Promise<Result<true>> {
 	return ok(true);
 }
 
-async function configureHooksPath(
+export async function configureHooksPath(
 	root: string,
 	req: CommandRequest,
 ): Promise<void> {
@@ -268,31 +267,18 @@ export async function handleUninstall(
 	if (rejected !== undefined) {
 		return rejected;
 	}
-	const human = checkHuman(commandEnv(), []);
-	if (!human.ok) {
-		return fail(
-			"CDX-E107",
-			human.error.message,
-			human.error.remediation,
-			req.json,
-		);
+	const preamble = await initPreamble(req);
+	if (typeof preamble !== "string") {
+		return preamble;
 	}
-	const root = await resolveRepoRoot(req.cwd);
-	if (!root.ok) {
-		return fail(
-			"CDX-E703",
-			root.error.message,
-			root.error.remediation,
-			req.json,
-		);
-	}
-	await removeGuardrails(root.value);
+	const root = preamble;
+	await removeGuardrails(root);
 	const note =
 		"CI will fail until its workflow and required check are removed too.";
 	if (req.json) {
-		printJson({ uninstalled: true, root: root.value, note });
+		printJson({ uninstalled: true, root, note });
 	} else {
-		printHuman(`uninstalled guardrails from ${root.value}`, req.quiet);
+		printHuman(`uninstalled guardrails from ${root}`, req.quiet);
 		printHuman(note, req.quiet);
 	}
 	return ok(0);

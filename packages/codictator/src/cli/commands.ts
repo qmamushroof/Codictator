@@ -22,6 +22,7 @@ import { handleReview } from "./proofs.ts";
 import { handleTestCmd } from "./proofs-test.ts";
 import { handleRemediate } from "./remediation.ts";
 import { handleContext, handleReport } from "./report.ts";
+import { handleSetup } from "./setup.ts";
 import type { CommandRequest } from "./shared.ts";
 import { handleTask } from "./task-advance.ts";
 import { handleExplain, handleReplay } from "./transparency.ts";
@@ -31,6 +32,7 @@ export type Handler = (req: CommandRequest) => Promise<Result<number>>;
 
 export const COMMANDS: Readonly<Record<string, Handler>> = {
 	init: handleInit,
+	setup: handleSetup,
 	"install-hooks": handleInstallHooks,
 	regen: handleRegen,
 	uninstall: handleUninstall,
@@ -55,4 +57,4 @@ export const COMMANDS: Readonly<Record<string, Handler>> = {
 };
 
 export const USAGE =
-	"usage: codictator <init|install-hooks|regen|uninstall|verify|status|explain|replay|report|context|hook|task|test|review|waive|baseline|deps|remediate|ci|generate|pack|adapter|serve> [--json] [--cwd <path>] [--quiet]";
+	"usage: codictator <init|setup|install-hooks|regen|uninstall|verify|status|explain|replay|report|context|hook|task|test|review|waive|baseline|deps|remediate|ci|generate|pack|adapter|serve> [--json] [--cwd <path>] [--quiet]";

@@ -6,18 +6,16 @@ import { ENGINE_VERSION } from "../features/config/index.ts";
 import { isBuiltinPackId } from "../features/packs/index.ts";
 import type { Result } from "../kernel/index.ts";
 import {
-	buildGuardrailPlan,
-	checkFreshConfig,
 	defaultHarnesses,
 	emitInitResult,
-	ensureBaseline,
 	type InitFlags,
 	initPreamble,
 	reportExisting,
+	runInitSequence,
 } from "./init-plan.ts";
-import { KNOWN_HELPER_ROLES, writePlan } from "./plan.ts";
+import { KNOWN_HELPER_ROLES } from "./plan.ts";
 import type { CommandRequest } from "./shared.ts";
-import { fail, readStateText, usageError } from "./shared.ts";
+import { readStateText, usageError } from "./shared.ts";
 
 const KNOWN_PROFILES: ReadonlySet<string> = new Set([
 	"app",
@@ -78,7 +76,9 @@ function narrowInitTools(
 	return tools;
 }
 
-function parseInitFlags(args: ReadonlyArray<string>): InitFlags | undefined {
+export function parseInitFlags(
+	args: ReadonlyArray<string>,
+): InitFlags | undefined {
 	try {
 		const parsed = parseArgs({
 			args: [...args],
@@ -130,28 +130,20 @@ export async function handleInit(req: CommandRequest): Promise<Result<number>> {
 	if (existing !== undefined && !flags.repair) {
 		return reportExisting(req, root);
 	}
-	const plan = await buildGuardrailPlan(root, flags, planned, engineVersion);
-	const wrote = await writePlan(root, plan, engineVersion);
-	if (!wrote.ok) {
-		return fail(
-			"CDX-E903",
-			wrote.error.message,
-			wrote.error.remediation,
-			req.json,
-		);
+	const sequenced = await runInitSequence(
+		root,
+		req,
+		flags,
+		planned,
+		engineVersion,
+	);
+	if (!sequenced.ok) {
+		return sequenced;
 	}
-	const fresh = await checkFreshConfig(root, req);
-	if (!fresh.ok) {
-		return fresh;
-	}
-	const baseline = await ensureBaseline(root, req);
-	if (!baseline.ok) {
-		return fail(
-			baseline.error.code,
-			baseline.error.message,
-			baseline.error.remediation,
-			req.json,
-		);
-	}
-	return emitInitResult(req, root, wrote.value, baseline.value);
+	return emitInitResult(
+		req,
+		root,
+		sequenced.value.written,
+		sequenced.value.baseline,
+	);
 }

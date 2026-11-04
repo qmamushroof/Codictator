@@ -21,6 +21,7 @@ export interface RunContext {
 // these before invoking anything.
 const ALWAYS_HUMAN: ReadonlySet<string> = new Set([
 	"init",
+	"setup",
 	"uninstall",
 	"waive",
 ]);
