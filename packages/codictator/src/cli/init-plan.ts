@@ -13,6 +13,7 @@ import {
 	stableStringify,
 } from "../kernel/index.ts";
 import { buildHelperTool, guardrailPlan, writePlan } from "./plan.ts";
+import { ensureGitignoreEntries } from "./setup-gitignore.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
 	checkHuman,
@@ -203,8 +204,8 @@ export interface InitSequence {
 }
 
 // SPEC §4.13.1: the shared write-then-guard tail of the init path: plan,
-// write, fresh-config guard, baseline guard. init and setup run the same
-// tail; one helper owns it.
+// write, fresh-config guard, baseline guard, gitignore guarantee. init
+// and setup run the same tail; one helper owns it.
 export async function runInitSequence(
 	root: string,
 	req: CommandRequest,
@@ -235,7 +236,20 @@ export async function runInitSequence(
 			req.json,
 		);
 	}
-	return ok({ written: wrote.value, baseline: baseline.value });
+	const ignored = await ensureGitignoreEntries(root);
+	if (!ignored.ok) {
+		return fail<InitSequence>(
+			"CDX-E903",
+			ignored.error.message,
+			ignored.error.remediation,
+			req.json,
+		);
+	}
+	const extra = ignored.value.added.length > 0 ? [{ path: ".gitignore" }] : [];
+	return ok({
+		written: [...wrote.value, ...extra],
+		baseline: baseline.value,
+	});
 }
 
 // The plan assembly handleInit writes: read-only inputs in, GuardrailPlan
