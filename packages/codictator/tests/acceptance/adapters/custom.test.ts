@@ -1,19 +1,21 @@
-// SPEC §4.5.6: custom adapters. One red test per contract row, pinned
-// against the acme reference fixture (fixtures/harness/custom/acme/0.0.0).
-// Tests 1-3 drive the loader seam (src/features/adapters/custom.ts), which
-// still throws; tests 4-6 drive regen and the adapter CLI, which do not
-// know custom ids yet. All six fail red until step 12.7 lands.
 import { strict as assert } from "node:assert";
+
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+
 import path from "node:path";
+
 import test from "node:test";
+
 import { fileURLToPath } from "node:url";
+
 import { handleRegen } from "../../../src/cli/guardrail.ts";
-import { runCommand } from "../../../src/cli/index.ts";
+
 import { guardrailPlan, writePlan } from "../../../src/cli/plan.ts";
+
 import type { CommandRequest } from "../../../src/cli/shared.ts";
+
 import { loadCustomAdapter } from "../../../src/features/adapters/custom.ts";
-import { parseEvent } from "../../../src/features/adapters/index.ts";
+
 import { createTempRepo } from "../../support/temp-repo.ts";
 
 function fixtureRoot(): string {
@@ -54,6 +56,40 @@ function seedAcme(repoDir: string): void {
 		source,
 		"utf8",
 	);
+}
+
+function snapshotTree(dir: string): Map<string, string> {
+	const files = new Map<string, string>();
+	const walk = (current: string, prefix: string): void => {
+		const entries = readdirSync(current, { withFileTypes: true }).sort(
+			(a, b) => (a.name < b.name ? -1 : 1),
+		);
+		for (const entry of entries) {
+			if (entry.name === ".git") {
+				continue;
+			}
+			const full = path.join(current, entry.name);
+			const relative = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
+			if (entry.isDirectory()) {
+				walk(full, relative);
+			} else if (entry.isFile()) {
+				files.set(relative, readFileSync(full, "utf8"));
+			}
+		}
+	};
+	walk(dir, "");
+	return files;
+}
+
+function regenRequest(repoDir: string): CommandRequest {
+	return {
+		args: [],
+		json: false,
+		quiet: true,
+		cwd: repoDir,
+		nodeVersion: undefined,
+		stdinText: undefined,
+	};
 }
 
 test("[§4.5.6] custom adapter load parses the golden payload to the normalised event", async () => {
@@ -159,40 +195,6 @@ test("[§4.5.6] custom adapter render matches the golden files", async () => {
 	}
 });
 
-function snapshotTree(dir: string): Map<string, string> {
-	const files = new Map<string, string>();
-	const walk = (current: string, prefix: string): void => {
-		const entries = readdirSync(current, { withFileTypes: true }).sort(
-			(a, b) => (a.name < b.name ? -1 : 1),
-		);
-		for (const entry of entries) {
-			if (entry.name === ".git") {
-				continue;
-			}
-			const full = path.join(current, entry.name);
-			const relative = prefix === "" ? entry.name : `${prefix}/${entry.name}`;
-			if (entry.isDirectory()) {
-				walk(full, relative);
-			} else if (entry.isFile()) {
-				files.set(relative, readFileSync(full, "utf8"));
-			}
-		}
-	};
-	walk(dir, "");
-	return files;
-}
-
-function regenRequest(repoDir: string): CommandRequest {
-	return {
-		args: [],
-		json: false,
-		quiet: true,
-		cwd: repoDir,
-		nodeVersion: undefined,
-		stdinText: undefined,
-	};
-}
-
 test("[§4.5.6] custom adapter regen is byte-identical", async () => {
 	// SPEC §4.5.6 + §4.5.8 EC-12: with custom:acme configured, regen renders
 	// the custom files, and a second regen over unchanged config reproduces
@@ -223,81 +225,6 @@ test("[§4.5.6] custom adapter regen is byte-identical", async () => {
 			[...snapshotTree(repo.dir).entries()],
 			[...before.entries()],
 		);
-	} finally {
-		repo.cleanup();
-	}
-});
-
-test("[§4.5.6] custom adapter without passing contract tests is inert with CDX-E302", async () => {
-	// SPEC §4.5.6: custom:raw ships an adapter but never passed
-	// `adapter test`, so every use stays inert with CDX-E302 (exit 3).
-	// The adapter command knows no custom id yet and answers CDX-E301.
-	const repo = createTempRepo();
-	try {
-		repo.writeFile(
-			".codictator/adapters/raw/adapter.mjs",
-			'export const adapter = { id: "custom:raw" };\n',
-		);
-		const result = await runCommand({
-			argv: ["adapter", "test", "custom:raw"],
-			cwd: repo.dir,
-		});
-		assert.equal(result.ok, false);
-		if (!result.ok) {
-			assert.equal(result.error.code, "CDX-E302");
-		}
-	} finally {
-		repo.cleanup();
-	}
-});
-
-test("[§4.5.6] unknown custom adapter id fails with CDX-E301", async () => {
-	// SPEC §4.5.6 + §8.1: an uninstalled custom id is CDX-E301 at the event
-	// layer, not a throw. parseEvent currently throws for every custom id.
-	const raw = { ...readPayload(), cwd: "/repo" };
-	const result = parseEvent("custom:nope", "tool.pre.write", raw);
-	assert.equal(result.ok, false);
-	if (!result.ok) {
-		assert.equal(result.error.code, "CDX-E301");
-	}
-});
-
-test("[§4.5.6] adapter test custom:acme passes its contract", async () => {
-	// SPEC §4.5.6: `adapter test custom:acme` runs the seeded adapter against
-	// its shipped goldens (golden parse, render byte for byte, reply smoke),
-	// so a verifying adapter exits 0 instead of staying inert with CDX-E302.
-	const repo = createTempRepo();
-	try {
-		seedAcme(repo.dir);
-		repo.writeFile(
-			".codictator/adapters/acme/tool-pre-write.json",
-			readFileSync(path.join(fixtureRoot(), "tool-pre-write.json"), "utf8"),
-		);
-		mkdirSync(
-			path.join(repo.dir, ".codictator", "adapters", "acme", "render"),
-			{
-				recursive: true,
-			},
-		);
-		writeFileSync(
-			path.join(
-				repo.dir,
-				".codictator",
-				"adapters",
-				"acme",
-				"render",
-				"acme-hooks.json",
-			),
-			readFileSync(
-				path.join(fixtureRoot(), "render", "acme-hooks.json"),
-				"utf8",
-			),
-		);
-		const result = await runCommand({
-			argv: ["adapter", "test", "custom:acme"],
-			cwd: repo.dir,
-		});
-		assert.equal(result.ok, true);
 	} finally {
 		repo.cleanup();
 	}

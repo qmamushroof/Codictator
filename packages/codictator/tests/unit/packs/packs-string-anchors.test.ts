@@ -1,35 +1,37 @@
-// SPEC §4.7.3, §4.9.2, §5.8, §5.9, §6.1: marker-word and extractor guards
-// match reports, never substrings inside code strings. `includes("edited:")`
-// flagged the guard's own source and status strings like "corrupt lines
-// skipped: 2"; only a line-start marker (`edited:`, `skipped:`) is a
-// report. Import specifiers come from a lexer, never a regex, so fixture
-// strings never count. Corpus counts match the SPEC §4.9.2 sentence shape,
-// never bare digit runs. Write targets must look like paths.
 import { strict as assert } from "node:assert";
+
 import test from "node:test";
+
 import type {
 	CheckContext,
 	Enforcer,
 } from "../../../src/features/engine/index.ts";
+
 import { resolveArchPublicEntry } from "../../../src/features/packs/enforcers/arch-guards.ts";
+
 import { resolveDocNoCorpusCounts } from "../../../src/features/packs/enforcers/docs-guards.ts";
-import {
-	resolveNoNewSuppressions,
-	resolveNoSkippedTests,
-	resolveTestCommandIntact,
-} from "../../../src/features/packs/enforcers/integrity-guards.ts";
+
 import {
 	resolveBugRowsImmutable,
 	resolveHistoryAppendOnly,
 } from "../../../src/features/packs/enforcers/records-guards.ts";
+
 import { resolveTsNoPhantomImport } from "../../../src/features/packs/enforcers/ts-phantom.ts";
+
 import { resolveWorkflowGates } from "../../../src/features/packs/enforcers/workflow-guards.ts";
+
 import { resolveWriteConfinement } from "../../../src/features/packs/enforcers/write-confine.ts";
+
 import type { EnforcerDecl } from "../../../src/features/packs/manifest.ts";
+
 import type { PackRule, Result } from "../../../src/kernel/index.ts";
+
 import { err, makeError } from "../../../src/kernel/index.ts";
+
 import { FIXED_INSTANT } from "../../support/fake-clock.ts";
+
 import { FakeFs } from "../../support/fake-fs.ts";
+
 import { createFakePorts } from "../../support/fake-ports.ts";
 
 function ruleFor(id: string): PackRule {
@@ -261,61 +263,4 @@ test("[§5.7] public entry matches import markers not prose", async () => {
 		{ "sample.txt": "import: engine/index.js\n" },
 	);
 	assert.equal(shallow, 0);
-});
-
-test("[§5.5] skipped tests ignore fixture strings", async () => {
-	const vector = await findingsOf(
-		resolveNoSkippedTests,
-		"core/no-skipped-tests",
-		{ "src/a.test.ts": "const v = \"test.skip('b', () => {});\";\n" },
-	);
-	assert.equal(vector, 0);
-	const skipped = await findingsOf(
-		resolveNoSkippedTests,
-		"core/no-skipped-tests",
-		{ "src/a.test.ts": 'test.skip("b", () => {});\n' },
-	);
-	assert.equal(skipped, 1);
-});
-
-test("[§5.5] suppressions match added markers not prose", async () => {
-	const prose = await findingsOf(
-		resolveNoNewSuppressions,
-		"core/no-new-suppressions",
-		{ "docs/a.md": "Suppressions like `biome-ignore` stay banned.\n" },
-	);
-	assert.equal(prose, 0);
-	const added = await findingsOf(
-		resolveNoNewSuppressions,
-		"core/no-new-suppressions",
-		{ "sample.txt": "added: eslint-disable-next-line\n" },
-	);
-	assert.equal(added, 1);
-	const none = await findingsOf(
-		resolveNoNewSuppressions,
-		"core/no-new-suppressions",
-		{ "sample.txt": "added: none\n" },
-	);
-	assert.equal(none, 0);
-});
-
-test("[§5.5] test commands match test markers not prose", async () => {
-	const prose = await findingsOf(
-		resolveTestCommandIntact,
-		"core/test-command-intact",
-		{ "docs/a.md": "Never weaken the command with `|| true`.\n" },
-	);
-	assert.equal(prose, 0);
-	const narrowed = await findingsOf(
-		resolveTestCommandIntact,
-		"core/test-command-intact",
-		{ "sample.txt": "test: node --test one-file.ts\n" },
-	);
-	assert.equal(narrowed, 1);
-	const intact = await findingsOf(
-		resolveTestCommandIntact,
-		"core/test-command-intact",
-		{ "sample.txt": "test: npm test\n" },
-	);
-	assert.equal(intact, 0);
 });

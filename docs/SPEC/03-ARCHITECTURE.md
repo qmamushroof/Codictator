@@ -26,7 +26,7 @@ packages/
   vscode/                    extension "codictator-vscode" (§4.20)
 ```
 
-Tests sit beside the package, not beside each source file, so the size and placement rules treat `src/` as production code only.
+Tests sit beside the package, not beside each source file, so the placement rules treat `src/` as production code only; `core/file-size` covers `src/` and test files alike (§5.6).
 
 ## 3.2 Packages
 

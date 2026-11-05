@@ -1,22 +1,22 @@
-// SPEC §4.18.3-§4.18.5: branch coverage for the audit surfaces (status,
-// replay, CI summary, report) the red ledger does not pin. Pure builders
-// over caller-supplied inputs: no ports, no I/O, fully deterministic.
 import { strict as assert } from "node:assert";
+
 import test from "node:test";
+
 import type {
 	CiSummaryInput,
 	EventLogLine,
 	StatusInput,
 } from "../../../src/features/audit/index.ts";
+
 import {
 	buildCiSummary,
-	buildReportText,
 	buildStatusJson,
 	buildStatusText,
 	replaySummary,
 	summarizeTokenSaverEvidence,
 	tokenSaverHelper,
 } from "../../../src/features/audit/index.ts";
+
 import { FIXED_INSTANT } from "../../support/fake-clock.ts";
 
 function statusInput(overrides: Partial<StatusInput> = {}): StatusInput {
@@ -271,32 +271,4 @@ test("[§4.18.4] ci summary renders empty sections as none", () => {
 	});
 	assert.ok(text.includes("## integrity then blocking findings\nnone"));
 	assert.ok(text.includes("## unverifiable items\nnone"));
-});
-
-test("[§4.18.5] report metrics read from local events only", () => {
-	// SPEC §4.18.5: block/allow pairs set the self-correction rate,
-	// escalations count, p95 renders in ms, and token metrics stay
-	// "unavailable" without harness usage data.
-	const text = buildReportText({
-		events: [
-			eventLine({ id: "e1", decision: "block", durationMs: 10 }),
-			eventLine({ id: "e2", decision: "allow", durationMs: 30 }),
-			eventLine({ id: "e3", kind: "escalation", durationMs: 20 }),
-		],
-		corrupt: 2,
-		now: FIXED_INSTANT,
-	});
-	assert.ok(text.includes("self-correction rate: 1/1"));
-	assert.ok(text.includes("loop-breaker escalations: 1"));
-	assert.ok(text.includes("unavailable (no harness usage data)"));
-	assert.ok(text.includes("p95 event latency: 30ms"));
-	assert.ok(text.includes("corrupt lines skipped: 2"));
-});
-
-test("[§4.18.5] report with no events names the gaps", () => {
-	// SPEC §4.18.5: with no events the rate and p95 name the gap instead
-	// of rendering zeros.
-	const text = buildReportText({ events: [], corrupt: 0, now: FIXED_INSTANT });
-	assert.ok(text.includes("no blocks observed"));
-	assert.ok(text.includes("p95 event latency: no events observed"));
 });

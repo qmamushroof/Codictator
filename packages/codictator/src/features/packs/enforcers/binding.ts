@@ -31,10 +31,10 @@ function isTrigger(value: string): value is Trigger {
 	return false;
 }
 
-// SPEC §3.1 + §5.6: the size and placement rules treat test trees as
-// non-production code, so the size enforcers skip them. Lockfiles and
-// fixture data are generated or test vectors, governed by dep-lockfile and
-// the pack self-test instead.
+// SPEC §3.1 + §5.6: the health enforcers treat test trees as
+// non-production code, so they skip them; core/file-size covers test
+// files. Lockfiles and fixture data are generated or test vectors,
+// governed by dep-lockfile and the pack self-test instead.
 const TEST_PATH_GLOBS: ReadonlyArray<string> = [
 	"**/tests/**",
 	"**/test/**",

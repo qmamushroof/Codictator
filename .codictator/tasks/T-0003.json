@@ -1,0 +1,14 @@
+{
+	"acceptanceCriteria": [],
+	"branch": "docs/test-size-cap",
+	"files": {
+		"allow": []
+	},
+	"id": "T-0003",
+	"phase": "discovery",
+	"phases": [],
+	"spec": [],
+	"title": "Enforce file-size cap on test files",
+	"type": "docs",
+	"version": 1
+}
