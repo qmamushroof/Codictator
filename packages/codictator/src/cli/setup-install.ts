@@ -1,17 +1,21 @@
 // SPEC §4.19.4 + §4.19.6 steps 4-5: the engine install layout and the
 // clean install here. npm repos install at the root; other repos get
 // .codictator/tool/package.json pinning the engine exactly, then npm ci
-// runs in the directory owning the lockfile. A registry or network outage
-// maps to CDX-E401 (exit 5); any other install failure is a missing
-// engine, CDX-E003 (exit 6).
+// runs in the directory owning the lockfile. Placing the tool manifest
+// and generating its lockfile mutate the repo and need the network, so
+// both wait for an explicit TTY yes; anything else fails closed with
+// CDX-E003. A registry or network outage maps to CDX-E401 (exit 5); any
+// other install failure is a missing engine, CDX-E003 (exit 6).
 import path from "node:path";
+import { createInterface } from "node:readline/promises";
 import { ENGINE_VERSION } from "../features/config/index.ts";
-import type { Result } from "../kernel/index.ts";
+import type { ProcOptions, ProcResult, Result } from "../kernel/index.ts";
 import { err, ok, stableStringify } from "../kernel/index.ts";
 import type { SetupStep } from "./setup.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
 	fail,
+	isTty,
 	portsFor,
 	printHuman,
 	readStateText,
@@ -24,10 +28,59 @@ export interface SetupInstallTarget {
 	readonly dirRel: string;
 }
 
+// SPEC §4.19.6: the test seams for the consent gate. isTty answers the
+// TTY check; run stands in for the npm spawn, so no test touches the
+// network. Production callers omit both.
+export interface SetupInstallDeps {
+	readonly isTty?: () => boolean;
+	readonly run?: (
+		argv: ReadonlyArray<string>,
+		options: ProcOptions,
+	) => Promise<ProcResult>;
+}
+
+// SPEC §4.19.6: the tool-scope consent gate. The prompt names the missing
+// artifact, the directory and the exact command; only y/yes counts as
+// consent, everything else fails closed. Tests answer through
+// req.stdinText (the runCommand seam); production reads one TTY line, so
+// quiet tests never print and never block.
+async function askInstallConsent(
+	req: CommandRequest,
+	message: string,
+): Promise<boolean> {
+	const firstLine = req.stdinText?.split("\n")[0] ?? "";
+	if (req.stdinText !== undefined) {
+		return /^\s*y(es)?\s*$/i.test(firstLine);
+	}
+	const line = createInterface({
+		input: process.stdin,
+		output: process.stdout,
+	});
+	try {
+		process.stdout.write(`${message} `);
+		return /^\s*y(es)?\s*$/i.test(await line.question(""));
+	} finally {
+		line.close();
+	}
+}
+
+function missingLockfile(
+	req: CommandRequest,
+	target: SetupInstallTarget,
+): Result<number> {
+	return fail(
+		"CDX-E003",
+		`no lockfile at ${target.lockRel}, so npm ci cannot run`,
+		`Run npm install in ${target.dirRel} (needs network access), then rerun codictator setup.`,
+		req.json,
+	);
+}
+
 export async function setupInstallLayout(
 	req: CommandRequest,
 	root: string,
 	steps: Array<SetupStep>,
+	deps: SetupInstallDeps = {},
 ): Promise<Result<SetupInstallTarget>> {
 	const rootManifest = await readStateText(root, "package.json");
 	if (rootManifest !== undefined) {
@@ -39,6 +92,23 @@ export async function setupInstallLayout(
 		".codictator/tool/package.json",
 	);
 	if (toolManifest === undefined) {
+		// SPEC §4.19.6: placing the manifest mutates the repo, so it waits
+		// for the same consent as the install it enables.
+		const tty = deps.isTty ?? isTty;
+		const agreed =
+			tty() &&
+			(await askInstallConsent(
+				req,
+				`setup: missing .codictator/tool/package.json - write it in .codictator/tool? [y/n]`,
+			));
+		if (!agreed) {
+			return fail(
+				"CDX-E003",
+				"no manifest at .codictator/tool/package.json, so the engine cannot be placed",
+				"Rerun codictator setup and consent to the tool install (needs network access).",
+				req.json,
+			);
+		}
 		const engineVersion = req.engineVersion ?? ENGINE_VERSION;
 		const saved = await writeStateText(
 			root,
@@ -81,9 +151,10 @@ function looksLikeRegistryOutage(output: string): boolean {
 export function setupNpmArgv(
 	platform: string = process.platform,
 	execPath: string = process.execPath,
+	subcommand: "ci" | "install" = "ci",
 ): ReadonlyArray<string> {
 	if (platform !== "win32") {
-		return ["npm", "ci"];
+		return ["npm", subcommand];
 	}
 	return [
 		execPath,
@@ -94,25 +165,18 @@ export function setupNpmArgv(
 			"bin",
 			"npm-cli.js",
 		),
-		"ci",
+		subcommand,
 	];
 }
 
-export async function setupInstallHere(
+async function runNpmSubcommand(
 	req: CommandRequest,
 	root: string,
 	target: SetupInstallTarget,
+	subcommand: "ci" | "install",
 	steps: Array<SetupStep>,
+	deps: SetupInstallDeps,
 ): Promise<Result<number>> {
-	const lock = await readStateText(root, target.lockRel);
-	if (lock === undefined) {
-		return fail(
-			"CDX-E003",
-			`no lockfile at ${target.lockRel}, so npm ci cannot run`,
-			`Run npm install in ${target.dirRel} (needs network access), then rerun codictator setup.`,
-			req.json,
-		);
-	}
 	const ports = await portsFor(root);
 	if (!ports.ok) {
 		return fail(
@@ -122,15 +186,33 @@ export async function setupInstallHere(
 			req.json,
 		);
 	}
-	const ran = await ports.value.proc.run(setupNpmArgv(), {
-		cwd: target.dir,
-		env: {},
-		timeoutMs: 300000,
-		maxOutputBytes: 4 * 1024 * 1024,
-	});
+	const run =
+		deps.run ??
+		((argv: ReadonlyArray<string>, options: ProcOptions): Promise<ProcResult> =>
+			ports.value.proc.run(argv, options));
+	const ran = await run(
+		setupNpmArgv(process.platform, process.execPath, subcommand),
+		{
+			cwd: target.dir,
+			env: {},
+			timeoutMs: 300000,
+			maxOutputBytes: 4 * 1024 * 1024,
+		},
+	);
 	if (!ran.timedOut && !ran.truncated && ran.code === 0) {
-		steps.push({ step: "install-here", ok: true });
-		printHuman(`setup: npm ci passed in ${target.dirRel}`, req.quiet);
+		steps.push(
+			subcommand === "ci"
+				? { step: "install-here", ok: true }
+				: {
+						step: "install",
+						ok: true,
+						detail: { dir: target.dirRel, command: "npm install" },
+					},
+		);
+		printHuman(
+			`setup: npm ${subcommand} passed in ${target.dirRel}`,
+			req.quiet,
+		);
 		return ok(0);
 	}
 	if (ran.timedOut || looksLikeRegistryOutage(`${ran.stdout}\n${ran.stderr}`)) {
@@ -143,8 +225,49 @@ export async function setupInstallHere(
 	}
 	return fail(
 		"CDX-E003",
-		`engine install failed in ${target.dirRel} (npm ci exit ${String(ran.code)})`,
-		`Run npm ci in ${target.dirRel}, then rerun codictator setup.`,
+		`engine install failed in ${target.dirRel} (npm ${subcommand} exit ${String(ran.code)})`,
+		`Run npm ${subcommand} in ${target.dirRel}, then rerun codictator setup.`,
 		req.json,
 	);
+}
+
+export async function setupInstallHere(
+	req: CommandRequest,
+	root: string,
+	target: SetupInstallTarget,
+	steps: Array<SetupStep>,
+	deps: SetupInstallDeps = {},
+): Promise<Result<number>> {
+	const lock = await readStateText(root, target.lockRel);
+	if (lock === undefined) {
+		if (target.dirRel === ".") {
+			return missingLockfile(req, target);
+		}
+		// SPEC §4.19.6: generating the tool lockfile mutates the repo and
+		// needs the network, so a TTY human confirms the exact commands;
+		// a decline or a non-TTY run fails closed with the current E003,
+		// unmutated and unprompted.
+		const tty = deps.isTty ?? isTty;
+		const agreed =
+			tty() &&
+			(await askInstallConsent(
+				req,
+				`setup: missing ${target.lockRel} - run "npm install" then "npm ci" in ${target.dirRel}? [y/n]`,
+			));
+		if (!agreed) {
+			return missingLockfile(req, target);
+		}
+		const generated = await runNpmSubcommand(
+			req,
+			root,
+			target,
+			"install",
+			steps,
+			deps,
+		);
+		if (!generated.ok) {
+			return generated;
+		}
+	}
+	return runNpmSubcommand(req, root, target, "ci", steps, deps);
 }
