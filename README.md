@@ -2,9 +2,15 @@
 
 # Codictator
 
-**Code + Dictator.** A guardrail engine for repositories built by AI coding agents. Whatever the prompt says, only minimal, secure, tested, documented and well-architected changes land, and tokens are not wasted getting there. Rules files only ask — Codictator turns each rule into something that runs: context injected where the agent reads it, harness hooks that block a bad tool call before it lands, git hooks, CI checks and scheduled sweeps. Asked for a bad outcome, the agent is steered to the compliant one and told which rule applied. Nothing is hidden.
+**Code + Dictator.** A guardrail engine for repositories built by AI coding agents. Whatever the prompt says, only minimal, secure, tested, documented and well-architected changes land, and tokens are not wasted getting there.
 
-> **Status: 0.2.4 published on npm, the VS Code Marketplace, and Open VSX.** Packages `codictator` and `codictator-vscode` are at 0.2.4 ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md) green). Install from the registries below; source builds remain an alternative. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
+Rules files only ask — Codictator turns each rule into something that runs: context injected where the agent reads it, harness hooks that block a bad tool call before it lands, git hooks, CI checks and scheduled sweeps.
+
+Asked for a bad outcome, the agent is steered to the compliant one and told which rule applied. Nothing is hidden.
+
+> **Status: 0.2.4 published on npm, the VS Code Marketplace, and Open VSX.** Packages `codictator` and `codictator-vscode` are at 0.2.4 ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md) green).
+>
+> Install from the registries below; source builds remain an alternative. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
 
 ## What it enforces
 
