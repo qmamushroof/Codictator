@@ -10,8 +10,8 @@ Security and secrets, exact and current dependencies, SPEC-driven tests written 
 
 ## Harnesses and languages
 
-- **First release (P0):** Muse Code (best-supported), OpenCode, Claude Code, GitHub Copilot, Codex CLI, plus Universal via `AGENTS.md`, git hooks and CI; TypeScript / JavaScript, full including npm enforcement, with language-agnostic rules applying to any repo; Meta Muse models suggested by default, any OpenAI- or Anthropic-compatible provider, or a local model.
-- **Later (P1):** Cursor, Gemini CLI; .NET, Python. What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5](docs/SPEC/04-05-ADAPTERS.md).
+- **First release (P0):** Muse Code (best-supported), OpenCode, Claude Code, GitHub Copilot, Codex CLI, Cursor, Gemini CLI, plus Universal via `AGENTS.md`, git hooks and CI; TypeScript / JavaScript, full including npm enforcement, and Python (pack rules, extractor, PyPI enforcement), with language-agnostic rules applying to any repo; Meta Muse models suggested by default, any OpenAI- or Anthropic-compatible provider, or a local model.
+- **Later (P1):** .NET. What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5](docs/SPEC/04-05-ADAPTERS.md).
 
 ## Install
 
