@@ -7,8 +7,8 @@ import {
 	currentBudget,
 	healthSummary,
 	listSteeringEntries,
-	registerSteeringBudgetHealthViews,
 } from "../../src/p1-views.ts";
+import { registerSteeringBudgetHealthViews } from "../../src/tree-provider.ts";
 import { createFakeVscode } from "../support/fake-vscode.ts";
 
 test("[§4.20.2] steering view shows exactly what was injected, when and into which harness session", async () => {

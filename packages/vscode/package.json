@@ -13,7 +13,12 @@
 	},
 	"activationEvents": [
 		"workspaceContains:.codictator/config.json",
-		"onView:Codictator"
+		"onView:codictator-active-rules",
+		"onView:codictator-violations",
+		"onView:codictator-timeline",
+		"onView:codictator-steering",
+		"onView:codictator-budget",
+		"onView:codictator-health"
 	],
 	"capabilities": {
 		"untrustedWorkspaces": {

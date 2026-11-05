@@ -1,6 +1,8 @@
 // SPEC §4.20.1: the extension entry (a dist/extension.cjs shim plus
 // dist/main.js) lands with the extension phase; this stub exposes the package
 // id meanwhile so the package has a compiled input.
+
+import { openPrefilledTerminal } from "./engine-activation.ts";
 import type { ExtensionApi } from "./host-adapter.ts";
 import { supportedProtocolMajor } from "./host-adapter.ts";
 
@@ -17,7 +19,9 @@ export {
 	activateExtension,
 	activateWithHost,
 	notifyMissingEngine,
+	openPrefilledTerminal,
 	registerPaletteCommands,
+	runPaletteCommand,
 	serversForFolders,
 } from "./engine-activation.ts";
 export type { EngineRequest } from "./engine-client.ts";
@@ -27,28 +31,26 @@ export {
 	setEngineRequest,
 } from "./engine-client.ts";
 export type {
+	CommandRegistrar,
 	ExtensionApi,
 	ExtensionHostFs,
 	ExtensionTerminal,
+	ProviderRegistrar,
 } from "./host-adapter.ts";
 export {
-	ALL_VIEW_IDS,
 	buildExtensionApi,
 	configPathFor,
 	enginePathFor,
-	registerAllViews,
 } from "./host-adapter.ts";
 export type {
 	BudgetState,
 	HealthState,
-	P1ViewsApi,
 	SteeringEntry,
 } from "./p1-views.ts";
 export {
 	currentBudget,
 	healthSummary,
 	listSteeringEntries,
-	registerSteeringBudgetHealthViews,
 } from "./p1-views.ts";
 // SPEC §4.20.4: restart and reconnect behaviour plus the Cursor-compatible
 // API floor live in reconnect.ts; main re-exports the seam.
@@ -78,6 +80,22 @@ export {
 	subscribeTimeline,
 } from "./timeline.ts";
 export type {
+	ExtensionCommandHandler,
+	ExtensionDisposable,
+	ExtensionTreeDataProvider,
+	ExtensionTreeEvent,
+	ExtensionTreeItem,
+	P1ViewsApi,
+} from "./tree-provider.ts";
+export {
+	ALL_VIEW_IDS,
+	buildTreeProvider,
+	isTreeDataProvider,
+	registerAllViews,
+	registerSteeringBudgetHealthViews,
+	toDisposable,
+} from "./tree-provider.ts";
+export type {
 	DiagnosticEntry,
 	DiagnosticSink,
 	RefreshPorts,
@@ -106,48 +124,9 @@ export function runHumanOnlyCommand(command: string): Promise<string> {
 	return Promise.resolve(command);
 }
 
-// SPEC §4.19.2: human-only roots refuse agent execution with CDX-E107.
-function isHumanOnlyArgv(argv: ReadonlyArray<string>): boolean {
-	const [head, sub] = argv;
-	return (
-		head === "waive" ||
-		head === "init" ||
-		head === "uninstall" ||
-		(head === "task" && sub === "ack") ||
-		(head === "pack" && sub === "accept") ||
-		(head === "baseline" && sub === "capture")
-	);
-}
-
-// SPEC §4.20.3: the CDX-E107 answer opens an integrated terminal pre-filled
-// with the exact command; the human runs it, so the UI is never a bypass.
-// Fire-and-forget like the setup welcome: pre-fill with execute:false.
-function openPrefilledTerminal(
-	api: ExtensionApi,
-	name: string,
-	commandLine: string,
-): string {
-	const terminal = api.createTerminal(name);
-	terminal.sendText(commandLine, false);
-	terminal.show();
-	return commandLine;
-}
-
-// SPEC §4.20.3: a palette command runs its CLI argv through the engine `run`
-// method; a human-only answer (CDX-E107) opens a pre-filled terminal.
-export function runPaletteCommand(
-	api: ExtensionApi,
-	_commandId: string,
-	argv: ReadonlyArray<string>,
-): Promise<string> {
-	const commandLine = `codictator ${argv.join(" ")}`;
-	if (isHumanOnlyArgv(argv)) {
-		return Promise.resolve(
-			openPrefilledTerminal(api, "Codictator", commandLine),
-		);
-	}
-	return Promise.resolve(commandLine);
-}
+// SPEC §4.20.3: the palette runtime (human-only gate plus engine `run`
+// routing) lives with the activation wiring in engine-activation.ts; main
+// keeps only the waive pre-fill on its local openPrefilledTerminal import.
 
 // SPEC §4.20 EC-7: the waive action opens a terminal pre-filled with the
 // exact `codictator waive …` command and runs nothing else.
@@ -162,9 +141,19 @@ export function runWaiveCommand(
 	);
 }
 
-// SPEC §4.20.1 Activation: workspaceContains config, or the Codictator view.
+// SPEC §4.20.1 Activation: workspaceContains config, or opening any
+// Codictator view. onView names real view ids (the container id never
+// fires), so every entry can actually trigger.
 export function activationEvents(): ReadonlyArray<string> {
-	return ["workspaceContains:.codictator/config.json", "onView:Codictator"];
+	return [
+		"workspaceContains:.codictator/config.json",
+		"onView:codictator-active-rules",
+		"onView:codictator-violations",
+		"onView:codictator-timeline",
+		"onView:codictator-steering",
+		"onView:codictator-budget",
+		"onView:codictator-health",
+	];
 }
 
 // SPEC §4.20.1 Trust: the extension executes the repo engine, so untrusted

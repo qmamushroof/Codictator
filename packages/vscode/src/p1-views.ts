@@ -34,11 +34,6 @@ export interface HealthState {
 	readonly remediation: string;
 }
 
-// The narrow port the P1 views need to register their tree data providers.
-export interface P1ViewsApi {
-	registerTreeDataProvider(viewId: string, items: ReadonlyArray<unknown>): void;
-}
-
 // SPEC §4.20.2: one steering row per injection event with a named session.
 // Rows without a session or timestamp carry no "when / into which session",
 // so they stay out the way the Violations view drops findings without a
@@ -133,16 +128,4 @@ export async function healthSummary(
 		integrity: stringFieldOf(answer, "integrity") ?? "unverified",
 		remediation: stringFieldOf(answer, "remediation") ?? "no plan",
 	};
-}
-
-// SPEC §4.20.2: the Codictator container gains the three P1 tree views
-// beside the P0 ones; each registration pins its view id.
-export function registerSteeringBudgetHealthViews(api: P1ViewsApi): void {
-	for (const viewId of [
-		"codictator-budget",
-		"codictator-health",
-		"codictator-steering",
-	]) {
-		api.registerTreeDataProvider(viewId, []);
-	}
 }

@@ -3,10 +3,15 @@
 // API object into the narrow ExtensionApi port; no vscode import keeps the
 // source erasable (§11 S6). main.ts re-exports this seam so the entry keeps
 // its shape (§4.20) and existing imports keep working.
-import { isRecord } from "./engine-client.ts";
+import { fieldOf, isRecord } from "./engine-client.ts";
 import type { ExtensionHostFs } from "./fs-ports.ts";
 import { configPathFor, enginePathFor, existsFile } from "./fs-ports.ts";
-import { registerSteeringBudgetHealthViews as registerP1Views } from "./p1-views.ts";
+import type {
+	ExtensionCommandHandler,
+	ExtensionDisposable,
+	ExtensionTreeDataProvider,
+} from "./tree-provider.ts";
+import { isTreeDataProvider, toDisposable } from "./tree-provider.ts";
 
 // SPEC §4.20.1 Engine: the fs port lives in fs-ports.ts; the seam is
 // re-exported here so existing imports keep working.
@@ -21,11 +26,8 @@ export interface ExtensionTerminal {
 }
 
 export interface ExtensionApi {
-	registerCommand(commandId: string): void;
-	registerTreeDataProvider?(
-		viewId: string,
-		items: ReadonlyArray<unknown>,
-	): void;
+	registerCommand: CommandRegistrar;
+	registerTreeDataProvider?: ProviderRegistrar;
 	workspaceFolderPaths(): ReadonlyArray<string>;
 	configExists(folderPath: string): boolean;
 	engineExists(folderPath: string): boolean;
@@ -41,36 +43,6 @@ export interface ExtensionApi {
 	supportedProtocolVersion(): string;
 	serverProtocolVersion(folderPath: string): string | undefined;
 	extensionVersion(): string;
-}
-
-// SPEC §4.20.2: all tree view ids the container owns; P0 first.
-// F-04: P0 ids live here so registerAllViews registers them directly while
-// the P1 helper owns its three; every view registers exactly once.
-const P0_VIEW_IDS: ReadonlyArray<string> = [
-	"codictator-active-rules",
-	"codictator-violations",
-	"codictator-timeline",
-];
-
-export const ALL_VIEW_IDS: ReadonlyArray<string> = [
-	...P0_VIEW_IDS,
-	"codictator-steering",
-	"codictator-budget",
-	"codictator-health",
-];
-
-export function registerAllViews(api: ExtensionApi): void {
-	for (const viewId of P0_VIEW_IDS) {
-		api.registerTreeDataProvider?.(viewId, []);
-	}
-	registerP1Views({
-		registerTreeDataProvider: (
-			viewId: string,
-			items: ReadonlyArray<unknown>,
-		): void => {
-			api.registerTreeDataProvider?.(viewId, items);
-		},
-	});
 }
 
 // SPEC §4.20.1 Protocol: the supported initialize.protocolVersion major,
@@ -92,13 +64,6 @@ function isHostFn(value: unknown): value is HostFn {
 	return typeof value === "function";
 }
 
-function fieldOf(host: unknown, name: string): unknown {
-	if (!isRecord(host)) {
-		return undefined;
-	}
-	return host[name];
-}
-
 function sectionOf(
 	host: unknown,
 	name: string,
@@ -107,29 +72,49 @@ function sectionOf(
 	return isRecord(section) ? section : undefined;
 }
 
-function registerCommandOf(host: unknown): (commandId: string) => void {
+// SPEC §4.20.1: the registrar the host exposes once narrowed; the host
+// return surfaces as a disposable when it carries one.
+export type CommandRegistrar = (
+	commandId: string,
+	handler: ExtensionCommandHandler,
+) => ExtensionDisposable | undefined;
+
+export type ProviderRegistrar = (
+	viewId: string,
+	provider: ExtensionTreeDataProvider,
+) => ExtensionDisposable | undefined;
+
+// SPEC §4.20.3: palette entries reach the engine through a real handler;
+// a non-function handler is a programmer error and throws like extHost.
+function registerCommandOf(host: unknown): CommandRegistrar {
 	const register = fieldOf(sectionOf(host, "commands"), "registerCommand");
 	if (isHostFn(register)) {
-		return (commandId: string): void => {
-			register(commandId);
+		return (commandId: string, handler: ExtensionCommandHandler) => {
+			if (typeof handler !== "function") {
+				throw new TypeError(`command ${commandId} needs a function handler`);
+			}
+			return toDisposable(register(commandId, handler));
 		};
 	}
-	return (_commandId: string): void => undefined;
+	return (): undefined => undefined;
 }
 
-function registerTreeDataProviderOf(
-	host: unknown,
-): (viewId: string, items: ReadonlyArray<unknown>) => void {
+// SPEC §4.20.2: the host receives a real provider, so the container
+// renders instead of throwing `provider.getChildren is not a function`.
+function registerTreeDataProviderOf(host: unknown): ProviderRegistrar {
 	const register = fieldOf(
 		sectionOf(host, "window"),
 		"registerTreeDataProvider",
 	);
 	if (isHostFn(register)) {
-		return (viewId: string, items: ReadonlyArray<unknown>): void => {
-			register(viewId, { items: [...items] });
+		return (viewId: string, provider: ExtensionTreeDataProvider) => {
+			if (!isTreeDataProvider(provider)) {
+				throw new TypeError(`view ${viewId} needs a tree data provider`);
+			}
+			return toDisposable(register(viewId, provider));
 		};
 	}
-	return (_viewId: string, _items: ReadonlyArray<unknown>): void => undefined;
+	return (): undefined => undefined;
 }
 
 // SPEC §4.20.1 Module format: F-01 builds the narrow-port adapter from a
@@ -260,11 +245,14 @@ function messageOf(
 
 export function createFallbackApi(): ExtensionApi {
 	return {
-		registerCommand: (_commandId: string): void => undefined,
+		registerCommand: (
+			_commandId: string,
+			_handler: ExtensionCommandHandler,
+		): undefined => undefined,
 		registerTreeDataProvider: (
 			_viewId: string,
-			_items: ReadonlyArray<unknown>,
-		): void => undefined,
+			_provider: ExtensionTreeDataProvider,
+		): undefined => undefined,
 		workspaceFolderPaths: () => [],
 		configExists: () => false,
 		engineExists: () => false,
