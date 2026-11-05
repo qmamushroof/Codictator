@@ -6,24 +6,24 @@
 import { fieldOf, isRecord } from "./engine-client.ts";
 import type { ExtensionHostFs } from "./fs-ports.ts";
 import { configPathFor, enginePathFor, existsFile } from "./fs-ports.ts";
+import type { ExtensionTerminal } from "./host-terminal.ts";
+import { messageOf, terminalOf } from "./host-terminal.ts";
+import { logOf } from "./output-channel.ts";
+import { onDidSaveOf } from "./save-notification.ts";
 import type {
 	ExtensionCommandHandler,
 	ExtensionDisposable,
-	ExtensionTreeDataProvider,
+	MutableTreeDataProvider,
 } from "./tree-provider.ts";
 import { isTreeDataProvider, toDisposable } from "./tree-provider.ts";
+import type { SaveEvent } from "./views.ts";
 
-// SPEC §4.20.1 Engine: the fs port lives in fs-ports.ts; the seam is
-// re-exported here so existing imports keep working.
+// SPEC §4.20.1 Engine: the fs port lives in fs-ports.ts and the terminal
+// port in host-terminal.ts; the seams are re-exported here so existing
+// imports keep working.
 export type { ExtensionHostFs } from "./fs-ports.ts";
 export { configPathFor, enginePathFor, existsFile } from "./fs-ports.ts";
-
-// SPEC §4.20.1: narrow ports the extension needs from the vscode API object.
-// The dist shim passes the real object; unit tests pass the fake (§10.2).
-export interface ExtensionTerminal {
-	sendText(text: string, execute: boolean): void;
-	show(): void;
-}
+export type { ExtensionTerminal } from "./host-terminal.ts";
 
 export interface ExtensionApi {
 	registerCommand: CommandRegistrar;
@@ -40,6 +40,14 @@ export interface ExtensionApi {
 		message: string,
 		actions: ReadonlyArray<string>,
 	): Promise<string | undefined>;
+	// SPEC §4.20.2: the Codictator output channel. Spawn and handshake
+	// failures land here so a dead engine is visible instead of silent.
+	log(message: string): void;
+	// SPEC §4.20.2 L2 on save: the refresh seam. Absent on hosts without a
+	// save notification, where views refresh on engine events only.
+	onDidSave?: (
+		listener: (event: SaveEvent) => void,
+	) => ExtensionDisposable | undefined;
 	supportedProtocolVersion(): string;
 	serverProtocolVersion(folderPath: string): string | undefined;
 	extensionVersion(): string;
@@ -71,7 +79,6 @@ function sectionOf(
 	const section = fieldOf(host, name);
 	return isRecord(section) ? section : undefined;
 }
-
 // SPEC §4.20.1: the registrar the host exposes once narrowed; the host
 // return surfaces as a disposable when it carries one.
 export type CommandRegistrar = (
@@ -81,7 +88,7 @@ export type CommandRegistrar = (
 
 export type ProviderRegistrar = (
 	viewId: string,
-	provider: ExtensionTreeDataProvider,
+	provider: MutableTreeDataProvider,
 ) => ExtensionDisposable | undefined;
 
 // SPEC §4.20.3: palette entries reach the engine through a real handler;
@@ -107,7 +114,7 @@ function registerTreeDataProviderOf(host: unknown): ProviderRegistrar {
 		"registerTreeDataProvider",
 	);
 	if (isHostFn(register)) {
-		return (viewId: string, provider: ExtensionTreeDataProvider) => {
+		return (viewId: string, provider: MutableTreeDataProvider) => {
 			if (!isTreeDataProvider(provider)) {
 				throw new TypeError(`view ${viewId} needs a tree data provider`);
 			}
@@ -138,10 +145,25 @@ export function buildExtensionApi(
 			messageOf(window, "showWarningMessage", message, actions),
 		showInformationMessage: (message, actions) =>
 			messageOf(window, "showInformationMessage", message, actions),
+		log: logOf(host),
+		...spreadOnDidSave(onDidSaveOf(host, () => workspacePathsOf(workspace))),
 		supportedProtocolVersion: () => supportedProtocolMajor.toString(),
 		serverProtocolVersion: () => undefined,
 		extensionVersion: () => fallbackExtensionVersion,
 	};
+}
+
+// SPEC §4.20.2 L2 on save: the save seam is optional, so a host without
+// the notification spreads nothing instead of an explicit undefined,
+// which exactOptionalPropertyTypes forbids.
+function spreadOnDidSave(
+	onDidSave:
+		| ((
+				listener: (event: SaveEvent) => void,
+		  ) => ExtensionDisposable | undefined)
+		| undefined,
+): Pick<ExtensionApi, "onDidSave"> {
+	return onDidSave === undefined ? {} : { onDidSave };
 }
 
 // F-03: resolves one workspace folder entry; the string case used to sit
@@ -179,70 +201,6 @@ function workspacePathsOf(workspace: unknown): Array<string> {
 	return paths;
 }
 
-// F-02: wraps a host terminal once; undefined when the handle carries no
-// object surface, so terminalOf stays a thin guard.
-function wrapTerminal(terminal: unknown): ExtensionTerminal | undefined {
-	if (!isRecord(terminal)) {
-		return undefined;
-	}
-	const sendText = fieldOf(terminal, "sendText");
-	const show = fieldOf(terminal, "show");
-	return {
-		sendText: (text: string, execute: boolean): void => {
-			if (isHostFn(sendText)) {
-				sendText(text, execute);
-			}
-		},
-		show: (): void => {
-			if (isHostFn(show)) {
-				show();
-			}
-		},
-	};
-}
-
-function terminalOf(hostWindow: unknown, name: string): ExtensionTerminal {
-	const create = fieldOf(hostWindow, "createTerminal");
-	if (isHostFn(create)) {
-		try {
-			const wrapped = wrapTerminal(create(name));
-			if (wrapped !== undefined) {
-				return wrapped;
-			}
-		} catch {
-			// Fall through to the no-op terminal below.
-		}
-	}
-	return {
-		sendText: (_text: string, _execute: boolean): void => undefined,
-		show: (): void => undefined,
-	};
-}
-
-function messageOf(
-	hostWindow: unknown,
-	kind: "showWarningMessage" | "showInformationMessage",
-	message: string,
-	actions: ReadonlyArray<string>,
-): Promise<string | undefined> {
-	if (!isRecord(hostWindow)) {
-		return Promise.resolve(undefined);
-	}
-	const show = hostWindow[kind];
-	if (!isHostFn(show)) {
-		return Promise.resolve(undefined);
-	}
-	let result: unknown;
-	try {
-		result = show.call(hostWindow, message, ...actions);
-	} catch {
-		return Promise.resolve(undefined);
-	}
-	return Promise.resolve(result).then((value): string | undefined =>
-		typeof value === "string" ? value : undefined,
-	);
-}
-
 export function createFallbackApi(): ExtensionApi {
 	return {
 		registerCommand: (
@@ -251,7 +209,7 @@ export function createFallbackApi(): ExtensionApi {
 		): undefined => undefined,
 		registerTreeDataProvider: (
 			_viewId: string,
-			_provider: ExtensionTreeDataProvider,
+			_provider: MutableTreeDataProvider,
 		): undefined => undefined,
 		workspaceFolderPaths: () => [],
 		configExists: () => false,
@@ -262,6 +220,7 @@ export function createFallbackApi(): ExtensionApi {
 		}),
 		showWarningMessage: () => Promise.resolve(undefined),
 		showInformationMessage: () => Promise.resolve(undefined),
+		log: (): void => undefined,
 		supportedProtocolVersion: () => supportedProtocolMajor.toString(),
 		serverProtocolVersion: () => undefined,
 		extensionVersion: () => fallbackExtensionVersion,

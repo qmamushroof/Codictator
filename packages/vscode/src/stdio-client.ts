@@ -8,17 +8,12 @@
 import type { ChildProcess } from "node:child_process";
 import { spawn } from "node:child_process";
 import type { EngineRequest } from "./engine-client.ts";
-import {
-	isRecord,
-	numberFieldOf,
-	parseJsonLine,
-	stringFieldOf,
-} from "./engine-client.ts";
+import { isRecord, numberFieldOf } from "./engine-client.ts";
 import { enginePathFor, supportedProtocolMajor } from "./host-adapter.ts";
+import { appendEngineChunk } from "./stdio-framing.ts";
 import type { TimelineDisposable } from "./timeline.ts";
 
 const initializeMethod = "initialize";
-const appendedMethod = "events/appended";
 
 // A pending call never resolves with canned data: transport failure
 // rejects every waiter instead (fail closed).
@@ -41,18 +36,12 @@ export function engineArgvFor(folderPath: string): ReadonlyArray<string> {
 	return [enginePathFor(folderPath), "serve", "--stdio"];
 }
 
-function errorMessageOf(message: Record<string, unknown>): string {
-	const error = message["error"];
-	if (!isRecord(error)) {
-		return "engine error";
-	}
-	return stringFieldOf(error, "message") ?? "engine error";
-}
-
 // Mutable per-process state shared by the framing, send, transport and
 // handshake helpers below. closed flips once so fail-closed rejection
-// runs exactly once and no waiter hangs.
-interface EngineState {
+// runs exactly once and no waiter hangs. log carries transport and
+// handshake failures to the Codictator output channel; stderr stays
+// ignored on the pipe, so the log port is its only record.
+export interface EngineState {
 	readonly folderPath: string;
 	readonly child: ChildProcess;
 	readonly stdin: ChildProcess["stdin"];
@@ -61,6 +50,7 @@ interface EngineState {
 	readonly appendedListeners: Set<(folderPath: string) => void>;
 	readonly resolveReady: (version: string) => void;
 	readonly rejectReady: (reason: unknown) => void;
+	readonly log: (message: string) => void;
 	nextId: number;
 	closed: boolean;
 	buffered: string;
@@ -76,52 +66,6 @@ function failEngine(state: EngineState, reason: unknown): void {
 	}
 	state.pending.clear();
 	state.rejectReady(reason);
-}
-
-// A numbered reply settles its waiter; an events/appended notification
-// fans out to the Timeline source. Anything else is dropped: dropping
-// never settles a waiter, so the request stays pending until the server
-// answers or the transport closes.
-function onEngineLine(state: EngineState, line: string): void {
-	if (line === "") {
-		return;
-	}
-	const message = parseJsonLine(line);
-	if (message === undefined) {
-		return;
-	}
-	const id = message["id"];
-	if (typeof id === "number") {
-		const call = state.pending.get(id);
-		if (call === undefined) {
-			return;
-		}
-		state.pending.delete(id);
-		if ("error" in message) {
-			call.reject(new Error(errorMessageOf(message)));
-			return;
-		}
-		call.resolve(message["result"]);
-		return;
-	}
-	if (id === undefined && message["method"] === appendedMethod) {
-		for (const listener of [...state.appendedListeners]) {
-			listener(state.folderPath);
-		}
-	}
-}
-
-// NDJSON framing: stdout chunks split anywhere, so bytes accumulate in
-// buffered until each newline arrives; diagnostics stay on stderr.
-function appendEngineChunk(state: EngineState, chunk: string): void {
-	state.buffered += chunk;
-	let newline = state.buffered.indexOf("\n");
-	while (newline >= 0) {
-		const line = state.buffered.slice(0, newline).replace(/\r$/, "");
-		state.buffered = state.buffered.slice(newline + 1);
-		onEngineLine(state, line);
-		newline = state.buffered.indexOf("\n");
-	}
 }
 
 function sendEngineMessage(
@@ -151,6 +95,7 @@ function attachEngineTransport(state: EngineState): void {
 	const stdout = state.stdout;
 	const stdin = state.stdin;
 	if (stdout === null || stdin === null) {
+		state.log(`engine stdio unavailable for ${state.folderPath}`);
 		failEngine(
 			state,
 			new Error(`engine stdio unavailable for ${state.folderPath}`),
@@ -164,6 +109,11 @@ function attachEngineTransport(state: EngineState): void {
 		}
 	});
 	const transportFailed = (cause: unknown): void => {
+		if (!state.closed) {
+			state.log(
+				`engine transport failed for ${state.folderPath}: ${transportDetailOf(cause)}`,
+			);
+		}
 		failEngine(
 			state,
 			cause instanceof Error
@@ -173,17 +123,23 @@ function attachEngineTransport(state: EngineState): void {
 	};
 	stdout.on("error", transportFailed);
 	stdout.on("close", () => {
-		failEngine(state, new Error(`engine closed for ${state.folderPath}`));
+		transportFailed(new Error(`engine closed for ${state.folderPath}`));
 	});
 	stdin.on("error", transportFailed);
 	state.child.on("error", transportFailed);
 	state.child.on("close", () => {
-		failEngine(state, new Error(`engine closed for ${state.folderPath}`));
+		transportFailed(new Error(`engine closed for ${state.folderPath}`));
 	});
+}
+
+// SPEC §4.20.2: the failure detail for the output channel.
+function transportDetailOf(cause: unknown): string {
+	return cause instanceof Error ? cause.message : String(cause);
 }
 
 // The initialize handshake: capture the server protocolVersion before
 // the first query so a mismatch stays inert instead of misreading rows.
+// Every failure logs to the output channel through the state log port.
 function runEngineHandshake(state: EngineState): void {
 	sendEngineMessage(state, initializeMethod, {})
 		.then((answer): void => {
@@ -191,6 +147,9 @@ function runEngineHandshake(state: EngineState): void {
 				? numberFieldOf(answer, "protocolVersion")
 				: undefined;
 			if (version === undefined) {
+				state.log(
+					`engine handshake failed for ${state.folderPath}: missing protocolVersion`,
+				);
 				failEngine(
 					state,
 					new Error(`engine handshake failed for ${state.folderPath}`),
@@ -198,12 +157,18 @@ function runEngineHandshake(state: EngineState): void {
 				return;
 			}
 			if (version !== supportedProtocolMajor) {
+				state.log(
+					`engine handshake failed for ${state.folderPath}: protocol ${version} unsupported`,
+				);
 				failEngine(state, new Error(`engine protocol ${version} unsupported`));
 				return;
 			}
 			state.resolveReady(version.toString());
 		})
 		.catch((cause: unknown) => {
+			state.log(
+				`engine handshake failed for ${state.folderPath}: ${transportDetailOf(cause)}`,
+			);
 			failEngine(state, cause);
 		});
 }
@@ -245,7 +210,10 @@ function createEngineHandle(
 	};
 }
 
-export function spawnStdioEngine(folderPath: string): StdioEngineHandle {
+export function spawnStdioEngine(
+	folderPath: string,
+	log?: (message: string) => void,
+): StdioEngineHandle {
 	const child: ChildProcess = spawn("node", [...engineArgvFor(folderPath)], {
 		stdio: ["pipe", "pipe", "ignore"],
 	});
@@ -264,6 +232,7 @@ export function spawnStdioEngine(folderPath: string): StdioEngineHandle {
 		child,
 		closed: false,
 		folderPath,
+		log: log ?? ((): void => undefined),
 		nextId: 1,
 		pending: new Map(),
 		rejectReady,

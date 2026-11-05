@@ -2,14 +2,16 @@
 // dist/main.js) lands with the extension phase; this stub exposes the package
 // id meanwhile so the package has a compiled input.
 
-import { openPrefilledTerminal } from "./engine-activation.ts";
 import type { ExtensionApi } from "./host-adapter.ts";
 import { supportedProtocolMajor } from "./host-adapter.ts";
+import { openPrefilledTerminal } from "./palette-command.ts";
 
 export const extensionId: string = "codictator-vscode";
 
-// SPEC §4.20.1 Engine: activation wiring lives in engine-activation.ts; main
-// re-exports the seam so existing imports keep working.
+// SPEC §4.20.1 Engine: activation wiring lives in engine-activation.ts
+// (palette commands in palette-command.ts, view population in
+// view-population.ts); main re-exports the seam so existing imports keep
+// working.
 export type {
 	EngineSpawner,
 	ServerHandle,
@@ -19,9 +21,6 @@ export {
 	activateExtension,
 	activateWithHost,
 	notifyMissingEngine,
-	openPrefilledTerminal,
-	registerPaletteCommands,
-	runPaletteCommand,
 	serversForFolders,
 } from "./engine-activation.ts";
 export type { EngineRequest } from "./engine-client.ts";
@@ -52,6 +51,13 @@ export {
 	healthSummary,
 	listSteeringEntries,
 } from "./p1-views.ts";
+// SPEC §4.20.3: palette commands and the human-only terminal seam live in
+// palette-command.ts; main re-exports them so existing imports keep working.
+export {
+	openPrefilledTerminal,
+	registerPaletteCommands,
+	runPaletteCommand,
+} from "./palette-command.ts";
 // SPEC §4.20.4: restart and reconnect behaviour plus the Cursor-compatible
 // API floor live in reconnect.ts; main re-exports the seam.
 export {
@@ -82,19 +88,26 @@ export {
 export type {
 	ExtensionCommandHandler,
 	ExtensionDisposable,
-	ExtensionTreeDataProvider,
 	ExtensionTreeEvent,
 	ExtensionTreeItem,
+	ExtensionTreeItemCommand,
+	MutableTreeDataProvider,
 	P1ViewsApi,
 } from "./tree-provider.ts";
 export {
 	ALL_VIEW_IDS,
-	buildTreeProvider,
+	createViewProvider,
+	disconnectedItem,
 	isTreeDataProvider,
+	noPacksConfiguredItem,
 	registerAllViews,
 	registerSteeringBudgetHealthViews,
+	setDisconnectedViews,
 	toDisposable,
 } from "./tree-provider.ts";
+// SPEC §4.20.2: live view population lives in view-population.ts; main
+// re-exports it so existing imports keep working.
+export { populateViews } from "./view-population.ts";
 export type {
 	DiagnosticEntry,
 	DiagnosticSink,
@@ -125,8 +138,8 @@ export function runHumanOnlyCommand(command: string): Promise<string> {
 }
 
 // SPEC §4.20.3: the palette runtime (human-only gate plus engine `run`
-// routing) lives with the activation wiring in engine-activation.ts; main
-// keeps only the waive pre-fill on its local openPrefilledTerminal import.
+// routing) lives in palette-command.ts; main keeps only the waive pre-fill
+// on its local openPrefilledTerminal import.
 
 // SPEC §4.20 EC-7: the waive action opens a terminal pre-filled with the
 // exact `codictator waive …` command and runs nothing else.
