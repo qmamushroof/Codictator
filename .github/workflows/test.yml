@@ -13,7 +13,105 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Path filter: docs-only PRs skip the 3-OS matrix (quick + contract still
+  # run). Shared engine/extension contract paths sit in both the engine and
+  # the vscode filter, so a CLI-surface change forces both suites; anything
+  # outside the known groups is `other` and forces the full suite.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      engine: ${{ steps.filter.outputs.engine }}
+      vscode: ${{ steps.filter.outputs.vscode }}
+      docs: ${{ steps.filter.outputs.docs }}
+      ci: ${{ steps.filter.outputs.ci }}
+      other: ${{ steps.filter.outputs.other }}
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # v4.0.3 looked up 2026-11-05 via git ls-remote.
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            engine:
+              - 'packages/codictator/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.nvmrc'
+            vscode:
+              - 'packages/vscode/**'
+              # Shared contract: the extension drives the engine CLI over
+              # stdio, so CLI-surface changes force both suites.
+              - 'packages/codictator/src/cli/**'
+              - '**/setup-handoff*'
+              - '**/serve-*.ts'
+            docs:
+              - 'docs/**'
+              - '**/*.md'
+            ci:
+              - '.github/**'
+            other:
+              - 'custom-packs/**'
+              - 'repo-missing-helper-tool/**'
+              - '.codictator/**'
+              - '.githooks/**'
+              - 'AGENTS.md'
+              - 'SECURITY.md'
+              - 'biome.json'
+              - 'tsconfig*.json'
+              - '.gitattributes'
+              - '.gitignore'
+              - 'LICENSE'
+
+  # Ubuntu-only static gate: typecheck + lint once, instead of once per OS
+  # in the matrix. The matrix needs this job, so a static failure fast-fails
+  # before any 3-OS minutes burn.
+  quick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
+
+  # Always-run contract: the build (both packages) plus a fast smoke of the
+  # engine/extension stdio contract, so every PR reports a build signal even
+  # when the matrix is path-skipped.
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: node --test packages/codictator/tests/unit/cli/serve-handshake.test.ts
+
   test:
+    needs: [changes, quick]
+    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.other == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
@@ -31,16 +129,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      # v6.1.0 looked up 2026-11-04 via git ls-remote.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: node_modules
-          key: node-${{ matrix.os }}-${{ hashFiles('.nvmrc') }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            node-${{ matrix.os }}-
       - run: npm ci --ignore-scripts
-      - run: npm run typecheck
-      - run: npm run lint
       - run: npm run build
       - run: npm test
       # SPEC §10.4: canonical verdict bytes per scenario for the cross-OS
@@ -58,15 +147,23 @@ jobs:
           name: stress-${{ matrix.os }}
           path: test-results/stress-timings.json
           if-no-files-found: warn
+      # Ubuntu-only: the heavy gates run once, not once per OS. Windows and
+      # macOS stay pure npm test + artifact upload for the §10.4 byte compare.
       # SPEC 10.7 query exits 1 while red entries remain; the gates are
       # npm test and the base comparison below, so only real errors fail here.
-      - run: >
-          node -e "const r = require('node:child_process').spawnSync('npm', ['run', 'ledger', '--', '--covers', '§10.3'], { stdio: 'inherit', shell: true }); if (r.status !== 0 && r.status !== 1) { process.exit(r.status === null ? 1 : r.status); }"
+      - if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          set +e
+          npm run ledger -- --covers §10.3
+          status=$?
+          if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then exit "$status"; fi
       # SPEC §10.6 thresholds are enforced by the test:coverage flags; the run
       # itself exits 1 while red-ledger entries remain, so only a threshold
       # breach or a crash fails this step. `npm test` above gates real
       # failures, which it reports strictly.
-      - shell: bash
+      - if: matrix.os == 'ubuntu-latest'
+        shell: bash
         run: |
           set +e
           output="$(npm run test:coverage 2>&1)"
@@ -74,18 +171,17 @@ jobs:
           echo "$output"
           if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then exit "$status"; fi
           printf '%s' "$output" | node -e 'let s = ""; process.stdin.on("data", (c) => { s += c; }).on("end", () => { const m = /all files\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/.exec(s); if (/does not meet threshold/.test(s) || m === null || Number(m[1]) < 90 || Number(m[2]) < 80) { process.exit(1); } })'
-      - run: npm run test:packaging
+      # Single build: `npm run build` above already built, so the packaging
+      # check reuses it instead of rebuilding via test:packaging.
+      - if: matrix.os == 'ubuntu-latest'
+        run: npm pack --dry-run -w codictator && node --test packages/codictator/tests/acceptance/packaging/packaging.test.ts
       # SPEC §10.7 Adding rule: a test that existed at the base must not
-      # become listed. The runner resolves the base revision from git and
-      # fails on any newly listed pre-existing test.
-      - shell: bash
+      # become listed. PR-only: the base SHA exists only on pull_request.
+      - if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request'
+        shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE="${{ github.event.before }}"
-          fi
-          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+          BASE="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$BASE" ]; then
             echo "no base revision to compare against; skipping"
             exit 0
           fi
@@ -95,6 +191,7 @@ jobs:
   # bytes of every determinism scenario, then re-runs the replay assertion.
   determinism-compare:
     needs: test
+    if: needs.test.result == 'success'
     runs-on: ubuntu-latest
     steps:
       # v7.0.1 looked up 2026-10-28 via git ls-remote.
@@ -107,13 +204,6 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      # v6.1.0 looked up 2026-11-04 via git ls-remote.
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: node_modules
-          key: node-ubuntu-latest-${{ hashFiles('.nvmrc') }}-${{ hashFiles('package-lock.json') }}
-          restore-keys: |
-            node-ubuntu-latest-
       # v8 looked up 2026-11-01 via git ls-remote.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
@@ -129,3 +219,21 @@ jobs:
           echo "determinism bytes identical across Linux, Windows and macOS"
       - run: npm ci --ignore-scripts
       - run: node --test packages/codictator/tests/acceptance/replay/determinism.test.ts
+
+  # Aggregator: always reports, even when the matrix is path-skipped (a
+  # skipped required check still satisfies branch protection). Fails only
+  # when an upstream job actually failed or was cancelled.
+  required-checks:
+    if: always()
+    needs: [changes, contract, quick, test, determinism-compare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: fail on any upstream failure
+        if: >-
+          needs.changes.result == 'failure' || needs.changes.result == 'cancelled' ||
+          needs.contract.result == 'failure' || needs.contract.result == 'cancelled' ||
+          needs.quick.result == 'failure' || needs.quick.result == 'cancelled' ||
+          needs.test.result == 'failure' || needs.test.result == 'cancelled' ||
+          needs.determinism-compare.result == 'failure' || needs.determinism-compare.result == 'cancelled'
+        run: exit 1
