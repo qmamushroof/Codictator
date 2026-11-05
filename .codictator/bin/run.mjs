@@ -12,8 +12,9 @@
 // the two-argument call. A
 // missing engine answers the harness's embedded static CDX-E003 block
 // reply; outside hook it prints CDX-E003 and exits 6. Git hooks arrive
-// as a `git` first word and route to the engine like hook words do, so
-// a missing engine or an old node fails the commit or push closed.
+// as a `git` first word and the extension server as a `serve` first
+// word; both route to the engine like hook words do, so a missing
+// engine or an old node fails the commit, push or live view closed.
 // Version arbitration
 // between the root and tool-dir engines (SPEC §4.19 EC-6) belongs to the
 // phase 9 CLI: until then the first candidate that exists wins.
@@ -237,7 +238,7 @@ function runEngine(enginePath, args, harness) {
 
 function main() {
 	const args = process.argv.slice(2);
-	if (args[0] !== "hook" && args[0] !== "git") {
+	if (args[0] !== "hook" && args[0] !== "git" && args[0] !== "serve") {
 		writeMissingEngine();
 		return;
 	}

@@ -1,7 +1,8 @@
 // SPEC §4.16 + §4.4 + §4.5.7 + §4.19.5: generate, pack, adapter and serve.
 // Custom guardrails need the LLM draft pipeline; without config.llm the
 // command fails as CDX-E851. Pack test runs the owning self-test; builtin
-// packs need no acceptance. The stdio server lands in phase 11.
+// packs need no acceptance. The stdio server loop lives in serve-server.ts;
+// handleServe below is its command-table entry.
 
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
@@ -12,6 +13,7 @@ import {
 } from "../features/packs/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
+import { runServer } from "./index.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
 	checkHuman,
@@ -213,17 +215,21 @@ export async function handlePack(req: CommandRequest): Promise<Result<number>> {
 	return sub === "test" ? packTest(req, root, id) : packAccept(req, root, id);
 }
 
-// SPEC §4.19.5: the stdio server lands in phase 11 with the extension.
+// SPEC §4.19.5: the stdio server for the extension. The command takes
+// exactly --stdio; the loop serves one NDJSON session on this process's
+// stdio and exits 0 when the client disconnects.
 export async function handleServe(
 	req: CommandRequest,
 ): Promise<Result<number>> {
 	if (req.args[0] !== "--stdio" || req.args.length !== 1) {
 		return usageError("usage: codictator serve --stdio");
 	}
-	return fail(
-		"CDX-E903",
-		"serve --stdio lands in phase 11 with the extension",
-		"Run hook and CLI commands directly until the extension protocol ships.",
-		req.json,
-	);
+	const code = await runServer({
+		argv: ["serve", ...req.args],
+		cwd: req.cwd,
+		...(req.engineVersion === undefined
+			? {}
+			: { engineVersion: req.engineVersion }),
+	});
+	return ok(code);
 }

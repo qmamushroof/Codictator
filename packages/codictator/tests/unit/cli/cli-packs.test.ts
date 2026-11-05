@@ -328,14 +328,14 @@ test("[§4.19] serve without the stdio flag is a usage error", async () => {
 	}
 });
 
-test("[§4.19] serve stdio names the later phase", async () => {
-	// SPEC §4.19.5: the stdio server lands in phase 11, so the command
-	// fails closed as CDX-E903 (exit 5) until then.
+test("[§4.19] serve stdio starts the extension server", async () => {
+	// SPEC §4.19.5: serve --stdio serves one NDJSON session; with no piped
+	// client the child stdin stays silent past the first-byte grace and the
+	// server exits 0 without serving.
 	const repo = createTempRepo();
 	try {
 		const ran = await cli(["serve", "--stdio"], repo.dir);
-		assert.equal(ran.code, 5);
-		assert.ok(ran.stderr.includes("phase 11"));
+		assert.equal(ran.code, 0);
 	} finally {
 		repo.cleanup();
 	}
