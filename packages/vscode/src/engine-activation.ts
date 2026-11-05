@@ -3,35 +3,44 @@
 // Timeline source wiring and missing-engine notification live here so the
 // entry (main.ts) keeps its shape (extension id, palette runtime,
 // re-exports) under its file limit.
-import { setEngineRequest } from "./engine-client.ts";
+import {
+	type EngineRequest,
+	engineRequestFor,
+	setEngineRequest,
+	stringFieldOf,
+} from "./engine-client.ts";
 import type { ExtensionApi, ExtensionHostFs } from "./host-adapter.ts";
 import {
 	buildExtensionApi,
 	createFallbackApi,
 	enginePathFor,
-	registerAllViews,
 } from "./host-adapter.ts";
 import type { StdioEngineHandle } from "./stdio-client.ts";
 import { routeEngineRequests, spawnStdioEngine } from "./stdio-client.ts";
 import { setTimelineSource } from "./timeline.ts";
+import { registerAllViews } from "./tree-provider.ts";
 import { refreshViolationDiagnostics } from "./views.ts";
 
 // SPEC §4.20.3: palette command ids map one-to-one to CLI commands; each
-// entry runs its argv through the engine `run` method (§7.15).
+// entry runs its argv through the engine `run` method (§7.15). Keys stay
+// sorted so registration order is deterministic without a sort call.
 const paletteCommandArgv: Readonly<Record<string, ReadonlyArray<string>>> = {
-	"codictator.verify": ["verify"],
-	"codictator.status": ["status"],
 	"codictator.explain": ["explain"],
 	"codictator.regen": ["regen"],
 	"codictator.remediateNext": ["remediate", "next"],
+	"codictator.status": ["status"],
 	"codictator.taskShow": ["task", "show"],
+	"codictator.verify": ["verify"],
+	"codictator.waive": ["waive"],
 };
 
 // SPEC §4.20.3: palette commands map one-to-one to CLI commands; each entry
-// runs its argv through the engine `run` method.
+// runs its argv through the engine `run` method via a real handler.
 export function registerPaletteCommands(api: ExtensionApi): void {
-	for (const commandId of Object.keys(paletteCommandArgv).sort()) {
-		api.registerCommand(commandId);
+	for (const [commandId, argv] of Object.entries(paletteCommandArgv)) {
+		api.registerCommand(commandId, () =>
+			runPaletteCommand(api, commandId, argv),
+		);
 	}
 }
 
@@ -84,7 +93,9 @@ export async function activateExtension(
 	api: ExtensionApi,
 	spawnEngine: EngineSpawner = spawnStdioEngine,
 ): Promise<void> {
-	api.registerCommand("codictator.setup");
+	api.registerCommand("codictator.setup", () =>
+		runPaletteCommand(api, "codictator.setup", ["setup"]),
+	);
 	registerPaletteCommands(api);
 	registerAllViews(api);
 	const handles = await spawnHandles(api, spawnEngine);
@@ -209,4 +220,77 @@ export async function notifyMissingEngine(
 		terminal.show();
 	}
 	return chosen;
+}
+
+// SPEC §4.19.2: human-only roots refuse agent execution with CDX-E107.
+function isHumanOnlyArgv(argv: ReadonlyArray<string>): boolean {
+	const [head, sub] = argv;
+	return (
+		head === "waive" ||
+		head === "init" ||
+		head === "setup" ||
+		head === "uninstall" ||
+		(head === "task" && sub === "ack") ||
+		(head === "pack" && sub === "accept") ||
+		(head === "baseline" && sub === "capture")
+	);
+}
+
+// SPEC §4.20.3: the CDX-E107 answer opens an integrated terminal pre-filled
+// with the exact command; the human runs it, so the UI is never a bypass.
+// Fire-and-forget like the setup welcome: pre-fill with execute:false.
+export function openPrefilledTerminal(
+	api: ExtensionApi,
+	name: string,
+	commandLine: string,
+): string {
+	const terminal = api.createTerminal(name);
+	terminal.sendText(commandLine, false);
+	terminal.show();
+	return commandLine;
+}
+
+// SPEC §4.20.3: a palette command runs its CLI argv through the engine `run`
+// method; a human-only answer (CDX-E107) opens a pre-filled terminal.
+export function runPaletteCommand(
+	api: ExtensionApi,
+	_commandId: string,
+	argv: ReadonlyArray<string>,
+	request?: EngineRequest,
+): Promise<string> {
+	const commandLine = `codictator ${argv.join(" ")}`;
+	if (isHumanOnlyArgv(argv)) {
+		return Promise.resolve(
+			openPrefilledTerminal(api, "Codictator", commandLine),
+		);
+	}
+	return runThroughEngine(api, argv, commandLine, request);
+}
+
+// SPEC §4.20.3: the palette entry forwards its CLI argv to `run` and
+// surfaces the CLI result; without an engine it echoes the command line.
+async function runThroughEngine(
+	api: ExtensionApi,
+	argv: ReadonlyArray<string>,
+	commandLine: string,
+	request?: EngineRequest,
+): Promise<string> {
+	const folder = api.workspaceFolderPaths()[0];
+	if (folder === undefined) {
+		return commandLine;
+	}
+	let answer: unknown;
+	try {
+		answer = await engineRequestFor(request)(folder, "run", {
+			argv: [...argv],
+		});
+	} catch (cause: unknown) {
+		const message = cause instanceof Error ? cause.message : "";
+		if (/CDX-E107|human-only/.test(message)) {
+			return openPrefilledTerminal(api, "Codictator", commandLine);
+		}
+		return commandLine;
+	}
+	const stdout = stringFieldOf(answer, "stdout");
+	return stdout === undefined || stdout === "" ? commandLine : stdout;
 }

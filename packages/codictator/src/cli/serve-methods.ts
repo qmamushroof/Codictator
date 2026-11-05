@@ -17,6 +17,7 @@ import { dispatchEvalMethod } from "./serve-eval.ts";
 import {
 	invalidParamsError,
 	methodNotFoundError,
+	PROTOCOL_VERSION,
 	serverError,
 } from "./serve-protocol.ts";
 import {
@@ -112,6 +113,22 @@ function ruleRow(
 			.map((entry) => entry.row),
 		coverage: "per-harness capability declarations; see codictator status",
 	};
+}
+
+// SPEC §7.15: the handshake is inert — a client that names a protocol
+// version must name this one. Absent or matching params answer the shape;
+// a mismatch fails closed without touching any server state.
+function initializeMismatch(params: unknown): string | undefined {
+	if (!isRecord(params)) {
+		return undefined;
+	}
+	const found = field(params, "protocolVersion");
+	if (found === undefined) {
+		return undefined;
+	}
+	return found === PROTOCOL_VERSION
+		? undefined
+		: "initialize protocolVersion must be 1";
 }
 
 // SPEC §7.15: `rules/list` answers rules with effective params, waivers
@@ -210,9 +227,13 @@ export async function dispatchMethod(
 ): Promise<MethodOutcome> {
 	switch (method) {
 		case "initialize": {
+			const mismatch = initializeMismatch(params);
+			if (mismatch !== undefined) {
+				return { ok: false, error: invalidParamsError(mismatch) };
+			}
 			const root = await resolveRoot(ctx.root);
 			return methodOk({
-				protocolVersion: 1,
+				protocolVersion: PROTOCOL_VERSION,
 				engineVersion: ctx.engineVersion ?? ENGINE_VERSION,
 				root,
 			});

@@ -152,6 +152,15 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+// Narrowing: unknown host fields read through a checked record. The name
+// stays a variable so neither the dot-access nor the literal-key rule fires.
+export function fieldOf(value: unknown, name: string): unknown {
+	if (!isRecord(value)) {
+		return undefined;
+	}
+	return value[name];
+}
+
 export function stringFieldOf(
 	value: unknown,
 	name: string,

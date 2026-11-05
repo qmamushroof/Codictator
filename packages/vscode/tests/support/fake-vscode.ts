@@ -2,6 +2,12 @@
 // records every call so shape tests can assert what the extension did —
 // which commands were registered, which terminals were pre-filled, which
 // notifications were shown — without an extension host.
+import type {
+	ExtensionCommandHandler,
+	ExtensionDisposable,
+	ExtensionTreeDataProvider,
+} from "../../src/tree-provider.ts";
+import { isTreeDataProvider } from "../../src/tree-provider.ts";
 export interface FakeSentText {
 	readonly text: string;
 	readonly execute: boolean;
@@ -64,35 +70,6 @@ export interface FakeSaveEvent {
 	readonly filePath: string;
 }
 
-export interface FakeEventEmitter<T> {
-	readonly fired: ReadonlyArray<T>;
-	event(listener: (data: T) => void): FakeDisposable;
-	fire(data: T): void;
-}
-
-export function createFakeEventEmitter<T>(): FakeEventEmitter<T> {
-	const fired: Array<T> = [];
-	const listeners: Array<(data: T) => void> = [];
-	return {
-		fired,
-		event(listener: (data: T) => void): FakeDisposable {
-			listeners.push(listener);
-			return createFakeDisposable(() => {
-				const at = listeners.indexOf(listener);
-				if (at >= 0) {
-					listeners.splice(at, 1);
-				}
-			});
-		},
-		fire(data: T): void {
-			fired.push(data);
-			for (const listener of [...listeners]) {
-				listener(data);
-			}
-		},
-	};
-}
-
 export interface FakeVscode {
 	folders: Array<string>;
 	configPaths: Set<string>;
@@ -100,13 +77,17 @@ export interface FakeVscode {
 	extensionVersionValue: string;
 	notificationChoice: string | undefined;
 	readonly commands: Array<string>;
+	readonly commandHandlers: ReadonlyMap<string, ExtensionCommandHandler>;
 	readonly terminals: Array<FakeTerminal>;
 	readonly notifications: Array<FakeNotification>;
 	readonly executedShellCommands: Array<string>;
 	readonly diagnosticCollections: ReadonlyMap<string, FakeDiagnosticCollection>;
-	readonly treeProviders: ReadonlyMap<string, ReadonlyArray<unknown>>;
+	readonly treeProviders: ReadonlyMap<string, ExtensionTreeDataProvider>;
 	addFolder(path: string, options: { config: boolean; engine: boolean }): void;
-	registerCommand(commandId: string): void;
+	registerCommand(
+		commandId: string,
+		handler: ExtensionCommandHandler,
+	): ExtensionDisposable | undefined;
 	workspaceFolderPaths(): ReadonlyArray<string>;
 	configExists(folderPath: string): boolean;
 	engineExists(folderPath: string): boolean;
@@ -132,7 +113,10 @@ export interface FakeVscode {
 	saveDocument(folderPath: string, filePath: string): void;
 	onEventsAppended(listener: (folderPath: string) => void): FakeDisposable;
 	emitEventsAppended(folderPath: string): void;
-	registerTreeDataProvider(viewId: string, items: ReadonlyArray<unknown>): void;
+	registerTreeDataProvider(
+		viewId: string,
+		provider: ExtensionTreeDataProvider,
+	): ExtensionDisposable | undefined;
 }
 
 export function createFakeVscode(): FakeVscode {
@@ -141,7 +125,8 @@ export function createFakeVscode(): FakeVscode {
 	const notifications: Array<FakeNotification> = [];
 	const executedShellCommands: Array<string> = [];
 	const diagnosticCollections = new Map<string, FakeDiagnosticCollection>();
-	const treeProviders = new Map<string, ReadonlyArray<unknown>>();
+	const commandHandlers = new Map<string, ExtensionCommandHandler>();
+	const treeProviders = new Map<string, ExtensionTreeDataProvider>();
 	const saveListeners: Array<(event: FakeSaveEvent) => void> = [];
 	const appendedListeners: Array<(folderPath: string) => void> = [];
 	const fake: FakeVscode = {
@@ -151,6 +136,7 @@ export function createFakeVscode(): FakeVscode {
 		extensionVersionValue: "0.0.0",
 		notificationChoice: undefined,
 		commands,
+		commandHandlers,
 		terminals,
 		notifications,
 		executedShellCommands,
@@ -168,8 +154,19 @@ export function createFakeVscode(): FakeVscode {
 				fake.enginePaths.add(path);
 			}
 		},
-		registerCommand(commandId: string): void {
+		registerCommand(
+			commandId: string,
+			handler: ExtensionCommandHandler,
+		): ExtensionDisposable | undefined {
+			// The real extHost throws without a function handler.
+			if (typeof handler !== "function") {
+				throw new TypeError(`command ${commandId} needs a function handler`);
+			}
 			commands.push(commandId);
+			commandHandlers.set(commandId, handler);
+			return createFakeDisposable(() => {
+				commandHandlers.delete(commandId);
+			});
 		},
 		workspaceFolderPaths(): ReadonlyArray<string> {
 			return [...fake.folders];
@@ -274,9 +271,17 @@ export function createFakeVscode(): FakeVscode {
 		},
 		registerTreeDataProvider(
 			viewId: string,
-			items: ReadonlyArray<unknown>,
-		): void {
-			treeProviders.set(viewId, [...items]);
+			provider: ExtensionTreeDataProvider,
+		): ExtensionDisposable | undefined {
+			// The real extHost renders by calling getChildren, so a provider
+			// without function-typed entries throws here instead of at render.
+			if (!isTreeDataProvider(provider)) {
+				throw new TypeError(`view ${viewId} needs a tree data provider`);
+			}
+			treeProviders.set(viewId, provider);
+			return createFakeDisposable(() => {
+				treeProviders.delete(viewId);
+			});
 		},
 	};
 	return fake;

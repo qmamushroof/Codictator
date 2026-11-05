@@ -24,12 +24,20 @@ test("[§4.20.1] shim loads the ESM main with the injected vscode API", async ()
 	assert.equal(other.commands.length, 0);
 });
 
-test("[§4.20.1] activation triggers on workspace config or the Codictator view", () => {
-	// SPEC §4.20.1 Activation: workspaceContains:.codictator/config.json, or
-	// opening the Codictator view.
+test("[§4.20.1] activation triggers on workspace config", () => {
+	// SPEC §4.20.1 Activation: workspaceContains:.codictator/config.json,
+	// or opening any Codictator view. onView names real view ids (the
+	// container id never fires).
 	const events = activationEvents();
-	assert.ok(events.includes("workspaceContains:.codictator/config.json"));
-	assert.ok(events.some((event) => event.includes("Codictator")));
+	assert.deepEqual(events, [
+		"workspaceContains:.codictator/config.json",
+		"onView:codictator-active-rules",
+		"onView:codictator-violations",
+		"onView:codictator-timeline",
+		"onView:codictator-steering",
+		"onView:codictator-budget",
+		"onView:codictator-health",
+	]);
 });
 
 test("[§4.20.1] untrusted workspaces are unsupported", () => {

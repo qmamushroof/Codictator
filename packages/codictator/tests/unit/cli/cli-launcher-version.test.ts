@@ -99,6 +99,19 @@ async function runGitHook(fixture: Fixture): Promise<CliResult> {
 	});
 }
 
+async function runServeArgs(fixture: Fixture): Promise<CliResult> {
+	return runNodeScript({
+		nodeArgs: [
+			path.join(fixture.dir, ".codictator", "bin", "run.mjs"),
+			"serve",
+			"--stdio",
+		],
+		cwd: fixture.dir,
+		env: { CODICTATOR_TEST_RECORD: fixture.record },
+		timeoutMs: 60000,
+	});
+}
+
 function recorded(fixture: Fixture): { count: number; version: string | null } {
 	const parsed: unknown = JSON.parse(readFileSync(fixture.record, "utf8"));
 	assert.ok(typeof parsed === "object" && parsed !== null);
@@ -158,6 +171,21 @@ test("[§4.2 EC-11] launcher falls back on a version-less manifest", async () =>
 		} finally {
 			fixture.cleanup();
 		}
+	}
+});
+
+test("[§4.19.5] launcher routes serve to the engine", async () => {
+	// SPEC §4.19.5: `serve --stdio` reaches the engine entry like hook and
+	// git words do, instead of the outside-hook CDX-E003 reply.
+	const fixture = installFixture(
+		JSON.stringify({ name: "codictator", version: "9.9.9" }),
+	);
+	try {
+		const ran = await runServeArgs(fixture);
+		assert.equal(ran.code, 0);
+		assert.deepEqual(recorded(fixture), { count: 3, version: "9.9.9" });
+	} finally {
+		fixture.cleanup();
 	}
 });
 

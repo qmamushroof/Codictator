@@ -371,14 +371,15 @@ test("[§4.19] serve without --stdio is a usage error", async () => {
 	}
 });
 
-test("[§4.19] serve --stdio names the later phase", async () => {
-	// SPEC §4.19.5: the stdio server lands in phase 11 (CDX-E903 meanwhile).
+test("[§4.19] serve --stdio starts the server loop", async () => {
+	// SPEC §4.19.5: serve --stdio enters the stdio loop; with the runner's
+	// closed stdin the loop observes EOF and exits 0 without serving.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		const ran = await handleServe(req(["--stdio"], repo.dir));
-		assert.equal(ran.ok, false);
-		if (!ran.ok) {
-			assert.equal(ran.error.code, "CDX-E903");
+		assert.equal(ran.ok, true);
+		if (ran.ok) {
+			assert.equal(ran.value, 0);
 		}
 	} finally {
 		repo.cleanup();

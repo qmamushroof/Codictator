@@ -43,6 +43,14 @@ function isHumanOnly(argv: ReadonlyArray<string>): boolean {
 	);
 }
 
+// SPEC §7.15: transport words are not runnable commands. A nested serve
+// would steal the session stdio, hook would wait on hook stdin, and git
+// would re-enter the git-hook runtime, so all three fail closed here.
+function isTransportWord(argv: ReadonlyArray<string>): boolean {
+	const head = argv[0] ?? "";
+	return head === "serve" || head === "hook" || head === "git";
+}
+
 function commandLine(argv: ReadonlyArray<string>): string {
 	return `codictator ${argv.join(" ")}`;
 }
@@ -169,6 +177,14 @@ export async function handleRun(
 			};
 		}
 		argv.push(entry);
+	}
+	if (isTransportWord(argv)) {
+		return {
+			ok: false,
+			error: invalidParamsError(
+				"run argv must be a CLI command, not serve/hook/git",
+			),
+		};
 	}
 	if (isHumanOnly(argv)) {
 		return {
