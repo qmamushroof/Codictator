@@ -5,7 +5,7 @@
 import type {
 	ExtensionCommandHandler,
 	ExtensionDisposable,
-	ExtensionTreeDataProvider,
+	MutableTreeDataProvider,
 } from "../../src/tree-provider.ts";
 import { isTreeDataProvider } from "../../src/tree-provider.ts";
 export interface FakeSentText {
@@ -81,8 +81,9 @@ export interface FakeVscode {
 	readonly terminals: Array<FakeTerminal>;
 	readonly notifications: Array<FakeNotification>;
 	readonly executedShellCommands: Array<string>;
+	readonly logs: Array<string>;
 	readonly diagnosticCollections: ReadonlyMap<string, FakeDiagnosticCollection>;
-	readonly treeProviders: ReadonlyMap<string, ExtensionTreeDataProvider>;
+	readonly treeProviders: ReadonlyMap<string, MutableTreeDataProvider>;
 	addFolder(path: string, options: { config: boolean; engine: boolean }): void;
 	registerCommand(
 		commandId: string,
@@ -103,6 +104,10 @@ export interface FakeVscode {
 	supportedProtocolVersion(): string;
 	serverProtocolVersion(_folderPath: string): string | undefined;
 	extensionVersion(): string;
+	// SPEC §4.20.2: the Codictator output channel recording plus the save
+	// seam driving L2-on-save view refreshes.
+	log(message: string): void;
+	onDidSave(listener: (event: FakeSaveEvent) => void): FakeDisposable;
 	// SPEC §4.20.2 views: diagnostics per folder (EC-1), the onDidSave seam
 	// for L2 on save, the `events/appended` seam for Timeline, and the tree
 	// providers behind the Active rules / Violations / Timeline views.
@@ -115,7 +120,7 @@ export interface FakeVscode {
 	emitEventsAppended(folderPath: string): void;
 	registerTreeDataProvider(
 		viewId: string,
-		provider: ExtensionTreeDataProvider,
+		provider: MutableTreeDataProvider,
 	): ExtensionDisposable | undefined;
 }
 
@@ -126,9 +131,10 @@ export function createFakeVscode(): FakeVscode {
 	const executedShellCommands: Array<string> = [];
 	const diagnosticCollections = new Map<string, FakeDiagnosticCollection>();
 	const commandHandlers = new Map<string, ExtensionCommandHandler>();
-	const treeProviders = new Map<string, ExtensionTreeDataProvider>();
+	const treeProviders = new Map<string, MutableTreeDataProvider>();
 	const saveListeners: Array<(event: FakeSaveEvent) => void> = [];
 	const appendedListeners: Array<(folderPath: string) => void> = [];
+	const logs: Array<string> = [];
 	const fake: FakeVscode = {
 		folders: [],
 		configPaths: new Set(),
@@ -140,6 +146,7 @@ export function createFakeVscode(): FakeVscode {
 		terminals,
 		notifications,
 		executedShellCommands,
+		logs,
 		diagnosticCollections,
 		treeProviders,
 		addFolder(
@@ -216,6 +223,12 @@ export function createFakeVscode(): FakeVscode {
 		extensionVersion(): string {
 			return fake.extensionVersionValue;
 		},
+		log(message: string): void {
+			logs.push(message);
+		},
+		onDidSave(listener: (event: FakeSaveEvent) => void): FakeDisposable {
+			return fake.onDidSaveTextDocument(listener);
+		},
 		createDiagnosticCollection(name: string): FakeDiagnosticCollection {
 			const entries = new Map<string, ReadonlyArray<FakeDiagnostic>>();
 			const collection: FakeDiagnosticCollection = {
@@ -271,7 +284,7 @@ export function createFakeVscode(): FakeVscode {
 		},
 		registerTreeDataProvider(
 			viewId: string,
-			provider: ExtensionTreeDataProvider,
+			provider: MutableTreeDataProvider,
 		): ExtensionDisposable | undefined {
 			// The real extHost renders by calling getChildren, so a provider
 			// without function-typed entries throws here instead of at render.

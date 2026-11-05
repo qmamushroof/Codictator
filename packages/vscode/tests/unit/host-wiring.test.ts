@@ -9,6 +9,8 @@ import {
 	ALL_VIEW_IDS,
 	activateExtension,
 	activateWithHost,
+	resetEngineRequest,
+	resetTimelineSource,
 } from "../../src/main.ts";
 import type {
 	ExtensionCommandHandler,
@@ -141,4 +143,27 @@ test("[§4.20.1] activateExtension registers all six view ids on the fake api", 
 		assert.ok(api.treeProviders.has(viewId), `api registered ${viewId}`);
 	}
 	assert.equal(api.treeProviders.size, ALL_VIEW_IDS.length);
+});
+
+test("[§4.20.2] disconnected views show an offline item instead of staying empty", async () => {
+	// SPEC §4.20.2 (BUG-0032): with no engine to spawn, every registered
+	// view shows one offline item, so the container never renders an empty
+	// view that reads as broken.
+	const api = createFakeVscode();
+	try {
+		await activateExtension(api, () => {
+			throw new Error("must not spawn without folders");
+		});
+		for (const viewId of ALL_VIEW_IDS) {
+			const provider = api.treeProviders.get(viewId);
+			assert.ok(provider !== undefined, `view ${viewId} registered`);
+			const children = provider.getChildren();
+			assert.ok(children.length >= 1, `view ${viewId} is not empty`);
+			const labels = children.map((child) => provider.getTreeItem(child).label);
+			assert.match(labels.join("\n"), /disconnect/i);
+		}
+	} finally {
+		resetEngineRequest();
+		resetTimelineSource();
+	}
 });

@@ -1,48 +1,24 @@
 // SPEC §4.20.1 Engine: activation wiring for the extension entry. The
-// palette registration, host entry, engine spawn fan-out, request routing,
-// Timeline source wiring and missing-engine notification live here so the
-// entry (main.ts) keeps its shape (extension id, palette runtime,
-// re-exports) under its file limit.
-import {
-	type EngineRequest,
-	engineRequestFor,
-	setEngineRequest,
-	stringFieldOf,
-} from "./engine-client.ts";
+// spawn fan-out, request routing, Timeline source wiring and missing-engine
+// notification live here; palette commands live in palette-command.ts and
+// view population in view-population.ts, so the entry keeps its shape
+// (extension id, palette runtime, re-exports) under its file limit.
+import { setEngineRequest } from "./engine-client.ts";
 import type { ExtensionApi, ExtensionHostFs } from "./host-adapter.ts";
 import {
 	buildExtensionApi,
 	createFallbackApi,
 	enginePathFor,
 } from "./host-adapter.ts";
+import { detailOf } from "./output-channel.ts";
+import { registerPaletteCommands, runSetupCommand } from "./palette-command.ts";
 import type { StdioEngineHandle } from "./stdio-client.ts";
 import { routeEngineRequests, spawnStdioEngine } from "./stdio-client.ts";
 import { setTimelineSource } from "./timeline.ts";
-import { registerAllViews } from "./tree-provider.ts";
+import type { MutableTreeDataProvider } from "./tree-provider.ts";
+import { registerAllViews, setDisconnectedViews } from "./tree-provider.ts";
+import { populateViews } from "./view-population.ts";
 import { refreshViolationDiagnostics } from "./views.ts";
-
-// SPEC §4.20.3: palette command ids map one-to-one to CLI commands; each
-// entry runs its argv through the engine `run` method (§7.15). Keys stay
-// sorted so registration order is deterministic without a sort call.
-const paletteCommandArgv: Readonly<Record<string, ReadonlyArray<string>>> = {
-	"codictator.explain": ["explain"],
-	"codictator.regen": ["regen"],
-	"codictator.remediateNext": ["remediate", "next"],
-	"codictator.status": ["status"],
-	"codictator.taskShow": ["task", "show"],
-	"codictator.verify": ["verify"],
-	"codictator.waive": ["waive"],
-};
-
-// SPEC §4.20.3: palette commands map one-to-one to CLI commands; each entry
-// runs its argv through the engine `run` method via a real handler.
-export function registerPaletteCommands(api: ExtensionApi): void {
-	for (const [commandId, argv] of Object.entries(paletteCommandArgv)) {
-		api.registerCommand(commandId, () =>
-			runPaletteCommand(api, commandId, argv),
-		);
-	}
-}
 
 export interface ServerHandle {
 	readonly folderPath: string;
@@ -63,8 +39,12 @@ const defaultSpawner: ServerSpawner = (folderPath) => ({ folderPath });
 
 // SPEC §4.20.1 Engine: the production spawner seam. Production passes
 // spawnStdioEngine (one stdio child per folder); unit tests inject a fake
-// so no real process starts under node:test.
-export type EngineSpawner = (folderPath: string) => StdioEngineHandle;
+// so no real process starts under node:test. The log port carries client
+// transport and handshake failures to the Codictator output channel.
+export type EngineSpawner = (
+	folderPath: string,
+	log?: (message: string) => void,
+) => StdioEngineHandle;
 
 // SPEC §4.20.1 Module format: the production host entry. The CommonJS shim
 // (src/extension.cts) dynamic-imports this module and passes the host vscode
@@ -89,33 +69,51 @@ export function activateWithHost(
 // spawn seam (default production), routes engine requests through the
 // spawned handles, fans `events/appended` out to the Timeline source, and
 // notifies for folders whose engine is missing instead of spawning them.
+// SPEC §4.20.2: activation registers commands and live view providers
+// first, spawns one stdio engine per folder, routes requests through the
+// handles, populates the providers from the live engine, and refreshes
+// them on engine events and saves. With no engine every view shows its
+// offline item.
 export async function activateExtension(
 	api: ExtensionApi,
 	spawnEngine: EngineSpawner = spawnStdioEngine,
 ): Promise<void> {
-	api.registerCommand("codictator.setup", () =>
-		runPaletteCommand(api, "codictator.setup", ["setup"]),
-	);
+	api.registerCommand("codictator.setup", () => runSetupCommand(api));
 	registerPaletteCommands(api);
-	registerAllViews(api);
+	const providers = registerAllViews(api);
 	const handles = await spawnHandles(api, spawnEngine);
-	wireEngineRequests(handles);
-	wireTimelineFanout(handles);
+	const folders = [...handles.keys()].sort();
+	if (folders.length === 0) {
+		setDisconnectedViews(providers);
+	} else {
+		wireEngineRequests(handles);
+		await populateViews(api, providers, folders);
+	}
+	wireViewRefresh(api, providers, folders, handles);
 	notifyFoldersMissingEngine(api);
 }
 
 // SPEC §4.20.1 Engine: spawn one stdio engine per folder that has both a
 // config and an engine on disk. The engine filter narrows the api before
-// delegating to serversForFolders, so the argv rule stays in one place.
+// delegating to serversForFolders, so the argv rule stays in one place. A
+// spawn throw logs to the output channel and skips the folder instead of
+// aborting activation; client transport and handshake failures log through
+// the injected log port.
 async function spawnHandles(
 	api: ExtensionApi,
 	spawnEngine: EngineSpawner,
 ): Promise<Map<string, StdioEngineHandle>> {
 	const handles = new Map<string, StdioEngineHandle>();
 	const spawner: ServerSpawner = (folderPath) => {
-		const handle = spawnEngine(folderPath);
-		handles.set(folderPath, handle);
-		return handle;
+		try {
+			const handle = spawnEngine(folderPath, (message: string): void => {
+				api.log(message);
+			});
+			handles.set(folderPath, handle);
+		} catch (cause: unknown) {
+			api.log(`engine spawn failed for ${folderPath}: ${detailOf(cause)}`);
+		}
+		return { folderPath };
 	};
 	// Folders with a config but no engine get the install notification, not
 	// a server; serversForFolders only sees folders with an engine present.
@@ -141,11 +139,15 @@ function wireEngineRequests(
 	setEngineRequest(routeEngineRequests(handles));
 }
 
-// SPEC §4.20.1 Engine: fan `events/appended` out to the Timeline source and
-// refresh violation diagnostics per changed folder. The refresh floats, so
-// it carries a catch: a failing refresh never escapes as an unhandled
-// rejection (fail closed).
-function wireTimelineFanout(
+// SPEC §4.20.1 Engine: fan `events/appended` out to the Timeline source
+// and refresh violation diagnostics plus every tree view per changed
+// folder. Refreshes float, so a failing refresh never escapes as an
+// unhandled rejection (fail closed). Saves re-query the engine the same
+// way through the host save seam when the host provides one.
+function wireViewRefresh(
+	api: ExtensionApi,
+	providers: ReadonlyMap<string, MutableTreeDataProvider>,
+	folders: ReadonlyArray<string>,
 	handles: ReadonlyMap<string, StdioEngineHandle>,
 ): void {
 	if (handles.size === 0) {
@@ -168,8 +170,12 @@ function wireTimelineFanout(
 	for (const handle of handles.values()) {
 		handle.onEventsAppended((changed) => {
 			void refreshViolationDiagnostics(changed).catch(() => undefined);
+			void populateViews(api, providers, folders).catch(() => undefined);
 		});
 	}
+	api.onDidSave?.(() => {
+		void populateViews(api, providers, folders).catch(() => undefined);
+	});
 }
 
 // SPEC §4.20.1 Engine: folders with a config but no engine get the install
@@ -220,77 +226,4 @@ export async function notifyMissingEngine(
 		terminal.show();
 	}
 	return chosen;
-}
-
-// SPEC §4.19.2: human-only roots refuse agent execution with CDX-E107.
-function isHumanOnlyArgv(argv: ReadonlyArray<string>): boolean {
-	const [head, sub] = argv;
-	return (
-		head === "waive" ||
-		head === "init" ||
-		head === "setup" ||
-		head === "uninstall" ||
-		(head === "task" && sub === "ack") ||
-		(head === "pack" && sub === "accept") ||
-		(head === "baseline" && sub === "capture")
-	);
-}
-
-// SPEC §4.20.3: the CDX-E107 answer opens an integrated terminal pre-filled
-// with the exact command; the human runs it, so the UI is never a bypass.
-// Fire-and-forget like the setup welcome: pre-fill with execute:false.
-export function openPrefilledTerminal(
-	api: ExtensionApi,
-	name: string,
-	commandLine: string,
-): string {
-	const terminal = api.createTerminal(name);
-	terminal.sendText(commandLine, false);
-	terminal.show();
-	return commandLine;
-}
-
-// SPEC §4.20.3: a palette command runs its CLI argv through the engine `run`
-// method; a human-only answer (CDX-E107) opens a pre-filled terminal.
-export function runPaletteCommand(
-	api: ExtensionApi,
-	_commandId: string,
-	argv: ReadonlyArray<string>,
-	request?: EngineRequest,
-): Promise<string> {
-	const commandLine = `codictator ${argv.join(" ")}`;
-	if (isHumanOnlyArgv(argv)) {
-		return Promise.resolve(
-			openPrefilledTerminal(api, "Codictator", commandLine),
-		);
-	}
-	return runThroughEngine(api, argv, commandLine, request);
-}
-
-// SPEC §4.20.3: the palette entry forwards its CLI argv to `run` and
-// surfaces the CLI result; without an engine it echoes the command line.
-async function runThroughEngine(
-	api: ExtensionApi,
-	argv: ReadonlyArray<string>,
-	commandLine: string,
-	request?: EngineRequest,
-): Promise<string> {
-	const folder = api.workspaceFolderPaths()[0];
-	if (folder === undefined) {
-		return commandLine;
-	}
-	let answer: unknown;
-	try {
-		answer = await engineRequestFor(request)(folder, "run", {
-			argv: [...argv],
-		});
-	} catch (cause: unknown) {
-		const message = cause instanceof Error ? cause.message : "";
-		if (/CDX-E107|human-only/.test(message)) {
-			return openPrefilledTerminal(api, "Codictator", commandLine);
-		}
-		return commandLine;
-	}
-	const stdout = stringFieldOf(answer, "stdout");
-	return stdout === undefined || stdout === "" ? commandLine : stdout;
 }

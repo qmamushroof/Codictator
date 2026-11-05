@@ -63,7 +63,37 @@
 				}
 			]
 		},
+		"viewsWelcome": [
+			{
+				"view": "codictator-active-rules",
+				"contents": "No packs configured.\n[Set up Codictator](command:codictator.setup)"
+			},
+			{
+				"view": "codictator-violations",
+				"contents": "Engine not connected. No violations to show.\n[Set up Codictator](command:codictator.setup)"
+			},
+			{
+				"view": "codictator-timeline",
+				"contents": "Engine not connected. No events to show.\n[Set up Codictator](command:codictator.setup)"
+			},
+			{
+				"view": "codictator-steering",
+				"contents": "Engine not connected. No steering injections to show.\n[Set up Codictator](command:codictator.setup)"
+			},
+			{
+				"view": "codictator-budget",
+				"contents": "Engine not connected. Budget is unavailable.\n[Set up Codictator](command:codictator.setup)"
+			},
+			{
+				"view": "codictator-health",
+				"contents": "Engine not connected. Health is unavailable.\n[Set up Codictator](command:codictator.setup)"
+			}
+		],
 		"commands": [
+			{
+				"command": "codictator.setup",
+				"title": "Codictator: Setup"
+			},
 			{
 				"command": "codictator.verify",
 				"title": "Codictator: Verify"

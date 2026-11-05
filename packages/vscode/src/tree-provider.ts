@@ -8,20 +8,30 @@ export interface ExtensionDisposable {
 	dispose(): void;
 }
 
+export interface ExtensionTreeItemCommand {
+	readonly command: string;
+	readonly title: string;
+	readonly args?: ReadonlyArray<unknown>;
+}
+
 export interface ExtensionTreeItem {
 	readonly label: string;
+	readonly command?: ExtensionTreeItemCommand;
 }
 
 export type ExtensionTreeEvent = (
 	listener: (value: unknown) => void,
 ) => ExtensionDisposable;
 
-// SPEC §4.20.2: the narrow provider port. onDidChangeTreeData stays a
-// no-op event while the views are snapshot lists from the engine.
-export interface ExtensionTreeDataProvider {
+// SPEC §4.20.2: the provider behind every view. Activation keeps one per
+// registered view and replaces its items after the engine handshake (and
+// on every refresh); each replacement fires onDidChangeTreeData once so
+// the host re-renders.
+export interface MutableTreeDataProvider {
 	getTreeItem(element: unknown): ExtensionTreeItem;
 	getChildren(element?: unknown): Array<unknown>;
-	onDidChangeTreeData?: ExtensionTreeEvent;
+	onDidChangeTreeData: ExtensionTreeEvent;
+	setItems(items: ReadonlyArray<unknown>): void;
 }
 
 export type ExtensionCommandHandler = (...args: Array<unknown>) => unknown;
@@ -36,25 +46,78 @@ function labelOf(item: unknown): string {
 	return label === undefined || label === "" ? "item" : label;
 }
 
-function noEvents(_listener: (value: unknown) => void): ExtensionDisposable {
+// SPEC §4.20.2 EC-10: a tree item narrows an optional command record, so
+// the "No packs configured" row runs the setup command when clicked.
+function commandOf(item: unknown): ExtensionTreeItemCommand | undefined {
+	if (!isRecord(item)) {
+		return undefined;
+	}
+	const command = fieldOf(item, "command");
+	if (!isRecord(command)) {
+		return undefined;
+	}
+	const id = stringFieldOf(command, "command");
+	const title = stringFieldOf(command, "title");
+	if (id === undefined || id === "" || title === undefined) {
+		return undefined;
+	}
+	const args = fieldOf(command, "args");
+	return Array.isArray(args)
+		? { args: [...args], command: id, title }
+		: { command: id, title };
+}
+
+function toTreeItem(element: unknown): ExtensionTreeItem {
+	const command = commandOf(element);
+	return command === undefined
+		? { label: labelOf(element) }
+		: { command, label: labelOf(element) };
+}
+
+// SPEC §4.20.2: one mutable provider per registered view. Activation keeps
+// the provider and replaces its items after the engine handshake (and on
+// every refresh); each replacement fires onDidChangeTreeData once.
+export function createViewProvider(
+	initial?: ReadonlyArray<unknown>,
+): MutableTreeDataProvider {
+	let items: Array<unknown> = [...(initial ?? [])];
+	const listeners = new Set<(value: unknown) => void>();
 	return {
-		dispose: (): void => undefined,
+		getChildren: (_element?: unknown): Array<unknown> => [...items],
+		getTreeItem: (element: unknown): ExtensionTreeItem => toTreeItem(element),
+		onDidChangeTreeData: (
+			listener: (value: unknown) => void,
+		): ExtensionDisposable => {
+			listeners.add(listener);
+			return {
+				dispose: (): void => {
+					listeners.delete(listener);
+				},
+			};
+		},
+		setItems: (next: ReadonlyArray<unknown>): void => {
+			items = [...next];
+			for (const listener of [...listeners]) {
+				listener(undefined);
+			}
+		},
 	};
 }
 
-// SPEC §4.20.2: one snapshot provider per registration; the copy keeps
-// later caller mutations out of the render.
-export function buildTreeProvider(
-	items: ReadonlyArray<unknown>,
-): ExtensionTreeDataProvider {
-	const snapshot = [...items];
+// SPEC §4.20.2 EC-10: the Active rules empty-state item. Zero packs shows
+// this one row; clicking it runs the setup command, which pre-fills the
+// setup terminal and executes nothing.
+export function noPacksConfiguredItem(): unknown {
 	return {
-		getChildren: (_element?: unknown): Array<unknown> => [...snapshot],
-		getTreeItem: (element: unknown): ExtensionTreeItem => ({
-			label: labelOf(element),
-		}),
-		onDidChangeTreeData: noEvents,
+		command: { command: "codictator.setup", title: "Set up Codictator" },
+		label: "No packs configured",
 	};
+}
+
+// SPEC §4.20 EC-2: the offline item. With no engine connected every view
+// shows this row instead of an empty tree that reads as broken.
+export function disconnectedItem(): unknown {
+	return "Disconnected: engine not running";
 }
 
 // SPEC §4.20.1: the host owns the registration lifetime; surfacing its
@@ -78,20 +141,27 @@ export function toDisposable(value: unknown): ExtensionDisposable | undefined {
 export interface P1ViewsApi {
 	registerTreeDataProvider(
 		viewId: string,
-		provider: ExtensionTreeDataProvider,
+		provider: MutableTreeDataProvider,
 	): void;
 }
 
 // SPEC §4.20.2: the Codictator container gains the three P1 tree views
-// beside the P0 ones; each registration pins its view id.
-export function registerSteeringBudgetHealthViews(api: P1ViewsApi): void {
+// beside the P0 ones; each registration pins its view id and the returned
+// providers stay live for post-handshake population.
+export function registerSteeringBudgetHealthViews(
+	api: P1ViewsApi,
+): Map<string, MutableTreeDataProvider> {
+	const providers = new Map<string, MutableTreeDataProvider>();
 	for (const viewId of [
 		"codictator-budget",
 		"codictator-health",
 		"codictator-steering",
 	]) {
-		api.registerTreeDataProvider(viewId, buildTreeProvider([]));
+		const provider = createViewProvider();
+		providers.set(viewId, provider);
+		api.registerTreeDataProvider(viewId, provider);
 	}
+	return providers;
 }
 
 // SPEC §4.20.2: all tree view ids the container owns; P0 first.
@@ -110,25 +180,43 @@ export const ALL_VIEW_IDS: ReadonlyArray<string> = [
 	"codictator-health",
 ];
 
-export function registerAllViews(api: ExtensionApi): void {
+export function registerAllViews(
+	api: ExtensionApi,
+): Map<string, MutableTreeDataProvider> {
+	const providers = new Map<string, MutableTreeDataProvider>();
 	for (const viewId of P0_VIEW_IDS) {
-		api.registerTreeDataProvider?.(viewId, buildTreeProvider([]));
+		const provider = createViewProvider();
+		providers.set(viewId, provider);
+		api.registerTreeDataProvider?.(viewId, provider);
 	}
-	registerSteeringBudgetHealthViews({
+	const p1 = registerSteeringBudgetHealthViews({
 		registerTreeDataProvider: (
 			viewId: string,
-			provider: ExtensionTreeDataProvider,
+			provider: MutableTreeDataProvider,
 		): void => {
 			api.registerTreeDataProvider?.(viewId, provider);
 		},
 	});
+	for (const [viewId, provider] of p1) {
+		providers.set(viewId, provider);
+	}
+	return providers;
+}
+
+// SPEC §4.20 EC-2: every view shows this row while no engine is connected.
+export function setDisconnectedViews(
+	providers: ReadonlyMap<string, MutableTreeDataProvider>,
+): void {
+	for (const provider of providers.values()) {
+		provider.setItems([disconnectedItem()]);
+	}
 }
 // SPEC §4.20.2: the extHost shape guard. Registrations reuse it so a
 // provider without function-typed getTreeItem/getChildren throws where
 // the real host would refuse it.
 export function isTreeDataProvider(
 	value: unknown,
-): value is ExtensionTreeDataProvider {
+): value is MutableTreeDataProvider {
 	if (!isRecord(value)) {
 		return false;
 	}
