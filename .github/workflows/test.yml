@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Path filter: docs-only PRs skip the 3-OS matrix (quick + contract still
-  # run). Shared engine/extension contract paths sit in both the engine and
+  # Path filter: docs-only PRs skip the 3-OS matrix and the heavy gates
+  # (quick still runs). Shared engine/extension contract paths sit in both the engine and
   # the vscode filter, so a CLI-surface change forces both suites; anything
   # outside the known groups is `other` and forces the full suite.
   changes:
@@ -27,6 +27,8 @@ jobs:
       ci: ${{ steps.filter.outputs.ci }}
       other: ${{ steps.filter.outputs.other }}
     steps:
+      # fetch-depth: 0 — kept: on push to main paths-filter diffs against the
+      # pre-push commit via git (PR events use the API and ignore depth).
       # v7.0.1 looked up 2026-10-28 via git ls-remote.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -67,31 +69,12 @@ jobs:
               - '.gitignore'
               - 'LICENSE'
 
-  # Ubuntu-only static gate: typecheck + lint once, instead of once per OS
+  # Merged static gate: typecheck + lint + build + a fast smoke of the
+  # engine/extension stdio contract, once on Ubuntu instead of once per OS
   # in the matrix. The matrix needs this job, so a static failure fast-fails
-  # before any 3-OS minutes burn.
-  quick:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      # v7.0.1 looked up 2026-10-28 via git ls-remote.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 1
-      # v7.1.0 looked up 2026-10-28 via git ls-remote.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npm run typecheck
-      - run: npm run lint
-
-  # Always-run contract: the build (both packages) plus a fast smoke of the
-  # engine/extension stdio contract, so every PR reports a build signal even
+  # before any 3-OS minutes burn; every PR still reports a build signal even
   # when the matrix is path-skipped.
-  contract:
+  quick:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -105,7 +88,9 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
+      - run: npm run typecheck
+      - run: npm run lint
       - run: npm run build
       - run: node --test packages/codictator/tests/unit/cli/serve-handshake.test.ts
 
@@ -123,13 +108,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0
+          fetch-depth: 1
       # v7.1.0 looked up 2026-10-28 via git ls-remote.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           cache: npm
-      - run: npm ci --ignore-scripts
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
       - run: npm run build
       - run: npm test
       # SPEC §10.4: canonical verdict bytes per scenario for the cross-OS
@@ -147,12 +132,38 @@ jobs:
           name: stress-${{ matrix.os }}
           path: test-results/stress-timings.json
           if-no-files-found: warn
-      # Ubuntu-only: the heavy gates run once, not once per OS. Windows and
-      # macOS stay pure npm test + artifact upload for the §10.4 byte compare.
+
+  # Ubuntu-only heavy gates, fanned out parallel to the 3-OS matrix instead
+  # of riding serially on the ubuntu matrix leg: the ledger coverage proof,
+  # the coverage-threshold suite, the single-build packaging check, and the
+  # PR-only red-ledger base comparison. Needs quick so a static failure
+  # fast-fails before these minutes burn.
+  heavy:
+    needs: [changes, quick]
+    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.other == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      # fetch-depth: 0 — the PR-only red-ledger --base step below needs the
+      # base SHA present in the clone; this is the only job that keeps full
+      # history.
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
+      # Single build: the packaging check below reuses it instead of
+      # rebuilding via test:packaging.
+      - run: npm run build
       # SPEC 10.7 query exits 1 while red entries remain; the gates are
       # npm test and the base comparison below, so only real errors fail here.
-      - if: matrix.os == 'ubuntu-latest'
-        shell: bash
+      - shell: bash
         run: |
           set +e
           npm run ledger -- --covers §10.3
@@ -160,10 +171,9 @@ jobs:
           if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then exit "$status"; fi
       # SPEC §10.6 thresholds are enforced by the test:coverage flags; the run
       # itself exits 1 while red-ledger entries remain, so only a threshold
-      # breach or a crash fails this step. `npm test` above gates real
+      # breach or a crash fails this step. `npm test` in the matrix gates real
       # failures, which it reports strictly.
-      - if: matrix.os == 'ubuntu-latest'
-        shell: bash
+      - shell: bash
         run: |
           set +e
           output="$(npm run test:coverage 2>&1)"
@@ -171,13 +181,10 @@ jobs:
           echo "$output"
           if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then exit "$status"; fi
           printf '%s' "$output" | node -e 'let s = ""; process.stdin.on("data", (c) => { s += c; }).on("end", () => { const m = /all files\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/.exec(s); if (/does not meet threshold/.test(s) || m === null || Number(m[1]) < 90 || Number(m[2]) < 80) { process.exit(1); } })'
-      # Single build: `npm run build` above already built, so the packaging
-      # check reuses it instead of rebuilding via test:packaging.
-      - if: matrix.os == 'ubuntu-latest'
-        run: npm pack --dry-run -w codictator && node --test packages/codictator/tests/acceptance/packaging/packaging.test.ts
+      - run: npm pack --dry-run -w codictator && node --test packages/codictator/tests/acceptance/packaging/packaging.test.ts
       # SPEC §10.7 Adding rule: a test that existed at the base must not
       # become listed. PR-only: the base SHA exists only on pull_request.
-      - if: matrix.os == 'ubuntu-latest' && github.event_name == 'pull_request'
+      - if: github.event_name == 'pull_request'
         shell: bash
         run: |
           BASE="${{ github.event.pull_request.base.sha }}"
@@ -189,6 +196,9 @@ jobs:
 
   # SPEC §10.4: the CI matrix compares the Linux, Windows and macOS verdict
   # bytes of every determinism scenario, then re-runs the replay assertion.
+  # The replay assertion imports only node: builtins and relative .ts sources
+  # (Node 24 type-stripping), so there is nothing to install: no npm cache,
+  # no npm ci. setup-node stays pinned for the toolchain version.
   determinism-compare:
     needs: test
     if: needs.test.result == 'success'
@@ -203,7 +213,6 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-          cache: npm
       # v8 looked up 2026-11-01 via git ls-remote.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
@@ -217,7 +226,6 @@ jobs:
             cmp --silent "$file" "determinism-compare/determinism-macos-latest/$name"
           done
           echo "determinism bytes identical across Linux, Windows and macOS"
-      - run: npm ci --ignore-scripts
       - run: node --test packages/codictator/tests/acceptance/replay/determinism.test.ts
 
   # Aggregator: always reports, even when the matrix is path-skipped (a
@@ -225,15 +233,15 @@ jobs:
   # when an upstream job actually failed or was cancelled.
   required-checks:
     if: always()
-    needs: [changes, contract, quick, test, determinism-compare]
+    needs: [changes, quick, test, heavy, determinism-compare]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: fail on any upstream failure
         if: >-
           needs.changes.result == 'failure' || needs.changes.result == 'cancelled' ||
-          needs.contract.result == 'failure' || needs.contract.result == 'cancelled' ||
           needs.quick.result == 'failure' || needs.quick.result == 'cancelled' ||
           needs.test.result == 'failure' || needs.test.result == 'cancelled' ||
+          needs.heavy.result == 'failure' || needs.heavy.result == 'cancelled' ||
           needs.determinism-compare.result == 'failure' || needs.determinism-compare.result == 'cancelled'
         run: exit 1
