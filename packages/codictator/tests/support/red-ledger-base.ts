@@ -17,9 +17,9 @@ import {
 	collectOutcomes,
 	discoverTestFiles,
 	loadLedger,
+	type PackagePaths,
 	packagePaths,
 	repoRoot,
-	type PackagePaths,
 } from "./red-ledger-collect.ts";
 import {
 	collectOutcomesAsync,

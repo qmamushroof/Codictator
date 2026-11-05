@@ -8,9 +8,9 @@ import { execFile } from "node:child_process";
 import type { TestOutcome } from "../../src/features/testing/index.ts";
 import {
 	collectOneOutcome,
-	testFileArgv,
 	type PackagePaths,
 	type TestChildResult,
+	testFileArgv,
 } from "./red-ledger-collect.ts";
 
 export type { TestChildResult } from "./red-ledger-collect.ts";
