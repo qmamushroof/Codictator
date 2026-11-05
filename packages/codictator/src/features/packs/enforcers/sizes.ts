@@ -1,7 +1,7 @@
-// SPEC §4.4.6 file-size: source files stay under maxLines lines and every
-// committed file under maxBytes bytes (§5.6). Limits bind from the pack
-// args first, then the rule tunables; a kind with neither limit fails the
-// load instead of checking nothing.
+// SPEC §4.4.6 file-size: source and test files stay under maxLines lines
+// and every committed file under maxBytes bytes (§5.6). Limits bind from
+// the pack args first, then the rule tunables; a kind with neither limit
+// fails the load instead of checking nothing.
 
 import type { Ports } from "../../../kernel/index.ts";
 import { err, isFixturePath, ok, type Result } from "../../../kernel/index.ts";
@@ -12,7 +12,6 @@ import {
 	bindingError,
 	findingFor,
 	isLockfilePath,
-	isTestPath,
 	nonNegativeInteger,
 	type RuleBinding,
 	readErrorFinding,
@@ -80,7 +79,7 @@ export async function checkSize(
 	for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
 		if (
 			binding.ruleId !== "core/max-file-bytes" &&
-			(isFixturePath(file) || isLockfilePath(file) || isTestPath(file))
+			(isFixturePath(file) || isLockfilePath(file))
 		) {
 			continue;
 		}

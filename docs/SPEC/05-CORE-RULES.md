@@ -65,7 +65,7 @@ Every rule of the `core` pack: language-agnostic families of PRD §8. This table
 
 | Rule | Tier | Params | Layers | R |
 |---|---|---|---|---|
-| `core/file-size` | tunable | `maxLines 300 (500, lower)` for source files | L1, L2, L4 | R |
+| `core/file-size` | tunable | `maxLines 300 (500, lower)` for source and test files; split an over-long test file by EC group (§4.10) | L1, L2, L4 | R |
 | `core/function-size` | tunable | `maxLines 40 (80, lower)` | L1, L2, L4 | R |
 | `core/complexity` | tunable | `maxCyclomatic 10 (15, lower)` | L1, L2, L4 | R |
 | `core/duplication` | tunable | `minTokens 50 (100, lower)` duplicated token run | L4 | R |

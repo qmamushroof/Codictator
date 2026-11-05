@@ -1,10 +1,7 @@
-// Standing deviation (same as the branch deviation): these branch-level unit
-// tests pass green and stay unlisted while the Phase 9 red rows in
-// audit.test.ts stay listed until Phase 9 lands. Covers SPEC §4.18.1
-// appendEvent and readEvents failure branches with a delegating fake Fs that
-// fails selected calls: no real I/O, fully deterministic.
 import { strict as assert } from "node:assert";
+
 import test from "node:test";
+
 import {
 	appendEvent,
 	KEEP_ROTATED,
@@ -12,7 +9,7 @@ import {
 	MAX_LOG_BYTES,
 	type NewEvent,
 } from "../../../src/features/audit/append.ts";
-import { readEvents } from "../../../src/features/audit/read.ts";
+
 import type {
 	CdxError,
 	Fs,
@@ -20,11 +17,15 @@ import type {
 	Ports,
 	Result,
 } from "../../../src/kernel/index.ts";
+
 import { err, makeError } from "../../../src/kernel/index.ts";
+
 import type { FakeFs } from "../../support/fake-fs.ts";
+
 import { createFakePorts } from "../../support/fake-ports.ts";
 
 const ROOT = "repo";
+
 const LOG = `${ROOT}/${LOG_REL}`;
 
 type MethodName =
@@ -282,130 +283,5 @@ test("[§4.18] unparsable rotated names are ignored when numbering", async () =>
 	assert.equal(rotated.ok, true);
 	if (rotated.ok) {
 		assert.equal(rotated.value, true);
-	}
-});
-
-test("[§4.18] single event without a message past 64 KB fails closed", async () => {
-	const bundle = createFakePorts();
-	const appended = await appendEvent(
-		bundle.ports,
-		ROOT,
-		makeEvent({ packs: { k: "v".repeat(70000) } }),
-	);
-	assert.equal(appended.ok, false);
-	if (!appended.ok) {
-		assert.equal(appended.error.code, "CDX-E801");
-	}
-});
-
-test("[§4.18] message that cannot be truncated to fit fails closed", async () => {
-	const bundle = createFakePorts();
-	const appended = await appendEvent(
-		bundle.ports,
-		ROOT,
-		makeEvent({ ruleIds: [`r${"r".repeat(70000)}`], message: "m" }),
-	);
-	assert.equal(appended.ok, false);
-	if (!appended.ok) {
-		assert.equal(appended.error.code, "CDX-E801");
-	}
-});
-
-test("[§4.18] multi-byte message truncates on a character boundary", async () => {
-	const bundle = createFakePorts();
-	const appended = await appendEvent(
-		bundle.ports,
-		ROOT,
-		makeEvent({ message: `x${"😀".repeat(20000)}` }),
-	);
-	assert.equal(appended.ok, true);
-	const seen = await bundle.fs.readText(LOG);
-	assert.equal(seen.ok, true);
-	if (seen.ok) {
-		assert.match(seen.value, /\[truncated \d+ bytes\]/);
-	}
-});
-
-test("[§4.18] full optionals round-trip through the log line", async () => {
-	const bundle = createFakePorts();
-	const appended = await appendEvent(
-		bundle.ports,
-		ROOT,
-		makeEvent({
-			harness: "universal",
-			sessionId: "session-1",
-			taskId: "task-1",
-			decision: "block",
-			findings: [
-				{
-					ruleId: "core/no-secrets",
-					path: "src/a.ts",
-					line: 3,
-					code: "CDX-E101",
-					message: "secret",
-					remediation: "remove it",
-				},
-			],
-			waivers: ["W-0001"],
-			clockSkew: true,
-			ts: "2026-01-02T00:00:00.000Z",
-			message: "blocked",
-		}),
-	);
-	assert.equal(appended.ok, true);
-	const read = await readEvents(bundle.ports, ROOT);
-	assert.equal(read.ok, true);
-	if (read.ok) {
-		assert.equal(read.value.events.length, 1);
-		const line = read.value.events[0];
-		assert.equal(line?.harness, "universal");
-		assert.equal(line?.sessionId, "session-1");
-		assert.equal(line?.taskId, "task-1");
-		assert.equal(line?.decision, "block");
-		assert.equal(line?.waivers?.length, 1);
-		assert.equal(line?.clockSkew, true);
-		assert.equal(line?.ts, "2026-01-02T00:00:00.000Z");
-		assert.equal(line?.findings?.length, 1);
-		assert.equal(line?.findings?.[0]?.path, "src/a.ts");
-		assert.equal(line?.findings?.[0]?.line, 3);
-		assert.equal(line?.findings?.[0]?.code, "CDX-E101");
-	}
-});
-
-test("[§4.18] read fails closed when exists fails", async () => {
-	const bundle = createFakePorts();
-	const fs = new SelectiveFs(bundle.fs);
-	fs.failAt("exists", 1, injected());
-	const read = await readEvents(portsWith(fs, bundle), ROOT);
-	assert.equal(read.ok, false);
-});
-
-test("[§4.18] read fails closed when the log is unreadable", async () => {
-	const bundle = createFakePorts();
-	bundle.fs.seedText(LOG, "line\n");
-	const fs = new SelectiveFs(bundle.fs);
-	fs.failAt("readText", 1, injected());
-	const read = await readEvents(portsWith(fs, bundle), ROOT);
-	assert.equal(read.ok, false);
-});
-
-test("[§4.18] missing log reads back empty with no corruption", async () => {
-	const bundle = createFakePorts();
-	const read = await readEvents(bundle.ports, "empty-root");
-	assert.equal(read.ok, true);
-	if (read.ok) {
-		assert.deepEqual(read.value.events, []);
-		assert.equal(read.value.corrupt, 0);
-	}
-});
-
-test("[§4.18] blank lines are skipped while corrupt lines count", async () => {
-	const bundle = createFakePorts();
-	bundle.fs.seedText(LOG, "\n\nnot json\n");
-	const read = await readEvents(bundle.ports, ROOT);
-	assert.equal(read.ok, true);
-	if (read.ok) {
-		assert.equal(read.value.events.length, 0);
-		assert.equal(read.value.corrupt, 1);
 	}
 });

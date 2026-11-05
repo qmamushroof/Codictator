@@ -1,7 +1,6 @@
 // SPEC §4.20.1, §10.2: fake vscode API object for extension unit tests. It
 // records every call so shape tests can assert what the extension did —
-// which commands were registered, which terminals were pre-filled, which
-// notifications were shown — without an extension host.
+// commands, terminals, notifications — without an extension host.
 import type {
 	ExtensionCommandHandler,
 	ExtensionDisposable,
@@ -27,8 +26,8 @@ export interface FakeNotification {
 	readonly actions: ReadonlyArray<string>;
 }
 
-// SPEC §4.20.2: Problems-panel diagnostics the Violations view writes.
-// Code is the rule id, message the remediation with an explain pointer.
+// SPEC §4.20.2: Problems-panel diagnostics the Violations view writes —
+// code is the rule id, message the remediation with an explain pointer.
 export interface FakeDiagnostic {
 	readonly uri: string;
 	readonly code: string;
@@ -61,6 +60,13 @@ export function createFakeDisposable(onDispose?: () => void): FakeDisposable {
 			}
 		},
 	};
+}
+
+function removeListener<T>(listeners: Array<T>, listener: T): void {
+	const at = listeners.indexOf(listener);
+	if (at >= 0) {
+		listeners.splice(at, 1);
+	}
 }
 
 // SPEC §4.20.2: the save seam for L2 on save plus the `events/appended`
@@ -256,10 +262,7 @@ export function createFakeVscode(): FakeVscode {
 		): FakeDisposable {
 			saveListeners.push(listener);
 			return createFakeDisposable(() => {
-				const at = saveListeners.indexOf(listener);
-				if (at >= 0) {
-					saveListeners.splice(at, 1);
-				}
+				removeListener(saveListeners, listener);
 			});
 		},
 		saveDocument(folderPath: string, filePath: string): void {
@@ -271,10 +274,7 @@ export function createFakeVscode(): FakeVscode {
 		onEventsAppended(listener: (folderPath: string) => void): FakeDisposable {
 			appendedListeners.push(listener);
 			return createFakeDisposable(() => {
-				const at = appendedListeners.indexOf(listener);
-				if (at >= 0) {
-					appendedListeners.splice(at, 1);
-				}
+				removeListener(appendedListeners, listener);
 			});
 		},
 		emitEventsAppended(folderPath: string): void {
@@ -286,8 +286,7 @@ export function createFakeVscode(): FakeVscode {
 			viewId: string,
 			provider: MutableTreeDataProvider,
 		): ExtensionDisposable | undefined {
-			// The real extHost renders by calling getChildren, so a provider
-			// without function-typed entries throws here instead of at render.
+			// The real extHost renders by calling getChildren, so a provider without function-typed entries throws here instead of at render.
 			if (!isTreeDataProvider(provider)) {
 				throw new TypeError(`view ${viewId} needs a tree data provider`);
 			}

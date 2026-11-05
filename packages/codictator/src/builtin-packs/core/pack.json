@@ -541,7 +541,7 @@
 			"id": "core/file-size",
 			"family": "F6",
 			"tier": "tunable",
-			"statement": "Source files stay under maxLines lines.",
+			"statement": "Source and test files stay under maxLines lines.",
 			"reason": "Oversize files resist review and hide coupling.",
 			"remediation": "Split {path} below {limit} lines by responsibility.",
 			"enforcer": "core/file-size",
@@ -557,7 +557,7 @@
 			},
 			"ratchet": true,
 			"measureVersion": 1,
-			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+			"fixtures": { "violating": ["basic", "test-cap"], "passing": ["basic"] }
 		},
 		{
 			"id": "core/function-size",

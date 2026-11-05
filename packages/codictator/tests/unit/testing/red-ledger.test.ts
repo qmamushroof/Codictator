@@ -14,7 +14,7 @@ import {
 	parseLedgerFile,
 	parseTap,
 } from "../../../src/features/testing/index.ts";
-import { runBaseComparison } from "../../support/red-ledger-runner.ts";
+import { runBaseComparison } from "../../support/red-ledger-base.ts";
 
 test("[§10.7] evaluateRun passes a clean run with an empty ledger", () => {
 	const outcomes: Array<TestOutcome> = [
