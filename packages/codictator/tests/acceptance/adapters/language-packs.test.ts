@@ -1,13 +1,21 @@
 // SPEC §6.4: one test per language-pack EC row. EC-6 and EC-7 pin the SPEC
-// outcome through the NuGet and PyPI drivers, so both pass. EC-8 still
-// throws "not implemented" until the python import extractor resolves
-// namespace packages by directory, and EC-10 until pack-bound enforcers
-// judge each file by its pack, so both stay red.
+// outcome through the NuGet and PyPI drivers, so both pass. EC-8 pins the
+// python namespace resolution by directory, and EC-10 pins per-file pack
+// judging by extension with each pack's own extractor.
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import { dotnetPack } from "../../../src/builtin-packs/dotnet/index.ts";
-import { pythonPack } from "../../../src/builtin-packs/python/index.ts";
-import { typescriptPack } from "../../../src/builtin-packs/typescript/index.ts";
+import {
+	extractPythonImports,
+	isPythonFile,
+	pythonPack,
+	resolvePythonModule,
+} from "../../../src/builtin-packs/python/index.ts";
+import {
+	extractImports,
+	isTypeScriptFile,
+	typescriptPack,
+} from "../../../src/builtin-packs/typescript/index.ts";
 import {
 	classifyNuGetRange,
 	csprojInlineVersions,
@@ -114,9 +122,22 @@ test("[§6.4 EC-7] requirements line with a range", () => {
 });
 
 test("[§6.4 EC-8] namespace package without init", () => {
-	// SPEC §6.4 EC-8: resolved by directory. Red until the python import
-	// extractor lands; the driver alone cannot resolve modules to files.
-	throw new Error("not implemented: SPEC §6.4 EC-8 namespace resolution");
+	// SPEC §6.4 EC-8: resolved by directory. A namespace package with no
+	// `__init__.py` resolves to the file or the directory contents; a
+	// relative specifier, an empty specifier or a non-identifier segment
+	// never resolves.
+	assert.equal(resolvePythonModule("myns.sub", ["myns/sub.py"]), "myns/sub.py");
+	assert.equal(
+		resolvePythonModule("myns", ["myns/a.py", "myns/b.py"]),
+		"myns/a.py",
+	);
+	assert.equal(
+		resolvePythonModule("pkg.mod", ["pkg/__init__.py", "pkg/mod.py"]),
+		"pkg/mod.py",
+	);
+	assert.equal(resolvePythonModule(".myns", ["myns.py"]), undefined);
+	assert.equal(resolvePythonModule("", ["myns.py"]), undefined);
+	assert.equal(resolvePythonModule("myns-sub", ["myns-sub.py"]), undefined);
 });
 
 test("[§6.4 EC-9] JS repo without TypeScript", () => {
@@ -126,10 +147,28 @@ test("[§6.4 EC-9] JS repo without TypeScript", () => {
 });
 
 test("[§6.4 EC-10] mixed TS and Python repo", () => {
-	// SPEC §6.4 EC-10: both packs load; each file judged by its pack. Red
-	// until pack-bound enforcers land; loading both packs alone judges no
-	// file.
-	throw new Error("not implemented: SPEC §6.4 EC-10 per-file pack judging");
+	// SPEC §6.4 EC-10: both packs load; each file judged by its pack. The
+	// per-file seam is the extension: typescript files are the python
+	// pack's non-files and vice versa, and each pack's own extractor judges
+	// its files.
+	const ts = typescriptPack();
+	const py = pythonPack();
+	assert.equal(ts.manifest.id, "typescript");
+	assert.equal(py.manifest.id, "python");
+	assert.equal(isTypeScriptFile("src/app.ts"), true);
+	assert.equal(isTypeScriptFile("src/app.py"), false);
+	assert.equal(isPythonFile("src/app.py"), true);
+	assert.equal(isPythonFile("src/app.ts"), false);
+	assert.deepEqual(
+		extractImports("src/app.ts", 'import { b } from "./b";').map(
+			(ref) => ref.to,
+		),
+		["./b"],
+	);
+	assert.deepEqual(
+		extractPythonImports("src/app.py", "import myns.sub").map((ref) => ref.to),
+		["myns.sub"],
+	);
 });
 
 test("[§6.3] pypi exact pin needs a full x.y.z", () => {

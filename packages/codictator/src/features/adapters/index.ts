@@ -94,6 +94,7 @@ import {
 
 export { hookBudgetMs } from "./hook-dispatch.ts";
 export { hookEnv } from "./hook-load.ts";
+export { isOutsideEveryModule, isWithinModules } from "./module-scope.ts";
 export {
 	type HookAppend,
 	type HookBasePorts,
@@ -103,6 +104,12 @@ export {
 	staticBlock,
 	supportedHarness,
 } from "./runtime.ts";
+export {
+	TIMELINE_PAGE_SIZE,
+	type TimelineEventRef,
+	timelineOlder,
+	timelineTail,
+} from "./timeline.ts";
 export type {
 	Adapter,
 	CapabilityDeclaration,
