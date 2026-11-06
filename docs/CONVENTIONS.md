@@ -31,7 +31,7 @@ File, function, complexity and module limits are `core/file-size`, `core/functio
 - Relative imports carry the `.ts` extension; type-only imports use `import type`.
 - No `any`. Take `unknown` and narrow it, or validate it with the kernel schema validator.
 - No non-null assertion (`!`) and no `as` cast that widens what the compiler knows. Narrow with a check instead.
-- `JSON.parse` only through the kernel's `parseJson`; every generated JSON file through `stableStringify` (SPEC §4.1.2).
+- `JSON.parse` only through the kernel's `parseJson`, except generated template text under SPEC §10.3 item 6; every generated JSON file through `stableStringify` (SPEC §4.1.2).
 
 ## Errors
 
