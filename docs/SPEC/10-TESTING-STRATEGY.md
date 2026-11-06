@@ -33,7 +33,7 @@ What Codictator's own suite must prove (PRD §12 #7, §6 P11). How to write and 
 3. Only `kernel` imports `node:fs`, `node:child_process`, `node:net`, `node:http(s)`, `node:dns` or uses global `fetch`, `Date.now`, `new Date()` without arguments, or `Math.random`.
 4. `engine` imports no feature module except `config` and `audit`; adapter sub-folders import only `adapters/contract` and allowed modules.
 5. Every module folder has a row in §3.3 and a SPEC leaf; every SPEC module leaf has a folder.
-6. `JSON.parse` appears only in the kernel.
+6. `JSON.parse` appears only in the kernel. A `JSON.parse` match inside a string literal that emits generated template text (for example CI YAML scripts) is not module parsing: the module never executes it. Each such occurrence is allowlisted per occurrence in `packages/codictator/tests/architecture/architecture.test.ts`, keyed by src path relative to the repository root plus the string-literal span holding the match; a match outside a string literal fails even in an allowlisted file. The emitted output MUST keep the plain call (no splitting/concatenation to evade the scan).
 
 ## 10.4 Determinism and replay
 
