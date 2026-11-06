@@ -213,6 +213,16 @@ export function spanKey(repoRel: string, span: StringSpan): string {
 	return `${repoRel}:${span.startLine}:${span.startCol}-${span.endLine}:${span.endCol}`;
 }
 
+// SPEC §10.3 item 6: a split concatenation spelling JSON.parse evades the
+// plain-call scan, so the guard fails it outright. The repo lint gate has
+// no regex-literal mode, so quotes are hex escapes per ts-checks.ts.
+export function hasSplitJsonParse(text: string): boolean {
+	return (
+		/JSON\.\s*[\x22\x27]\s*\+/.exec(text) !== null ||
+		/[\x22\x27]\s*\+\s*[\x22\x27]parse/.exec(text) !== null
+	);
+}
+
 export function containingSpan(
 	spans: ReadonlyArray<StringSpan>,
 	offset: number,

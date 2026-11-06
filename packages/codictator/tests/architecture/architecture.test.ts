@@ -14,6 +14,7 @@ import {
 	collectSrcFiles,
 	containingSpan,
 	findJsonParseMatches,
+	hasSplitJsonParse,
 	readSrc,
 	relativeToRepo,
 	relativeToSrc,
@@ -214,13 +215,6 @@ const ITEM_6_TEMPLATE_ALLOWLIST: ReadonlySet<string> = new Set([
 	"packages/codictator/src/features/ci/workflow-live.ts:80:2-80:86",
 ]);
 
-function hasSplitJsonParse(text: string): boolean {
-	return (
-		/JSON\.\s*\x22\s*\+/.exec(text) !== null ||
-		/\x22\s*\+\s*\x22parse/.exec(text) !== null
-	);
-}
-
 function item6FileOffenders(repoRel: string, text: string): Array<string> {
 	const offenders: Array<string> = [];
 	if (hasSplitJsonParse(text)) {
@@ -278,4 +272,22 @@ test("[§10.3 item 6] JSON.parse appears only in the kernel", () => {
 		}
 	}
 	assert.deepEqual(offenders, []);
+});
+
+test("[§10.3 item 6] single-quote split fails beside a plain in-literal match", () => {
+	// A single-quote concatenation is the same evasion as the double-quote
+	// split, so the guard flags it even when the file also holds a plain
+	// in-literal match that would pass through the allowlist.
+	const text = [
+		'const template = "run node -e JSON.parse(payload)";',
+		"const evasive = 'JSON.' + 'parse(payload)';",
+	].join("\n");
+	const offenders = item6FileOffenders(
+		"packages/codictator/src/features/ci/workflow-live.ts",
+		text,
+	);
+	assert.equal(
+		offenders.some((offense) => offense.includes("split JSON.parse")),
+		true,
+	);
 });

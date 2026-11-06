@@ -5,6 +5,7 @@ import {
 	collectSrcFiles,
 	containingSpan,
 	findJsonParseMatches,
+	hasSplitJsonParse,
 	readSrc,
 	relativeToRepo,
 	relativeToSrc,
@@ -55,4 +56,20 @@ test("[§10.3] arch scan helpers locate string-literal spans and JSON.parse matc
 		spanKey("packages/codictator/src/f.ts", span),
 		/f\.ts:\d+:\d+-\d+:\d+/,
 	);
+});
+
+test("[§10.3] split detection flags double-quote JSON.parse concatenation", () => {
+	assert.equal(hasSplitJsonParse('const s = "JSON." + "parse(x)";'), true);
+	assert.equal(hasSplitJsonParse('const s = "JSON."  +  "parse(x)";'), true);
+});
+
+test("[§10.3] split detection flags single-quote JSON.parse concatenation", () => {
+	assert.equal(hasSplitJsonParse("const s = 'JSON.' + 'parse(x)';"), true);
+	assert.equal(hasSplitJsonParse("emit(\"JSON.\" + 'parse');"), true);
+});
+
+test("[§10.3] split detection ignores plain calls and other concatenation", () => {
+	assert.equal(hasSplitJsonParse("const v = JSON.parse(text);"), false);
+	assert.equal(hasSplitJsonParse('const s = "a" + "b";'), false);
+	assert.equal(hasSplitJsonParse("const s = 'JSON.';"), false);
 });
