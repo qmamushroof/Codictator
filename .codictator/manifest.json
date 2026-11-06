@@ -37,7 +37,7 @@
       "path": ".githooks/pre-push"
     },
     {
-      "hash": "bfc3fbfb51c51724023f6a4490de395c3844f393ffd3444e0707b460d100bca0",
+      "hash": "711caa0a1ad509fe75910f27e5ab672d915f6144bc7adb3c0c72061cc68c97cf",
       "mode": "file",
       "owner": "codictator",
       "path": ".github/workflows/codictator.yml"
@@ -50,7 +50,7 @@
     }
   ],
   "codictator": "0.2.7",
-  "hash": "a17ef35ba4349e745277d22d0d04de550b34cb80b4a30924aad220da85da8b63",
+  "hash": "ec2eb32dc882298b8c61d16e274cc396028e4cd13e9d88ba91a3a82d7a21dbfb",
   "version": 1
 }
 

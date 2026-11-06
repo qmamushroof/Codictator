@@ -122,7 +122,7 @@ test("[§4.15.3] bot evidence flows through the gate", async () => {
 });
 
 test("[§4.15.7] fork PR with a read-only token advises", async () => {
-	// SPEC §4.15.7 EC-1: verify runs; the required-check rule only advises.
+	// SPEC §4.15.7 EC-1: verify skips; the required-check rule only advises.
 	const findings = await checkCi(ctxFor(), externalWorkflow(), {
 		baseReachable: true,
 		forkPr: true,
@@ -207,6 +207,29 @@ test("[§4.15.1] rendered workflow pins and verifies", async () => {
 	assert.ok(text.includes("fetch-depth: 0"));
 	assert.ok(!text.includes("- run: codictator ci "));
 	assert.ok(workflow.scheduleCron?.match(/^\d+ \d+ \* \* \*$/));
+});
+
+test("[§4.15.1] verify skips on pull_request; required-checks carries the PR signal", () => {
+	// SPEC §4.15.1 + EC-12: the verify job skips on pull_request so it
+	// deduplicates against the test workflow's required-checks aggregator,
+	// while the pull_request trigger stays (record-bot-change still runs
+	// and the skipped verify still resolves the required check). Full
+	// verify stays on push, schedule, and manual dispatch.
+	const workflow = renderWorkflow("/repo", { repoName: "app" });
+	const text = workflow.text ?? "";
+	assert.ok(text.includes("  pull_request:"));
+	const verifyAt = text.indexOf("  verify:");
+	const recordAt = text.indexOf("  record-bot-change:");
+	assert.ok(verifyAt >= 0 && verifyAt < recordAt);
+	const verifyBlock = text.slice(verifyAt, recordAt);
+	assert.ok(verifyBlock.includes("if: github.event_name != 'pull_request'"));
+	assert.ok(verifyBlock.includes("ci verify"));
+	assert.ok(text.includes("if: github.event_name == 'pull_request'"));
+	assert.ok(
+		text.includes(
+			"if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'",
+		),
+	);
 });
 
 test("[§4.15.2] rendered github workflow passes the pin check", async () => {

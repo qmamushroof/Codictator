@@ -18,6 +18,9 @@ concurrency:
 
 jobs:
   verify:
+    # PRs ride on the test workflow's required-checks gate; full verify
+    # runs on push, schedule, and manual dispatch (§4.15.1, EC-12).
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
