@@ -105,10 +105,13 @@ export async function resolveVerifyScope(
 		});
 	}
 	if (flags.base !== undefined && flags.head !== undefined) {
+		// BUG-0044 ACMR only: a ranged deletion has no worktree content, so
+		// listing it fail-closes the gate (same class as BUG-0041/0043).
 		const ranged = await runGitList(ports, [
 			"git",
 			"diff",
 			"--name-only",
+			"--diff-filter=ACMR",
 			flags.base,
 			flags.head,
 		]);
