@@ -83,7 +83,16 @@ export class NodeGit implements Git {
 	}
 
 	async stagedFiles(): Promise<Result<Array<string>>> {
-		const result = await this.exec(["git", "diff", "--name-only", "--cached"]);
+		// BUG-0040: added/copied/modified/renamed only. A staged deletion has
+		// no worktree content, so listing it sends enforcers into a fail-closed
+		// readErrorFinding and verify --staged can never go green on a delete.
+		const result = await this.exec([
+			"git",
+			"diff",
+			"--name-only",
+			"--cached",
+			"--diff-filter=ACMR",
+		]);
 		const failure = procFailure("staged files", result);
 		if (failure !== undefined) {
 			return err(failure);
