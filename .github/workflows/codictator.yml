@@ -18,25 +18,35 @@ concurrency:
 
 jobs:
   verify:
-    # PRs ride on the test workflow's required-checks gate; full verify
-    # runs on push, schedule, and manual dispatch (§4.15.1, EC-12).
-    if: github.event_name != 'pull_request'
+    # No job-level skip: a skipped matrix job reports `verify` (SKIPPED),
+    # never the required `verify (<os>)` matrix-leg name, so the gate
+    # would block every PR. The expensive steps run only off-PR while a
+    # PR-only no-op reports SUCCESS; full verify stays on push, schedule,
+    # and manual dispatch (§4.15.1, EC-12).
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: ["ubuntu-latest"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name != 'pull_request'
         with:
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: github.event_name != 'pull_request'
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts
+        if: github.event_name != 'pull_request'
       - run: npm run build
+        if: github.event_name != 'pull_request'
       - run: node packages/codictator/dist/cli/main.js ci verify
+        if: github.event_name != 'pull_request'
+      - name: PR dedup no-op (SPEC §4.15.1, EC-12)
+        if: github.event_name == 'pull_request'
+        run: echo "verify dedupes to required-checks on pull_request"
 
   record-bot-change:
     if: github.event_name == 'pull_request'

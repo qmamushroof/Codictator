@@ -209,12 +209,13 @@ test("[§4.15.1] rendered workflow pins and verifies", async () => {
 	assert.ok(workflow.scheduleCron?.match(/^\d+ \d+ \* \* \*$/));
 });
 
-test("[§4.15 EC-12] verify skips on pull_request; required-checks carries the PR signal", () => {
-	// SPEC §4.15.1 + EC-12: the verify job skips on pull_request so it
-	// deduplicates against the test workflow's required-checks aggregator,
-	// while the pull_request trigger stays (record-bot-change still runs
-	// and the skipped verify still resolves the required check). Full
-	// verify stays on push, schedule, and manual dispatch.
+test("[§4.15 EC-12] verify reports SUCCESS on pull_request via a PR no-op; full verify stays on push, schedule, and dispatch", () => {
+	// SPEC §4.15.1 + EC-12: no job-level skip — a skipped matrix job reports
+	// `verify` (SKIPPED), never the required `verify (<os>)` matrix-leg name.
+	// The expensive steps are gated off per step while a PR-only no-op step
+	// reports SUCCESS, so the matrix leg resolves and the PR signal rides on
+	// the test workflow's required-checks. Full verify stays on push,
+	// schedule, and manual dispatch.
 	const workflow = renderWorkflow("/repo", { repoName: "app" });
 	const text = workflow.text ?? "";
 	assert.ok(text.includes("  pull_request:"));
@@ -222,9 +223,19 @@ test("[§4.15 EC-12] verify skips on pull_request; required-checks carries the P
 	const recordAt = text.indexOf("  record-bot-change:");
 	assert.ok(verifyAt >= 0 && verifyAt < recordAt);
 	const verifyBlock = text.slice(verifyAt, recordAt);
-	assert.ok(verifyBlock.includes("if: github.event_name != 'pull_request'"));
+	const stepsAt = verifyBlock.indexOf("    steps:");
+	assert.ok(stepsAt >= 0);
+	assert.ok(!verifyBlock.slice(0, stepsAt).includes("if: github.event_name"));
 	assert.ok(verifyBlock.includes("ci verify"));
-	assert.ok(text.includes("if: github.event_name == 'pull_request'"));
+	assert.ok(verifyBlock.includes("if: github.event_name != 'pull_request'"));
+	const noopAt = verifyBlock.indexOf("if: github.event_name == 'pull_request'");
+	assert.ok(noopAt > stepsAt);
+	const stepStart = verifyBlock.lastIndexOf("\n      - ", noopAt);
+	assert.ok(stepStart >= 0);
+	const noopStep = verifyBlock.slice(stepStart);
+	assert.ok(!noopStep.includes("npm "));
+	assert.ok(!noopStep.includes("checkout"));
+	assert.ok(!noopStep.includes("ci verify"));
 	assert.ok(
 		text.includes(
 			"if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'",
