@@ -28,11 +28,17 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
+      # Single-path artifacts restore their directory contents, so each
+      # downloads to its own packages/... path.
       # v8 looked up 2026-11-01 via git ls-remote.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: dist-${{ github.sha }}
-          path: .
+          name: dist-codictator-${{ github.sha }}
+          path: packages/codictator/dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-vscode-${{ github.sha }}
+          path: packages/vscode/dist
       # SPEC §10.6 thresholds are enforced by the test:coverage flags; the run
       # itself exits 1 while red-ledger entries remain, so only a threshold
       # breach or a crash fails this step. `npm test` in the matrix gates real
@@ -64,8 +70,12 @@ jobs:
       # v8 looked up 2026-11-01 via git ls-remote.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: dist-${{ github.sha }}
-          path: .
+          name: dist-codictator-${{ github.sha }}
+          path: packages/codictator/dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-vscode-${{ github.sha }}
+          path: packages/vscode/dist
       # Single build reused: the packaging check runs against quick's dist
       # instead of rebuilding via test:packaging.
       - run: npm pack --dry-run -w codictator && node --test packages/codictator/tests/acceptance/packaging/packaging.test.ts
@@ -91,8 +101,12 @@ jobs:
       # v8 looked up 2026-11-01 via git ls-remote.
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          name: dist-${{ github.sha }}
-          path: .
+          name: dist-codictator-${{ github.sha }}
+          path: packages/codictator/dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-vscode-${{ github.sha }}
+          path: packages/vscode/dist
       # SPEC 10.7 query exits 1 while red entries remain; the gates are
       # npm test and the base comparison below, so only real errors fail here.
       - shell: bash
