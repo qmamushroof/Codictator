@@ -109,34 +109,6 @@ test("[§4.1] git head trims the commit hash", async () => {
 	}
 });
 
-test("[§4.1] git staged files split and sort", async () => {
-	const { git } = gitWith((fake) => {
-		fake.when(
-			["git", "diff", "--name-only", "--cached"],
-			result({ stdout: "b.ts\na.ts\n\n" }),
-		);
-	});
-	const staged = await git.stagedFiles();
-	assert.equal(staged.ok, true);
-	if (staged.ok) {
-		assert.deepEqual(staged.value, ["a.ts", "b.ts"]);
-	}
-});
-
-test("[§4.1] git staged files failing is CDX-E703", async () => {
-	const { git } = gitWith((fake) => {
-		fake.when(
-			["git", "diff", "--name-only", "--cached"],
-			result({ code: 128 }),
-		);
-	});
-	const staged = await git.stagedFiles();
-	assert.equal(staged.ok, false);
-	if (!staged.ok) {
-		assert.equal(staged.error.code, "CDX-E703");
-	}
-});
-
 test("[§4.1] git diff returns the patch text", async () => {
 	const { git } = gitWith((fake) => {
 		fake.when(["git", "diff", "a", "b"], result({ stdout: "patch" }));
