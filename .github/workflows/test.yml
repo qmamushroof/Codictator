@@ -144,10 +144,25 @@ jobs:
     if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.other == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
+    # Lever 6: per-OS pool width. The pool spawns one `node --test` child
+    # per slot (the harness's documented CODICTATOR_TEST_JOBS knob, default
+    # 8). The Windows leg dominates the critical path (2-5x the Ubuntu
+    # execution for the same suite); halving its width to core count eases
+    # spawn and I/O contention without changing what is tested. Ubuntu and
+    # macOS keep the default.
+    env:
+      CODICTATOR_TEST_JOBS: ${{ matrix.test-jobs }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            test-jobs: 8
+          - os: windows-latest
+            test-jobs: 4
+          - os: macos-latest
+            test-jobs: 8
     steps:
       # v7.0.1 looked up 2026-10-28 via git ls-remote.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
