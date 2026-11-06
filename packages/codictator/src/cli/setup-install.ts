@@ -29,39 +29,49 @@ export interface SetupInstallTarget {
 }
 
 // SPEC §4.19.6: the test seams for the consent gate. isTty answers the
-// TTY check; run stands in for the npm spawn, so no test touches the
-// network. Production callers omit both.
+// TTY check; prompt stands in for the TTY read, so quiet tests assert the
+// exact visible message without touching stdin; run stands in for the npm
+// spawn, so no test touches the network. Production callers omit all three.
 export interface SetupInstallDeps {
 	readonly isTty?: () => boolean;
+	readonly prompt?: (message: string) => Promise<string>;
 	readonly run?: (
 		argv: ReadonlyArray<string>,
 		options: ProcOptions,
 	) => Promise<ProcResult>;
 }
 
-// SPEC §4.19.6: the tool-scope consent gate. The prompt names the missing
-// artifact, the directory and the exact command; only y/yes counts as
-// consent, everything else fails closed. Tests answer through
-// req.stdinText (the runCommand seam); production reads one TTY line, so
-// quiet tests never print and never block.
-async function askInstallConsent(
-	req: CommandRequest,
-	message: string,
-): Promise<boolean> {
-	const firstLine = req.stdinText?.split("\n")[0] ?? "";
-	if (req.stdinText !== undefined) {
-		return /^\s*y(es)?\s*$/i.test(firstLine);
-	}
+// SPEC §4.19.6: the production prompt. The message rides as the
+// question() prompt so the TTY shows the exact mutation before the cursor
+// waits; a bare question("") would leave the consent line invisible.
+async function defaultPrompt(message: string): Promise<string> {
 	const line = createInterface({
 		input: process.stdin,
 		output: process.stdout,
 	});
 	try {
-		process.stdout.write(`${message} `);
-		return /^\s*y(es)?\s*$/i.test(await line.question(""));
+		return await line.question(`${message} `);
 	} finally {
 		line.close();
 	}
+}
+
+// SPEC §4.19.6: the tool-scope consent gate. The prompt names the missing
+// artifact, the directory and the exact command; only y/yes counts as
+// consent, everything else fails closed. Tests answer through
+// req.stdinText (the runCommand seam) or the prompt seam; production reads
+// one TTY line through defaultPrompt, so quiet tests never print and never
+// block.
+async function askInstallConsent(
+	req: CommandRequest,
+	message: string,
+	prompt: (message: string) => Promise<string>,
+): Promise<boolean> {
+	const firstLine = req.stdinText?.split("\n")[0] ?? "";
+	if (req.stdinText !== undefined) {
+		return /^\s*y(es)?\s*$/i.test(firstLine);
+	}
+	return /^\s*y(es)?\s*$/i.test(await prompt(message));
 }
 
 function missingLockfile(
@@ -100,6 +110,7 @@ export async function setupInstallLayout(
 			(await askInstallConsent(
 				req,
 				`setup: missing .codictator/tool/package.json - write it in .codictator/tool? [y/n]`,
+				deps.prompt ?? defaultPrompt,
 			));
 		if (!agreed) {
 			return fail(
@@ -253,6 +264,7 @@ export async function setupInstallHere(
 			(await askInstallConsent(
 				req,
 				`setup: missing ${target.lockRel} - run "npm install" then "npm ci" in ${target.dirRel}? [y/n]`,
+				deps.prompt ?? defaultPrompt,
 			));
 		if (!agreed) {
 			return missingLockfile(req, target);
