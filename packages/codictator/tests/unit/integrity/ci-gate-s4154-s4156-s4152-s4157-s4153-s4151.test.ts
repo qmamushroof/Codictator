@@ -209,7 +209,7 @@ test("[§4.15.1] rendered workflow pins and verifies", async () => {
 	assert.ok(workflow.scheduleCron?.match(/^\d+ \d+ \* \* \*$/));
 });
 
-test("[§4.15.1] verify skips on pull_request; required-checks carries the PR signal", () => {
+test("[§4.15 EC-12] verify skips on pull_request; required-checks carries the PR signal", () => {
 	// SPEC §4.15.1 + EC-12: the verify job skips on pull_request so it
 	// deduplicates against the test workflow's required-checks aggregator,
 	// while the pull_request trigger stays (record-bot-change still runs
