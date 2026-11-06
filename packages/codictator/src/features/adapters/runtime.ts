@@ -187,7 +187,12 @@ async function runHookInner(
 		configHash: effective.value.configHash,
 		append: (verdict) => request.append(root, verdict),
 	});
-	const scope = hookScope(event, root, roots.raw);
+	const scope = hookScope(
+		event,
+		root,
+		roots.raw,
+		event.cwd === "" ? request.cwd : event.cwd,
+	);
 	// SPEC §4.6.3 + §4.18.3: the L0 triggers render the scoped injection
 	// and land the auditable event before evaluation, so the status row
 	// reads live evidence even when the verdict blocks. An unwritable log

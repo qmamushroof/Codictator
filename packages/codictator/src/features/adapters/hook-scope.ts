@@ -21,13 +21,18 @@ import type { HookEvent } from "./contract.ts";
 // names) survived absolute and toRepoPath rejected it (§4.1.2) as a false
 // deny. Stripping against either root spelling fixes that lexically: no
 // realpath on targets (§4.7.3), relative on first match, else unchanged.
+// The caller-cwd spelling is a third hazard: tool targets carry the
+// path.join(repo.dir, ...) spelling, which matches neither git spelling on
+// mac (/var vs /private/var) or Windows (8.3 short vs long), so it strips
+// here too, still lexically (§4.7.3: no target realpathing).
 function relativizeTarget(
 	canonicalRoot: string,
 	target: string,
 	rawRoot?: string,
+	cwdSpelling?: string,
 ): string {
 	const slashed = target.replace(/\\/g, "/");
-	const bases = [canonicalRoot, rawRoot]
+	const bases = [canonicalRoot, rawRoot, cwdSpelling]
 		.filter((base) => base !== undefined && base !== "")
 		.map((base) => (base as string).replace(/\\/g, "/").replace(/\/+$/, ""));
 	for (const base of bases) {
@@ -45,11 +50,12 @@ export function hookScope(
 	event: HookEvent,
 	canonicalRoot: string,
 	rawRoot?: string,
+	cwdSpelling?: string,
 ): Scope {
 	const tool = event.tool;
 	const targets = new Set<string>();
 	for (const raw of tool?.paths ?? []) {
-		targets.add(relativizeTarget(canonicalRoot, raw, rawRoot));
+		targets.add(relativizeTarget(canonicalRoot, raw, rawRoot, cwdSpelling));
 	}
 	// SPEC §4.7.3 EC-8: shell redirection targets (`>`, `>>`, `tee`,
 	// `Out-File`, `cp`/`mv` destinations) are write targets too. The parse
@@ -61,7 +67,9 @@ export function hookScope(
 		const parsed = analyseShell(command);
 		if (parsed.ok) {
 			for (const target of parsed.value.writeTargets) {
-				targets.add(relativizeTarget(canonicalRoot, target, rawRoot));
+				targets.add(
+					relativizeTarget(canonicalRoot, target, rawRoot, cwdSpelling),
+				);
 			}
 		}
 	}
