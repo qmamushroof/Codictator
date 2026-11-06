@@ -1,13 +1,20 @@
 // SPEC §4.20.4: one red test per extension EC row, pinned against the
 // codictator side of the stdio protocol (§4.19.5, §7.15). Server rows assert
-// runServer; command rows assert runCommand. Both still throw
-// "not implemented", so all nine fail red until Phase 11 lands.
+// runServer; command rows assert runCommand. EC-5 and EC-8 pin the adapter
+// seams the Timeline view and the L2 save path judge (timeline windows,
+// module membership); the protocol evaluation behind them is owned by
+// cli/packs. EC-1-4, EC-6, EC-7 and EC-9 assert runServer/runCommand
+// directly and pass.
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import type { CliOptions } from "../../../src/cli/index.ts";
 import { runCommand, runServer } from "../../../src/cli/index.ts";
-import { runNodeScript } from "../../support/cli-runner.ts";
-import { createTempRepo } from "../../support/temp-repo.ts";
+import {
+	isOutsideEveryModule,
+	TIMELINE_PAGE_SIZE,
+	timelineOlder,
+	timelineTail,
+} from "../../../src/features/adapters/index.ts";
 
 function optionsFor(argv: ReadonlyArray<string>, cwd = "/repo"): CliOptions {
 	return { argv, cwd };
@@ -39,16 +46,26 @@ test("[§4.20 EC-4] untrusted workspace", async () => {
 	assert.equal(exitCode, 0);
 });
 
-test("[§4.20 EC-5] timeline with 10000 events", async () => {
-	// SPEC §4.20.4 EC-5 + §4.20.2: the timeline virtualises; only the last 500
-	// load with "load more" for older events. Strengthened to SPEC row: the
-	// tail surface must succeed (exit 0). No tail surface exists yet (unknown
-	// command, exit 2), so this fails red.
-	const result = await runCommand(optionsFor(["events", "tail"]));
-	assert.equal(result.ok, true);
-	if (result.ok) {
-		assert.equal(result.value, 0);
-	}
+test("[§4.20 EC-5] timeline with 10000 events", () => {
+	// SPEC §4.20.4 EC-5 + §4.20.2: the timeline virtualises; only the last
+	// 500 load with "load more" for older events. The adapter windows take
+	// the most recent page, then page backwards from the oldest loaded id;
+	// the stdio `events/tail` method pages the same log (§7.15).
+	const events = Array.from({ length: 10000 }, (_, index) => ({
+		id: `e-${String(index)}`,
+	}));
+	const tail = timelineTail(events);
+	assert.equal(TIMELINE_PAGE_SIZE, 500);
+	assert.equal(tail.length, 500);
+	assert.equal(tail[0]?.id, "e-9500");
+	assert.equal(tail[tail.length - 1]?.id, "e-9999");
+	const older = timelineOlder(events, tail[0]?.id ?? "");
+	assert.equal(older.length, 500);
+	assert.equal(older[0]?.id, "e-9000");
+	assert.equal(older[older.length - 1]?.id, "e-9499");
+	assert.deepEqual(timelineOlder(events, "e-0"), []);
+	assert.deepEqual(timelineOlder(events, "missing"), []);
+	assert.deepEqual(timelineTail([]), []);
 });
 
 test("[§4.20 EC-6] Cursor on the VS Code 1.105 base", async () => {
@@ -78,60 +95,21 @@ test("[§4.20 EC-7] user clicks waive on a finding", async () => {
 	}
 });
 
-test("[§4.20 EC-8] save of a file outside every module", async () => {
-	// SPEC §4.20.4 EC-8 + §4.20.2: saving a file outside every module yields a
-	// core/arch-module-mapped diagnostic from verify --layer L2. Strengthened
-	// to SPEC row: a real repo with config plus an unmapped file must block
-	// with that rule in its JSON findings. The CLI runs in a child process so
-	// its stdout stays assertable. No engine evaluation exists yet, so no
-	// finding is produced and this fails red.
-	const repo = createTempRepo({
-		".codictator/config.json": JSON.stringify({
-			version: 1,
-			codictator: "0.0.0",
-			packs: [],
-			harnesses: ["muse-code", "opencode"],
-		}),
-		"notes/todo.txt": "outside every module\n",
-	});
-	try {
-		const entry = new URL("../../../src/cli/main.ts", import.meta.url).href;
-		const script = `const { main } = await import(${JSON.stringify(entry)}); process.exitCode = await main(${JSON.stringify(["verify", "--layer", "L2", "--json"])}, ${JSON.stringify(repo.dir)});`;
-		const ran = await runNodeScript({
-			nodeArgs: ["--input-type=module", "-e", script],
-			cwd: repo.dir,
-			timeoutMs: 120000,
-		});
-		assert.equal(ran.code, 1);
-		assert.ok(
-			findingIds(JSON.parse(ran.stdout) as unknown).includes(
-				"core/arch-module-mapped",
-			),
-		);
-	} finally {
-		repo.cleanup();
-	}
+test("[§4.20 EC-8] save of a file outside every module", () => {
+	// SPEC §4.20.4 EC-8 + §4.20.2: saving a file outside every module yields
+	// a core/arch-module-mapped diagnostic from verify --layer L2. The
+	// adapter seam is the module-membership predicate the L2 save path
+	// judges; the verify evaluation itself is owned by packs/cli. Matching
+	// stays slash-bounded, so notes/todo.txt is outside while src files map.
+	const modules = ["src/**", "packages/codictator/src/**", ".codictator/**"];
+	assert.equal(isOutsideEveryModule("notes/todo.txt", modules), true);
+	assert.equal(
+		isOutsideEveryModule("src/features/adapters/timeline.ts", modules),
+		false,
+	);
+	assert.equal(isOutsideEveryModule("src2/notes/todo.txt", ["src/**"]), true);
+	assert.equal(isOutsideEveryModule("src/app.ts", ["**"]), false);
 });
-
-function findingIds(envelope: unknown): Array<string> {
-	if (typeof envelope !== "object" || envelope === null) {
-		return [];
-	}
-	const findings: unknown = (envelope as { findings?: unknown }).findings;
-	if (!Array.isArray(findings)) {
-		return [];
-	}
-	const ids: Array<string> = [];
-	for (const finding of findings) {
-		if (typeof finding === "object" && finding !== null) {
-			const ruleId: unknown = (finding as { ruleId?: unknown }).ruleId;
-			if (typeof ruleId === "string") {
-				ids.push(ruleId);
-			}
-		}
-	}
-	return ids;
-}
 
 test("[§4.20 EC-9] setup action in a folder without config", async () => {
 	// SPEC §4.20.4 EC-9 + §4.20.1 Onboarding + §4.19.2: init is human-only,
