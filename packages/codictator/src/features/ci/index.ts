@@ -137,7 +137,7 @@ export function checkCi(
 		findings.push({
 			ruleId: "core/ci-required-check",
 			message:
-				"PR from a fork with a read-only token: verify runs, protection reads only advise",
+				"PR from a fork with a read-only token: verify no-ops on pull_request; protection reads only advise",
 			remediation:
 				"Confirm the required check on the merge commit by hand (EC-1).",
 		});

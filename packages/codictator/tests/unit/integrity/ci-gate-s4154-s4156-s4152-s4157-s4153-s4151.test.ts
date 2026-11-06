@@ -122,14 +122,21 @@ test("[§4.15.3] bot evidence flows through the gate", async () => {
 });
 
 test("[§4.15.7] fork PR with a read-only token advises", async () => {
-	// SPEC §4.15.7 EC-1: verify skips; the required-check rule only advises.
+	// SPEC §4.15.7 EC-1: verify no-ops on pull_request; the required-check
+	// rule only advises (message carries the advise signal for exit 0).
 	const findings = await checkCi(ctxFor(), externalWorkflow(), {
 		baseReachable: true,
 		forkPr: true,
 	});
-	assert.ok(
-		findings.some((finding) => finding.ruleId === "core/ci-required-check"),
+	const fork = findings.find(
+		(finding) =>
+			finding.ruleId === "core/ci-required-check" &&
+			finding.message.includes("fork"),
 	);
+	assert.ok(fork !== undefined);
+	assert.ok(fork.message.includes("no-ops on pull_request"));
+	assert.ok(fork.message.includes("advise"));
+	assert.ok(fork.remediation.includes("by hand"));
 });
 
 test("[§4.15.4] sweep evidence flows through the gate", async () => {
