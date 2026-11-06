@@ -2,6 +2,7 @@
 // the same engine evaluation the `verify` command uses; log and budget
 // rows live in serve-log.ts.
 
+import { hookEnv } from "../features/adapters/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import { isFixturePath } from "../kernel/index.ts";
 import {
@@ -19,7 +20,7 @@ import {
 	methodOk,
 	resolveRoot,
 } from "./serve-shared.ts";
-import { loadRepoConfig } from "./shared.ts";
+import { commandEnv, loadRepoConfig } from "./shared.ts";
 
 function methodFail(
 	code: string,
@@ -66,9 +67,13 @@ async function evaluateFiles(
 	layer: string | undefined,
 ): Promise<MethodOutcome> {
 	const root = await resolveRoot(ctx.root);
+	// SPEC §4.2.3 with §4.19.3, same shape as the git-hook path: the
+	// launcher marks this engine process CODICTATOR_HOOK=1, which authorizes
+	// evaluation instead of refusing it. Only the launcher's own marker is
+	// hidden, so a foreign agent marker still refuses CDX-E107 in loadConfig.
 	const configured = await loadRepoConfig(
 		root,
-		undefined,
+		hookEnv(commandEnv()),
 		ctx.engineVersion ?? ENGINE_VERSION,
 	);
 	if (!configured.ok) {
