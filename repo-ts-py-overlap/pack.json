@@ -1,0 +1,34 @@
+{
+	"id": "ts-py-overlap",
+	"version": "0.0.0",
+	"description": "SPEC §4.4.8 EC-13 fixture: two language packs both claim .js; the load succeeds while overlap selection stays first-wins with the unused extractor reported by status.",
+	"rules": [
+		{
+			"id": "ts-py-overlap/overlap-check",
+			"family": "F2",
+			"tier": "floor",
+			"statement": "Overlapping extractor claims resolve first-wins.",
+			"reason": "Two extractors on one extension double-count imports.",
+			"remediation": "Keep the first pack's extractor; status names the unused one.",
+			"enforcer": "ts-py-overlap/check",
+			"triggers": ["startup"],
+			"scope": [],
+			"params": {},
+			"measureVersion": 1,
+			"fixtures": { "violating": ["basic"], "passing": ["basic"] }
+		}
+	],
+	"enforcers": [
+		{
+			"id": "ts-py-overlap/check",
+			"kind": "code",
+			"budgetMs": 1000,
+			"args": {}
+		}
+	],
+	"extractors": [
+		{ "language": "typescript", "extensions": [".js"] },
+		{ "language": "python", "extensions": [".js"] }
+	],
+	"maxWaiverDays": 90
+}

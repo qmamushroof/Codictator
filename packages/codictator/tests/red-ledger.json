@@ -5,7 +5,6 @@
 		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo mixed builds into temp git repo",
 		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo python builds into temp git repo",
 		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo ts-brownfield builds into temp git repo",
-		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo ts-clean builds into temp git repo",
-		"tests/unit/packs/packs.test.ts::[§4.4 EC-13] two language packs claim one extension"
+		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo ts-clean builds into temp git repo"
 	]
 }
