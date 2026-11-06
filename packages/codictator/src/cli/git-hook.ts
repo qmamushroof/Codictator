@@ -202,11 +202,12 @@ async function runPrePush(
 	if (!upstream.ok || upstream.value.trim() === "") {
 		return emitGitVerdict(req, "pre-push", []);
 	}
-	const base = upstream.value.trim();
+	const base = upstream.value.trim(); // BUG-0043 ACMR only: a pushed deletion has no worktree content.
 	const names = await runGitText(ports, [
 		"git",
 		"diff",
 		"--name-only",
+		"--diff-filter=ACMR",
 		base,
 		"HEAD",
 		"--",
