@@ -4,10 +4,16 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Lever 4: merge-queue batches also gate on this workflow so queued
+  # batches carry the same signals as PRs and push-to-main (kept above).
+  merge_group:
+    types: [checks_requested]
 
 permissions:
   contents: read
 
+# Lever 4: only pull_request runs cancel in progress; push-to-main and
+# merge_group batches never cancel (a merge-queue batch must run to verdict).
 concurrency:
   group: test-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -16,8 +22,8 @@ jobs:
   # Path filter: docs-only PRs skip the matrix and heavy gates (quick runs).
   # Lever 1: one-package PRs run the scoped suite; shared contract paths sit
   # in both filters so a CLI change selects full, as does `other`. Lever 2:
-  # .github-only PRs run quick plus the smoke job, unless the matrix pair
-  # itself changed (`workflows` forces the full gates).
+  # .github-only PRs run quick plus the smoke gate in test-scope, unless the
+  # matrix trio itself changed (`workflows` forces the full gates).
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -62,6 +68,7 @@ jobs:
             workflows:
               - '.github/workflows/test.yml'
               - '.github/workflows/test-heavy.yml'
+              - '.github/workflows/test-scope.yml'
             other:
               - 'custom-packs/**'
               - 'repo-missing-helper-tool/**'
@@ -74,7 +81,7 @@ jobs:
               - '.gitattributes'
               - '.gitignore'
               - 'LICENSE'
-      # One suite selector: unknown paths, both packages (shared contract), or workflow-pair edits select full.
+      # One suite selector: unknown paths, both packages (shared contract), or workflow-file edits select full.
       - id: suite
         env:
           ENGINE: ${{ steps.filter.outputs.engine }}
@@ -212,76 +219,29 @@ jobs:
     if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.other == 'true'
     uses: ./.github/workflows/test-heavy.yml
 
-  # Lever 2: .github-only PRs skip the matrix/heavy gates; quick plus this single-OS run is the signal.
-  smoke:
-    needs: [changes, quick]
-    if: needs.changes.outputs.ci == 'true' && needs.changes.outputs.engine != 'true' && needs.changes.outputs.vscode != 'true' && needs.changes.outputs.other != 'true' && needs.changes.outputs.workflows != 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      # v7.0.1 looked up 2026-10-28 via git ls-remote.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 1
-      # v7.1.0 looked up 2026-10-28 via git ls-remote.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
-      # Same dist reuse as a matrix leg, single OS.
-      # v8 looked up 2026-11-01 via git ls-remote.
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          name: dist-codictator-${{ github.sha }}
-          path: packages/codictator/dist
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          name: dist-vscode-${{ github.sha }}
-          path: packages/vscode/dist
-      - run: npm test
-
-  # SPEC §10.4: the CI matrix compares the Linux, Windows and macOS verdict
-  # bytes of every determinism scenario, then re-runs the replay assertion.
-  # The replay assertion imports only node: builtins and relative .ts sources
-  # (Node 24 type-stripping), so there is nothing to install: no npm cache,
-  # no npm ci. setup-node stays pinned for the toolchain version.
-  determinism-compare:
-    needs: [test, changes]
-    if: needs.test.result == 'success' && needs.changes.outputs.suite != 'vscode'
-    runs-on: ubuntu-latest
-    steps:
-      # v7.0.1 looked up 2026-10-28 via git ls-remote.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 1
-      # v7.1.0 looked up 2026-10-28 via git ls-remote.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-      # v8 looked up 2026-11-01 via git ls-remote.
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          pattern: determinism-*
-          path: determinism-compare
-      - shell: bash
-        run: |
-          for file in determinism-compare/determinism-ubuntu-latest/*.json; do
-            name="$(basename "$file")"
-            cmp --silent "$file" "determinism-compare/determinism-windows-latest/$name"
-            cmp --silent "$file" "determinism-compare/determinism-macos-latest/$name"
-          done
-          echo "determinism bytes identical across Linux, Windows and macOS"
-      - run: node --test packages/codictator/tests/acceptance/replay/determinism.test.ts
+  # Ubuntu-only single-OS gates (Lever 2 smoke, SPEC §10.4 determinism
+  # compare) live in the test-scope called workflow so this file stays under
+  # the file-size gate. The smoke gate runs parallel to a skipped matrix on
+  # .github-only PRs (needs test resolves immediately when the matrix is
+  # path-skipped); the compare gate rides after the 3-OS matrix. Both gates
+  # stay inputs here so one call site carries both conditions.
+  scope-gates:
+    needs: [changes, quick, test]
+    if: >-
+      always() &&
+      ((needs.quick.result == 'success' && needs.changes.outputs.ci == 'true' && needs.changes.outputs.engine != 'true' && needs.changes.outputs.vscode != 'true' && needs.changes.outputs.other != 'true' && needs.changes.outputs.workflows != 'true') ||
+      (needs.test.result == 'success' && needs.changes.outputs.suite != 'vscode'))
+    uses: ./.github/workflows/test-scope.yml
+    with:
+      run-smoke: ${{ needs.quick.result == 'success' && needs.changes.outputs.ci == 'true' && needs.changes.outputs.engine != 'true' && needs.changes.outputs.vscode != 'true' && needs.changes.outputs.other != 'true' && needs.changes.outputs.workflows != 'true' }}
+      run-compare: ${{ needs.test.result == 'success' && needs.changes.outputs.suite != 'vscode' }}
 
   # Aggregator: always reports, even when the matrix is path-skipped (a
   # skipped required check still satisfies branch protection). Fails only
   # when an upstream job actually failed or was cancelled.
   required-checks:
     if: always()
-    needs: [changes, quick, test, heavy-gates, determinism-compare, smoke]
+    needs: [changes, quick, test, heavy-gates, scope-gates]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -291,6 +251,5 @@ jobs:
           needs.quick.result == 'failure' || needs.quick.result == 'cancelled' ||
           needs.test.result == 'failure' || needs.test.result == 'cancelled' ||
           needs.heavy-gates.result == 'failure' || needs.heavy-gates.result == 'cancelled' ||
-          needs.smoke.result == 'failure' || needs.smoke.result == 'cancelled' ||
-          needs.determinism-compare.result == 'failure' || needs.determinism-compare.result == 'cancelled'
+          needs.scope-gates.result == 'failure' || needs.scope-gates.result == 'cancelled'
         run: exit 1
