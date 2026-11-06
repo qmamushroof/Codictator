@@ -69,14 +69,46 @@ test("[§4.19 EC-5] Node 22 on PATH", async () => {
 });
 
 test("[§4.19 EC-6] root and tool-dir engines differ", async () => {
-	// SPEC §4.19.6 EC-6: CDX-E102; root wins only at config.codictator. Red
-	// with reason: the engine-resolution path is unimplemented, so production
-	// answers E703 (no git repository above /repo) instead of E102.
-	// Strengthened to SPEC row: the error code must be CDX-E102.
-	const result = await runCommand(optionsFor(["verify"]));
-	assert.equal(result.ok, false);
-	if (!result.ok) {
-		assert.equal(result.error.code, "CDX-E102");
+	// SPEC §4.19 EC-6: both engines installed at different versions is
+	// CDX-E102; the root engine wins only when it equals config.codictator.
+	const repo = createTempRepo({
+		".codictator/config.json": JSON.stringify({
+			version: 1,
+			codictator: "9.9.2",
+			packs: [],
+			harnesses: ["muse-code", "opencode"],
+		}),
+		"node_modules/codictator/package.json": JSON.stringify({
+			name: "codictator",
+			version: "9.9.1",
+		}),
+		".codictator/tool/node_modules/codictator/package.json": JSON.stringify({
+			name: "codictator",
+			version: "9.9.2",
+		}),
+	});
+	try {
+		// The tool-dir version matches config but the root one does not:
+		// still CDX-E102, because only the root install may win.
+		const diverged = await runCommand({ argv: ["verify"], cwd: repo.dir });
+		assert.equal(diverged.ok, false);
+		if (!diverged.ok) {
+			assert.equal(diverged.error.code, "CDX-E102");
+		}
+		// Pointing config at the root install lets the root engine win.
+		repo.writeFile(
+			".codictator/config.json",
+			JSON.stringify({
+				version: 1,
+				codictator: "9.9.1",
+				packs: [],
+				harnesses: ["muse-code", "opencode"],
+			}),
+		);
+		const rooted = await runCommand({ argv: ["verify"], cwd: repo.dir });
+		assert.equal(rooted.ok, true);
+	} finally {
+		repo.cleanup();
 	}
 });
 
