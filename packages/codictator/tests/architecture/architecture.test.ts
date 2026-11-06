@@ -4,13 +4,24 @@
 // Item 5 holds green: every module folder already has its §3.3 row and leaf.
 
 import { strict as assert } from "node:assert";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
 import type { ModuleNode } from "../../src/features/arch/index.ts";
 import { buildGraph, checkArch } from "../../src/features/arch/index.ts";
 import type { CheckContext } from "../../src/features/engine/index.ts";
+import {
+	collectSrcFiles,
+	containingSpan,
+	findJsonParseMatches,
+	readSrc,
+	relativeToRepo,
+	relativeToSrc,
+	spanKey,
+	srcRoot,
+	stringLiteralSpans,
+	toPosixPath,
+} from "../support/arch-scan.ts";
 import { FIXED_INSTANT } from "../support/fake-clock.ts";
 
 test("[§10.3 item 1] arch guard runs on own src with §3.3 map and reports zero findings", async () => {
@@ -114,100 +125,11 @@ function collectIndexedDirs(): Array<string> {
 	return found.filter((dir) => dir !== "");
 }
 
-// Items 2, 3, 4 and 6 scan the staged src/ and hold green: only the
-// testing module exists so far, so no src file may import the LLM, touch
-// the OS, cross into another feature module, or parse JSON. tests/ stays
-// out of the scan because it is non-production code (SPEC §3.1); the
-// tests/support driver is the only OS-touching test helper until the
-// kernel lands.
-
-function srcRoot(): string {
-	return fileURLToPath(new URL("../../src/", import.meta.url));
-}
-
-function toPosixPath(value: string): string {
-	return value.split(path.sep).join("/");
-}
-
-function collectSrcFiles(): Array<string> {
-	const root = srcRoot();
-	const found: Array<string> = [];
-	const walk = (dir: string): void => {
-		const entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) =>
-			a.name < b.name ? -1 : 1,
-		);
-		for (const entry of entries) {
-			const full = path.join(dir, entry.name);
-			if (entry.isDirectory()) {
-				walk(full);
-			} else if (entry.isFile() && entry.name.endsWith(".ts")) {
-				found.push(full);
-			}
-		}
-	};
-	walk(root);
-	return found;
-}
-
-function relativeToSrc(file: string): string {
-	return toPosixPath(path.relative(srcRoot(), file));
-}
-
-function readSrc(file: string): string {
-	return readFileSync(file, "utf8");
-}
-
-test("[§10.3 item 2] only generator and cli import llm", () => {
-	const allowedPrefixes = ["features/generator/", "features/llm/", "cli/"];
-	const llmImport =
-		/from\s*["'][^"']*llm[^"']*["']|import\s*\(\s*["'][^"']*llm/;
-	const offenders: Array<string> = [];
-	for (const file of collectSrcFiles()) {
-		const relative = relativeToSrc(file);
-		if (allowedPrefixes.some((prefix) => relative.startsWith(prefix))) {
-			continue;
-		}
-		if (llmImport.exec(readSrc(file)) !== null) {
-			offenders.push(relative);
-		}
-	}
-	assert.deepEqual(offenders, []);
-});
-
-test("[§10.3 item 3] only kernel touches node:fs, network, fetch, clock or randomness", () => {
-	const osImport =
-		/from\s*["']node:(?:fs|child_process|net|https?|dns)\b|import\s*\(\s*["']node:(?:fs|child_process|net|https?|dns)\b/;
-	const bareFetch = /(?:^|[^A-Za-z0-9_$])fetch\s*\(/;
-	const bareDate = /new Date\(\s*\)/;
-	const offenders: Array<string> = [];
-	for (const file of collectSrcFiles()) {
-		const relative = relativeToSrc(file);
-		if (relative.startsWith("kernel/")) {
-			continue;
-		}
-		const text = readSrc(file);
-		const offenses: Array<string> = [];
-		if (osImport.exec(text) !== null) {
-			offenses.push("node os import");
-		}
-		if (bareFetch.exec(text) !== null) {
-			offenses.push("fetch");
-		}
-		if (text.includes("Date.now")) {
-			offenses.push("Date.now");
-		}
-		if (bareDate.exec(text) !== null) {
-			offenses.push("new Date()");
-		}
-		if (text.includes("Math.random")) {
-			offenses.push("Math.random");
-		}
-		if (offenses.length > 0) {
-			offenders.push(`${relative}: ${offenses.join(", ")}`);
-		}
-	}
-	assert.deepEqual(offenders, []);
-});
+// Items 4 and 6 scan the staged src/ and hold green: only the
+// testing module exists so far, so no src file may cross into another
+// feature module or parse JSON. Items 2 and 3 live in
+// import-boundaries.test.ts; tests/ stays out of every scan because it is
+// non-production code (SPEC §3.1).
 
 function featureOfSpecifier(specifier: string): string | undefined {
 	const marker = "features/";
@@ -279,15 +201,80 @@ test("[§10.3 item 4] engine imports no feature module except config and audit",
 	assert.deepEqual(offenders, []);
 });
 
-test("[§10.3 item 6] JSON.parse appears only in the kernel", () => {
+// SPEC §10.3 item 6 owns this allowlist: generated template text the module
+// never executes (CI YAML scripts) may carry the JSON.parse text when the
+// emitted output keeps the plain call. Each occurrence is keyed per
+// occurrence by src path relative to the repository root plus the
+// string-literal span holding the match; a match outside a string literal
+// fails even in an allowlisted file, and splitting the call to evade the
+// scan fails. An allowlist entry with no remaining match fails so dead
+// entries cannot linger.
+const ITEM_6_TEMPLATE_ALLOWLIST: ReadonlySet<string> = new Set([
+	"packages/codictator/src/features/ci/workflow-live.ts:21:2-21:64",
+	"packages/codictator/src/features/ci/workflow-live.ts:80:2-80:86",
+]);
+
+function hasSplitJsonParse(text: string): boolean {
+	return (
+		/JSON\.\s*\x22\s*\+/.exec(text) !== null ||
+		/\x22\s*\+\s*\x22parse/.exec(text) !== null
+	);
+}
+
+function item6FileOffenders(repoRel: string, text: string): Array<string> {
 	const offenders: Array<string> = [];
-	for (const file of collectSrcFiles()) {
-		const relative = relativeToSrc(file);
-		if (relative.startsWith("kernel/")) {
+	if (hasSplitJsonParse(text)) {
+		offenders.push(`${repoRel}: split JSON.parse to evade the scan`);
+	}
+	const spans = stringLiteralSpans(text);
+	for (const match of findJsonParseMatches(text)) {
+		const span = containingSpan(spans, match.offset);
+		if (span === undefined) {
+			offenders.push(
+				`${repoRel}:${match.line}:${match.column}: executable JSON.parse outside string literal`,
+			);
 			continue;
 		}
-		if (/JSON\.parse\s*\(/.exec(readSrc(file)) !== null) {
-			offenders.push(relative);
+		const key = spanKey(repoRel, span);
+		if (!ITEM_6_TEMPLATE_ALLOWLIST.has(key)) {
+			offenders.push(
+				`${repoRel}:${match.line}:${match.column}: non-allowlisted template JSON.parse`,
+			);
+		}
+	}
+	return offenders;
+}
+
+test("[§10.3 item 6] JSON.parse appears only in the kernel", () => {
+	const offenders: Array<string> = [];
+	const covered = new Set<string>();
+	for (const file of collectSrcFiles()) {
+		const srcRel = relativeToSrc(file);
+		if (srcRel.startsWith("kernel/")) {
+			continue;
+		}
+		const repoRel = relativeToRepo(file);
+		const text = readSrc(file);
+		if (findJsonParseMatches(text).length === 0) {
+			if (hasSplitJsonParse(text)) {
+				offenders.push(`${repoRel}: split JSON.parse to evade the scan`);
+			}
+			continue;
+		}
+		for (const offense of item6FileOffenders(repoRel, text)) {
+			offenders.push(offense);
+		}
+		const spans = stringLiteralSpans(text);
+		for (const match of findJsonParseMatches(text)) {
+			const span = containingSpan(spans, match.offset);
+			if (span !== undefined) {
+				covered.add(spanKey(repoRel, span));
+			}
+		}
+	}
+	for (const allowed of [...ITEM_6_TEMPLATE_ALLOWLIST].sort()) {
+		if (!covered.has(allowed)) {
+			offenders.push(`${allowed}: allowlist entry with no template match`);
 		}
 	}
 	assert.deepEqual(offenders, []);

@@ -13,11 +13,12 @@ export const liveCheck: ReadonlyArray<string> = [
 	`          curl -sSf --max-time 60 -H 'Content-Type: application/json' -d '{"package":{"name":"lodash","ecosystem":"npm"},"version":"4.17.20"}' -o /tmp/live-osv.json https://api.osv.dev/v1/query`,
 	"          node <<'EOF'",
 	"          const fs = require('fs');",
-	// §10.3 item 6 scans src for a JSON-parse call literal; the two uses below
-	// are YAML template text for the CI job's node script, not module
-	// parsing, so the call name is concatenated to keep the literal out of src.
+	// SPEC §10.3 item 6: the two matches below are generated template text
+	// for the CI job's node script, not module parsing, and stay covered per
+	// occurrence by the item 6 allowlist (repo-root-relative path plus the
+	// string-literal span). The emitted YAML keeps the plain call.
 	"          function readJson(path) {",
-	"            return JSON." + "parse(fs.readFileSync(path, 'utf8'));",
+	"            return JSON.parse(fs.readFileSync(path, 'utf8'));",
 	"          }",
 	"          const packument = readJson('/tmp/live-packument.json');",
 	"          for (const key of ['name', 'versions', 'time', 'dist-tags']) {",
@@ -76,8 +77,7 @@ export const liveCheck: ReadonlyArray<string> = [
 	"                }",
 	"                let capture = null;",
 	"                try {",
-	"                  capture = JSON." +
-		"parse(fs.readFileSync(dir + '/' + entry, 'utf8'));",
+	"                  capture = JSON.parse(fs.readFileSync(dir + '/' + entry, 'utf8'));",
 	"                } catch (ignored) {",
 	"                  capture = null;",
 	"                }",
