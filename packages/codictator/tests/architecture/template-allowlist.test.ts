@@ -12,6 +12,7 @@ import { liveCheck } from "../../src/features/ci/workflow-live.ts";
 import {
 	containingSpan,
 	findJsonParseMatches,
+	hasSplitJsonParse,
 	stringLiteralSpans,
 } from "../support/arch-scan.ts";
 
@@ -22,15 +23,13 @@ function srcDir(): string {
 test("[§10.3 item 6] live template emits plain JSON.parse covered only by the allowlist", () => {
 	const emitted = liveCheck.join("\n");
 	assert.equal(emitted.match(/JSON\.parse\s*\(/g)?.length ?? 0, 2);
-	assert.equal(/JSON\.\s*\x22\s*\+/.exec(emitted) === null, true);
-	assert.equal(/\x22\s*\+\s*\x22parse/.exec(emitted) === null, true);
+	assert.equal(hasSplitJsonParse(emitted), false);
 	const src = readFileSync(
 		path.join(srcDir(), "features", "ci", "workflow-live.ts"),
 		"utf8",
 	);
 	assert.equal(findJsonParseMatches(src).length, 2);
-	assert.equal(/JSON\.\s*\x22\s*\+/.exec(src) === null, true);
-	assert.equal(/\x22\s*\+\s*\x22parse/.exec(src) === null, true);
+	assert.equal(hasSplitJsonParse(src), false);
 	const spans = stringLiteralSpans(src);
 	for (const match of findJsonParseMatches(src)) {
 		assert.notEqual(containingSpan(spans, match.offset), undefined);
