@@ -1,0 +1,87 @@
+name: test-scope
+
+# Called by the test workflow's scope-gates job. Holds the Ubuntu-only
+# single-OS gates so the caller stays under the file-size gate: Lever 2's
+# .github-only smoke suite plus the SPEC §10.4 cross-OS determinism compare.
+# The path-filter and matrix-outcome gates live at the call site; each job
+# here runs only when its input lets it through.
+on:
+  workflow_call:
+    inputs:
+      run-smoke:
+        description: Run the .github-only smoke suite (single-OS npm test).
+        required: false
+        default: false
+        type: boolean
+      run-compare:
+        description: Run the cross-OS determinism compare and replay assertion.
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  # Lever 2: .github-only PRs skip the matrix/heavy gates; quick plus this
+  # single-OS run is the signal.
+  smoke:
+    if: inputs.run-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
+      # Same dist reuse as a matrix leg, single OS.
+      # v8 looked up 2026-11-01 via git ls-remote.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-codictator-${{ github.sha }}
+          path: packages/codictator/dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-vscode-${{ github.sha }}
+          path: packages/vscode/dist
+      - run: npm test
+
+  # SPEC §10.4: the CI matrix compares the Linux, Windows and macOS verdict
+  # bytes of every determinism scenario, then re-runs the replay assertion.
+  # The replay assertion imports only node: builtins and relative .ts sources
+  # (Node 24 type-stripping), so there is nothing to install: no npm cache,
+  # no npm ci. setup-node stays pinned for the toolchain version.
+  determinism-compare:
+    if: inputs.run-compare
+    runs-on: ubuntu-latest
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      # v8 looked up 2026-11-01 via git ls-remote.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: determinism-*
+          path: determinism-compare
+      - shell: bash
+        run: |
+          for file in determinism-compare/determinism-ubuntu-latest/*.json; do
+            name="$(basename "$file")"
+            cmp --silent "$file" "determinism-compare/determinism-windows-latest/$name"
+            cmp --silent "$file" "determinism-compare/determinism-macos-latest/$name"
+          done
+          echo "determinism bytes identical across Linux, Windows and macOS"
+      - run: node --test packages/codictator/tests/acceptance/replay/determinism.test.ts
