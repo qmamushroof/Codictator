@@ -93,6 +93,25 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: node --test packages/codictator/tests/unit/cli/serve-handshake.test.ts
+      # Lever 3: share this single build with the matrix and the heavy jobs
+      # instead of rebuilding per job. Keyed to the commit SHA so concurrent
+      # runs never cross-read. Short-lived: only CI consumes it. Two
+      # artifacts (one single path each): a multi-path artifact strips to
+      # the least-common-ancestor (packages/), so consumers would land at
+      # ./codictator/dist instead of ./packages/codictator/dist.
+      # v7 looked up 2026-11-01 via git ls-remote.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist-codictator-${{ github.sha }}
+          path: packages/codictator/dist
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: dist-vscode-${{ github.sha }}
+          path: packages/vscode/dist
+          if-no-files-found: error
+          retention-days: 1
 
   test:
     needs: [changes, quick]
@@ -115,7 +134,18 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
-      - run: npm run build
+      # Lever 3: reuse quick's dist instead of rebuilding on every OS leg.
+      # Single-path artifacts restore their directory contents, so each
+      # downloads to its own packages/... path.
+      # v8 looked up 2026-11-01 via git ls-remote.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-codictator-${{ github.sha }}
+          path: packages/codictator/dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-vscode-${{ github.sha }}
+          path: packages/vscode/dist
       - run: npm test
       # SPEC §10.4: canonical verdict bytes per scenario for the cross-OS
       # compare job; always uploaded so a red run still leaves evidence.
@@ -126,73 +156,24 @@ jobs:
           name: determinism-${{ matrix.os }}
           path: test-results/determinism/*.json
           if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: stress-${{ matrix.os }}
           path: test-results/stress-timings.json
           if-no-files-found: warn
+          retention-days: 7
 
-  # Ubuntu-only heavy gates, fanned out parallel to the 3-OS matrix instead
-  # of riding serially on the ubuntu matrix leg: the ledger coverage proof,
-  # the coverage-threshold suite, the single-build packaging check, and the
-  # PR-only red-ledger base comparison. Needs quick so a static failure
-  # fast-fails before these minutes burn.
-  heavy:
+  # Ubuntu-only heavy gates (coverage, packaging, ledger) live in the
+  # test-heavy called workflow so this file stays under the file-size gate.
+  # They fan out parallel to the 3-OS matrix instead of riding serially on
+  # the ubuntu matrix leg, reuse quick's dist (Lever 3), and need quick so a
+  # static failure fast-fails before these minutes burn.
+  heavy-gates:
     needs: [changes, quick]
     if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.other == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      # fetch-depth: 0 — the PR-only red-ledger --base step below needs the
-      # base SHA present in the clone; this is the only job that keeps full
-      # history.
-      # v7.0.1 looked up 2026-10-28 via git ls-remote.
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-      # v7.1.0 looked up 2026-10-28 via git ls-remote.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
-      # Single build: the packaging check below reuses it instead of
-      # rebuilding via test:packaging.
-      - run: npm run build
-      # SPEC 10.7 query exits 1 while red entries remain; the gates are
-      # npm test and the base comparison below, so only real errors fail here.
-      - shell: bash
-        run: |
-          set +e
-          npm run ledger -- --covers §10.3
-          status=$?
-          if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then exit "$status"; fi
-      # SPEC §10.6 thresholds are enforced by the test:coverage flags; the run
-      # itself exits 1 while red-ledger entries remain, so only a threshold
-      # breach or a crash fails this step. `npm test` in the matrix gates real
-      # failures, which it reports strictly.
-      - shell: bash
-        run: |
-          set +e
-          output="$(npm run test:coverage 2>&1)"
-          status=$?
-          echo "$output"
-          if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then exit "$status"; fi
-          printf '%s' "$output" | node -e 'let s = ""; process.stdin.on("data", (c) => { s += c; }).on("end", () => { const m = /all files\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)/.exec(s); if (/does not meet threshold/.test(s) || m === null || Number(m[1]) < 90 || Number(m[2]) < 80) { process.exit(1); } })'
-      - run: npm pack --dry-run -w codictator && node --test packages/codictator/tests/acceptance/packaging/packaging.test.ts
-      # SPEC §10.7 Adding rule: a test that existed at the base must not
-      # become listed. PR-only: the base SHA exists only on pull_request.
-      - if: github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          BASE="${{ github.event.pull_request.base.sha }}"
-          if [ -z "$BASE" ]; then
-            echo "no base revision to compare against; skipping"
-            exit 0
-          fi
-          node packages/codictator/tests/support/red-ledger-runner.ts --base "$BASE"
+    uses: ./.github/workflows/test-heavy.yml
 
   # SPEC §10.4: the CI matrix compares the Linux, Windows and macOS verdict
   # bytes of every determinism scenario, then re-runs the replay assertion.
@@ -233,7 +214,7 @@ jobs:
   # when an upstream job actually failed or was cancelled.
   required-checks:
     if: always()
-    needs: [changes, quick, test, heavy, determinism-compare]
+    needs: [changes, quick, test, heavy-gates, determinism-compare]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -242,6 +223,6 @@ jobs:
           needs.changes.result == 'failure' || needs.changes.result == 'cancelled' ||
           needs.quick.result == 'failure' || needs.quick.result == 'cancelled' ||
           needs.test.result == 'failure' || needs.test.result == 'cancelled' ||
-          needs.heavy.result == 'failure' || needs.heavy.result == 'cancelled' ||
+          needs.heavy-gates.result == 'failure' || needs.heavy-gates.result == 'cancelled' ||
           needs.determinism-compare.result == 'failure' || needs.determinism-compare.result == 'cancelled'
         run: exit 1
