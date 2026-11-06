@@ -24,6 +24,7 @@ import {
 	SystemClock,
 	stableStringify,
 } from "../kernel/index.ts";
+import { resolveEngineVersion } from "./engine-version.ts";
 
 // SPEC §2.3 with §4.19.4: the engine's node floor. The launcher enforces it
 // before the engine starts; the CLI start path enforces it here, so a
@@ -244,8 +245,15 @@ export async function loadRepoConfig(
 	if (!ports.ok) {
 		return err(ports.error);
 	}
+	// SPEC §4.19 EC-6: arbitrate the root and tool-dir engines before config
+	// load, so a version divergence fails with CDX-E102 instead of whichever
+	// single version the caller threaded in.
+	const arbitrated = await resolveEngineVersion(ports.value.fs, engineVersion);
+	if (!arbitrated.ok) {
+		return err(arbitrated.error);
+	}
 	try {
-		const effective = await loadConfigImpl(".", ports.value, engineVersion);
+		const effective = await loadConfigImpl(".", ports.value, arbitrated.value);
 		return ok({ ports: ports.value, effective });
 	} catch (error) {
 		if (
