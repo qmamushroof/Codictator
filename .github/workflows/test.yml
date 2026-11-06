@@ -13,10 +13,11 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Path filter: docs-only PRs skip the 3-OS matrix and the heavy gates
-  # (quick still runs). Shared engine/extension contract paths sit in both the engine and
-  # the vscode filter, so a CLI-surface change forces both suites; anything
-  # outside the known groups is `other` and forces the full suite.
+  # Path filter: docs-only PRs skip the matrix and heavy gates (quick runs).
+  # Lever 1: one-package PRs run the scoped suite; shared contract paths sit
+  # in both filters so a CLI change selects full, as does `other`. Lever 2:
+  # .github-only PRs run quick plus the smoke job, unless the matrix pair
+  # itself changed (`workflows` forces the full gates).
   changes:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -25,7 +26,9 @@ jobs:
       vscode: ${{ steps.filter.outputs.vscode }}
       docs: ${{ steps.filter.outputs.docs }}
       ci: ${{ steps.filter.outputs.ci }}
+      workflows: ${{ steps.filter.outputs.workflows }}
       other: ${{ steps.filter.outputs.other }}
+      suite: ${{ steps.suite.outputs.suite }}
     steps:
       # fetch-depth: 0 — kept: on push to main paths-filter diffs against the
       # pre-push commit via git (PR events use the API and ignore depth).
@@ -56,6 +59,9 @@ jobs:
               - '**/*.md'
             ci:
               - '.github/**'
+            workflows:
+              - '.github/workflows/test.yml'
+              - '.github/workflows/test-heavy.yml'
             other:
               - 'custom-packs/**'
               - 'repo-missing-helper-tool/**'
@@ -68,6 +74,19 @@ jobs:
               - '.gitattributes'
               - '.gitignore'
               - 'LICENSE'
+      # One suite selector: unknown paths, both packages (shared contract), or workflow-pair edits select full.
+      - id: suite
+        env:
+          ENGINE: ${{ steps.filter.outputs.engine }}
+          VSCODE: ${{ steps.filter.outputs.vscode }}
+          OTHER: ${{ steps.filter.outputs.other }}
+          WORKFLOWS: ${{ steps.filter.outputs.workflows }}
+        run: |
+          suite=full
+          if [ "$WORKFLOWS" != "true" ] && [ "$OTHER" != "true" ] && [ "$ENGINE" != "$VSCODE" ]; then
+            if [ "$ENGINE" = "true" ]; then suite=engine; else suite=vscode; fi
+          fi
+          echo "suite=$suite" >> "$GITHUB_OUTPUT"
 
   # Merged static gate: typecheck + lint + build + a fast smoke of the
   # engine/extension stdio contract, once on Ubuntu instead of once per OS
@@ -115,7 +134,7 @@ jobs:
 
   test:
     needs: [changes, quick]
-    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.other == 'true'
+    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.other == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
@@ -146,19 +165,37 @@ jobs:
         with:
           name: dist-vscode-${{ github.sha }}
           path: packages/vscode/dist
-      - run: npm test
+      # Lever 1: one-package PRs run the ledger-aware suite for that package (same collect+evaluate as `npm test`); all else runs full.
+      - if: needs.changes.outputs.suite == 'full'
+        run: npm test
+      - if: needs.changes.outputs.suite == 'engine' || needs.changes.outputs.suite == 'vscode'
+        shell: bash
+        run: |
+          node --input-type=module --eval '
+          import { discoverTestFiles, loadLedger, packagePaths } from "./packages/codictator/tests/support/red-ledger-collect.ts";
+          import { collectOutcomesAsync, resolveJobCount, runTestFileAsync } from "./packages/codictator/tests/support/red-ledger-pool.ts";
+          import { evaluateRun, formatRunReport } from "./packages/codictator/src/features/testing/index.ts";
+          const name = "${{ needs.changes.outputs.suite }}" === "engine" ? "codictator" : "vscode";
+          const pkg = packagePaths().find((p) => p.name === name);
+          if (pkg === undefined) { console.error("unknown scope package"); process.exit(1); }
+          collectOutcomesAsync(pkg, discoverTestFiles(pkg.testsDir), resolveJobCount([], process.env), runTestFileAsync).then((collected) => {
+          const verdict = evaluateRun(loadLedger(pkg.testsDir, pkg.name).red, collected.outcomes);
+          console.log([formatRunReport([{ packageName: pkg.name, verdict }]), ...collected.detailLines].join("\n"));
+          process.exitCode = verdict.ok ? 0 : 1;
+          }).catch((error) => { console.error(error); process.exitCode = 1; });
+          '
       # SPEC §10.4: canonical verdict bytes per scenario for the cross-OS
       # compare job; always uploaded so a red run still leaves evidence.
       # v7 looked up 2026-11-01 via git ls-remote.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: always()
+        if: always() && needs.changes.outputs.suite != 'vscode'
         with:
           name: determinism-${{ matrix.os }}
           path: test-results/determinism/*.json
           if-no-files-found: error
           retention-days: 7
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
-        if: always()
+        if: always() && needs.changes.outputs.suite != 'vscode'
         with:
           name: stress-${{ matrix.os }}
           path: test-results/stress-timings.json
@@ -172,8 +209,38 @@ jobs:
   # static failure fast-fails before these minutes burn.
   heavy-gates:
     needs: [changes, quick]
-    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.ci == 'true' || needs.changes.outputs.other == 'true'
+    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.other == 'true'
     uses: ./.github/workflows/test-heavy.yml
+
+  # Lever 2: .github-only PRs skip the matrix/heavy gates; quick plus this single-OS run is the signal.
+  smoke:
+    needs: [changes, quick]
+    if: needs.changes.outputs.ci == 'true' && needs.changes.outputs.engine != 'true' && needs.changes.outputs.vscode != 'true' && needs.changes.outputs.other != 'true' && needs.changes.outputs.workflows != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
+      # Same dist reuse as a matrix leg, single OS.
+      # v8 looked up 2026-11-01 via git ls-remote.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-codictator-${{ github.sha }}
+          path: packages/codictator/dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: dist-vscode-${{ github.sha }}
+          path: packages/vscode/dist
+      - run: npm test
 
   # SPEC §10.4: the CI matrix compares the Linux, Windows and macOS verdict
   # bytes of every determinism scenario, then re-runs the replay assertion.
@@ -181,8 +248,8 @@ jobs:
   # (Node 24 type-stripping), so there is nothing to install: no npm cache,
   # no npm ci. setup-node stays pinned for the toolchain version.
   determinism-compare:
-    needs: test
-    if: needs.test.result == 'success'
+    needs: [test, changes]
+    if: needs.test.result == 'success' && needs.changes.outputs.suite != 'vscode'
     runs-on: ubuntu-latest
     steps:
       # v7.0.1 looked up 2026-10-28 via git ls-remote.
@@ -214,7 +281,7 @@ jobs:
   # when an upstream job actually failed or was cancelled.
   required-checks:
     if: always()
-    needs: [changes, quick, test, heavy-gates, determinism-compare]
+    needs: [changes, quick, test, heavy-gates, determinism-compare, smoke]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -224,5 +291,6 @@ jobs:
           needs.quick.result == 'failure' || needs.quick.result == 'cancelled' ||
           needs.test.result == 'failure' || needs.test.result == 'cancelled' ||
           needs.heavy-gates.result == 'failure' || needs.heavy-gates.result == 'cancelled' ||
+          needs.smoke.result == 'failure' || needs.smoke.result == 'cancelled' ||
           needs.determinism-compare.result == 'failure' || needs.determinism-compare.result == 'cancelled'
         run: exit 1
