@@ -93,6 +93,7 @@ import {
 } from "./universal.ts";
 
 export { hookBudgetMs } from "./hook-dispatch.ts";
+export { hookEnv } from "./hook-load.ts";
 export {
 	type HookAppend,
 	type HookBasePorts,
