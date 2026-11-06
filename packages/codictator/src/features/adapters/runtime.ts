@@ -36,7 +36,7 @@ import {
 	errorMessageOf,
 	hookEnv,
 	loadEffective,
-	resolveRoot,
+	resolveRoots,
 } from "./hook-load.ts";
 import { hookScope } from "./hook-scope.ts";
 
@@ -133,13 +133,14 @@ async function runHookInner(
 		return blockReply(adapter, hookEvent.error.code, hookEvent.error.message);
 	}
 	const event = hookEvent.value;
-	const root = await resolveRoot(
+	const roots = await resolveRoots(
 		request.ports,
 		event.cwd === "" ? request.cwd : event.cwd,
 	);
-	if (root === undefined) {
+	if (roots === undefined) {
 		return allowReply(adapter, "no-root");
 	}
+	const root = roots.canonical;
 	if (stopHookActive(adapter, event, raw)) {
 		return allowReply(adapter, "stop-active");
 	}
@@ -186,7 +187,12 @@ async function runHookInner(
 		configHash: effective.value.configHash,
 		append: (verdict) => request.append(root, verdict),
 	});
-	const scope = hookScope(event, root);
+	const scope = hookScope(
+		event,
+		root,
+		roots.raw,
+		event.cwd === "" ? request.cwd : event.cwd,
+	);
 	// SPEC §4.6.3 + §4.18.3: the L0 triggers render the scoped injection
 	// and land the auditable event before evaluation, so the status row
 	// reads live evidence even when the verdict blocks. An unwritable log

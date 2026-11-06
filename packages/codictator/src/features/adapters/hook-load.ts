@@ -60,12 +60,30 @@ export async function resolveRoot(
 	ports: HookBasePorts,
 	startDir: string,
 ): Promise<string | undefined> {
+	const roots = await resolveRoots(ports, startDir);
+	return roots?.canonical;
+}
+
+// SPEC §4.19.3 step 2 with §4.7: both root spellings for the lexical L1
+// scope. resolveRoot canonicalizes (realpath) for Fs confinement, but
+// harness tool targets carry the raw spelling (macOS /var vs
+// /private/var, Windows short vs long names); hookScope strips lexically
+// against either, so the raw spelling is preserved alongside.
+export interface ResolvedRoots {
+	readonly raw: string;
+	readonly canonical: string;
+}
+
+export async function resolveRoots(
+	ports: HookBasePorts,
+	startDir: string,
+): Promise<ResolvedRoots | undefined> {
 	const git = new NodeGit(ports.proc, startDir);
 	const root = await git.root();
 	if (!root.ok) {
 		return undefined;
 	}
-	return canonicalRoot(root.value);
+	return { raw: root.value, canonical: await canonicalRoot(root.value) };
 }
 
 // SPEC §4.19.3 step 3: the effective-config cache file. The keyed cache
