@@ -89,7 +89,7 @@ export async function activateExtension(
 		wireEngineRequests(handles);
 		await populateViews(api, providers, folders);
 	}
-	wireViewRefresh(api, providers, folders, handles);
+	wireViewRefresh(api, providers, handles, spawnEngine);
 	notifyFoldersMissingEngine(api);
 }
 
@@ -139,20 +139,29 @@ function wireEngineRequests(
 	setEngineRequest(routeEngineRequests(handles));
 }
 
-// SPEC §4.20.1 Engine: fan `events/appended` out to the Timeline source
-// and refresh violation diagnostics plus every tree view per changed
-// folder. Refreshes float, so a failing refresh never escapes as an
-// unhandled rejection (fail closed). Saves re-query the engine the same
-// way through the host save seam when the host provides one.
-function wireViewRefresh(
+// SPEC §4.20.1 Engine: one per-handle refresh subscription. Engine events
+// refresh violation diagnostics plus every tree view for the currently
+// connected folders; refreshes float, so a failing refresh never escapes
+// as an unhandled rejection (fail closed).
+function attachHandleRefresh(
 	api: ExtensionApi,
 	providers: ReadonlyMap<string, MutableTreeDataProvider>,
-	folders: ReadonlyArray<string>,
+	handles: ReadonlyMap<string, StdioEngineHandle>,
+	handle: StdioEngineHandle,
+): void {
+	handle.onEventsAppended((changed) => {
+		void refreshViolationDiagnostics(changed).catch(() => undefined);
+		void populateViews(api, providers, [...handles.keys()].sort()).catch(
+			() => undefined,
+		);
+	});
+}
+
+// SPEC §4.20.1 Engine: fan `events/appended` out to the Timeline source
+// across every connected handle.
+function wireTimelineSource(
 	handles: ReadonlyMap<string, StdioEngineHandle>,
 ): void {
-	if (handles.size === 0) {
-		return;
-	}
 	setTimelineSource({
 		onEventsAppended: (listener: (folderPath: string) => void) => {
 			const disposables = [...handles.values()].map((handle) =>
@@ -167,14 +176,69 @@ function wireViewRefresh(
 			};
 		},
 	});
-	for (const handle of handles.values()) {
-		handle.onEventsAppended((changed) => {
-			void refreshViolationDiagnostics(changed).catch(() => undefined);
-			void populateViews(api, providers, folders).catch(() => undefined);
-		});
+}
+
+// SPEC §4.20 EC-9: late-setup reconnect. A save re-checks existence per
+// folder and spawns engines that appeared after activation (the human ran
+// `setup`), so the views connect without a reload. New handles join the
+// request router, the Timeline fan-out and the refresh subscriptions;
+// a spawn throw logs and skips the folder instead of aborting.
+export function connectMissing(
+	api: ExtensionApi,
+	providers: ReadonlyMap<string, MutableTreeDataProvider>,
+	handles: Map<string, StdioEngineHandle>,
+	spawnEngine: EngineSpawner,
+): Array<string> {
+	let added = false;
+	for (const folderPath of api.workspaceFolderPaths()) {
+		if (handles.has(folderPath)) {
+			continue;
+		}
+		if (!api.configExists(folderPath) || !api.engineExists(folderPath)) {
+			continue;
+		}
+		try {
+			const handle = spawnEngine(folderPath, (message: string): void => {
+				api.log(message);
+			});
+			handles.set(folderPath, handle);
+			attachHandleRefresh(api, providers, handles, handle);
+			added = true;
+		} catch (cause: unknown) {
+			api.log(`engine spawn failed for ${folderPath}: ${detailOf(cause)}`);
+		}
+	}
+	if (added) {
+		wireEngineRequests(handles);
+		wireTimelineSource(handles);
+	}
+	return [...handles.keys()].sort();
+}
+
+// SPEC §4.20.1 Engine: fan `events/appended` out to the Timeline source
+// and refresh violation diagnostics plus every tree view per changed
+// folder. Saves re-query the engine the same way through the host save
+// seam when the host provides one. The save listener registers
+// unconditionally so a late `setup` (config or engine appearing after
+// activation) reconnects on the next save; the Timeline and per-handle
+// wiring needs a live engine, so it stays behind the size guard.
+function wireViewRefresh(
+	api: ExtensionApi,
+	providers: ReadonlyMap<string, MutableTreeDataProvider>,
+	handles: Map<string, StdioEngineHandle>,
+	spawnEngine: EngineSpawner,
+): void {
+	if (handles.size > 0) {
+		wireTimelineSource(handles);
+		for (const handle of handles.values()) {
+			attachHandleRefresh(api, providers, handles, handle);
+		}
 	}
 	api.onDidSave?.(() => {
-		void populateViews(api, providers, folders).catch(() => undefined);
+		void (async (): Promise<void> => {
+			connectMissing(api, providers, handles, spawnEngine);
+			await populateViews(api, providers, [...handles.keys()].sort());
+		})().catch(() => undefined);
 	});
 }
 
