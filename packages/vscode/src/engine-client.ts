@@ -15,7 +15,7 @@ function cannedRulesList(): unknown {
 		rules: [
 			{
 				id: "core/arch-module-mapped",
-				pack: "core@0.0.0",
+				pack: "core",
 				tier: "floor",
 				statement: "Every file maps to one architecture module.",
 				reason: "Unmapped files escape every boundary.",

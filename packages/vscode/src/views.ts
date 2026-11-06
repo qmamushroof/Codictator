@@ -107,7 +107,7 @@ export async function listRuleGroups(
 			if (id === undefined || id === "") {
 				continue;
 			}
-			const pack = stringFieldOf(entry, "pack") ?? "unknown@0.0.0";
+			const pack = stringFieldOf(entry, "pack") ?? "unknown";
 			const listed = packs.get(pack) ?? [];
 			if (!listed.includes(id)) {
 				listed.push(id);

@@ -63,6 +63,38 @@ export const supportedProtocolMajor = 1;
 // fallback stays a literal pin.
 const fallbackExtensionVersion = "0.0.0";
 
+// SPEC §4.20.1: the full marketplace id owns the version lookup; the short
+// package name never resolves through extensions.getExtension.
+const extensionFullId = "codictator.codictator-vscode";
+
+// SPEC §4.20.1: the extension version rides the host extension surface, so
+// palette and setup terminals pre-fill `npx codictator@<version>`. An
+// absent surface (or a missing/empty version) falls back to the F-05 pin.
+export function extensionVersionOf(host: unknown): string {
+	const extensions = sectionOf(host, "extensions");
+	const getExtension = fieldOf(extensions, "getExtension");
+	if (!isHostFn(getExtension)) {
+		return fallbackExtensionVersion;
+	}
+	let found: unknown;
+	try {
+		found = getExtension(extensionFullId);
+	} catch {
+		return fallbackExtensionVersion;
+	}
+	if (!isRecord(found)) {
+		return fallbackExtensionVersion;
+	}
+	const packageJson = fieldOf(found, "packageJSON");
+	if (!isRecord(packageJson)) {
+		return fallbackExtensionVersion;
+	}
+	const version = fieldOf(packageJson, "version");
+	return typeof version === "string" && version !== ""
+		? version
+		: fallbackExtensionVersion;
+}
+
 // Narrowing: the host object is unknown, so every field narrows through a
 // check (CONVENTIONS.md, no `as` widening); one callable guard covers every
 // host function slot.
@@ -149,7 +181,7 @@ export function buildExtensionApi(
 		...spreadOnDidSave(onDidSaveOf(host, () => workspacePathsOf(workspace))),
 		supportedProtocolVersion: () => supportedProtocolMajor.toString(),
 		serverProtocolVersion: () => undefined,
-		extensionVersion: () => fallbackExtensionVersion,
+		extensionVersion: () => extensionVersionOf(host),
 	};
 }
 
