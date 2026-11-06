@@ -45,12 +45,15 @@ function escapeFinding(
 	});
 }
 
-// A `write:` line inside code is object syntax (`write: "write",` in an
-// adapter capability table, `write: (chunk) => ...` in a fake), not a
-// tool target. Real targets are paths, so anything carrying code
-// characters is not a target at all and judges nothing; failing closed
-// stays for real targets that cannot resolve.
-const CODE_CHARS = /[-"'(){}[\];,=><|&$`]/;
+// SPEC §4.7.3: a `write:` line inside code is object syntax
+// (`write: "write",` caught via quotes, `(chunk) => ...` caught via `=>`),
+// not a tool target. Hyphens, parens, braces, brackets, semicolons, commas,
+// and backslash are legal in Windows+POSIX paths (`SN-LP-64`,
+// `Program Files (x86)`, `[draft]`, `C:\` absolutes), so treating them as
+// code markers misclassifies a real path and fails OPEN by skipping the
+// escape check; only characters that real targets rarely carry mark a target
+// as code here (the backslash drop un-breaks `C:\` absolutes).
+const CODE_CHARS = /[\x22\x27=><|&$\x60]/;
 
 function isPathLike(target: string): boolean {
 	return !CODE_CHARS.test(target);
@@ -122,6 +125,38 @@ function checkProposedTarget(
 	}
 }
 
+async function judgeFile(
+	binding: RuleBinding,
+	ports: Ports,
+	file: string,
+	findings: Array<Finding>,
+): Promise<void> {
+	const targets = new Set<string>([file]);
+	const loaded = await readLossyText(ports.fs, file);
+	if (!loaded.ok) {
+		findings.push(readErrorFinding(binding, file, loaded.error, "read"));
+		return;
+	}
+	for (const line of loaded.value.text.split("\n")) {
+		const target = writeLineTarget(line);
+		if (target !== undefined) {
+			targets.add(target);
+		}
+	}
+	for (const source of extractShellSources(loaded.value.text, file)) {
+		const parsed = analyseShell(source);
+		if (!parsed.ok) {
+			continue;
+		}
+		for (const target of parsed.value.writeTargets) {
+			targets.add(target);
+		}
+	}
+	for (const target of [...targets].sort()) {
+		await checkTarget(ports, binding, file, target, findings);
+	}
+}
+
 export function resolveWriteConfinement(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -137,32 +172,7 @@ export function resolveWriteConfinement(
 			check: async (ctx: CheckContext): Promise<Array<Finding>> => {
 				const findings: Array<Finding> = [];
 				for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-					const targets = new Set<string>([file]);
-					const loaded = await readLossyText(ports.fs, file);
-					if (!loaded.ok) {
-						findings.push(
-							readErrorFinding(binding, file, loaded.error, "read"),
-						);
-						continue;
-					}
-					for (const line of loaded.value.text.split("\n")) {
-						const target = writeLineTarget(line);
-						if (target !== undefined) {
-							targets.add(target);
-						}
-					}
-					for (const source of extractShellSources(loaded.value.text, file)) {
-						const parsed = analyseShell(source);
-						if (!parsed.ok) {
-							continue;
-						}
-						for (const target of parsed.value.writeTargets) {
-							targets.add(target);
-						}
-					}
-					for (const target of [...targets].sort()) {
-						await checkTarget(ports, binding, file, target, findings);
-					}
+					await judgeFile(binding, ports, file, findings);
 				}
 				// L1 hook targets are lexical only: no disk read, so benign
 				// writes to not-yet-existing files stay allowed while lexical
