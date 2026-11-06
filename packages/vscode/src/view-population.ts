@@ -15,6 +15,9 @@ import type { MutableTreeDataProvider } from "./tree-provider.ts";
 import {
 	disconnectedItem,
 	noPacksConfiguredItem,
+	noSteeringEntriesItem,
+	noTimelineEventsItem,
+	noViolationsItem,
 	setDisconnectedViews,
 } from "./tree-provider.ts";
 import {
@@ -92,7 +95,11 @@ async function populateViolationView(
 				}
 			}
 		}
-		setViewItems(providers, viewId, items);
+		setViewItems(
+			providers,
+			viewId,
+			items.length === 0 ? [noViolationsItem()] : items,
+		);
 	} catch (cause: unknown) {
 		failView(api, providers, viewId, "findings/list", cause);
 	}
@@ -117,7 +124,11 @@ async function populateTimelineView(
 				);
 			}
 		}
-		setViewItems(providers, viewId, items);
+		setViewItems(
+			providers,
+			viewId,
+			items.length === 0 ? [noTimelineEventsItem()] : items,
+		);
 	} catch (cause: unknown) {
 		failView(api, providers, viewId, "events/tail", cause);
 	}
@@ -143,7 +154,11 @@ async function populateSteeringView(
 				);
 			}
 		}
-		setViewItems(providers, viewId, items);
+		setViewItems(
+			providers,
+			viewId,
+			items.length === 0 ? [noSteeringEntriesItem()] : items,
+		);
 	} catch (cause: unknown) {
 		failView(api, providers, viewId, "steering/history", cause);
 	}

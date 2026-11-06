@@ -120,6 +120,23 @@ export function disconnectedItem(): unknown {
 	return "Disconnected: engine not running";
 }
 
+// SPEC §4.20.2: healthy-empty rows. The engine is connected but has nothing
+// to show, so each view keeps one plain row with no command instead of an
+// empty tree that reads as broken.
+export function noViolationsItem(): unknown {
+	return "No violations";
+}
+
+// SPEC §4.20.2: healthy-empty Timeline row; connected with zero events.
+export function noTimelineEventsItem(): unknown {
+	return "No timeline events";
+}
+
+// SPEC §4.20.2: healthy-empty Steering row; connected with zero injections.
+export function noSteeringEntriesItem(): unknown {
+	return "No steering entries";
+}
+
 // SPEC §4.20.1: the host owns the registration lifetime; surfacing its
 // disposable lets callers dispose exactly what the host registered.
 export function toDisposable(value: unknown): ExtensionDisposable | undefined {
