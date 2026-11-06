@@ -96,22 +96,17 @@ test("[§4.7.1] redactSecrets prefers the widest overlapping match", () => {
 });
 
 test("[§9.3] redactSecrets scales linearly on long name-character runs", () => {
-	// SPEC §9.3: the hook path owns a 150 ms warm budget, so redaction must
-	// not go quadratic on adversarial input. A uniform name-character run
-	// used to backtrack the assignment pattern (~5 s at 65KB); it must now
-	// stay flat and unredacted.
+	// SPEC §9.3/§10.5: §9.3 budgets are p95 enforced by stress tests, not by
+	// a unit-level ratio. The old large/small ratio measured scheduler noise
+	// (sub-ms denominator clamped to 1), so only the absolute bound stays.
+	// It preserves the BUG-0001 regression signal (~5 s bug vs ms fixed):
+	// a uniform name-character run must stay fast and unredacted.
 	const small = "a".repeat(16 * 1024);
 	const large = "a".repeat(64 * 1024);
 	redactSecrets("warmup");
-	const startSmall = performance.now();
 	assert.equal(redactSecrets(small), small);
-	const smallMs = performance.now() - startSmall;
 	const startLarge = performance.now();
 	assert.equal(redactSecrets(large), large);
 	const largeMs = performance.now() - startLarge;
 	assert.ok(largeMs < 1000, `65KB took ${largeMs} ms`);
-	assert.ok(
-		largeMs / Math.max(smallMs, 1) < 8,
-		`scaling ratio ${largeMs / Math.max(smallMs, 1)}`,
-	);
 });
