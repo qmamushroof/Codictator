@@ -3,6 +3,8 @@
 // and resolves to the longest matching workspace folder; anything else
 // skips the listener. The seam is optional, so a host without the
 // notification contributes nothing instead of an explicit undefined.
+import { realpathSync } from "node:fs";
+import { isAbsolute, relative, resolve, sep } from "node:path";
 import { fieldOf, isRecord } from "./engine-client.ts";
 import type { ExtensionDisposable } from "./tree-provider.ts";
 import { toDisposable } from "./tree-provider.ts";
@@ -15,6 +17,50 @@ type HostFn = (...args: Array<unknown>) => unknown;
 
 function isHostFn(value: unknown): value is HostFn {
 	return typeof value === "function";
+}
+
+// SPEC §4.20 EC-11: Windows paths ride backslashes, so every comparison
+// normalizes separators first; the helpers stay platform-independent, so
+// the unit pins hold on any OS.
+function splitPath(value: string): string {
+	return value.replace(/\\/g, "/");
+}
+
+// SPEC §4.20.1 Engine: the handshake compares initialize.root with the
+// folder through this helper, so a case-only, separator-only or
+// symlink-only spelling (macOS /var vs /private/var tmpdir) never reads
+// as a foreign root.
+function canonicalPath(value: string): string {
+	const resolved = resolve(splitPath(value));
+	try {
+		return realpathSync(resolved);
+	} catch {
+		return resolved;
+	}
+}
+
+export function samePath(left: string, right: string): boolean {
+	const resolvedLeft = canonicalPath(left);
+	const resolvedRight = canonicalPath(right);
+	if (process.platform === "win32") {
+		return resolvedLeft.toLowerCase() === resolvedRight.toLowerCase();
+	}
+	return resolvedLeft === resolvedRight;
+}
+
+// SPEC §4.20 EC-11: folder containment through path.relative, never a
+// string prefix, so Windows fsPaths match and ".." names stay outside.
+export function isInside(folder: string, file: string): boolean {
+	if (samePath(folder, file)) {
+		return false;
+	}
+	const rest = relative(splitPath(folder), splitPath(file));
+	return (
+		rest !== "" &&
+		rest !== ".." &&
+		!rest.startsWith(`..${sep}`) &&
+		!isAbsolute(rest)
+	);
 }
 
 function saveEventOf(
@@ -34,10 +80,12 @@ function saveEventOf(
 	}
 	let match: { folder: string; rest: string } | undefined;
 	for (const folder of folders) {
-		if (fsPath !== folder && !fsPath.startsWith(`${folder}/`)) {
+		if (!isInside(folder, fsPath)) {
 			continue;
 		}
-		const rest = fsPath === folder ? "" : fsPath.slice(folder.length + 1);
+		const rest = relative(splitPath(folder), splitPath(fsPath))
+			.split(sep)
+			.join("/");
 		if (match === undefined || folder.length > match.folder.length) {
 			match = { folder, rest };
 		}
