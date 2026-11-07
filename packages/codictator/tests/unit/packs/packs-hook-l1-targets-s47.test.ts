@@ -141,7 +141,7 @@ function tempRepoWithConfig(): TempRepo {
 	return createTempRepo({
 		".codictator/config.json": JSON.stringify({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [],
 			harnesses: ["muse-code", "opencode"],
 		}),

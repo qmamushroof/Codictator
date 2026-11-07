@@ -42,7 +42,7 @@ test("[§7.1] init sequence writes the manifest-owned .gitignore entries", async
 			req([], repo.dir),
 			initFlags,
 			defaultHarnesses(initFlags),
-			"0.0.0",
+			"unknown",
 		);
 		assert.equal(sequenced.ok, true);
 		if (!sequenced.ok) {
@@ -71,7 +71,7 @@ test("[§7.1] init sequence keeps user .gitignore text and fills the gaps", asyn
 			req([], repo.dir),
 			initFlags,
 			defaultHarnesses(initFlags),
-			"0.0.0",
+			"unknown",
 		);
 		assert.equal(first.ok, true);
 		if (!first.ok) {
@@ -87,7 +87,7 @@ test("[§7.1] init sequence keeps user .gitignore text and fills the gaps", asyn
 			req([], repo.dir),
 			initFlags,
 			defaultHarnesses(initFlags),
-			"0.0.0",
+			"unknown",
 		);
 		assert.equal(second.ok, true);
 		if (!second.ok) {

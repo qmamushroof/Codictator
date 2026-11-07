@@ -30,7 +30,7 @@ function seedConfig(repo: TempRepo): void {
 		".codictator/config.json",
 		JSON.stringify({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [],
 			harnesses: ["muse-code", "opencode"],
 		}),
@@ -46,7 +46,7 @@ test("[§4.16] generate with an LLM names the later pipeline", async () => {
 			".codictator/config.json",
 			JSON.stringify({
 				version: 1,
-				codictator: "0.0.0",
+				codictator: "unknown",
 				packs: [],
 				harnesses: ["muse-code", "opencode"],
 				llm: {},

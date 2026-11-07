@@ -36,7 +36,7 @@ function seedConfig(repo: {
 		".codictator/config.json",
 		JSON.stringify({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [],
 			harnesses: ["muse-code", "opencode"],
 		}),
@@ -193,7 +193,7 @@ test("[§4.14] verify skips non-record manifest entries", async () => {
 			".codictator/manifest.json",
 			`${JSON.stringify({
 				version: 1,
-				codictator: "0.0.0",
+				codictator: "unknown",
 				artifacts,
 				hash: manifestHash(artifacts as never),
 			})}\n`,

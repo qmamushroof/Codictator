@@ -38,7 +38,7 @@ function recordOf(value: unknown): Record<string, unknown> {
 
 const MINIMAL_CONFIG = JSON.stringify({
 	version: 1,
-	codictator: "0.0.0",
+	codictator: "unknown",
 	packs: [],
 	harnesses: ["opencode"],
 });

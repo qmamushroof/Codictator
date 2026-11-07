@@ -71,7 +71,7 @@ test("[§4.18 EC-6] CI summary exceeds 60 KB", async () => {
 	const repo = createTempRepo({
 		".codictator/config.json": JSON.stringify({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [],
 			harnesses: ["muse-code", "opencode"],
 		}),

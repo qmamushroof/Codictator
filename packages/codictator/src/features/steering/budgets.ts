@@ -2,11 +2,16 @@
 // recorded usage only, never estimated (PRD §10); without usage data the
 // band is unevaluated and the view reports unavailable (SPEC §4.6.7 EC-4).
 // State is caller-owned per session id; the hook runtime threads it.
+// SPEC §4.5.2 + §4.6.7 EC-4: hook usage producers live in usage.ts. The
+// runtime threads usage onto events (transcript or native); the band
+// reads recorded usage only, never an estimate.
+
 import {
 	HARD_PERCENT_DEFAULT,
 	MAX_TOOL_CALLS_DEFAULT,
 	SOFT_PERCENT_DEFAULT,
 } from "./precedence.ts";
+import { saneWindow } from "./usage.ts";
 
 export type BudgetBand = "green" | "amber" | "red";
 
@@ -128,4 +133,79 @@ export function noteSoftAdvised(session: SteeringSession): SteeringSession {
 // subagent to return CHECKPOINT instead of clearing.
 export function isSubagentSession(sessionId: string): boolean {
 	return sessionId.startsWith("subagent-");
+}
+
+export interface BudgetEvent {
+	readonly sessionId?: string;
+	readonly harness?: string;
+	readonly usage?:
+		| {
+				readonly contextTokens: number;
+				readonly contextWindow: number;
+		  }
+		| undefined;
+}
+
+export interface BudgetSessionOptions {
+	readonly configuredWindow?: number | undefined;
+}
+
+export type BudgetUnavailableReason =
+	| "no-session"
+	| "harness-no-usage"
+	| "unknown-window";
+
+export type BudgetResult =
+	| {
+			readonly available: true;
+			readonly band: BudgetBand;
+			readonly usedTokens: number;
+			readonly contextWindow: number;
+	  }
+	| {
+			readonly available: false;
+			readonly reason: BudgetUnavailableReason;
+			readonly harness?: string | undefined;
+	  };
+
+// SPEC §4.6.4 + §4.6.7 EC-4: the band reads the latest recorded usage
+// for the session against the payload window, else the configured
+// steering window. No usage for the session names the harness instead
+// of estimating.
+export function budgetForSession(
+	events: ReadonlyArray<BudgetEvent>,
+	sessionId: string,
+	options: BudgetSessionOptions = {},
+): BudgetResult {
+	const mine = events.filter((event) => event.sessionId === sessionId);
+	if (mine.length === 0) {
+		return { available: false, reason: "no-session" };
+	}
+	for (let index = mine.length - 1; index >= 0; index -= 1) {
+		const event = mine[index];
+		const usage = event?.usage;
+		if (
+			usage === undefined ||
+			!Number.isFinite(usage.contextTokens) ||
+			usage.contextTokens < 0
+		) {
+			continue;
+		}
+		const contextWindow =
+			saneWindow(usage.contextWindow) ?? saneWindow(options.configuredWindow);
+		if (contextWindow === undefined) {
+			return { available: false, reason: "unknown-window" };
+		}
+		return {
+			available: true,
+			band: bandForUsage(usage.contextTokens, contextWindow),
+			usedTokens: usage.contextTokens,
+			contextWindow,
+		};
+	}
+	const latest = mine[mine.length - 1];
+	const harness = latest?.harness;
+	return harness === undefined || harness === ""
+		? { available: false, reason: "harness-no-usage" }
+		: { available: false, reason: "harness-no-usage", harness };
 }

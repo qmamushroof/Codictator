@@ -2,7 +2,12 @@
 // block (§4.6.2) and scoped injection (§4.6.3) byte budgets. The three
 // tested contracts stay on this entry; every helper lives beside it so
 // adapters and the pack registry import through here (SPEC §3.3).
-import { type BudgetBand, sessionBand } from "./budgets.ts";
+import {
+	type BudgetBand,
+	type BudgetEvent,
+	type BudgetUnavailableReason,
+	budgetForSession,
+} from "./budgets.ts";
 import { renderContextFile as renderFile } from "./context-file.ts";
 import {
 	type InjectionOptions,
@@ -18,9 +23,17 @@ export {
 	parseHelperList,
 	renderAgentAsset,
 } from "./agent-assets.ts";
-export type { BudgetBand, SteeringSession } from "./budgets.ts";
+export type {
+	BudgetBand,
+	BudgetEvent,
+	BudgetResult,
+	BudgetSessionOptions,
+	BudgetUnavailableReason,
+	SteeringSession,
+} from "./budgets.ts";
 export {
 	bandForUsage,
+	budgetForSession,
 	createSteeringSession,
 	isSubagentSession,
 	noteCheckpointCommitted,
@@ -76,6 +89,17 @@ export {
 	isRepeatRead,
 	recordRead,
 } from "./read-cache.ts";
+export type {
+	HookUsageInput,
+	ResolvedHookUsage,
+	TranscriptUsage,
+	UsageDataKind,
+} from "./usage.ts";
+export {
+	parseTranscriptUsage,
+	resolveHookUsage,
+	transcriptUsedTokens,
+} from "./usage.ts";
 
 export interface SteeringBudget {
 	readonly contextWindow: number;
@@ -84,6 +108,13 @@ export interface SteeringBudget {
 	// SPEC §4.6.7 EC-4: without usage data the band is unevaluated and the
 	// budget view reports unavailable, never an estimate.
 	readonly available: boolean;
+	readonly reason?: BudgetUnavailableReason | undefined;
+	readonly harness?: string | undefined;
+}
+
+export interface CurrentBandInput {
+	readonly events?: ReadonlyArray<BudgetEvent>;
+	readonly configuredWindow?: number | undefined;
 }
 
 export interface ScopedInjection {
@@ -110,24 +141,30 @@ export function renderScopedInjection(
 	return renderInjection(_sessionId, _scope, _maxBytes, _options);
 }
 
-// SPEC §4.6.4: budget band lookup for the session. No usage is recorded
-// through this contract, so the band is unevaluated by construction;
-// runtimes thread a SteeringSession through recordSessionUsage and read
-// sessionBand instead.
-export function currentBand(_sessionId: string): Promise<SteeringBudget> {
-	const fresh = sessionBand({
-		sessionId: _sessionId,
-		toolCalls: 0,
-		usedTokens: 0,
-		contextWindow: 0,
-		usageKnown: false,
-		checkpointRequired: false,
-		softAdvised: false,
+// SPEC §4.6.4: budget band lookup for the session. Runtimes thread the
+// latest events with usage (plus the configured steering window); without
+// usage the band is unevaluated by construction, never estimated.
+export function currentBand(
+	sessionId: string,
+	input: CurrentBandInput = {},
+): Promise<SteeringBudget> {
+	const decided = budgetForSession(input.events ?? [], sessionId, {
+		configuredWindow: input.configuredWindow,
 	});
+	if (!decided.available) {
+		return Promise.resolve({
+			contextWindow: 0,
+			usedTokens: 0,
+			band: "green",
+			available: false,
+			reason: decided.reason,
+			...(decided.harness === undefined ? {} : { harness: decided.harness }),
+		});
+	}
 	return Promise.resolve({
-		contextWindow: 0,
-		usedTokens: 0,
-		band: fresh,
-		available: false,
+		contextWindow: decided.contextWindow,
+		usedTokens: decided.usedTokens,
+		band: decided.band,
+		available: true,
 	});
 }

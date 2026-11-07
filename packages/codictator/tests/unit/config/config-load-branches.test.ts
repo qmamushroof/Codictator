@@ -19,7 +19,7 @@ import { createFakePorts } from "../../support/fake-ports.ts";
 function baseConfigText(): string {
 	const config: Config = {
 		version: 1,
-		codictator: "0.0.0",
+		codictator: "unknown",
 		packs: [{ id: "core" }],
 		harnesses: ["universal"],
 		tunables: {},

@@ -157,7 +157,7 @@ test("[§4.18] replay reruns an installed event", async () => {
 	// SPEC §4.18.2: an event whose pack matches reruns to its summary.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
-		seedEvent(repo, "evt-1", { codictator: "0.0.0" });
+		seedEvent(repo, "evt-1", { codictator: "unknown" });
 		const ran = await cli(["replay", "evt-1"], repo.dir);
 		assert.equal(ran.code, 0);
 		assert.ok(ran.stdout.includes("rerun: codictator replay evt-1"));
@@ -173,7 +173,7 @@ test("[§4.18] status renders the one-screen summary", async () => {
 	try {
 		const ran = await cli(["status"], repo.dir);
 		assert.equal(ran.code, 0);
-		assert.ok(ran.stdout.includes("codictator 0.0.0 status at"));
+		assert.ok(ran.stdout.includes("codictator unknown status at"));
 		assert.ok(ran.stdout.includes("harnesses:"));
 	} finally {
 		repo.cleanup();
@@ -188,7 +188,7 @@ test("[§4.18] status json mirrors the screen as data", async () => {
 		const ran = await cli(["--json", "status"], repo.dir);
 		assert.equal(ran.code, 0);
 		const body = jsonOut(ran.stdout) as { engineVersion: string };
-		assert.equal(body.engineVersion, "0.0.0");
+		assert.equal(body.engineVersion, "unknown");
 	} finally {
 		repo.cleanup();
 	}
@@ -202,7 +202,7 @@ test("[§4.18] status names configured packs", async () => {
 			".codictator/config.json",
 			JSON.stringify({
 				version: 1,
-				codictator: "0.0.0",
+				codictator: "unknown",
 				packs: [{ id: "core", version: "1.0.0" }],
 				harnesses: ["muse-code", "opencode"],
 			}),

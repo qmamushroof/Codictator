@@ -38,7 +38,7 @@ function seedConfig(repo: TempRepo): void {
 		".codictator/config.json",
 		JSON.stringify({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [],
 			harnesses: ["muse-code", "opencode"],
 		}),
@@ -80,7 +80,7 @@ test("[§4.18] explain rule and event answer as data", async () => {
 		const ruleBody = jsonOut(rule.stdout) as { rule: string; text: string };
 		assert.equal(ruleBody.rule, "core/context-soft-band");
 		assert.ok(ruleBody.text.includes("rule core/context-soft-band"));
-		seedEvent(repo, "evt-1", { codictator: "0.0.0" });
+		seedEvent(repo, "evt-1", { codictator: "unknown" });
 		const event = await cli(["--json", "explain", "evt-1"], repo.dir);
 		assert.equal(event.code, 0);
 		const eventBody = jsonOut(event.stdout) as { event: string; text: string };

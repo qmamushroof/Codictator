@@ -133,28 +133,56 @@ function initializeMismatch(params: unknown): string | undefined {
 
 // SPEC §7.15: `rules/list` answers rules with effective params, waivers
 // and coverage. Effective params overlay config tunables on pack defaults.
-async function rulesListMethod(ctx: MethodContext): Promise<MethodOutcome> {
-	const root = await resolveRoot(ctx.root);
+// D6: the row filters to config.packs, and the "0.0.0" source placeholder
+// renders the engine version (stamped at build), never itself.
+function displayPackVersion(version: string, engineVersion: string): string {
+	return version === "0.0.0" ? engineVersion : version;
+}
+
+interface RulesListConfig {
+	readonly ids: Set<string> | undefined;
+	readonly tunables: Readonly<Record<string, unknown>>;
+}
+
+async function rulesListConfig(
+	ctx: MethodContext,
+	root: string,
+): Promise<RulesListConfig> {
 	const configured = await loadRepoConfig(
 		root,
 		undefined,
 		ctx.engineVersion ?? ENGINE_VERSION,
 	);
+	if (configured.ok !== true) {
+		return { ids: undefined, tunables: {} };
+	}
 	// Tunables are optional in a repo config (§4.2 validation), so a
 	// missing section defaults before indexing by rule id.
-	const configuredTunables =
-		configured.ok === true ? configured.value.effective.config.tunables : {};
-	const tunables = configuredTunables ?? {};
+	return {
+		ids: new Set(
+			configured.value.effective.config.packs.map((pack) => pack.id),
+		),
+		tunables: configured.value.effective.config.tunables ?? {},
+	};
+}
+
+async function rulesListMethod(ctx: MethodContext): Promise<MethodOutcome> {
+	const root = await resolveRoot(ctx.root);
+	const config = await rulesListConfig(ctx, root);
 	const waivers = await waiverRows(root);
+	const engineVersion = ctx.engineVersion ?? ENGINE_VERSION;
 	const rules: Array<Record<string, unknown>> = [];
 	for (const id of ["core", "typescript", "dotnet", "python"]) {
+		if (config.ids !== undefined && !config.ids.has(id)) {
+			continue;
+		}
 		const loaded = await loadBuiltinPack(id);
 		if (!loaded.ok) {
 			continue;
 		}
-		const pack = `${loaded.value.manifest.id}@${loaded.value.manifest.version}`;
+		const pack = `${loaded.value.manifest.id}@${displayPackVersion(loaded.value.manifest.version, engineVersion)}`;
 		for (const rule of loaded.value.manifest.rules) {
-			rules.push(ruleRow(rule, pack, tunables, waivers));
+			rules.push(ruleRow(rule, pack, config.tunables, waivers));
 		}
 	}
 	return methodOk({ rules });
