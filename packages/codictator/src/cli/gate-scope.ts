@@ -11,6 +11,7 @@ import type { Finding, Result } from "../kernel/index.ts";
 import { err, ok, stableStringify } from "../kernel/index.ts";
 import { evaluateScope } from "./evaluate.ts";
 import type { CommandPorts } from "./shared.ts";
+import type { VerdictEmit } from "./verdict-emit.ts";
 
 export const GATE_DIFF_UNSOUND_RULES: ReadonlySet<string> = new Set([
 	"core/dead-code",
@@ -91,12 +92,15 @@ export function addedLines(diff: string): string {
 // review leg adds the diff-sound review subset over the same files, so the
 // gate no longer accepts the coverage loss the pre-tool-only mitigation
 // took. The diff-unsound rules never run here, whatever their triggers say.
+// An emit lands one auditable verdict per leg, so each recorded verdict is
+// exactly what its leg judged.
 export async function evaluateGateScope(
 	ports: CommandPorts,
 	packIds: ReadonlyArray<string>,
 	scope: GateScope,
 	now: string,
 	configHash: string,
+	options: { readonly emit?: VerdictEmit } = {},
 ): Promise<Result<Array<Finding>>> {
 	const input =
 		scope.proposedContent === undefined || scope.proposedContent === ""
@@ -113,6 +117,7 @@ export async function evaluateGateScope(
 		},
 		now,
 		configHash,
+		options.emit === undefined ? {} : { emit: options.emit },
 	);
 	if (!local.ok) {
 		return err(local.error);
@@ -128,7 +133,10 @@ export async function evaluateGateScope(
 		},
 		now,
 		configHash,
-		{ excludeRuleIds: GATE_DIFF_UNSOUND_RULES },
+		{
+			excludeRuleIds: GATE_DIFF_UNSOUND_RULES,
+			...(options.emit === undefined ? {} : { emit: options.emit }),
+		},
 	);
 	if (!review.ok) {
 		return err(review.error);

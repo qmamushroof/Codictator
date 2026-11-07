@@ -7,7 +7,7 @@
 
 import path from "node:path";
 import { ENGINE_VERSION, HOOK_MARKER } from "../features/config/index.ts";
-import type { Env, Finding, Result } from "../kernel/index.ts";
+import type { Env, Result } from "../kernel/index.ts";
 import {
 	err,
 	makeError,
@@ -15,8 +15,7 @@ import {
 	readHostText,
 	writeHostText,
 } from "../kernel/index.ts";
-import { addedLines, evaluateGateScope } from "./gate-scope.ts";
-import { printFinding } from "./inspect.ts";
+import { emitGitVerdict, evaluateGitChange } from "./git-eval.ts";
 import type { CommandPorts, CommandRequest } from "./shared.ts";
 import {
 	commandEnv,
@@ -26,11 +25,10 @@ import {
 	needRoot,
 	nodeMajor,
 	nodeTooOldMessage,
-	printHuman,
-	printJson,
 	reportError,
 	usageError,
 } from "./shared.ts";
+import { gateVerdict, type VerdictEmit } from "./verdict-emit.ts";
 
 const GIT_TIMEOUT_MS = 30000;
 const GIT_MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
@@ -57,65 +55,6 @@ async function runGitText(
 	return ok(ran.stdout);
 }
 
-function emitGitVerdict(
-	req: CommandRequest,
-	hook: string,
-	findings: ReadonlyArray<Finding>,
-): Result<number> {
-	if (req.json) {
-		printJson({
-			hook,
-			decision: findings.length === 0 ? "allow" : "block",
-			findings,
-		});
-	} else {
-		for (const finding of findings) {
-			printFinding(finding, req.quiet);
-		}
-		if (findings.length === 0) {
-			printHuman(`${hook}: pass`, req.quiet);
-		} else {
-			printHuman(
-				`${hook}: blocked (${String(findings.length)} findings)`,
-				req.quiet,
-			);
-		}
-	}
-	return ok(findings.length === 0 ? 0 : 1);
-}
-
-async function evaluateGitChange(
-	ports: CommandPorts,
-	req: CommandRequest,
-	hook: string,
-	packIds: ReadonlyArray<string>,
-	files: ReadonlyArray<string>,
-	content: string,
-	now: string,
-	configHash: string,
-): Promise<Result<number>> {
-	// BUG-0014 + SPEC §4.3.2: gates judge pre-tool plus the diff-sound
-	// review subset, the phase-5 finer trigger as a rule subset. The
-	// diff-unsound rules (spec-trace, dead-code) stay on the human
-	// `review` command over the tree; a review trigger here once blocked
-	// every normally-commented file.
-	const evaluated = await evaluateGateScope(
-		ports,
-		packIds,
-		{
-			files: [...files],
-			note: hook,
-			...(content === "" ? {} : { proposedContent: addedLines(content) }),
-		},
-		now,
-		configHash,
-	);
-	if (!evaluated.ok) {
-		return reportError(evaluated.error, req.json);
-	}
-	return emitGitVerdict(req, hook, evaluated.value);
-}
-
 // SPEC §4.7.1: L3 scans staged content. The staged file list scopes the
 // disk reads while the staged diff rides as proposed content, so a secret
 // staged but not yet matching the worktree still blocks.
@@ -125,6 +64,7 @@ async function runPreCommit(
 	packIds: ReadonlyArray<string>,
 	now: string,
 	configHash: string,
+	emit: VerdictEmit,
 ): Promise<Result<number>> {
 	const staged = await ports.git.stagedFiles();
 	if (!staged.ok) {
@@ -146,6 +86,7 @@ async function runPreCommit(
 		diff.value,
 		now,
 		configHash,
+		emit,
 	);
 }
 
@@ -192,6 +133,7 @@ async function runPrePush(
 	packIds: ReadonlyArray<string>,
 	now: string,
 	configHash: string,
+	emit: VerdictEmit,
 ): Promise<Result<number>> {
 	const upstream = await runGitText(ports, [
 		"git",
@@ -232,6 +174,7 @@ async function runPrePush(
 		diff.value,
 		now,
 		configHash,
+		emit,
 	);
 }
 
@@ -271,10 +214,11 @@ export async function handleGitHook(
 	if (typeof root !== "string") {
 		return root;
 	}
+	const engineVersion = req.engineVersion ?? ENGINE_VERSION;
 	const configured = await loadRepoConfig(
 		root,
 		hookEnv(commandEnv()),
-		req.engineVersion ?? ENGINE_VERSION,
+		engineVersion,
 	);
 	if (!configured.ok) {
 		return fail(
@@ -293,8 +237,16 @@ export async function handleGitHook(
 	if (hook === "commit-msg") {
 		return runCommitMsg(req, configHash);
 	}
+	// SPEC §4.18: the hook verdict carries the evaluated packs and the
+	// branch task, so the Timeline row names what judged the change.
+	const emit = await gateVerdict(
+		ports,
+		"git",
+		configured.value.effective.config.packs,
+		engineVersion,
+	);
 	if (hook === "pre-push") {
-		return runPrePush(req, ports, packIds, now, configHash);
+		return runPrePush(req, ports, packIds, now, configHash, emit);
 	}
-	return runPreCommit(req, ports, packIds, now, configHash);
+	return runPreCommit(req, ports, packIds, now, configHash, emit);
 }
