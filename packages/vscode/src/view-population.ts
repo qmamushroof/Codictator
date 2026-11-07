@@ -13,7 +13,7 @@ import {
 import { listTimelineEvents } from "./timeline.ts";
 import type { MutableTreeDataProvider } from "./tree-provider.ts";
 import {
-	disconnectedItem,
+	errorItem,
 	noPacksConfiguredItem,
 	noSteeringEntriesItem,
 	noTimelineEventsItem,
@@ -38,11 +38,18 @@ function failView(
 	api: ExtensionApi,
 	providers: ReadonlyMap<string, MutableTreeDataProvider>,
 	viewId: string,
-	what: string,
+	method: string,
 	cause: unknown,
 ): void {
-	api.log(`${what} refresh failed: ${detailOf(cause)}`);
-	setViewItems(providers, viewId, [disconnectedItem()]);
+	const detail = detailOf(cause);
+	api.log(`${method} refresh failed: ${detail}`);
+	setViewItems(providers, viewId, [errorItem(method, codeOf(detail), detail)]);
+}
+
+// SPEC §4.20.2: the CDX code behind a method failure for the Explain
+// action; a bare message carries no code to explain.
+function codeOf(detail: string): string {
+	return detail.match(/CDX-E\d+/)?.[0] ?? "engine error";
 }
 
 // SPEC §4.20.2: Active rules view data, one row per pack. EC-1 groups by
@@ -218,7 +225,8 @@ async function populateHealthView(
 
 // SPEC §4.20.2: query the engine (rules, findings, timeline, steering,
 // budget, health) and fill every registered provider. One failing source
-// disconnects only its own view; with no folders every view disconnects.
+// fails only its own view with the method error item; with no folders
+// every view disconnects.
 export async function populateViews(
 	api: ExtensionApi,
 	providers: ReadonlyMap<string, MutableTreeDataProvider>,
