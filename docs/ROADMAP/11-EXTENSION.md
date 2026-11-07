@@ -33,3 +33,12 @@ SPEC-first hardening for a live extension: connection, live data, real producers
 - `npm run test:extension` green on all three OSes, plus the VALIDATION always-set.
 - The extension loads this repo in VS Code and shows its rules, findings and timeline.
 - Leaf 11.6 adds the live checks: an external append reaches the Timeline with no user action, and killing the engine shows the retrying state before recovery.
+- The PR5 scaffold (`packages/vscode/tests/e2e/`, runner `packages/vscode/scripts/run-e2e.mjs`) carries the gate asserts; each waits on its engine or extension PR and lands with it, never by loosening the scaffold:
+  - every view populates (PR1 cwd and labels, PR3 producers; view content still needs a PR4 hook to observe it);
+  - an external append pushes `events/appended` in under 3 s with no request in flight (PR2 watcher, asserted at the protocol level; the Timeline view refresh itself rides PR2 unit tests until a PR4 hook exposes view state);
+  - saving a file refreshes L2 diagnostics (PR1 paths; the L2 engine path answers over stdio, but `registerL2OnSave` is unwired and no `DiagnosticCollection` exists yet — PR4);
+  - killing the engine shows retrying, then recovers (PR1 reconnect plus a PR4 test hook to observe it);
+  - no `0.0.0` anywhere (PR3 versions; `rules/list` pack versions still ride the manifests).
+- Full-run observation on `main` (2026-11-07, VS Code 1.145.2 win32): the host cwd is the install dir and `initialize` answers it as `root` with no `version` field — the D1/D6 red proof.
+- Rebase follow-up on `fix/pr5-e2e`: spawning the fixture launcher with the fixture folder as cwd answers the fixture folder as `root` with the real `engineVersion` (the version field is `engineVersion`, not `version`); the suite asserts both, and the remaining gates stay TODO-stubbed per the mapping above.
+- PR2 follow-up on `fix/pr5-e2e` (rebased onto the PR2 merge): the suite lands the protocol-level `ping`, external-append→push-under-3-s, `events/tail` and L2-shape gates through one persistent stdio session (`packages/vscode/scripts/serve-client.mjs`, shared with a new fast smoke); the TODO stubs now name PR3/PR4 only.
