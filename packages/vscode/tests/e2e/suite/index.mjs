@@ -13,7 +13,13 @@
 // UI (PR1 reconnect plus a PR4 test hook to observe it), and no 0.0.0 in
 // rules/list packs (PR3 versions).
 import { strict as assert } from "node:assert";
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import {
+	appendFileSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	realpathSync,
+} from "node:fs";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import {
@@ -53,14 +59,26 @@ function readJson(path) {
 	return JSON.parse(readFileSync(path, "utf8"));
 }
 
-// Windows drive letters disagree in case between the env record and the
-// host uri; PR1 owns the shared samePath() helper, so the suite folds
-// case on win32 only until then.
-function sameFixturePath(left, right) {
-	if (process.platform === "win32") {
-		return left.toLowerCase() === right.toLowerCase();
+// The engine resolves its root through the repo lookup while the env
+// record keeps the unresolved spelling; on macOS the tmpdir symlink
+// (/var vs /private/var) would otherwise read as a foreign root. Mirror
+// the product handshake helper (samePath, BUG-0057): canonicalize both
+// sides, folding case on win32 only.
+function canonicalFixturePath(value) {
+	try {
+		return realpathSync(value);
+	} catch {
+		return value;
 	}
-	return left === right;
+}
+
+function sameFixturePath(left, right) {
+	const canonicalLeft = canonicalFixturePath(left);
+	const canonicalRight = canonicalFixturePath(right);
+	if (process.platform === "win32") {
+		return canonicalLeft.toLowerCase() === canonicalRight.toLowerCase();
+	}
+	return canonicalLeft === canonicalRight;
 }
 
 function declaredViewIds(extension) {
