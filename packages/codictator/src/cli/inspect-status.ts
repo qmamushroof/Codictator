@@ -10,15 +10,9 @@ import {
 } from "../features/audit/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import { ok, type Result } from "../kernel/index.ts";
+import { needCommandContext } from "./command-context.ts";
 import type { CommandRequest } from "./shared.ts";
-import {
-	fail,
-	needRoot,
-	portsFor,
-	printHuman,
-	printJson,
-	usageError,
-} from "./shared.ts";
+import { portsFor, printHuman, printJson, usageError } from "./shared.ts";
 import { collectStatusFrame, statusInput } from "./status-rows.ts";
 
 // SPEC §4.18.1: the repo's event lines through caller-owned ports against
@@ -57,20 +51,11 @@ export async function handleStatus(
 	if (!terseArgs(req.args, 0)) {
 		return usageError("usage: codictator status");
 	}
-	const root = await needRoot(req);
-	if (typeof root !== "string") {
-		return root;
+	const resolved = await needCommandContext(req);
+	if ("ok" in resolved) {
+		return resolved;
 	}
-	const ports = await portsFor(root);
-	if (!ports.ok) {
-		return fail(
-			"CDX-E903",
-			ports.error.message,
-			ports.error.remediation,
-			req.json,
-		);
-	}
-	const now = ports.value.clock.now();
+	const { root, now } = resolved;
 	const log = await readLogEvents(root);
 	const events = log?.events ?? [];
 	const frame = await collectStatusFrame(
