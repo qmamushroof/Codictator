@@ -3,11 +3,8 @@
 // step 12.9 lands the implementation.
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import {
-	currentBudget,
-	healthSummary,
-	listSteeringEntries,
-} from "../../src/p1-views.ts";
+import { healthSummary } from "../../src/health-views.ts";
+import { currentBudget, listSteeringEntries } from "../../src/p1-views.ts";
 import { registerSteeringBudgetHealthViews } from "../../src/tree-provider.ts";
 import { createFakeVscode } from "../support/fake-vscode.ts";
 

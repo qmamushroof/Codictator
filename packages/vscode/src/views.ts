@@ -1,7 +1,8 @@
 // SPEC §4.20.2: Active rules and Violations views plus L2 on save. Every
 // view is data from the repo-pinned engine over stdio (§7.15); this module
 // owns the shaping, the engine itself owns the verdicts. Timeline lives in
-// timeline.ts so each view module stays small.
+// timeline.ts and the rules polish in rule-views.ts so each view module
+// stays small.
 import type { EngineRequest } from "./engine-client.ts";
 import {
 	arrayFieldOf,
@@ -187,6 +188,26 @@ export async function refreshViolationDiagnostics(
 		total += entries.length;
 	}
 	return total;
+}
+
+// SPEC §4.20.2 PR4: the Violations polish — findings grouped by file, each
+// row opening the file at the first finding line.
+export interface ViolationFileGroup {
+	readonly uri: string;
+	readonly entries: ReadonlyArray<DiagnosticEntry>;
+}
+
+// SPEC §4.20.2 PR4: per-file groups of the folder diagnostics, sorted by
+// uri so multi-root rows never mix.
+export function groupViolationsByFile(
+	folderPath: string,
+): Array<ViolationFileGroup> {
+	const groups: Array<ViolationFileGroup> = [];
+	for (const uri of [...diagnosticsForFolder(folderPath).keys()].sort()) {
+		const entries = diagnosticsForFolder(folderPath).get(uri) ?? [];
+		groups.push({ entries: [...entries], uri });
+	}
+	return groups;
 }
 
 const SAVE_DEBOUNCE_MS = 200;

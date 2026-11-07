@@ -17,6 +17,10 @@ export interface ExtensionTreeItemCommand {
 export interface ExtensionTreeItem {
 	readonly label: string;
 	readonly command?: ExtensionTreeItemCommand;
+	// SPEC §4.20.2 PR4: the UX polish rows carry a description and a
+	// tooltip, so counts and explanations render without opening.
+	readonly description?: string;
+	readonly tooltip?: string;
 }
 
 export type ExtensionTreeEvent = (
@@ -68,10 +72,25 @@ function commandOf(item: unknown): ExtensionTreeItemCommand | undefined {
 }
 
 function toTreeItem(element: unknown): ExtensionTreeItem {
+	const base: {
+		command?: ExtensionTreeItemCommand;
+		description?: string;
+		label: string;
+		tooltip?: string;
+	} = { label: labelOf(element) };
 	const command = commandOf(element);
-	return command === undefined
-		? { label: labelOf(element) }
-		: { command, label: labelOf(element) };
+	if (command !== undefined) {
+		base.command = command;
+	}
+	const description = stringFieldOf(element, "description");
+	if (description !== undefined) {
+		base.description = description;
+	}
+	const tooltip = stringFieldOf(element, "tooltip");
+	if (tooltip !== undefined) {
+		base.tooltip = tooltip;
+	}
+	return base;
 }
 
 // SPEC §4.20.2: one mutable provider per registered view. Activation keeps

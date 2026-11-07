@@ -3,13 +3,11 @@
 // budget, health) and fills every registered provider; one failing source
 // disconnects only its own view. EC-1 groups rows by folder in multi-root
 // workspaces; EC-10 shows the setup item on zero packs.
+
+import { healthSummary } from "./health-views.ts";
 import type { ExtensionApi } from "./host-adapter.ts";
 import { detailOf } from "./output-channel.ts";
-import {
-	currentBudget,
-	healthSummary,
-	listSteeringEntries,
-} from "./p1-views.ts";
+import { currentBudget, listSteeringEntries } from "./p1-views.ts";
 import { listTimelineEvents } from "./timeline.ts";
 import type { MutableTreeDataProvider } from "./tree-provider.ts";
 import {
