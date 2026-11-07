@@ -4,7 +4,7 @@
 // against it with the host cwd deliberately left at the repo root. The
 // --smoke-only flag (or CODICTATOR_E2E_SMOKE_ONLY=1) stops after the
 // fixture wiring so local runs need no display or download.
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -36,7 +36,7 @@ function vscodeVersion() {
 	return typeof pinned === "string" && pinned !== "" ? pinned : "stable";
 }
 
-async function runExtensionHost(fixtureDir) {
+async function loadTestElectron() {
 	// @vscode/test-electron is a root devDependency (SPEC §2.2) hoisted to
 	// the workspace root by npm; the nearest manifest above this script is
 	// packages/vscode, so the bare specifier would read as phantom. Import
@@ -51,7 +51,23 @@ async function runExtensionHost(fixtureDir) {
 			"index.js",
 		),
 	).href;
-	const { downloadAndUnzipVSCode, runTests } = await import(testElectronEntry);
+	return import(testElectronEntry);
+}
+
+function hostLaunchArgs(fixtureDir, profileDir) {
+	// The profile stays under the OS tmp dir beside the fixture, so a
+	// host run never writes `.vscode-test/` into the repo checkout.
+	return [
+		fixtureDir,
+		"--user-data-dir",
+		join(profileDir, "user-data"),
+		"--extensions-dir",
+		join(profileDir, "extensions"),
+	];
+}
+
+async function runExtensionHost(fixtureDir, profileDir) {
+	const { downloadAndUnzipVSCode, runTests } = await loadTestElectron();
 	const executablePath = await downloadAndUnzipVSCode({
 		cachePath: join(tmpdir(), "codictator-e2e-vscode"),
 		version: vscodeVersion(),
@@ -66,7 +82,7 @@ async function runExtensionHost(fixtureDir) {
 			"index.mjs",
 		),
 		extensionTestsEnv: { CODICTATOR_E2E_FIXTURE: fixtureDir },
-		launchArgs: [fixtureDir],
+		launchArgs: hostLaunchArgs(fixtureDir, profileDir),
 		vscodeExecutablePath: executablePath,
 	});
 }
@@ -81,9 +97,11 @@ async function main() {
 		}
 	}
 	const fixture = await createE2eFixture({ enginePackageDir });
+	const profileDir = mkdtempSync(join(tmpdir(), "codictator-e2e-profile-"));
 	const hostCwd = process.cwd();
 	if (fixture.dir === hostCwd) {
 		removeE2eFixture(fixture.dir);
+		removeE2eFixture(profileDir);
 		fail(`fixture dir equals host cwd`);
 		return;
 	}
@@ -95,9 +113,10 @@ async function main() {
 			report(`smoke-only: fixture wiring ok, no VS Code launch`);
 			return;
 		}
-		process.exitCode = await runExtensionHost(fixture.dir);
+		process.exitCode = await runExtensionHost(fixture.dir, profileDir);
 	} finally {
 		removeE2eFixture(fixture.dir);
+		removeE2eFixture(profileDir);
 	}
 }
 

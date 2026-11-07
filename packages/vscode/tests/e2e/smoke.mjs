@@ -1,9 +1,10 @@
 // SPEC §4.20: the extension-host E2E smoke. Runs under plain node:test
 // (no display, no download): the tmp fixture mirrors setup output, links
 // the built engine, and pins a real version. The in-host suite in
-// suite/index.mjs owns the live asserts (PR1 root and version asserts
-// landed there); the remaining gates wait on PRs 2-4 per the Roadmap 11
-// exit gate.
+// suite/index.mjs owns the live asserts (PR1 root and version asserts,
+// PR2 ping and watcher-push gates landed there); the smoke pins the
+// protocol shape (initialize plus ping) so a broken serve surface fails
+// fast. The remaining gates wait on PRs 3-4 per the Roadmap 11 exit gate.
 import { strict as assert } from "node:assert";
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -15,6 +16,7 @@ import {
 	createE2eFixture,
 	removeE2eFixture,
 } from "../../scripts/e2e-fixture.mjs";
+import { openServeSession } from "../../scripts/serve-client.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..", "..");
@@ -84,6 +86,23 @@ test("[§4.20] e2e runner uses the SPEC §2 @vscode/test-electron pin", () => {
 		pinned,
 		`installed test-electron matches the SPEC §2 pin`,
 	);
+});
+
+test("[§4.20] e2e engine answers initialize and ping over stdio", async () => {
+	const fixture = await createE2eFixture({ enginePackageDir });
+	const session = openServeSession(fixture.launcherPath, fixture.dir);
+	try {
+		const init = await session.request("initialize", {});
+		assert.equal(init.protocolVersion, 1);
+		assert.equal(init.engineVersion, fixture.engineVersion);
+		assert.notEqual(init.engineVersion, "0.0.0");
+		const pong = await session.request("ping", {});
+		assert.deepEqual(pong, { pong: true });
+	} finally {
+		await session.close();
+		removeE2eFixture(fixture.dir);
+	}
+	assert.equal(existsSync(fixture.dir), false);
 });
 
 test("[§4.20] run-e2e --smoke-only wires the fixture without a VS Code launch", () => {
