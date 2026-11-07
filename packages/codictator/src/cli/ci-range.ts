@@ -133,13 +133,11 @@ export async function resolveCiRange(
 	} else if (typeof prHead === "string" && prHead !== "") {
 		head = prHead;
 	}
+	// SPEC §4.15.7 EC-13: a parseable schedule/dispatch payload names no
+	// range, so there is no change to judge: L4 runs the repo-wide rules
+	// only (§4.3.2). Unparseable payloads still fail closed above.
 	if (typeof base !== "string" || base === "" || head === undefined) {
-		return err({
-			code: "CDX-E303",
-			message: "CI event payload names no verify range",
-			remediation:
-				"Re-run with --base <sha> --head <sha> for the change under review.",
-		} satisfies CdxError);
+		return ok(undefined);
 	}
 	// SPEC §4.15.7 EC-3: push of a new branch (no `before`) — the base is
 	// the merge-base with the default branch.
