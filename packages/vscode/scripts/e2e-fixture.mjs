@@ -46,17 +46,15 @@ async function launcherTextOf(enginePackageDir) {
 }
 
 function fixtureConfig(engineVersion) {
-	return (
-		JSON.stringify({
-			architecture: { modules: [], profile: "app" },
-			codictator: engineVersion,
-			harnesses: ["opencode"],
-			packs: [{ id: "core", version: engineVersion }],
-			tools: [],
-			tunables: {},
-			version: 1,
-		}) + "\n"
-	);
+	return `${JSON.stringify({
+		architecture: { modules: [], profile: "app" },
+		codictator: engineVersion,
+		harnesses: ["opencode"],
+		packs: [{ id: "core", version: engineVersion }],
+		tools: [],
+		tunables: {},
+		version: 1,
+	})}\n`;
 }
 
 // Build the fixture repo. enginePackageDir must be absolute and point at
