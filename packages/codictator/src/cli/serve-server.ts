@@ -48,30 +48,94 @@ function writeDiagnostic(stderr: StdioServerStdout, text: string): void {
 
 // The Fs-port watcher: the baseline is set at startup with no notify; after
 // each request new lines push one `events/appended` notification carrying
-// the new event lines.
-async function pollAppended(state: ServerState): Promise<void> {
+// the new event lines. A poll interval covers external appends between
+// requests (rotation-aware: a shrunk count re-opens the baseline), and a
+// 150 ms debounce coalesces bursts into one frame.
+async function collectAppended(
+	state: ServerState,
+): Promise<Array<EventLogLine>> {
 	const log = await readLogEvents(state.root);
 	if (log === undefined) {
-		return;
+		state.seen.count = 0;
+		state.seen.started = true;
+		return [];
 	}
 	const total = log.events.length + log.corrupt;
 	if (!state.seen.started) {
 		state.seen.count = total;
 		state.seen.started = true;
-		return;
+		return [];
 	}
 	if (total <= state.seen.count) {
 		state.seen.count = total;
-		return;
+		return [];
 	}
 	const fresh: Array<EventLogLine> = log.events.slice(state.seen.count);
 	state.seen.count = total;
+	return fresh;
+}
+
+function pushAppended(
+	state: ServerState,
+	fresh: ReadonlyArray<EventLogLine>,
+): void {
 	if (fresh.length > 0) {
 		writeFrame(
 			state.io.stdout,
 			notificationFrame("events/appended", { events: fresh }),
 		);
 	}
+}
+
+async function pollAppended(state: ServerState): Promise<void> {
+	pushAppended(state, await collectAppended(state));
+}
+
+// Watch-state for the debounced interval push. Pending lines queue while
+// the log bursts; one timer flushes them 150 ms after the first arrival.
+interface AppendedWatch {
+	readonly stop: () => void;
+}
+
+function startAppendedWatch(state: ServerState): AppendedWatch {
+	const WATCH_POLL_MS = 1000;
+	const APPEND_DEBOUNCE_MS = 150;
+	let pending: Array<EventLogLine> = [];
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	let stopped = false;
+	const flush = (): void => {
+		timer = undefined;
+		const events = pending;
+		pending = [];
+		if (!stopped) {
+			pushAppended(state, events);
+		}
+	};
+	const poll = (): void => {
+		void collectAppended(state)
+			.then((fresh) => {
+				if (stopped || fresh.length === 0) {
+					return;
+				}
+				pending.push(...fresh);
+				if (timer === undefined) {
+					timer = setTimeout(flush, APPEND_DEBOUNCE_MS);
+				}
+			})
+			.catch(() => undefined);
+	};
+	const interval = setInterval(poll, WATCH_POLL_MS);
+	return {
+		stop: (): void => {
+			stopped = true;
+			clearInterval(interval);
+			if (timer !== undefined) {
+				clearTimeout(timer);
+				timer = undefined;
+			}
+			pending = [];
+		},
+	};
 }
 
 // One request answered with exactly one frame; a throw inside a method
@@ -173,12 +237,16 @@ export function startStdioServer(
 	if (streams.stdin.readableEnded || streams.stdin.readable !== true) {
 		return Promise.resolve(0);
 	}
+	const watch = startAppendedWatch(state);
 	return new Promise<number>((resolve) => {
 		openLinePump(
 			streams.stdin,
 			pollAppended(state),
 			(line) => handleLine(line, state),
-			resolve,
+			(code) => {
+				watch.stop();
+				resolve(code);
+			},
 		);
 	});
 }

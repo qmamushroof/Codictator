@@ -13,13 +13,13 @@ import { checkCommitTrailers } from "../features/integrity/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { ciRecordBotChange } from "./ci-bot-change.ts";
+import { verifyInputs } from "./ci-inputs.ts";
 import {
 	ciPackIds,
 	parseCiVerifyFlags,
 	rangeCommits,
 	rangeMessages,
 	resolveCiRange,
-	trailerExemptFrom,
 } from "./ci-range.ts";
 import { ciSummaryFor, isUnverifiableFinding } from "./ci-summary.ts";
 import { resolveVerifyScope } from "./evaluate.ts";
@@ -28,13 +28,13 @@ import { printFinding } from "./inspect.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
 	fail,
-	loadRepoConfig,
 	needRoot,
 	portsFor,
 	printHuman,
 	printJson,
 	usageError,
 } from "./shared.ts";
+import { gateVerdict } from "./verdict-emit.ts";
 
 // SPEC §8.2 + §4.15.1: ci verify exits per §8 — 0 on allow or advise only.
 // Advise findings are exactly the unverifiable ones the summary already
@@ -53,6 +53,10 @@ async function ciVerify(
 	now: string,
 	trailerExempt: ReadonlyArray<string>,
 	engineVersion: string,
+	packEntries: ReadonlyArray<{
+		readonly id: string;
+		readonly version?: string;
+	}>,
 ): Promise<Result<number>> {
 	const flags = parseCiVerifyFlags(req.args.slice(1));
 	if (flags === undefined) {
@@ -139,6 +143,14 @@ async function ciVerify(
 				ranged.value.base,
 				ranged.value.head,
 			);
+			// SPEC §4.18: the L4 gate lands its verdicts with the evaluated
+			// packs and the branch task, so CI blocks reach the Timeline.
+			const emit = await gateVerdict(
+				ports.value,
+				"ci",
+				packEntries,
+				engineVersion,
+			);
 			const judged = await evaluateGateScope(
 				ports.value,
 				await ciPackIds(root, engineVersion),
@@ -154,6 +166,7 @@ async function ciVerify(
 						},
 				now,
 				configHash,
+				{ emit },
 			);
 			if (!judged.ok) {
 				return fail(
@@ -229,23 +242,6 @@ function ciSweep(req: CommandRequest): Result<number> {
 	return ok(0);
 }
 
-// The verify evaluation inputs (the stored config hash plus the trailer
-// exemption list) load together: one repo-config read serves both, and the
-// handleCi dispatch stays under the complexity gate.
-async function verifyInputs(
-	root: string,
-	engineVersion: string,
-): Promise<{ configHash: string; trailerExempt: ReadonlyArray<string> }> {
-	let configHash = "unknown";
-	let trailerExempt: ReadonlyArray<string> = [];
-	const configured = await loadRepoConfig(root, undefined, engineVersion);
-	if (configured.ok) {
-		configHash = configured.value.effective.configHash;
-		trailerExempt = trailerExemptFrom(configured.value.effective.config);
-	}
-	return { configHash, trailerExempt };
-}
-
 export async function handleCi(req: CommandRequest): Promise<Result<number>> {
 	const sub = req.args[0] ?? "";
 	if (sub !== "verify" && sub !== "sweep" && sub !== "record-bot-change") {
@@ -277,6 +273,7 @@ export async function handleCi(req: CommandRequest): Promise<Result<number>> {
 			now,
 			inputs.trailerExempt,
 			engineVersion,
+			inputs.packEntries,
 		);
 	}
 	if (sub === "sweep") {

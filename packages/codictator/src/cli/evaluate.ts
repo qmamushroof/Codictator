@@ -21,6 +21,7 @@ import type {
 } from "../kernel/index.ts";
 import { err, isFixturePath, ok } from "../kernel/index.ts";
 import type { CommandPorts } from "./shared.ts";
+import { type EvaluateOptions, emitEngineOptions } from "./verdict-emit.ts";
 
 export interface VerifyScope {
 	readonly trigger: Trigger;
@@ -275,7 +276,7 @@ export async function evaluateScope(
 	configHash: string,
 	// BUG-0014: diff-scope callers pass the diff-unsound rule ids (the gate
 	// subset); tree callers omit it and judge everything.
-	options: { readonly excludeRuleIds?: ReadonlySet<string> } = {},
+	options: EvaluateOptions = {},
 ): Promise<Result<Array<Finding>>> {
 	const cached: CommandPorts = { ...ports, fs: sharedReads(ports.fs) };
 	const excluded: ReadonlySet<string> = options.excludeRuleIds ?? new Set();
@@ -283,7 +284,8 @@ export async function evaluateScope(
 	if (!loaded.ok) {
 		return err(loaded.error);
 	}
-	const engine = createEngine(loaded.value, { configHash });
+	const engineOptions = emitEngineOptions(configHash, options.emit);
+	const engine = createEngine(loaded.value, engineOptions);
 	const verdict = await engine.evaluate(
 		scope.trigger,
 		{
