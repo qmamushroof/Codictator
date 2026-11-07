@@ -1,0 +1,74 @@
+{
+  "disableBypassPermissionsMode": "disable",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "node $CLAUDE_PROJECT_DIR/.codictator/bin/run.mjs hook claude-code PostToolUse",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "node $CLAUDE_PROJECT_DIR/.codictator/bin/run.mjs hook claude-code PreToolUse",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "node $CLAUDE_PROJECT_DIR/.codictator/bin/run.mjs hook claude-code SessionStart",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "command": "node $CLAUDE_PROJECT_DIR/.codictator/bin/run.mjs hook claude-code Stop",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "command": "node $CLAUDE_PROJECT_DIR/.codictator/bin/run.mjs hook claude-code SubagentStart",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "node $CLAUDE_PROJECT_DIR/.codictator/bin/run.mjs hook claude-code UserPromptSubmit",
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ]
+  },
+  "permissions": {
+    "deny": []
+  }
+}

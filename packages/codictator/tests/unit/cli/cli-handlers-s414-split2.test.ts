@@ -67,9 +67,11 @@ test("[§4.14] ci verify blocks a trailer-less commit in range (L4)", async () =
 	}
 });
 
-test("[§4.14] ci verify allows a ranged commit carrying the trailer (L4)", async () => {
-	// SPEC §4.14.2: the trailer proves the commit-msg gate ran, so a
-	// trailer-carrying range with no other finding passes.
+test("[§4.14] ci verify blocks a ranged trailer commit with no history entry (L4)", async () => {
+	// SPEC §4.9.3 core/history-entry + EC-9: L3 blocks a commit with no
+	// history entry and, if bypassed, L4 blocks the range. The trailer
+	// (SPEC §4.14.2) exempts only core/no-bypass, so a trailer-carrying
+	// range with no entry still blocks.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		seedConfig(repo);
@@ -82,10 +84,13 @@ test("[§4.14] ci verify allows a ranged commit carrying the trailer (L4)", asyn
 			["--json", "ci", "verify", "--base", base, "--head", head],
 			repo.dir,
 		);
-		assert.equal(ran.code, 0);
+		assert.equal(ran.code, 1);
 		const body = jsonOut(ran.stdout) as {
 			findings: Array<{ ruleId: string }>;
 		};
+		assert.ok(
+			body.findings.some((finding) => finding.ruleId === "core/history-entry"),
+		);
 		assert.ok(
 			!body.findings.some((finding) => finding.ruleId === "core/no-bypass"),
 		);

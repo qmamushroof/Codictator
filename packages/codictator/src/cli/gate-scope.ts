@@ -100,7 +100,13 @@ export async function evaluateGateScope(
 	scope: GateScope,
 	now: string,
 	configHash: string,
-	options: { readonly emit?: VerdictEmit } = {},
+	options: {
+		readonly emit?: VerdictEmit;
+		// SPEC §4.9: hook diff legs exclude commit-phase rules whose
+		// phase lives elsewhere (commit-msg owns the staged history
+		// text, L4 the range); the tree review and L4 pass nothing.
+		readonly excludeReviewRuleIds?: ReadonlySet<string>;
+	} = {},
 ): Promise<Result<Array<Finding>>> {
 	const input =
 		scope.proposedContent === undefined || scope.proposedContent === ""
@@ -134,7 +140,10 @@ export async function evaluateGateScope(
 		now,
 		configHash,
 		{
-			excludeRuleIds: GATE_DIFF_UNSOUND_RULES,
+			excludeRuleIds: new Set([
+				...GATE_DIFF_UNSOUND_RULES,
+				...(options.excludeReviewRuleIds ?? []),
+			]),
 			...(options.emit === undefined ? {} : { emit: options.emit }),
 		},
 	);

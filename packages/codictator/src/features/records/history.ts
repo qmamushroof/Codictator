@@ -4,6 +4,8 @@ export {
 	checkHistoryAppendOnly,
 	checkHistoryEntryComplete,
 	checkHistoryEntryCount,
+	addedHistoryEntries,
+	checkAddedHistoryEntryCount,
 } from "./history-checks.ts";
 export {
 	type HistoryEntry,
