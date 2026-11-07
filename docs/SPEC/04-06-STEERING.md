@@ -45,6 +45,8 @@ At most **2,000 bytes**. On `prompt.submit` it is re-sent only when its hash dif
 | Context tokens | Adapter `usageData` (§4.5.2) and context window from payload or `config.steering.contextWindow` | Bands not evaluated; budget shown as unavailable, never estimated (PRD §10) |
 | Tool calls this session | Count of `tool.pre.*` events per session id | Always available |
 
+Where `usageData` is `none`, the budget reads `<harness> does not report token usage`. With no session yet, it reads `no agent session yet`.
+
 | State | Trigger | Effect |
 |---|---|---|
 | Soft band | `core/context-soft-band` crossed | One advise per crossing: finish the current unit, then checkpoint |

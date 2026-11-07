@@ -166,7 +166,12 @@ JSON-RPC 2.0, one message per line, UTF-8. `initialize → { protocolVersion: 1,
 | `budget/current` | Bands per session or `unavailable` |
 | `explain { id }` | §4.18.2 |
 | `run { argv }` | CLI result; human-only → error `CDX-E107` with `data.commandLine` |
+| `ping` | Liveness probe; answers `pong` without touching the log |
 | notification `events/appended` | New event lines |
+
+The server watches `.codictator/state/events.jsonl` (`fs.watch` with a 2 s stat-poll fallback) and pushes `events/appended` on every append, including appends from other processes, without waiting for a request. The watch is rotation-aware: the file is re-opened when its inode changes or its size shrinks (§4.18.1).
+
+`status` answers the §4.18.3 JSON. Its `health` object carries one entry per Health view row (`ratchet`, `deps`, `integrity`, `remediation`, `task`, `waivers`, `escalations`); each entry gives the display state and the evidence behind it.
 
 ## 7.16 Review findings file
 

@@ -7,7 +7,7 @@
 | **Depends on** | Phase 10 (may run in parallel with phase 12) |
 | **Delivers** | The stdio server and the VS Code extension with the P0 views: Active rules, Violations, Timeline; L2 on save |
 | **Read** | SPEC §4.19.5, §4.20, §7.15, §11 S6, S28; PRD §12 #2, #22 |
-| **Covers** | `§4.20`, `§4.19 EC-9`, `§4.19 EC-10` |
+| **Covers** | `§4.20`, `§4.19 EC-9`, `§4.19 EC-10`, `§4.20 EC-11`, `§4.20 EC-12`, `§7.15` |
 
 ## Steps
 
@@ -17,8 +17,19 @@
 - [x] **11.4** Palette commands through `run`, with human-only commands opening a pre-filled terminal (SPEC §4.20.3). Verify: §4.20 EC-7.
 - [x] **11.5** Restart and reconnect behaviour; untrusted workspaces; the Cursor-compatible API floor. Verify: §4.20 EC-2–4, EC-6.
 
+## 11.6 Live extension hardening
+
+SPEC-first hardening for a live extension: connection, live data, real producers, polish and a real host E2E.
+
+- [ ] **11.6.1** Connection correctness: spawn with `cwd`, root handshake, Windows path comparison, reconnect wiring, stderr surfaced (PR 1)
+- [ ] **11.6.2** Live data path: log watcher with `events/appended` push, git-hook and verify verdict appends (PR 2)
+- [ ] **11.6.3** Real data producers: versions, budget, health, remediation plan path (PR 3)
+- [ ] **11.6.4** UX polish, extension only (PR 4)
+- [ ] **11.6.5** Real extension-host E2E on all three OSes (PR 5)
+
 ## Exit gate
 
 - `npm run ledger -- --covers "§4.20" "§4.19 EC-9" "§4.19 EC-10"` lists only the P1 view tests.
 - `npm run test:extension` green on all three OSes, plus the VALIDATION always-set.
 - The extension loads this repo in VS Code and shows its rules, findings and timeline.
+- Leaf 11.6 adds the live checks: an external append reaches the Timeline with no user action, and killing the engine shows the retrying state before recovery.
