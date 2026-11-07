@@ -16,6 +16,7 @@ import {
 	printJson,
 	usageError,
 } from "./shared.ts";
+import { gateVerdict } from "./verdict-emit.ts";
 
 export function printFinding(finding: Finding, quiet: boolean): void {
 	const where =
@@ -137,12 +138,22 @@ export async function handleVerify(
 			req.json,
 		);
 	}
+	// SPEC §4.18: a human verify lands its verdict with the evaluated
+	// packs and the branch task, so the Timeline shows the same row CI
+	// and hooks record.
+	const emit = await gateVerdict(
+		configured.value.ports,
+		"cli",
+		configured.value.effective.config.packs,
+		req.engineVersion ?? ENGINE_VERSION,
+	);
 	const evaluated = await evaluateScope(
 		configured.value.ports,
 		configured.value.effective.config.packs.map((entry) => entry.id),
 		scoped.value,
 		configured.value.ports.clock.now(),
 		configured.value.effective.configHash,
+		{ emit },
 	);
 	if (!evaluated.ok) {
 		return fail(

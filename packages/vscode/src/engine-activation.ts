@@ -10,18 +10,22 @@ import {
 	createFallbackApi,
 	enginePathFor,
 } from "./host-adapter.ts";
+import {
+	attachHandleRefresh,
+	attachWorkspaceRefresh,
+	startLivenessPing,
+	wireTimelineSource,
+} from "./live-refresh.ts";
 import { registerPaletteCommands, runSetupCommand } from "./palette-command.ts";
 import type { DelayFn, ReconnectHooks } from "./reconnect.ts";
 import { restartFolder, shouldRestartOnLockChange } from "./reconnect.ts";
 import {
-	attachHandleRefresh,
 	defaultSpawner,
 	type EngineSpawner,
 	reconnectHooks,
 	type ServerHandle,
 	type ServerSpawner,
 	wireEngineRequests,
-	wireTimelineSource,
 } from "./reconnect-hooks.ts";
 import type { StdioEngineHandle } from "./stdio-client.ts";
 import { spawnStdioEngine } from "./stdio-client.ts";
@@ -131,12 +135,13 @@ export function connectMissing(
 }
 
 // SPEC §4.20.1 Engine: fan `events/appended` out to the Timeline source
-// and refresh the views per changed folder. Saves re-query the
+// and refresh the event views per changed folder. Saves re-query the
 // engine the same way through the host save seam when the host provides
 // one. The save listener registers unconditionally so a late `setup`
 // (config or engine appearing after activation) reconnects on the next
 // save; the Timeline and per-handle wiring needs a live engine, so it
-// stays behind the size guard.
+// stays behind the size guard. The ping and the workspace watch run
+// regardless, so liveness and config changes surface without a save.
 function wireViewRefresh(
 	api: ExtensionApi,
 	providers: ReadonlyMap<string, MutableTreeDataProvider>,
@@ -150,6 +155,8 @@ function wireViewRefresh(
 			attachHandleRefresh(api, providers, handles, handle);
 		}
 	}
+	startLivenessPing(handles);
+	let watching = attachWorkspaceRefresh(api, providers, handles);
 	api.onDidSave?.((event) => {
 		void (async (): Promise<void> => {
 			if (shouldRestartOnLockChange(event.filePath)) {
@@ -157,6 +164,8 @@ function wireViewRefresh(
 			} else {
 				connectMissing(api, providers, handles, spawnEngine, hooks.delay);
 			}
+			watching.dispose();
+			watching = attachWorkspaceRefresh(api, providers, handles);
 			await populateViews(api, providers, [...handles.keys()].sort());
 		})().catch(() => undefined);
 	});

@@ -22,6 +22,9 @@ import {
 } from "./waivers.ts";
 
 export { TRIGGERS } from "../../kernel/index.ts";
+// SPEC §7.10: the verdict packs map, shared by the CLI emit and the hook
+// runtime so both pin the same evaluated versions.
+export { type PackEntry, packsRecord } from "./packs.ts";
 export type {
 	CheckContext,
 	Decision,

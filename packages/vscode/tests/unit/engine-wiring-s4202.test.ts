@@ -147,9 +147,10 @@ test("[§4.20.2] activation populates tree views from the live engine", async ()
 });
 
 test("[§4.20.2] views refresh on engine events and on save", async () => {
-	// SPEC §4.20.2: an `events/appended` notification or a saved document
-	// re-queries the engine and fires onDidChangeTreeData, so the views
-	// follow live data instead of their activation snapshot.
+	// SPEC §4.20.2: an `events/appended` notification refreshes only the
+	// event views (Timeline, Steering, Budget, Violations) — rules and
+	// health keep their rows — while a saved document repopulates every
+	// view, so the views follow live data without redundant engine calls.
 	let extraRules: Array<unknown> = [];
 	let extraInjections: Array<unknown> = [];
 	const canned = (method: string): unknown => {
@@ -183,19 +184,26 @@ test("[§4.20.2] views refresh on engine events and on save", async () => {
 			fires += 1;
 		});
 		assert.ok(subscription !== undefined);
-		const before = rules.getChildren().length;
-		extraRules = [{ id: "core/no-secrets", pack: "extra@2.0.0" }];
-		emitAppended("/repo");
-		await waitForRefresh(() => rules.getChildren().length === before + 1);
-		assert.ok(fires >= 1, "events/appended fires the change event");
+		const rulesBefore = rules.getChildren().length;
 		const steering = api.treeProviders.get("codictator-steering");
 		assert.ok(steering !== undefined);
-		const seen = steering.getChildren().length;
+		const steeringBefore = steering.getChildren().length;
+		extraRules = [{ id: "core/no-secrets", pack: "extra@2.0.0" }];
 		extraInjections = [
 			{ sessionId: "s2", ts: "2026-01-02T00:00:00Z", harness: "opencode" },
 		];
+		emitAppended("/repo");
+		await waitForRefresh(
+			() => steering.getChildren().length === steeringBefore + 1,
+		);
+		assert.equal(
+			rules.getChildren().length,
+			rulesBefore,
+			"events/appended leaves the rules view untouched",
+		);
 		api.saveDocument("/repo", "src/a.ts");
-		await waitForRefresh(() => steering.getChildren().length === seen + 1);
+		await waitForRefresh(() => rules.getChildren().length === rulesBefore + 1);
+		assert.ok(fires >= 1, "save fires the rules change event");
 		subscription.dispose();
 	} finally {
 		resetEngineRequest();

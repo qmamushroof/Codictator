@@ -19,7 +19,7 @@ import type {
 import { NodeFs, NodeGit, parseJson } from "../../kernel/index.ts";
 import { ENGINE_VERSION } from "../config/index.ts";
 import type { Enforcer, EngineOptions } from "../engine/index.ts";
-import { createEngine } from "../engine/index.ts";
+import { createEngine, packsRecord } from "../engine/index.ts";
 import type { Adapter, HookReply } from "./contract.ts";
 import { HOOK_PAYLOAD_MAX_BYTES } from "./contract.ts";
 import {
@@ -183,9 +183,24 @@ async function runHookInner(
 			errorMessageOf(loaded.error),
 		);
 	}
+	// SPEC §7.10 + §4.18: the verdict pins the evaluated pack versions and
+	// its harness source, so the Timeline row names what judged the call.
+	const packs = packsRecord(
+		effective.value.config.packs,
+		request.engineVersion ?? ENGINE_VERSION,
+	);
 	const engine = createEngine(loaded.value, {
 		configHash: effective.value.configHash,
-		append: (verdict) => request.append(root, verdict),
+		packs,
+		append: (verdict) =>
+			request.append(root, {
+				...verdict,
+				harness: event.harness,
+				packs,
+				...(event.sessionId === undefined
+					? {}
+					: { sessionId: event.sessionId }),
+			}),
 	});
 	const scope = hookScope(
 		event,

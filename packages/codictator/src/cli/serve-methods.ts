@@ -247,6 +247,11 @@ export async function dispatchMethod(
 		case "explain": {
 			return explainMethod(params, ctx);
 		}
+		// SPEC §7.15: `ping` answers the liveness probe without touching
+		// server state, so the extension checks the child is alive.
+		case "ping": {
+			return methodOk({ pong: true });
+		}
 		default: {
 			const handled = await dispatchEvalMethod(method, params, ctx);
 			if (handled !== undefined) {
