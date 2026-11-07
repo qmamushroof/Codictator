@@ -8,17 +8,18 @@ test("[§4.20] extension entry exposes the package id", () => {
 });
 
 test("[§10.7] vscode red ledger holds only created tests", () => {
-	// Integrity exception (§4.10.4, for reviewer): this Phase 1 scaffold test
-	// asserted an empty ledger; Phase 2 step 2.8 adds vscode-side §4.20 reds,
-	// so the ledger is non-empty by design. The host-wiring fix (BUG-0025)
-	// turned the last vscode red green, so the ledger is empty again. The
-	// structural assertions below (version 1, sorted entries) still hold
-	// and keep the suite green.
+	// Integrity note (§4.10.4, for reviewer): PR0 added SPEC §4.20 EC-11 and
+	// EC-12, whose citing tests fail until PR 1 wires the fixes, so the
+	// ledger holds exactly those two reds by design. PR 1 turns them green,
+	// empties the ledger and restores the empty pin.
 	const text = readFileSync(
 		new URL("../red-ledger.json", import.meta.url),
 		"utf8",
 	);
 	assert.equal(/"version":\s*1/.test(text), true);
 	const entries: Array<string> = JSON.parse(text).red;
-	assert.deepEqual(entries, []);
+	assert.deepEqual(entries, [
+		"tests/unit/extension-hardening.test.ts::[§4.20 EC-11] on-save matches win32 backslash paths without string prefixes",
+		"tests/unit/extension-hardening.test.ts::[§4.20 EC-12] engine stderr reaches the output-channel log",
+	]);
 });

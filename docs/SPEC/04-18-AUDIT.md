@@ -8,6 +8,14 @@ Total transparency (PRD §6 P5, §7.11): every verdict, injection, escalation, w
 
 `.codictator/state/events.jsonl` (git-ignored), one JSON object per line (schema §7.10), appended with a single `appendFile` call per event (lines < 64 KB, so concurrent hook processes never interleave). When the file exceeds 5 MiB it is renamed `events.<n>.jsonl`; the newest five are kept. In CI the log is written to the workspace and summarised (§4.18.4), not committed.
 
+Verdict events are appended by the gates that judge, never by readers:
+
+| Writer | Appends |
+|---|---|
+| pre-commit hook (L3, `git.pre-commit`), pre-push hook (L3, `git.pre-push`) | `verdict` for the judged diff |
+| `verify` at L3 and above, `ci verify` (L4) | `verdict` for the evaluated scope |
+| `findings/list`, L2 `verify` including on-save | nothing, so reads and keystrokes never flood the log |
+
 Events never contain file content, prompt text or tool output: only paths, rule ids, digests, sizes, durations, decisions and the agent message (already redacted, §4.3.7).
 
 ## 4.18.2 `explain`

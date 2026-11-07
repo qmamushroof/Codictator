@@ -13,7 +13,7 @@
 | Activation | `workspaceContains:.codictator/config.json`, or opening the Codictator view |
 | Onboarding | In a trusted folder without `.codictator/config.json`, the view shows a welcome with one action, "Set up Codictator". `setup` is human-only, so the action opens an integrated terminal pre-filled with `npx codictator@<extension version> setup`; the human runs it (PRD §7.10) |
 | Trust | `capabilities.untrustedWorkspaces.supported: false` — it executes the repo's engine, so it runs only in trusted workspaces |
-| Engine | Spawns `node <root>/.codictator/bin/run.mjs serve --stdio` per workspace folder with a config; never bundles or downloads an engine. No engine installed → a notification offering to run `npm ci` (or the tool-dir install) in a terminal |
+| Engine | Spawns `node <root>/.codictator/bin/run.mjs serve --stdio` per workspace folder with a config, with `cwd` set to the folder; never bundles or downloads an engine. The extension compares `initialize.root` against the folder after path normalisation (case-insensitive on win32). A mismatch shows an error row and populates nothing. No engine installed → a notification offering to run `npm ci` (or the tool-dir install) in a terminal |
 | Protocol | Checks `initialize.protocolVersion`; an unsupported version shows "update the extension" or "update codictator" and stays inert |
 
 ## 4.20.2 Views
@@ -30,6 +30,8 @@ An activity-bar container "Codictator" with tree views; the budget is text in th
 | Health | `status` | Ratchet trend, dependency freshness, integrity, remediation progress | P1 |
 
 **L2 on save:** on `onDidSaveTextDocument`, the extension calls `verify` with `layer: L2` for that file and refreshes its diagnostics; it never blocks a save.
+
+Each view shows one state per folder. `connecting` covers the handshake; `connected` follows a successful `initialize`. A failing method shows `method error <CDX-E###>` naming the code, never a disconnect. A crashed server shows `engine crashed, retrying in Ns` during EC-2 backoff. A folder without an engine shows `engine missing`.
 
 ## 4.20.3 Commands
 
@@ -49,3 +51,5 @@ Palette commands map one-to-one to CLI commands via `run` (`verify`, `status`, `
 | EC-8 | Save of a file outside every module | Diagnostic from `core/arch-module-mapped` |
 | EC-9 | Trusted folder without `.codictator/config.json`; user clicks "Set up Codictator" | Terminal opens pre-filled with the `setup` command; nothing runs without the human; after `setup` the views connect |
 | EC-10 | Trusted folder with `.codictator/config.json` but zero packs enabled | Active rules shows its empty-state item (EC-9 covers folders without a config); the action opens an integrated terminal pre-filled with `npx codictator@<extension version> setup` and executes nothing; after `setup` adds packs the views list rules |
+| EC-11 | File or folder path compared across separators or casing (win32 backslash, case-insensitivity) | Compared with path normalisation, never string prefixes |
+| EC-12 | Engine child writes to stderr | Surfaced in the "Codictator" output channel, ring-buffered; never silently dropped |
