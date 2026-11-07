@@ -33,3 +33,10 @@ SPEC-first hardening for a live extension: connection, live data, real producers
 - `npm run test:extension` green on all three OSes, plus the VALIDATION always-set.
 - The extension loads this repo in VS Code and shows its rules, findings and timeline.
 - Leaf 11.6 adds the live checks: an external append reaches the Timeline with no user action, and killing the engine shows the retrying state before recovery.
+- The PR5 scaffold (`packages/vscode/tests/e2e/`, runner `packages/vscode/scripts/run-e2e.mjs`) carries the gate asserts; each waits on its engine or extension PR and lands with it, never by loosening the scaffold:
+  - every view populates (PR1 cwd and labels, PR3 producers);
+  - an external append reaches the Timeline in under 3 s (PR2 watcher);
+  - saving a file refreshes L2 diagnostics (PR1 paths, PR2 refresh);
+  - killing the engine shows retrying, then recovers (PR1 reconnect);
+  - no `0.0.0` anywhere (PR3 versions).
+- Full-run observation on `main` (2026-11-07, VS Code 1.145.2 win32): the host cwd is the install dir and `initialize` answers it as `root` with no `version` field — the D1/D6 red proof.

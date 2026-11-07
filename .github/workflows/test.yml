@@ -224,6 +224,35 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+  # PR5 scaffold: real extension-host E2E on all three OSes. Runs the
+  # test:extension runner (build plus smoke plus @vscode/test-electron
+  # against a tmp fixture repo); Linux needs a virtual display.
+  e2e:
+    needs: [changes, quick]
+    if: needs.changes.outputs.engine == 'true' || needs.changes.outputs.vscode == 'true' || needs.changes.outputs.workflows == 'true' || needs.changes.outputs.other == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      # v7.0.1 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/checkout@3d3c42e5aac5ba805da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      # v7.1.0 looked up 2026-10-28 via git ls-remote.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund --prefer-offline
+      - if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:extension
+      - if: runner.os != 'Linux'
+        run: npm run test:extension
+
   # Ubuntu-only heavy gates (coverage, packaging, ledger) live in the
   # test-heavy called workflow so this file stays under the file-size gate.
   # They fan out parallel to the 3-OS matrix instead of riding serially on
@@ -256,7 +285,7 @@ jobs:
   # when an upstream job actually failed or was cancelled.
   required-checks:
     if: always()
-    needs: [changes, quick, test, heavy-gates, scope-gates]
+    needs: [changes, quick, test, e2e, heavy-gates, scope-gates]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -265,6 +294,7 @@ jobs:
           needs.changes.result == 'failure' || needs.changes.result == 'cancelled' ||
           needs.quick.result == 'failure' || needs.quick.result == 'cancelled' ||
           needs.test.result == 'failure' || needs.test.result == 'cancelled' ||
+          needs.e2e.result == 'failure' || needs.e2e.result == 'cancelled' ||
           needs.heavy-gates.result == 'failure' || needs.heavy-gates.result == 'cancelled' ||
           needs.scope-gates.result == 'failure' || needs.scope-gates.result == 'cancelled'
         run: exit 1
