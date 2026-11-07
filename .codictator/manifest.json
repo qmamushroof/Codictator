@@ -1,13 +1,175 @@
 {
   "artifacts": [
     {
+      "hash": "78d7953fbf272b9aa4cdf7628d721b2593e6cd5d513d8eaba9f4ef8cde770f3f",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".agents/memory/MEMORY.md"
+    },
+    {
+      "hash": "e97e9ce2e42c08c766a2131f841a9218a1063cf187471f24489ceeefb11c2695",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".agents/memory/codictator.md"
+    },
+    {
+      "hash": "5db285dd6f7832ea37ac20f474967c72c3d665a0168c1d7d2df2f321fa137314",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".agents/skills/codictator-bug-record/SKILL.md"
+    },
+    {
+      "hash": "ce6fcf59c753cf15cf2a61480e1fb558dadbad1a0886efddd317417fe2aa6bcc",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".agents/skills/codictator-checkpoint/SKILL.md"
+    },
+    {
+      "hash": "729018e3613fcf056d487113f889dad13ff0c3eae124edc3667f0091788fa86d",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".agents/skills/codictator-debug/SKILL.md"
+    },
+    {
+      "hash": "7351bb5360111e9f69827ebaa04b87079e5b1575ef2a69dc88a554024d7a7185",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".agents/skills/codictator-docs-audit/SKILL.md"
+    },
+    {
+      "hash": "4830bafa42065a0579eccfdf542bebe7724104669ac9d334d3ea2b14fe0f4d9d",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".agents/skills/codictator-qa/SKILL.md"
+    },
+    {
+      "hash": "d839098566414c47edb459a469f46913a079ccb12871dfedd7cfa45ae146c058",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".agents/skills/codictator-review/SKILL.md"
+    },
+    {
+      "hash": "98d9595aabfb93afc0637feb76162fabf59bb45566f982b92610c001a4d265ea",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/agents/codictator-bug-record.md"
+    },
+    {
+      "hash": "6cb1c9f6f3556c292176fe4adbfd7c5a55deec6d3909084b6f33d32ae4a7ff56",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/agents/codictator-checkpoint.md"
+    },
+    {
+      "hash": "a03844f46ba9c9f9323e2ab01faefe0a0c8ea08da72899b579d691313a57ab54",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/agents/codictator-debug.md"
+    },
+    {
+      "hash": "f917f7d1e07133f5d5160bb017758a13731521e1436dee75abe9a16e2d47b35a",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/agents/codictator-docs-audit.md"
+    },
+    {
+      "hash": "4830bafa42065a0579eccfdf542bebe7724104669ac9d334d3ea2b14fe0f4d9d",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/agents/codictator-qa.md"
+    },
+    {
+      "hash": "c3cd81d5165fbf877aa7a0774eb36dba1e885269f6abe860207af17f7684a3f8",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/agents/codictator-review.md"
+    },
+    {
+      "hash": "98d9595aabfb93afc0637feb76162fabf59bb45566f982b92610c001a4d265ea",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/commands/codictator-bug-record.md"
+    },
+    {
+      "hash": "6cb1c9f6f3556c292176fe4adbfd7c5a55deec6d3909084b6f33d32ae4a7ff56",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/commands/codictator-checkpoint.md"
+    },
+    {
+      "hash": "a03844f46ba9c9f9323e2ab01faefe0a0c8ea08da72899b579d691313a57ab54",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/commands/codictator-debug.md"
+    },
+    {
+      "hash": "f917f7d1e07133f5d5160bb017758a13731521e1436dee75abe9a16e2d47b35a",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/commands/codictator-docs-audit.md"
+    },
+    {
+      "hash": "4830bafa42065a0579eccfdf542bebe7724104669ac9d334d3ea2b14fe0f4d9d",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/commands/codictator-qa.md"
+    },
+    {
+      "hash": "c3cd81d5165fbf877aa7a0774eb36dba1e885269f6abe860207af17f7684a3f8",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/commands/codictator-review.md"
+    },
+    {
+      "hash": "63fd6b27838e72a34ee10ed6d780db940191376f3f2bf02d7634cfda310b22cf",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/settings.json"
+    },
+    {
+      "hash": "98d9595aabfb93afc0637feb76162fabf59bb45566f982b92610c001a4d265ea",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/skills/codictator-bug-record/SKILL.md"
+    },
+    {
+      "hash": "6cb1c9f6f3556c292176fe4adbfd7c5a55deec6d3909084b6f33d32ae4a7ff56",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/skills/codictator-checkpoint/SKILL.md"
+    },
+    {
+      "hash": "a03844f46ba9c9f9323e2ab01faefe0a0c8ea08da72899b579d691313a57ab54",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/skills/codictator-debug/SKILL.md"
+    },
+    {
+      "hash": "f917f7d1e07133f5d5160bb017758a13731521e1436dee75abe9a16e2d47b35a",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/skills/codictator-docs-audit/SKILL.md"
+    },
+    {
+      "hash": "4830bafa42065a0579eccfdf542bebe7724104669ac9d334d3ea2b14fe0f4d9d",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/skills/codictator-qa/SKILL.md"
+    },
+    {
+      "hash": "c3cd81d5165fbf877aa7a0774eb36dba1e885269f6abe860207af17f7684a3f8",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": ".claude/skills/codictator-review/SKILL.md"
+    },
+    {
       "hash": "6db9decc4c4bcb12657647b922c4d412702aa46b41a8f341f9ac4ae24ab66b31",
       "mode": "file",
       "owner": "codictator",
       "path": ".codictator/bin/run.mjs"
     },
     {
-      "hash": "6e1fd3924d0b889defef74376c59d8b4474125ebc8fa3830f7445049242866a1",
+      "hash": "e94a3d38e94f7bd00c630066cf8dc1855ab38ff1ee6b256731d8d2f60aee7b12",
       "mode": "file",
       "owner": "codictator",
       "path": ".codictator/config.json"
@@ -37,20 +199,44 @@
       "path": ".githooks/pre-push"
     },
     {
-      "hash": "abced17183d86e30eb4fab80936c487be976736a8ee164e6f66d9103499ee8e4",
+      "hash": "28f5b6b79838db1893a88184dffde9ab73c540f0e6c307e2df374a9510dd3f1d",
       "mode": "file",
       "owner": "codictator",
       "path": ".github/workflows/codictator.yml"
+    },
+    {
+      "hash": "501638b44e5122f31f035c10a0272944d85915031dd1fb5c18d32a7ff55370d1",
+      "mode": "file",
+      "owner": "muse-code",
+      "path": ".muse/hooks.json"
+    },
+    {
+      "hash": "e520e1b4ebb1efa61f8a10d36dac64cb7c022c42e4dbfdf646ca9eb7548cf71d",
+      "mode": "file",
+      "owner": "opencode",
+      "path": ".opencode/plugins/codictator.mjs"
     },
     {
       "hash": "ec67ecc2529e1c17fbb56de84c29c0c56851f7c985d6e2f37b93daf7586595ea",
       "mode": "file",
       "owner": "codictator",
       "path": "AGENTS.md"
+    },
+    {
+      "hash": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49",
+      "mode": "file",
+      "owner": "claude-code",
+      "path": "CLAUDE.md"
+    },
+    {
+      "hash": "08e13519043b7e7c054944c9f6733e80c645ec6a348f3847e906367432fa6cb3",
+      "mode": "file",
+      "owner": "opencode",
+      "path": "opencode.json"
     }
   ],
   "codictator": "0.2.8",
-  "hash": "034cedc9af186c87a492cbdc60780098f6ad1cc3ea5655448dc4713f69dfa5c3",
+  "hash": "11f7dd4101844da81b052b8759fac5a34b14238a5cd85a012fa1d0b43c94f6f0",
   "version": 1
 }
 

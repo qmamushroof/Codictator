@@ -16,6 +16,7 @@ import {
 	usageError,
 } from "./shared.ts";
 import { taskPhaseNext } from "./task-phases.ts";
+import { taskAmend } from "./task-amend.ts";
 import {
 	listTaskIds,
 	readTask,
@@ -68,31 +69,6 @@ async function taskAck(
 	return ok(0);
 }
 
-async function taskAmend(
-	req: CommandRequest,
-	root: string,
-	task: TaskRecord,
-	title: string | undefined,
-	type: string | undefined,
-): Promise<Result<number>> {
-	if (title === undefined && type === undefined) {
-		return usageError(
-			"usage: codictator task amend --id <T-####> [--title <t>] [--type <t>]",
-		);
-	}
-	const amended: TaskRecord = {
-		...task,
-		...(title === undefined ? {} : { title }),
-		...(type === undefined ? {} : { type }),
-	};
-	const saved = await writeTask(root, amended);
-	if (!saved.ok) {
-		return saved;
-	}
-	printHuman(`amended ${taskLine(amended)}`, req.quiet);
-	return ok(0);
-}
-
 async function taskMutate(
 	req: CommandRequest,
 	root: string,
@@ -101,6 +77,16 @@ async function taskMutate(
 	let id = "";
 	let title: string | undefined;
 	let type: string | undefined;
+	let allow: Array<string> | undefined;
+	let setAllow: Array<string> | undefined;
+	let spec: Array<string> | undefined;
+	let setSpec: Array<string> | undefined;
+	let diagnosis: string | undefined;
+	let accept: Array<string> | undefined;
+	let test: Array<string> | undefined;
+	let setTests: Array<string> | undefined;
+	let historyStaged = false;
+	let bugRowUpdated = false;
 	let note = "";
 	try {
 		const parsed = parseArgs({
@@ -109,6 +95,16 @@ async function taskMutate(
 				id: { type: "string" },
 				title: { type: "string" },
 				type: { type: "string" },
+				allow: { type: "string", multiple: true },
+				"set-allow": { type: "string", multiple: true },
+				spec: { type: "string", multiple: true },
+				"set-spec": { type: "string", multiple: true },
+				diagnosis: { type: "string" },
+				accept: { type: "string", multiple: true },
+				test: { type: "string", multiple: true },
+				"set-tests": { type: "string", multiple: true },
+				"history-staged": { type: "boolean" },
+				"bug-row-updated": { type: "boolean" },
 				note: { type: "string", default: "" },
 			},
 			allowPositionals: true,
@@ -119,6 +115,16 @@ async function taskMutate(
 		id = parsed.values.id ?? "";
 		title = parsed.values.title;
 		type = parsed.values.type;
+		allow = parsed.values.allow;
+		setAllow = parsed.values["set-allow"];
+		spec = parsed.values.spec;
+		setSpec = parsed.values["set-spec"];
+		diagnosis = parsed.values.diagnosis;
+		accept = parsed.values.accept;
+		test = parsed.values.test;
+		setTests = parsed.values["set-tests"];
+		historyStaged = parsed.values["history-staged"] ?? false;
+		bugRowUpdated = parsed.values["bug-row-updated"] ?? false;
 		note = parsed.values.note ?? "";
 	} catch {
 		return usageError(`usage: codictator task ${sub} --id <T-####> ...`);
@@ -136,7 +142,23 @@ async function taskMutate(
 		return taskAck(req, root, task, id, note);
 	}
 	if (sub === "amend") {
-		return taskAmend(req, root, task, title, type);
+		return taskAmend(
+			req,
+			root,
+			task,
+			title,
+			type,
+			allow,
+			setAllow,
+			spec,
+			setSpec,
+			diagnosis,
+			accept,
+			test,
+			setTests,
+			historyStaged,
+			bugRowUpdated,
+		);
 	}
 	return taskClose(req, root, id);
 }

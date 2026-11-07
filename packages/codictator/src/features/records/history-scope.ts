@@ -3,13 +3,13 @@
 // completeness and, when the base text is supplied, append-only.
 import type { CheckContext, Finding } from "../engine/index.ts";
 import {
+	addedHistoryEntries,
+	checkAddedHistoryEntryCount,
 	checkHistoryAppendOnly,
 	checkHistoryEntryComplete,
-	checkHistoryEntryCount,
 	entryFinding,
 } from "./history-checks.ts";
 import type { HistoryKind } from "./history-parse.ts";
-import { parseHistoryEntries } from "./history-parse.ts";
 
 const TOOLCHAIN_FILES: ReadonlySet<string> = new Set([
 	"package.json",
@@ -109,12 +109,20 @@ export function checkHistoryFiles(
 			),
 		];
 	}
-	const findings = checkHistoryEntryCount(text, historyPath, commitSubject);
+	// SPEC §4.9.3: the staged diff adds exactly one entry. Accumulated
+	// history files hold many entries, so the verdict judges ADDED subjects
+	// (staged minus HEAD) and runs completeness on the added entry; the
+	// whole-file count helper stays for the single-entry evaluation path.
+	const findings = checkAddedHistoryEntryCount(
+		text,
+		baseText,
+		historyPath,
+		commitSubject,
+	);
 	if (findings.length > 0) {
 		return findings;
 	}
-	const parsed = parseHistoryEntries(text);
-	const entry = parsed.entries[0];
+	const entry = addedHistoryEntries(text, baseText)[0];
 	if (entry === undefined) {
 		return findings;
 	}

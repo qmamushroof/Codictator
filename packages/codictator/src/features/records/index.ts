@@ -46,6 +46,8 @@ export {
 	checkHistoryAppendOnly,
 	checkHistoryEntryComplete,
 	checkHistoryEntryCount,
+	addedHistoryEntries,
+	checkAddedHistoryEntryCount,
 	checkHistoryFiles,
 	deriveHistoryKind,
 	type HistoryEntry,
