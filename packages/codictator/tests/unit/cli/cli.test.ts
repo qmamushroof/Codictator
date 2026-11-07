@@ -121,7 +121,7 @@ test("[§4.19 EC-7] effective-config cache stale after waiver edit", async () =>
 	const repo = createTempRepo({
 		".codictator/config.json": JSON.stringify({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [],
 			harnesses: ["muse-code", "opencode"],
 		}),

@@ -79,7 +79,7 @@ async function readFrames(
 
 const MINIMAL_CONFIG = JSON.stringify({
 	version: 1,
-	codictator: "0.0.0",
+	codictator: "unknown",
 	packs: [],
 	harnesses: ["opencode"],
 });

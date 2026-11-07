@@ -59,7 +59,7 @@ test("[§4.13] remediate status renders as data", async () => {
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		repo.writeFile(
-			".codictator/remediation-plan.json",
+			".codictator/plan/remediation.json",
 			JSON.stringify({ version: 1, steps: [{ id: "s1", status: "open" }] }),
 		);
 		const ran = await cli(["--json", "remediate", "status"], repo.dir);
@@ -74,7 +74,7 @@ test("[§4.13] remediate rejects a plan that is not an object", async () => {
 	// SPEC §4.13: a plan file that is a bare list is not a plan.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
-		repo.writeFile(".codictator/remediation-plan.json", "[]\n");
+		repo.writeFile(".codictator/plan/remediation.json", "[]\n");
 		const ran = await cli(["remediate", "status"], repo.dir);
 		assert.equal(ran.code, 5);
 		assert.ok(ran.stderr.includes("not a plan"));
@@ -89,7 +89,7 @@ test("[§4.13] remediate run completes a done step", async () => {
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		repo.writeFile(
-			".codictator/remediation-plan.json",
+			".codictator/plan/remediation.json",
 			JSON.stringify({ version: 1, steps: [{ id: "s1", status: "done" }] }),
 		);
 		const ran = await cli(["remediate", "run", "s1"], repo.dir);
@@ -146,7 +146,7 @@ test("[§4.13] remediate rejects a corrupt plan", async () => {
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		repo.writeFile(
-			".codictator/remediation-plan.json",
+			".codictator/plan/remediation.json",
 			JSON.stringify({ nope: true }),
 		);
 		const ran = await cli(["remediate", "status"], repo.dir);
@@ -163,7 +163,7 @@ test("[§4.13] remediate status and next read a saved plan", async () => {
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		repo.writeFile(
-			".codictator/remediation-plan.json",
+			".codictator/plan/remediation.json",
 			JSON.stringify({ version: 1, steps: [{ id: "s1", status: "open" }] }),
 		);
 		const status = await cli(["remediate", "status"], repo.dir);
@@ -182,7 +182,7 @@ test("[§4.13] remediate next with a done plan completes", async () => {
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		repo.writeFile(
-			".codictator/remediation-plan.json",
+			".codictator/plan/remediation.json",
 			JSON.stringify({ version: 1, steps: [] }),
 		);
 		const ran = await cli(["remediate", "next"], repo.dir);
@@ -198,7 +198,7 @@ test("[§4.13] remediate run without gate evidence fails CDX-E608", async () => 
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		repo.writeFile(
-			".codictator/remediation-plan.json",
+			".codictator/plan/remediation.json",
 			JSON.stringify({ version: 1, steps: [{ id: "s1", status: "open" }] }),
 		);
 		const ran = await cli(["remediate", "run", "s1"], repo.dir);
@@ -214,7 +214,7 @@ test("[§4.13] remediate run without an id is a usage error", async () => {
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		repo.writeFile(
-			".codictator/remediation-plan.json",
+			".codictator/plan/remediation.json",
 			JSON.stringify({ version: 1, steps: [] }),
 		);
 		const ran = await cli(["remediate", "run"], repo.dir);

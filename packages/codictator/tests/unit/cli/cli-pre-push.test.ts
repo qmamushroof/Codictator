@@ -31,7 +31,7 @@ test("[§4.3.2] pre-push allows a pushed deletion (BUG-0043)", async () => {
 			".codictator/config.json",
 			JSON.stringify({
 				version: 1,
-				codictator: "0.0.0",
+				codictator: "unknown",
 				packs: [],
 				harnesses: ["muse-code", "opencode"],
 			}),

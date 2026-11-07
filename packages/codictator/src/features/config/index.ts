@@ -54,9 +54,10 @@ export interface EffectiveConfig {
 	readonly configHash: string;
 }
 
-// Mirrors packages/codictator/package.json version. The CLI passes the real
-// installed version when it can read its own manifest; tests pin "0.0.0".
-export const ENGINE_VERSION = "0.0.0";
+// The built entry resolves the installed engine version from its own
+// manifest; when the manifest is unreadable the version stays unknown,
+// never the old "0.0.0" placeholder, so unknown renders as unknown.
+export const ENGINE_VERSION = "unknown";
 
 const CONFIG_REL = ".codictator/config.json";
 

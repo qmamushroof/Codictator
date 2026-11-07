@@ -20,8 +20,8 @@ function recordOf(value: unknown): Record<string, unknown> {
 
 const MINIMAL_CONFIG = JSON.stringify({
 	version: 1,
-	codictator: "0.0.0",
-	packs: [],
+	codictator: "unknown",
+	packs: [{ id: "core" }],
 	harnesses: ["opencode"],
 });
 
@@ -60,6 +60,9 @@ test("[§7.15] dispatch rules/list answers rules with params waivers coverage", 
 			assert.equal(typeof field(row, "params"), "object");
 			assert.ok(Array.isArray(field(row, "waivers")));
 			assert.equal(typeof field(row, "coverage"), "string");
+			for (const rule of rules) {
+				assert.ok(String(field(recordOf(rule), "pack")).startsWith("core@"));
+			}
 		}
 	} finally {
 		repo.cleanup();

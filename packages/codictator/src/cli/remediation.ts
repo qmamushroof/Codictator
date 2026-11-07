@@ -21,6 +21,13 @@ import {
 	writeStateText,
 } from "./shared.ts";
 
+// SPEC §7.1: the remediation plan lives at
+// .codictator/plan/remediation.json. The pre-SPEC path is read once as a
+// migration, then the SPEC path owns it.
+export const REMEDIATION_PLAN_PATH = ".codictator/plan/remediation.json";
+
+const LEGACY_REMEDIATION_PLAN_PATH = ".codictator/remediation-plan.json";
+
 function toBaseline(value: unknown): Baseline {
 	const fallback: Baseline = { version: 1, entries: {} };
 	if (typeof value !== "object" || value === null) {
@@ -42,6 +49,35 @@ function toPlan(value: unknown): RemediationPlan | undefined {
 		return undefined;
 	}
 	return value as RemediationPlan;
+}
+
+// SPEC §7.1 D10: read the SPEC path, else the legacy path once. A
+// migrated legacy plan is written to the SPEC path best-effort, so the
+// next read never touches the old path again. Missing reads undefined;
+// present-but-not-a-plan reads null, so callers keep both errors.
+export async function readRemediationPlan(
+	root: string,
+): Promise<RemediationPlan | null | undefined> {
+	const fresh = await readStateText(root, REMEDIATION_PLAN_PATH);
+	if (fresh !== undefined) {
+		const parsed = parseJson(fresh);
+		return parsed.ok ? (toPlan(parsed.value) ?? null) : null;
+	}
+	const legacy = await readStateText(root, LEGACY_REMEDIATION_PLAN_PATH);
+	if (legacy === undefined) {
+		return undefined;
+	}
+	const parsed = parseJson(legacy);
+	const shaped = parsed.ok ? toPlan(parsed.value) : undefined;
+	if (shaped === undefined) {
+		return null;
+	}
+	await writeStateText(
+		root,
+		REMEDIATION_PLAN_PATH,
+		`${stableStringify(shaped)}\n`,
+	);
+	return shaped;
 }
 
 async function remediatePlan(
@@ -69,7 +105,7 @@ async function remediatePlan(
 	}
 	const saved = await writeStateText(
 		root,
-		".codictator/remediation-plan.json",
+		REMEDIATION_PLAN_PATH,
 		`${stableStringify(planned.value)}\n`,
 	);
 	if (!saved.ok) {
@@ -153,10 +189,7 @@ export async function handleRemediate(
 	if (sub === "plan") {
 		return remediatePlan(req, root);
 	}
-	const planText = await readStateText(
-		root,
-		".codictator/remediation-plan.json",
-	);
+	const planText = await readRemediationPlan(root);
 	if (planText === undefined) {
 		return fail(
 			"CDX-E903",
@@ -165,9 +198,7 @@ export async function handleRemediate(
 			req.json,
 		);
 	}
-	const plan = parseJson(planText);
-	const shaped = plan.ok ? toPlan(plan.value) : undefined;
-	if (!plan.ok || shaped === undefined) {
+	if (planText === null) {
 		return fail(
 			"CDX-E903",
 			"remediation plan is not a plan",
@@ -175,6 +206,7 @@ export async function handleRemediate(
 			req.json,
 		);
 	}
+	const shaped = planText;
 	if (sub === "status") {
 		return remediateStatus(shaped, req);
 	}

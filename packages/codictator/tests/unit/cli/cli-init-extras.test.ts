@@ -105,7 +105,7 @@ test("[§4.13] guardrail plan carries packs, tools and the module map", async ()
 	assert.doesNotThrow(() =>
 		validateConfig({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [],
 			harnesses: ["opencode"],
 			tunables: {},
@@ -139,7 +139,7 @@ test("[§4.14] regen preserves packs, tools and the architecture map", async () 
 			".codictator/config.json",
 			JSON.stringify({
 				version: 1,
-				codictator: "0.0.0",
+				codictator: "unknown",
 				packs: [{ id: "core", version: "0.0.0" }],
 				harnesses: ["opencode"],
 				tunables: {},
@@ -174,7 +174,7 @@ test("[§4.18] status names helper presence per required role", async () => {
 			".codictator/config.json",
 			JSON.stringify({
 				version: 1,
-				codictator: "0.0.0",
+				codictator: "unknown",
 				packs: [],
 				harnesses: ["opencode"],
 				tools: [
@@ -200,7 +200,7 @@ test("[§4.18] verify passes with packs and helper tools declared", async () => 
 		"README.md": "hi",
 		".codictator/config.json": JSON.stringify({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [
 				{ id: "core", version: "0.0.0" },
 				{ id: "typescript", version: "0.0.0" },

@@ -197,7 +197,7 @@ test("[§4.19.6] setup init sequence writes the shared plan tail", async () => {
 			req([], repo.dir),
 			flags,
 			defaultHarnesses(flags),
-			"0.0.0",
+			"unknown",
 		);
 		assert.equal(sequenced.ok, true);
 		if (!sequenced.ok) {

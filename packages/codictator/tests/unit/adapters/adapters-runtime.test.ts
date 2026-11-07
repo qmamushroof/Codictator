@@ -127,7 +127,7 @@ test("[§4.19.3] hook without enforcers fails closed", async () => {
 	const repo = createTempRepo({
 		".codictator/config.json": JSON.stringify({
 			version: 1,
-			codictator: "0.0.0",
+			codictator: "unknown",
 			packs: [],
 			harnesses: ["muse-code"],
 		}),
