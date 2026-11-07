@@ -157,6 +157,29 @@ export async function run() {
 	report(`engine root: ${String(reply.result.root)}`);
 	report(`engine version: ${String(reply.result.engineVersion)}`);
 
+	assert.notEqual(
+		process.cwd(),
+		fixtureDir,
+		`host cwd stays elsewhere, never inside the fixture`,
+	);
+	for (const pack of config.packs) {
+		assert.notEqual(pack.version, "0.0.0", `pack ${pack.id} is versioned`);
+		assert.equal(
+			pack.version,
+			linked.version,
+			`pack ${pack.id} matches the linked build`,
+		);
+	}
+	const contributes = extension.packageJSON?.contributes ?? {};
+	assert.ok(
+		Array.isArray(contributes.commands) && contributes.commands.length > 0,
+		`extension contributes palette commands`,
+	);
+	const welcomeIds = (contributes.viewsWelcome ?? []).map(
+		(entry) => entry.view,
+	);
+	assert.deepEqual(welcomeIds.sort(), expectedViews);
+
 	// TODO(PR2): append an event externally and assert the Timeline view
 	// updates within 3 s with no user action. Needs the serve-side
 	// events/appended push plus the extension refresh wiring.

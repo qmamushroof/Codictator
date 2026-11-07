@@ -15,7 +15,7 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 function engineVersionOf(enginePackageDir) {
@@ -97,5 +97,11 @@ export function removeE2eFixture(dir) {
 	if (typeof dir !== "string" || dir === "") {
 		return;
 	}
-	rmSync(resolve(dir), { force: true, recursive: true });
+	const resolved = resolve(dir);
+	// SPEC §4.20: the fixture lives under the OS tmp dir; never remove
+	// anything else, so a wrong path fails silent instead of wiping a repo.
+	if (resolved !== tmpdir() && !resolved.startsWith(tmpdir() + sep)) {
+		return;
+	}
+	rmSync(resolved, { force: true, recursive: true });
 }

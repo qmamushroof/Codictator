@@ -44,9 +44,46 @@ test("[§4.20] e2e fixture pins the built engine version, never 0.0.0", async ()
 		assert.notEqual(fixture.engineVersion, "0.0.0");
 		const config = JSON.parse(readFileSync(fixture.configPath, "utf8"));
 		assert.equal(config.packs[0].version, fixture.engineVersion);
+		for (const pack of config.packs) {
+			assert.notEqual(pack.version, "", `pack ${pack.id} names a version`);
+			assert.notEqual(
+				pack.version,
+				"0.0.0",
+				`pack ${pack.id} pins a real version`,
+			);
+		}
 	} finally {
 		removeE2eFixture(fixture.dir);
 	}
+});
+
+test("[§4.20] e2e runner uses the SPEC §2 @vscode/test-electron pin", () => {
+	const rootManifest = JSON.parse(
+		readFileSync(join(repoRoot, "package.json"), "utf8"),
+	);
+	const pinned = rootManifest.devDependencies?.["@vscode/test-electron"];
+	assert.ok(
+		typeof pinned === "string" && pinned !== "",
+		`root manifest pins @vscode/test-electron`,
+	);
+	assert.notEqual(pinned, "0.0.0");
+	const installed = JSON.parse(
+		readFileSync(
+			join(
+				repoRoot,
+				"node_modules",
+				"@vscode",
+				"test-electron",
+				"package.json",
+			),
+			"utf8",
+		),
+	);
+	assert.equal(
+		installed.version,
+		pinned,
+		`installed test-electron matches the SPEC §2 pin`,
+	);
 });
 
 test("[§4.20] run-e2e --smoke-only wires the fixture without a VS Code launch", () => {
