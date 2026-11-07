@@ -3,6 +3,7 @@
 // and resolves to the longest matching workspace folder; anything else
 // skips the listener. The seam is optional, so a host without the
 // notification contributes nothing instead of an explicit undefined.
+import { realpathSync } from "node:fs";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import { fieldOf, isRecord } from "./engine-client.ts";
 import type { ExtensionDisposable } from "./tree-provider.ts";
@@ -26,11 +27,21 @@ function splitPath(value: string): string {
 }
 
 // SPEC §4.20.1 Engine: the handshake compares initialize.root with the
-// folder through this helper, so a case-only or separator-only spelling
-// never reads as a foreign root.
+// folder through this helper, so a case-only, separator-only or
+// symlink-only spelling (macOS /var vs /private/var tmpdir) never reads
+// as a foreign root.
+function canonicalPath(value: string): string {
+	const resolved = resolve(splitPath(value));
+	try {
+		return realpathSync(resolved);
+	} catch {
+		return resolved;
+	}
+}
+
 export function samePath(left: string, right: string): boolean {
-	const resolvedLeft = resolve(splitPath(left));
-	const resolvedRight = resolve(splitPath(right));
+	const resolvedLeft = canonicalPath(left);
+	const resolvedRight = canonicalPath(right);
 	if (process.platform === "win32") {
 		return resolvedLeft.toLowerCase() === resolvedRight.toLowerCase();
 	}

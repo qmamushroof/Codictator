@@ -1,7 +1,4 @@
 {
 	"version": 1,
-	"red": [
-		"tests/unit/extension-hardening.test.ts::[§4.20 EC-11] on-save matches win32 backslash paths without string prefixes",
-		"tests/unit/extension-hardening.test.ts::[§4.20 EC-12] engine stderr reaches the output-channel log"
-	]
+	"red": []
 }

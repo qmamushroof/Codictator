@@ -28,6 +28,20 @@ async function waitForSeen(seen: () => boolean): Promise<void> {
 	throw new Error("timed out waiting for the expected event");
 }
 
+// Windows holds the child cwd until the kill lands, so removal retries
+// instead of racing the exit (same race as the connection-handshake pins).
+async function removeFolder(folder: string): Promise<void> {
+	for (let attempt = 0; attempt < 50; attempt += 1) {
+		try {
+			rmSync(folder, { force: true, recursive: true });
+			return;
+		} catch {
+			await sleep(100);
+		}
+	}
+	rmSync(folder, { force: true, recursive: true });
+}
+
 test("[§4.20 EC-11] on-save matches win32 backslash paths without string prefixes", () => {
 	// A save under a win32 folder must resolve to that folder even though
 	// the fsPath never contains a forward slash after the folder.
@@ -98,6 +112,6 @@ test("[§4.20 EC-12] engine stderr reaches the output-channel log", async () => 
 		);
 	} finally {
 		handle.dispose();
-		rmSync(folder, { recursive: true, force: true });
+		await removeFolder(folder);
 	}
 });

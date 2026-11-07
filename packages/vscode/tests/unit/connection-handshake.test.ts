@@ -57,13 +57,15 @@ type StubMode =
 function stubSource(mode: StubMode): string {
 	if (mode === "stderr-exit") {
 		return [
-			'process.stderr.write("simulated engine failure detail\\n");',
+			'import fs from "node:fs";',
+			'fs.writeSync(2, "simulated engine failure detail\\n");',
 			"process.exit(1);",
 		].join("\n");
 	}
 	if (mode === "burst") {
 		return [
-			'for (let i = 0; i < 201; i += 1) { process.stderr.write("burst-" + i + "\\n"); }',
+			'import fs from "node:fs";',
+			'for (let i = 0; i < 201; i += 1) { fs.writeSync(2, "burst-" + i + "\\n"); }',
 			"process.exit(1);",
 		].join("\n");
 	}

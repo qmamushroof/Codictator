@@ -119,20 +119,29 @@ export function restartFolder(hooks: ReconnectHooks, folderPath: string): void {
 
 // SPEC §4.20 EC-12: engine stderr is surfaced. Every line streams into the
 // output channel and the last 200 stay on the ring for the crash log.
+// Pipe chunks split anywhere, so a trailing partial line rides a carry
+// until its newline (or the stream end) instead of logging fragmented.
 const stderrRingLines = 200;
 
-function appendStderrLine(state: EngineState, chunk: string): void {
-	for (const line of chunk.split("\n")) {
-		const trimmed = line.endsWith("\r") ? line.slice(0, -1) : line;
-		if (trimmed === "") {
-			continue;
-		}
-		state.stderrTape.push(trimmed);
-		if (state.stderrTape.length > stderrRingLines) {
-			state.stderrTape.shift();
-		}
-		state.log(`engine stderr for ${state.folderPath}: ${trimmed}`);
+function appendStderrLine(state: EngineState, line: string): void {
+	const trimmed = line.endsWith("\r") ? line.slice(0, -1) : line;
+	if (trimmed === "") {
+		return;
 	}
+	state.stderrTape.push(trimmed);
+	if (state.stderrTape.length > stderrRingLines) {
+		state.stderrTape.shift();
+	}
+	state.log(`engine stderr for ${state.folderPath}: ${trimmed}`);
+}
+
+function appendStderrChunk(state: EngineState, text: string): string {
+	const parts = text.split("\n");
+	const carry = parts.pop() ?? "";
+	for (const line of parts) {
+		appendStderrLine(state, line);
+	}
+	return carry;
 }
 
 export function attachStderrTape(state: EngineState): void {
@@ -140,10 +149,17 @@ export function attachStderrTape(state: EngineState): void {
 	if (stderr === null) {
 		return;
 	}
+	let carry = "";
 	stderr.setEncoding("utf8");
 	stderr.on("data", (chunk: unknown) => {
 		if (typeof chunk === "string") {
-			appendStderrLine(state, chunk);
+			carry = appendStderrChunk(state, carry + chunk);
+		}
+	});
+	stderr.on("end", () => {
+		if (carry !== "") {
+			appendStderrLine(state, carry);
+			carry = "";
 		}
 	});
 }
