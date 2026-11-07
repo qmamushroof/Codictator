@@ -256,7 +256,7 @@
     ],
     "profile": "app"
   },
-  "codictator": "0.2.7",
+  "codictator": "0.2.8",
   "harnesses": [
     "claude-code",
     "muse-code",

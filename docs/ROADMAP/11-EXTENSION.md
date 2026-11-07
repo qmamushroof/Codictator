@@ -21,11 +21,11 @@
 
 SPEC-first hardening for a live extension: connection, live data, real producers, polish and a real host E2E.
 
-- [ ] **11.6.1** Connection correctness: spawn with `cwd`, root handshake, Windows path comparison, reconnect wiring, stderr surfaced (PR 1)
-- [ ] **11.6.2** Live data path: log watcher with `events/appended` push, git-hook and verify verdict appends (PR 2)
-- [ ] **11.6.3** Real data producers: versions, budget, health, remediation plan path (PR 3)
-- [ ] **11.6.4** UX polish, extension only (PR 4)
-- [ ] **11.6.5** Real extension-host E2E on all three OSes (PR 5)
+- [x] **11.6.1** Connection correctness: spawn with `cwd`, root handshake, Windows path comparison, reconnect wiring, stderr surfaced (PR 1)
+- [x] **11.6.2** Live data path: log watcher with `events/appended` push, git-hook and verify verdict appends (PR 2)
+- [x] **11.6.3** Real data producers: versions, budget, health, remediation plan path (PR 3)
+- [x] **11.6.4** UX polish, extension only (PR 4)
+- [x] **11.6.5** Real extension-host E2E on all three OSes (PR 5)
 
 ## Exit gate
 
