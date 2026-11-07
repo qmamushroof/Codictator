@@ -105,6 +105,34 @@ test("[§4.20] e2e engine answers initialize and ping over stdio", async () => {
 	assert.equal(existsSync(fixture.dir), false);
 });
 
+test("[§4.20] test:extension runs the real host E2E, never the exit-2 stub", () => {
+	const rootManifest = JSON.parse(
+		readFileSync(join(repoRoot, "package.json"), "utf8"),
+	);
+	const script = rootManifest.scripts?.["test:extension"];
+	assert.equal(
+		typeof script,
+		"string",
+		`root manifest names a test:extension script`,
+	);
+	assert.ok(
+		script.includes("run-e2e.mjs"),
+		`test:extension drives the real host runner, not a stub:\n${script}`,
+	);
+	assert.ok(
+		script.includes("smoke.mjs"),
+		`test:extension keeps the smoke gate:\n${script}`,
+	);
+	assert.ok(
+		!script.includes("process.exit(2)"),
+		`test:extension never exits 2 without work (BUG-0056):\n${script}`,
+	);
+	assert.equal(
+		existsSync(join(repoRoot, "packages", "vscode", "scripts", "run-e2e.mjs")),
+		true,
+		`the wired runner exists on disk`,
+	);
+});
 test("[§4.20] run-e2e --smoke-only wires the fixture without a VS Code launch", () => {
 	const runner = join(repoRoot, "packages", "vscode", "scripts", "run-e2e.mjs");
 	const result = spawnSync(process.execPath, [runner, "--smoke-only"], {
