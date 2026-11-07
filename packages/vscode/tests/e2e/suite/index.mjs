@@ -237,7 +237,10 @@ export async function run() {
 	const welcomeIds = (contributes.viewsWelcome ?? []).map(
 		(entry) => entry.view,
 	);
-	assert.deepEqual(welcomeIds.sort(), expectedViews);
+	// PR4 UX polish declares three welcome entries per view (default plus
+	// engineMissing plus methodError), so the per-view coverage assert
+	// dedupes before comparing against the six declared view ids.
+	assert.deepEqual([...new Set(welcomeIds)].sort(), expectedViews);
 
 	// TODO(PR3): assert no 0.0.0 in rules/list pack versions. The
 	// reply-level engineVersion above is real; pack manifest versions are
