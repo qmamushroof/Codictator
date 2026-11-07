@@ -7,6 +7,8 @@ bin/
 build/
 coverage/
 dist/
+graphify-out/
+test-results/
 node_modules/
 obj/
 # The hook launcher is manifest-owned and ships in the repo (SPEC §4.19.3);
