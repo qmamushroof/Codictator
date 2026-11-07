@@ -69,24 +69,84 @@
 				"contents": "No packs configured.\n[Set up Codictator](command:codictator.setup)"
 			},
 			{
+				"view": "codictator-active-rules",
+				"contents": "Engine is not installed.\n[Install engine (npm ci)](command:codictator.installEngine)",
+				"when": "view == codictator-active-rules && codictator.engineMissing"
+			},
+			{
+				"view": "codictator-active-rules",
+				"contents": "Engine method failed.\n[Show log](command:codictator.showLog) [Explain](command:codictator.explain)",
+				"when": "view == codictator-active-rules && codictator.methodError"
+			},
+			{
 				"view": "codictator-violations",
 				"contents": "Engine not connected. No violations to show.\n[Set up Codictator](command:codictator.setup)"
+			},
+			{
+				"view": "codictator-violations",
+				"contents": "Engine is not installed.\n[Install engine (npm ci)](command:codictator.installEngine)",
+				"when": "view == codictator-violations && codictator.engineMissing"
+			},
+			{
+				"view": "codictator-violations",
+				"contents": "Engine method failed.\n[Show log](command:codictator.showLog) [Explain](command:codictator.explain)",
+				"when": "view == codictator-violations && codictator.methodError"
 			},
 			{
 				"view": "codictator-timeline",
 				"contents": "Engine not connected. No events to show.\n[Set up Codictator](command:codictator.setup)"
 			},
 			{
+				"view": "codictator-timeline",
+				"contents": "Engine is not installed.\n[Install engine (npm ci)](command:codictator.installEngine)",
+				"when": "view == codictator-timeline && codictator.engineMissing"
+			},
+			{
+				"view": "codictator-timeline",
+				"contents": "Engine method failed.\n[Show log](command:codictator.showLog) [Explain](command:codictator.explain)",
+				"when": "view == codictator-timeline && codictator.methodError"
+			},
+			{
 				"view": "codictator-steering",
 				"contents": "Engine not connected. No steering injections to show.\n[Set up Codictator](command:codictator.setup)"
+			},
+			{
+				"view": "codictator-steering",
+				"contents": "Engine is not installed.\n[Install engine (npm ci)](command:codictator.installEngine)",
+				"when": "view == codictator-steering && codictator.engineMissing"
+			},
+			{
+				"view": "codictator-steering",
+				"contents": "Engine method failed.\n[Show log](command:codictator.showLog) [Explain](command:codictator.explain)",
+				"when": "view == codictator-steering && codictator.methodError"
 			},
 			{
 				"view": "codictator-budget",
 				"contents": "Engine not connected. Budget is unavailable.\n[Set up Codictator](command:codictator.setup)"
 			},
 			{
+				"view": "codictator-budget",
+				"contents": "Engine is not installed.\n[Install engine (npm ci)](command:codictator.installEngine)",
+				"when": "view == codictator-budget && codictator.engineMissing"
+			},
+			{
+				"view": "codictator-budget",
+				"contents": "Engine method failed.\n[Show log](command:codictator.showLog) [Explain](command:codictator.explain)",
+				"when": "view == codictator-budget && codictator.methodError"
+			},
+			{
 				"view": "codictator-health",
 				"contents": "Engine not connected. Health is unavailable.\n[Set up Codictator](command:codictator.setup)"
+			},
+			{
+				"view": "codictator-health",
+				"contents": "Engine is not installed.\n[Install engine (npm ci)](command:codictator.installEngine)",
+				"when": "view == codictator-health && codictator.engineMissing"
+			},
+			{
+				"view": "codictator-health",
+				"contents": "Engine method failed.\n[Show log](command:codictator.showLog) [Explain](command:codictator.explain)",
+				"when": "view == codictator-health && codictator.methodError"
 			}
 		],
 		"commands": [
@@ -121,8 +181,74 @@
 			{
 				"command": "codictator.waive",
 				"title": "Codictator: Waive"
+			},
+			{
+				"command": "codictator.restartEngine",
+				"title": "Codictator: Restart Engine"
+			},
+			{
+				"command": "codictator.showLog",
+				"title": "Codictator: Show Engine Log"
+			},
+			{
+				"command": "codictator.refresh",
+				"title": "Codictator: Refresh"
+			},
+			{
+				"command": "codictator.installEngine",
+				"title": "Codictator: Install Engine"
+			},
+			{
+				"command": "codictator.captureBaseline",
+				"title": "Codictator: Capture Baseline"
+			},
+			{
+				"command": "codictator.depsCheck",
+				"title": "Codictator: Run Deps Check"
+			},
+			{
+				"command": "codictator.openFinding",
+				"title": "Codictator: Open Finding"
+			},
+			{
+				"command": "codictator.timelineLoadMore",
+				"title": "Codictator: Load More Timeline Events"
+			},
+			{
+				"command": "codictator.focusViews",
+				"title": "Codictator: Focus Views"
+			},
+			{
+				"command": "codictator.waiveFinding",
+				"title": "Codictator: Waive Finding"
 			}
-		]
+		],
+		"menus": {
+			"view/title": [
+				{
+					"command": "codictator.refresh",
+					"group": "navigation",
+					"when": "view =~ /^codictator-/"
+				}
+			]
+		},
+		"configuration": {
+			"title": "Codictator",
+			"properties": {
+				"codictator.notifyOnBlock": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show a non-modal toast when Codictator blocks a new event."
+				},
+				"codictator.timeline.pageSize": {
+					"type": "number",
+					"default": 100,
+					"minimum": 1,
+					"maximum": 500,
+					"description": "Timeline events loaded per page."
+				}
+			}
+		}
 	},
 	"icon": "resources/codictator-128.png"
 }

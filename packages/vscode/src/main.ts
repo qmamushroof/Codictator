@@ -29,6 +29,8 @@ export {
 	resetEngineRequest,
 	setEngineRequest,
 } from "./engine-client.ts";
+export type { HealthState } from "./health-views.ts";
+export { healthSummary } from "./health-views.ts";
 export type {
 	CommandRegistrar,
 	ExtensionApi,
@@ -41,16 +43,8 @@ export {
 	configPathFor,
 	enginePathFor,
 } from "./host-adapter.ts";
-export type {
-	BudgetState,
-	HealthState,
-	SteeringEntry,
-} from "./p1-views.ts";
-export {
-	currentBudget,
-	healthSummary,
-	listSteeringEntries,
-} from "./p1-views.ts";
+export type { BudgetState, SteeringEntry } from "./p1-views.ts";
+export { currentBudget, listSteeringEntries } from "./p1-views.ts";
 // SPEC §4.20.3: palette commands and the human-only terminal seam live in
 // palette-command.ts; main re-exports them so existing imports keep working.
 export {

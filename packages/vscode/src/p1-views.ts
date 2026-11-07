@@ -1,6 +1,7 @@
-// SPEC §4.20.2: P1 views — Steering, Budget and Health. Every view is data
-// from the repo-pinned engine over stdio (§7.15); this module owns the
-// shaping, the engine itself owns the verdicts.
+// SPEC §4.20.2: P1 views — Steering and Budget (Health lives in
+// health-views.ts). Every view is data from the repo-pinned engine over
+// stdio (§7.15); this module owns the shaping, the engine itself owns the
+// verdicts.
 import type { EngineRequest } from "./engine-client.ts";
 import {
 	arrayFieldOf,
@@ -16,6 +17,16 @@ export interface SteeringEntry {
 	readonly sessionId: string;
 	readonly injectedAt: string;
 	readonly harness: string;
+	// SPEC §4.20.2 PR4: the injected text, when the engine reports it, for
+	// the read-only virtual document.
+	readonly text?: string;
+}
+
+// SPEC §4.20.2 PR4: one steering session with its injections, newest last.
+export interface SteeringSession {
+	readonly sessionId: string;
+	readonly harness: string;
+	readonly injections: ReadonlyArray<SteeringEntry>;
 }
 
 // SPEC §4.20.2 Budget: band and usage per session, or "unavailable", over
@@ -23,15 +34,21 @@ export interface SteeringEntry {
 export interface BudgetState {
 	readonly band: string;
 	readonly usage: string;
+	// SPEC §4.20.2 PR4: the progress shaping — percent when usage is known,
+	// otherwise the human reason with the harness that reported it.
+	readonly percent?: number;
+	readonly reason?: string;
+	readonly harness?: string;
 }
 
-// SPEC §4.20.2 Health: ratchet trend, dependency freshness, integrity and
-// remediation progress, over `status`.
-export interface HealthState {
-	readonly ratchet: string;
-	readonly dependencies: string;
-	readonly integrity: string;
-	readonly remediation: string;
+// The injected text under any of the engine's spellings; absent stays
+// absent so metadata-only rows still list.
+function steeringTextOf(entry: Record<string, unknown>): string | undefined {
+	return (
+		stringFieldOf(entry, "text") ??
+		stringFieldOf(entry, "content") ??
+		stringFieldOf(entry, "injected")
+	);
 }
 
 // SPEC §4.20.2: one steering row per injection event with a named session.
@@ -53,10 +70,19 @@ function toSteeringEntry(entry: unknown): SteeringEntry | undefined {
 	) {
 		return undefined;
 	}
+	const text = steeringTextOf(entry);
+	if (text === undefined) {
+		return {
+			harness: stringFieldOf(entry, "harness") ?? "unknown",
+			injectedAt,
+			sessionId,
+		};
+	}
 	return {
-		sessionId,
-		injectedAt,
 		harness: stringFieldOf(entry, "harness") ?? "unknown",
+		injectedAt,
+		sessionId,
+		text,
 	};
 }
 
@@ -84,6 +110,40 @@ export async function listSteeringEntries(
 // SPEC §4.20.2 + §4.6.7 EC-4: Budget view data over `budget/current` — the
 // band and the usage per session, or "unavailable" when the engine has no
 // usage to report. Only engine-reported numbers render; nothing estimates.
+// SPEC §4.20.2 PR4: session → injections, sorted by session then time, so
+// the Steering view opens one row per session.
+export function groupInjectionsBySession(
+	entries: ReadonlyArray<SteeringEntry>,
+): Array<SteeringSession> {
+	const sessions = new Map<string, Array<SteeringEntry>>();
+	const harnessOf = new Map<string, string>();
+	for (const entry of entries) {
+		const listed = sessions.get(entry.sessionId) ?? [];
+		listed.push(entry);
+		sessions.set(entry.sessionId, listed);
+		if (!harnessOf.has(entry.sessionId)) {
+			harnessOf.set(entry.sessionId, entry.harness);
+		}
+	}
+	const grouped: Array<SteeringSession> = [];
+	for (const sessionId of [...sessions.keys()].sort()) {
+		const injections = [...(sessions.get(sessionId) ?? [])].sort(
+			(left, right) =>
+				left.injectedAt < right.injectedAt
+					? -1
+					: left.injectedAt > right.injectedAt
+						? 1
+						: 0,
+		);
+		grouped.push({
+			harness: harnessOf.get(sessionId) ?? "unknown",
+			injections,
+			sessionId,
+		});
+	}
+	return grouped;
+}
+
 export async function currentBudget(
 	folderPath: string,
 	request?: EngineRequest,
@@ -99,33 +159,69 @@ export async function currentBudget(
 		"unavailable";
 	const usedTokens = numberFieldOf(answer, "usedTokens");
 	const contextWindow = numberFieldOf(answer, "contextWindow");
+	const reason = stringFieldOf(answer, "reason");
+	const harness = stringFieldOf(answer, "harness");
 	if (
 		usedTokens !== undefined &&
 		contextWindow !== undefined &&
 		contextWindow > 0 &&
 		usedTokens >= 0
 	) {
-		return { band, usage: `${usedTokens}/${contextWindow} tokens used` };
+		const percent = Math.round((usedTokens / contextWindow) * 100);
+		if (harness === undefined) {
+			return {
+				band,
+				percent,
+				usage: `${usedTokens}/${contextWindow} tokens used`,
+			};
+		}
+		return {
+			band,
+			harness,
+			percent,
+			usage: `${usedTokens}/${contextWindow} tokens used`,
+		};
+	}
+	if (reason === undefined) {
+		if (harness === undefined) {
+			return { band, usage: stringFieldOf(answer, "usage") ?? "unavailable" };
+		}
+		return {
+			band,
+			harness,
+			usage: stringFieldOf(answer, "usage") ?? "unavailable",
+		};
+	}
+	if (harness === undefined) {
+		return {
+			band,
+			reason,
+			usage: stringFieldOf(answer, "usage") ?? "unavailable",
+		};
 	}
 	return {
 		band,
+		harness,
+		reason,
 		usage: stringFieldOf(answer, "usage") ?? "unavailable",
 	};
 }
 
-// SPEC §4.20.2: Health view data over `status` — ratchet trend, dependency
-// freshness, integrity and remediation progress. Absent sections read the
-// same defaults the `status` text renders (§4.18.3), so the view stays
-// live-shaped on an empty log.
-export async function healthSummary(
-	folderPath: string,
-	request?: EngineRequest,
-): Promise<HealthState> {
-	const answer = await engineRequestFor(request)(folderPath, "status", {});
-	return {
-		ratchet: stringFieldOf(answer, "ratchet") ?? "no baseline history",
-		dependencies: stringFieldOf(answer, "deps") ?? "freshness unknown",
-		integrity: stringFieldOf(answer, "integrity") ?? "unverified",
-		remediation: stringFieldOf(answer, "remediation") ?? "no plan",
-	};
+// SPEC §4.20.2 PR4: the Budget label — a progress-style "62% · amber" when
+// usage is known, or the human reason when the engine reports none. Only
+// engine-reported numbers render; nothing estimates.
+export function budgetLabel(state: BudgetState): string {
+	if (state.percent !== undefined) {
+		return `${state.percent}% · ${state.band}`;
+	}
+	if (state.reason === "harness-no-usage") {
+		return `${state.harness ?? "This harness"} does not report token usage`;
+	}
+	if (state.reason === "no-session") {
+		return "no agent session yet";
+	}
+	if (state.reason !== undefined) {
+		return state.reason;
+	}
+	return `${state.band}: ${state.usage}`;
 }

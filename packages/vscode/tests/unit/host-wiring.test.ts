@@ -121,12 +121,20 @@ test("[§4.20.2] registered tree providers render labels without throwing", asyn
 
 test("[§4.20.3] registered palette commands invoke through the engine run path", async () => {
 	// Palette entries used to register with no callback, so invoking them
-	// did nothing. The probe invokes every handler and expects the engine
-	// `run` outcome, or the human-only pre-filled command line.
+	// did nothing. The probe invokes every palette handler and expects the
+	// engine `run` outcome, or the human-only pre-filled command line.
+	// Integrity exception: the probe stays scoped to the palette set plus
+	// setup. The PR4 view-action commands (restart, show log, refresh,
+	// focus, load more, install, baseline, deps check, open, waive) answer
+	// void by contract — they act through ports instead of answering a
+	// command line — so invoking them here would fail a contract they never
+	// held. Their routing is pinned by ux-commands / ux-violations tests.
 	const { handlers, host } = createFakeHost();
 	await activateWithHost(host);
 	assert.ok(handlers.size >= PALETTE_COMMAND_IDS.length);
-	for (const [commandId, handler] of handlers) {
+	for (const commandId of [...PALETTE_COMMAND_IDS, "codictator.setup"]) {
+		const handler = handlers.get(commandId);
+		assert.ok(handler !== undefined, `palette command ${commandId} registered`);
 		const outcome = await handler();
 		if (typeof outcome !== "string" || outcome === "") {
 			assert.fail(`command ${commandId} answers a command line`);

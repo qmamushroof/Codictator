@@ -31,6 +31,8 @@ import type { StdioEngineHandle } from "./stdio-client.ts";
 import { spawnStdioEngine } from "./stdio-client.ts";
 import type { MutableTreeDataProvider } from "./tree-provider.ts";
 import { registerAllViews, setDisconnectedViews } from "./tree-provider.ts";
+import { type UxChrome, wireUxPolish } from "./ux-chrome.ts";
+import type { TreeViewHandle } from "./ux-host.ts";
 import { populateViews } from "./view-population.ts";
 
 // The spawn seam lives in reconnect-hooks.ts; the entry re-exports its
@@ -70,9 +72,24 @@ export async function activateExtension(
 ): Promise<void> {
 	api.registerCommand("codictator.setup", () => runSetupCommand(api));
 	registerPaletteCommands(api);
-	const providers = registerAllViews(api);
+	const views = new Map<string, TreeViewHandle>();
+	const providers = registerAllViews(api, views);
 	const handles = new Map<string, StdioEngineHandle>();
 	const hooks = reconnectHooks(api, providers, handles, spawnEngine, delay);
+	// SPEC §4.20.2 PR4: the UX polish wires here — status bar, UX and
+	// violation commands, the steering document, the Timeline badge and
+	// the block toast — so the shaping modules take effect on activation.
+	const chrome = wireUxPolish(
+		api,
+		providers,
+		views,
+		() => [...handles.keys()].sort(),
+		() => {
+			for (const folderPath of [...handles.keys()].sort()) {
+				restartFolder(hooks, folderPath);
+			}
+		},
+	);
 	await spawnHandles(api, hooks);
 	const folders = [...handles.keys()].sort();
 	if (folders.length === 0) {
@@ -81,7 +98,8 @@ export async function activateExtension(
 		wireEngineRequests(handles);
 		await populateViews(api, providers, folders);
 	}
-	wireViewRefresh(api, providers, handles, spawnEngine, hooks);
+	await chrome.refresh();
+	wireViewRefresh(api, providers, handles, spawnEngine, hooks, chrome);
 	notifyFoldersMissingEngine(api);
 }
 
@@ -148,11 +166,15 @@ function wireViewRefresh(
 	handles: Map<string, StdioEngineHandle>,
 	spawnEngine: EngineSpawner,
 	hooks: ReconnectHooks,
+	chrome: UxChrome,
 ): void {
 	if (handles.size > 0) {
 		wireTimelineSource(handles);
 		for (const handle of handles.values()) {
 			attachHandleRefresh(api, providers, handles, handle);
+			handle.onEventsAppended(() => {
+				void chrome.refresh().catch(() => undefined);
+			});
 		}
 	}
 	startLivenessPing(handles);
@@ -167,6 +189,7 @@ function wireViewRefresh(
 			watching.dispose();
 			watching = attachWorkspaceRefresh(api, providers, handles);
 			await populateViews(api, providers, [...handles.keys()].sort());
+			await chrome.refresh();
 		})().catch(() => undefined);
 	});
 }

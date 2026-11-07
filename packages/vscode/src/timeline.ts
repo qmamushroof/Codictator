@@ -13,6 +13,13 @@ export interface TimelineEventRow {
 	readonly id: string;
 	readonly kind: string;
 	readonly message?: string;
+	// SPEC §4.20.2 PR4: the shaping the Timeline polish reads. `at` is the
+	// event `ts` (falling back to `now`); `verdict` the block/allow
+	// decision; `source` agent vs git; `layer` the originating layer.
+	readonly at?: string;
+	readonly verdict?: string;
+	readonly source?: string;
+	readonly layer?: string;
 }
 
 export interface TimelinePage {
@@ -38,6 +45,70 @@ export interface TimelineSource {
 
 const TIMELINE_LIMIT_MAX = 500;
 
+// The event `ts` (falling back to `now`); absent stays absent so the row
+// reads "unknown time" instead of guessing.
+function timelineAtOf(entry: Record<string, unknown>): string | undefined {
+	return stringFieldOf(entry, "ts") ?? stringFieldOf(entry, "now");
+}
+
+// The block/allow decision; `decision` is the older engine spelling.
+function timelineVerdictOf(entry: Record<string, unknown>): string | undefined {
+	return stringFieldOf(entry, "verdict") ?? stringFieldOf(entry, "decision");
+}
+
+// Agent vs git. A git trigger prefix reads git; anything else is agent work.
+function timelineSourceOf(entry: Record<string, unknown>): string | undefined {
+	const source = stringFieldOf(entry, "source");
+	if (source !== undefined) {
+		return source;
+	}
+	const trigger = stringFieldOf(entry, "trigger");
+	if (trigger === undefined) {
+		return undefined;
+	}
+	return trigger.startsWith("git") ? "git" : "agent";
+}
+
+// The mutable draft behind a TimelineEventRow; optional fields stay unset
+// until the engine reports them.
+interface TimelineRowDraft {
+	at?: string;
+	id: string;
+	kind: string;
+	layer?: string;
+	message?: string;
+	source?: string;
+	verdict?: string;
+}
+
+// The optional row fields — message, time, verdict, source, layer — each
+// set only when the engine reported it.
+function fillTimelineRow(
+	row: TimelineRowDraft,
+	entry: Record<string, unknown>,
+): void {
+	const message = stringFieldOf(entry, "message");
+	if (message !== undefined) {
+		row.message = message;
+	}
+	const at = timelineAtOf(entry);
+	if (at !== undefined) {
+		row.at = at;
+	}
+	const verdict = timelineVerdictOf(entry);
+	if (verdict !== undefined) {
+		row.verdict = verdict;
+	}
+	const source = timelineSourceOf(entry);
+	if (source !== undefined) {
+		row.source = source;
+	}
+	const layer = stringFieldOf(entry, "layer");
+	if (layer !== undefined) {
+		row.layer = layer;
+	}
+}
+
 function toTimelineRow(entry: unknown): TimelineEventRow | undefined {
 	if (!isRecord(entry)) {
 		return undefined;
@@ -47,8 +118,9 @@ function toTimelineRow(entry: unknown): TimelineEventRow | undefined {
 	if (id === undefined || id === "" || kind === undefined || kind === "") {
 		return undefined;
 	}
-	const message = stringFieldOf(entry, "message");
-	return message === undefined ? { id, kind } : { id, kind, message };
+	const row: TimelineRowDraft = { id, kind };
+	fillTimelineRow(row, entry);
+	return row;
 }
 
 // Timeline over `events/tail`, newest first. The limit is clamped to 500

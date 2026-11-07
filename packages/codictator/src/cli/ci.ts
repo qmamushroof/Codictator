@@ -22,18 +22,12 @@ import {
 	resolveCiRange,
 } from "./ci-range.ts";
 import { ciSummaryFor, isUnverifiableFinding } from "./ci-summary.ts";
+import { needCommandContext } from "./command-context.ts";
 import { resolveVerifyScope } from "./evaluate.ts";
 import { evaluateGateScope } from "./gate-scope.ts";
 import { printFinding } from "./inspect.ts";
 import type { CommandRequest } from "./shared.ts";
-import {
-	fail,
-	needRoot,
-	portsFor,
-	printHuman,
-	printJson,
-	usageError,
-} from "./shared.ts";
+import { fail, portsFor, printHuman, printJson, usageError } from "./shared.ts";
 import { gateVerdict } from "./verdict-emit.ts";
 
 // SPEC §8.2 + §4.15.1: ci verify exits per §8 — 0 on allow or advise only.
@@ -249,20 +243,11 @@ export async function handleCi(req: CommandRequest): Promise<Result<number>> {
 			"usage: codictator ci <verify|sweep|record-bot-change ...>",
 		);
 	}
-	const root = await needRoot(req);
-	if (typeof root !== "string") {
-		return root;
+	const resolved = await needCommandContext(req);
+	if ("ok" in resolved) {
+		return resolved;
 	}
-	const ports = await portsFor(root);
-	if (!ports.ok) {
-		return fail(
-			"CDX-E903",
-			ports.error.message,
-			ports.error.remediation,
-			req.json,
-		);
-	}
-	const now = ports.value.clock.now();
+	const { root, now } = resolved;
 	if (sub === "verify") {
 		const engineVersion = req.engineVersion ?? ENGINE_VERSION;
 		const inputs = await verifyInputs(root, engineVersion);

@@ -10,12 +10,16 @@ import type { ExtensionTerminal } from "./host-terminal.ts";
 import { messageOf, terminalOf } from "./host-terminal.ts";
 import { logOf } from "./output-channel.ts";
 import { onDidSaveOf } from "./save-notification.ts";
+import type { StatusBarItemHandle } from "./status-bar.ts";
+import type { SteeringDocProvider } from "./steering-doc.ts";
 import type {
 	ExtensionCommandHandler,
 	ExtensionDisposable,
 	MutableTreeDataProvider,
 } from "./tree-provider.ts";
 import { isTreeDataProvider, toDisposable } from "./tree-provider.ts";
+import type { TreeViewFactory } from "./ux-host.ts";
+import { spreadUxHost } from "./ux-host.ts";
 import type { SaveEvent } from "./views.ts";
 
 // SPEC §4.20.1 Engine: the fs port lives in fs-ports.ts and the terminal
@@ -28,6 +32,18 @@ export type { ExtensionTerminal } from "./host-terminal.ts";
 export interface ExtensionApi {
 	registerCommand: CommandRegistrar;
 	registerTreeDataProvider?: ProviderRegistrar;
+	// SPEC §4.20.2 PR4: the UX polish surfaces. Every one is optional, so
+	// unit tests and older hosts run the provider-only path unbadged.
+	createTreeView?: TreeViewFactory;
+	createStatusBarItem?(): StatusBarItemHandle | undefined;
+	registerTextDocumentContentProvider?(
+		scheme: string,
+		provider: SteeringDocProvider,
+	): void;
+	openFileAt?(uri: string, line?: number): void;
+	focusViews?(): void;
+	readConfig?(key: string): string | number | boolean | undefined;
+	showLog?(): void;
 	workspaceFolderPaths(): ReadonlyArray<string>;
 	configExists(folderPath: string): boolean;
 	engineExists(folderPath: string): boolean;
@@ -169,6 +185,7 @@ export function buildExtensionApi(
 	return {
 		registerCommand: registerCommandOf(host),
 		registerTreeDataProvider: registerTreeDataProviderOf(host),
+		...spreadUxHost(host),
 		workspaceFolderPaths: () => workspacePathsOf(workspace),
 		configExists: (folderPath) => existsFile(fs, configPathFor(folderPath)),
 		engineExists: (folderPath) => existsFile(fs, enginePathFor(folderPath)),

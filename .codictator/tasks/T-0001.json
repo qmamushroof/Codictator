@@ -1,0 +1,23 @@
+{
+	"acceptanceCriteria": [],
+	"branch": "fix/pr4-ux",
+	"files": {
+		"allow": []
+	},
+	"id": "T-0001",
+	"phase": "discovery",
+	"phases": [],
+	"redProof": {
+		"at": "2026-11-07T05:14:42.232Z",
+		"commit": "489f6ddde14c46260fa74728c63946206369ca8f",
+		"failing": [
+			"[§4.20.2] status bar names unseen blocks and the missing engine",
+			"[§4.20.3] install, baseline and load more commands reach their ports"
+		],
+		"tree": "034319ed2a19e1c00bcdc993d87ee4f516e11152"
+	},
+	"spec": [],
+	"title": "PR4 extension UX polish",
+	"type": "fix",
+	"version": 1
+}
