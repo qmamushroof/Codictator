@@ -4,6 +4,7 @@
 // suite/index.mjs owns the live asserts; the rest waits on PRs 1-3 per
 // the Roadmap 11 exit gate.
 import { strict as assert } from "node:assert";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve, sep } from "node:path";
@@ -45,4 +46,27 @@ test("[§4.20] e2e fixture pins the built engine version, never 0.0.0", async ()
 	} finally {
 		removeE2eFixture(fixture.dir);
 	}
+});
+
+test("[§4.20] run-e2e --smoke-only wires the fixture without a VS Code launch", () => {
+	const runner = join(repoRoot, "packages", "vscode", "scripts", "run-e2e.mjs");
+	const result = spawnSync(process.execPath, [runner, "--smoke-only"], {
+		cwd: repoRoot,
+		encoding: "utf8",
+		timeout: 120_000,
+	});
+	assert.equal(
+		result.status,
+		0,
+		`runner exits 0:\n${result.stdout}\n${result.stderr}`,
+	);
+	assert.match(
+		result.stdout,
+		/smoke-only: fixture wiring ok, no VS Code launch/,
+	);
+	assert.match(result.stdout, /fixture: .*codictator-e2e-/);
+	assert.ok(
+		result.stdout.includes(`host cwd: ${repoRoot}`),
+		`host cwd stays at the repo root:\n${result.stdout}`,
+	);
 });
