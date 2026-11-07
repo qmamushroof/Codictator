@@ -50,6 +50,20 @@ function waitForAppended(seen: () => boolean): Promise<void> {
 	})();
 }
 
+// The child runs with the folder as cwd, so removal races the kill on
+// Windows and retries instead of failing the test on EPERM.
+async function removeFolder(folder: string): Promise<void> {
+	for (let attempt = 0; attempt < 50; attempt += 1) {
+		try {
+			rmSync(folder, { force: true, recursive: true });
+			return;
+		} catch {
+			await sleep(100);
+		}
+	}
+	rmSync(folder, { force: true, recursive: true });
+}
+
 function stubSource(): string {
 	return [
 		'import readline from "node:readline";',
@@ -214,7 +228,7 @@ test("[§4.20.1] spawnStdioEngine handshakes, routes and fans out", async () => 
 		handle.dispose();
 	} finally {
 		handle?.dispose();
-		rmSync(folder, { force: true, recursive: true });
+		await removeFolder(folder);
 	}
 });
 

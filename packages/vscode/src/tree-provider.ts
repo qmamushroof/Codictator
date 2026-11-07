@@ -120,6 +120,20 @@ export function disconnectedItem(): unknown {
 	return "Disconnected: engine not running";
 }
 
+// SPEC §4.20.2: a method error row. The label names the failing method so
+// a red view reads as what broke instead of a dead engine; the Explain
+// action opens the CDX code remediation without leaving the view.
+export function errorItem(
+	method: string,
+	code: string,
+	remediation: string,
+): unknown {
+	return {
+		command: { args: [code], command: "codictator.explain", title: "Explain" },
+		label: `${method} failed (${code}): ${remediation}`,
+	};
+}
+
 // SPEC §4.20.2: healthy-empty rows. The engine is connected but has nothing
 // to show, so each view keeps one plain row with no command instead of an
 // empty tree that reads as broken.
