@@ -3,6 +3,8 @@
 // adapter registers this provider object instead of a bare items array.
 import { fieldOf, isRecord, stringFieldOf } from "./engine-client.ts";
 import type { ExtensionApi } from "./host-adapter.ts";
+import type { TreeViewHandle } from "./ux-host.ts";
+import { trackViewHandle } from "./ux-host.ts";
 
 export interface ExtensionDisposable {
 	dispose(): void;
@@ -232,19 +234,21 @@ export const ALL_VIEW_IDS: ReadonlyArray<string> = [
 
 export function registerAllViews(
 	api: ExtensionApi,
+	views?: Map<string, TreeViewHandle>,
 ): Map<string, MutableTreeDataProvider> {
 	const providers = new Map<string, MutableTreeDataProvider>();
 	for (const viewId of P0_VIEW_IDS) {
 		const provider = createViewProvider();
 		providers.set(viewId, provider);
-		api.registerTreeDataProvider?.(viewId, provider);
+		trackViewHandle(api, views, viewId, provider);
 	}
 	const p1 = registerSteeringBudgetHealthViews({
 		registerTreeDataProvider: (
 			viewId: string,
 			provider: MutableTreeDataProvider,
 		): void => {
-			api.registerTreeDataProvider?.(viewId, provider);
+			providers.set(viewId, provider);
+			trackViewHandle(api, views, viewId, provider);
 		},
 	});
 	for (const [viewId, provider] of p1) {

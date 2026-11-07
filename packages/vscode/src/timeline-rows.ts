@@ -2,7 +2,12 @@
 // load-more paging, unseen-block ids and the block toast. Row shaping over
 // the TimelineEventRow owned by timeline.ts; the list and subscription stay
 // there.
-import type { TimelineEventRow } from "./timeline.ts";
+import {
+	listTimelineEvents,
+	type TimelineEventRow,
+	type TimelineOptions,
+} from "./timeline.ts";
+import type { MutableTreeDataProvider } from "./tree-provider.ts";
 
 // SPEC §4.20.2 PR4: the Timeline polish. Relative times take the clock as
 // an explicit millisecond value, so no wall-clock read hides in the view
@@ -109,6 +114,41 @@ export function loadMoreItem(cursor: string): unknown {
 		},
 		label: "Load more…",
 	};
+}
+
+// SPEC §4.20.4 EC-5 PR4: the "load more" page. Older events append to the
+// Timeline provider in the same plain shape the population uses.
+export async function loadMorePage(
+	log: (message: string) => void,
+	providers: ReadonlyMap<string, MutableTreeDataProvider>,
+	folders: ReadonlyArray<string>,
+	cursor: string,
+	options?: TimelineOptions,
+): Promise<void> {
+	const provider = providers.get("codictator-timeline");
+	if (provider === undefined) {
+		return;
+	}
+	const rows: Array<unknown> = [];
+	for (const folder of folders) {
+		const page = await listTimelineEvents(folder, {
+			...options,
+			since: cursor,
+		});
+		for (const event of page.events) {
+			rows.push(timelineRowText(event));
+		}
+	}
+	if (rows.length > 0) {
+		log(`timeline loaded ${rows.length} older events`);
+		provider.setItems([...provider.getChildren(), ...rows]);
+	}
+}
+
+function timelineRowText(event: TimelineEventRow): string {
+	return event.message === undefined
+		? `${event.kind}: ${event.id}`
+		: `${event.kind}: ${event.message}`;
 }
 
 // SPEC §4.20.2 PR4: the ids of blocked events the user has not seen, which

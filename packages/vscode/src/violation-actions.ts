@@ -2,6 +2,7 @@
 // diagnostics with rule id as code plus explain and waive code actions
 // (EC-7 opens a terminal pre-filled with `codictator waive …` and runs
 // nothing), and the open-at-line command behind grouped violation rows.
+import { fieldOf, isRecord } from "./engine-client.ts";
 export interface FindingRef {
 	readonly uri: string;
 	readonly line?: number;
@@ -121,4 +122,50 @@ export function registerViolationActions(ports: ViolationActionPorts): void {
 			terminal.show();
 		},
 	);
+}
+
+// SPEC §4.20.2 PR4: opening a violation row at its file and line. The
+// selection needs the host Range and Position constructors; without them
+// the document still opens, just without the line selected.
+export function openFileAtOf(
+	host: unknown,
+): ((uri: string, line?: number) => void) | undefined {
+	if (!isRecord(host)) {
+		return undefined;
+	}
+	const window = fieldOf(host, "window");
+	if (!isRecord(window)) {
+		return undefined;
+	}
+	const showDoc = fieldOf(window, "showTextDocument");
+	const uriSpace = fieldOf(host, "Uri");
+	if (typeof showDoc !== "function" || !isRecord(uriSpace)) {
+		return undefined;
+	}
+	const uriParse = fieldOf(uriSpace, "parse");
+	if (typeof uriParse !== "function") {
+		return undefined;
+	}
+	return (uri: string, line?: number): void => {
+		try {
+			const parsed: unknown = uriParse(uri);
+			if (line === undefined) {
+				showDoc(parsed);
+				return;
+			}
+			const rangeCtor = fieldOf(host, "Range");
+			const positionCtor = fieldOf(host, "Position");
+			if (
+				typeof rangeCtor === "function" &&
+				typeof positionCtor === "function"
+			) {
+				const at: unknown = positionCtor(line, 0);
+				showDoc(parsed, { selection: rangeCtor(at, at) });
+			} else {
+				showDoc(parsed);
+			}
+		} catch {
+			// Opening never blocks the command.
+		}
+	};
 }

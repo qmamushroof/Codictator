@@ -58,3 +58,33 @@ export function logOf(host: unknown): (message: string) => void {
 		}
 	};
 }
+
+// SPEC §4.20.2 PR4: revealing the Codictator channel behind the "Show
+// Engine Log" command. A host without a show surface degrades to a no-op.
+export function showOf(host: unknown): (() => void) | undefined {
+	const window = fieldOf(host, "window");
+	const create = fieldOf(window, "createOutputChannel");
+	if (!isHostFn(create)) {
+		return undefined;
+	}
+	let channel: unknown;
+	try {
+		channel = create("Codictator");
+	} catch {
+		return undefined;
+	}
+	if (!isRecord(channel)) {
+		return undefined;
+	}
+	const show = fieldOf(channel, "show");
+	if (!isHostFn(show)) {
+		return undefined;
+	}
+	return (): void => {
+		try {
+			show();
+		} catch {
+			// Revealing never blocks the command.
+		}
+	};
+}
