@@ -3,7 +3,7 @@
 // .codictator/bin/run.mjs) whose launcher resolves the built engine from
 // this checkout, so the host under test spawns the real server. The repo
 // lives under the OS tmp dir, never under the host cwd, which is the D1
-// regression shape. Full view asserts wait on PRs 1-3 per the Roadmap 11
+// regression shape. View asserts wait on PRs 2-4 per the Roadmap 11
 // exit gate.
 import {
 	existsSync,

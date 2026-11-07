@@ -1,8 +1,9 @@
 // SPEC §4.20: the extension-host E2E smoke. Runs under plain node:test
 // (no display, no download): the tmp fixture mirrors setup output, links
 // the built engine, and pins a real version. The in-host suite in
-// suite/index.mjs owns the live asserts; the rest waits on PRs 1-3 per
-// the Roadmap 11 exit gate.
+// suite/index.mjs owns the live asserts (PR1 root and version asserts
+// landed there); the remaining gates wait on PRs 2-4 per the Roadmap 11
+// exit gate.
 import { strict as assert } from "node:assert";
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";

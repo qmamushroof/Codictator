@@ -40,3 +40,4 @@ SPEC-first hardening for a live extension: connection, live data, real producers
   - killing the engine shows retrying, then recovers (PR1 reconnect);
   - no `0.0.0` anywhere (PR3 versions).
 - Full-run observation on `main` (2026-11-07, VS Code 1.145.2 win32): the host cwd is the install dir and `initialize` answers it as `root` with no `version` field — the D1/D6 red proof.
+- Rebase follow-up on `fix/pr5-e2e`: spawning the fixture launcher with the fixture folder as cwd answers the fixture folder as `root` with the real `engineVersion` (the version field is `engineVersion`, not `version`); the suite asserts both, and the remaining gates stay TODO-stubbed per the mapping above.
