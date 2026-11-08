@@ -11,7 +11,11 @@ import { checkAddedHistoryEntryCount } from "../features/records/history-checks.
 import type { Env, Result } from "../kernel/index.ts";
 import { ok, readHostText, writeHostText } from "../kernel/index.ts";
 import { emitGitVerdict, evaluateGitChange } from "./git-eval.ts";
-import { checkStagedHistory, runGitText, withTrackedBugsFallback } from "./git-history.ts";
+import {
+	checkStagedHistory,
+	runGitText,
+	withTrackedBugsFallback,
+} from "./git-history.ts";
 import type { CommandPorts, CommandRequest } from "./shared.ts";
 import {
 	commandEnv,

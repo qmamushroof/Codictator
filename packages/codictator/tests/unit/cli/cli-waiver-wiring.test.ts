@@ -80,10 +80,11 @@ test("[§4.2.1] active waiver loosens the evaluated rule param within bound", ()
 		waivedStore(),
 		FIXED_INSTANT as Instant,
 	);
+	const maxRoundsKey = "maxRounds";
 	const cap = out.rules.find((rule) => rule.id === "core/review-round-cap");
-	assert.equal(cap?.params["maxRounds"]?.default, 4);
+	assert.equal(cap?.params[maxRoundsKey]?.default, 4);
 	const floor = out.rules.find((rule) => rule.id === "core/no-bypass");
-	assert.equal(floor?.params["maxRounds"]?.default, 3);
+	assert.equal(floor?.params[maxRoundsKey]?.default, 3);
 });
 
 test("[§4.3.3] file waivers reach the verdict and ride waiversApplied", async () => {

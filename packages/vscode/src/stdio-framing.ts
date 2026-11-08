@@ -11,7 +11,7 @@ import type { EngineState } from "./stdio-client.ts";
 const appendedMethod = "events/appended";
 
 function errorMessageOf(message: Record<string, unknown>): string {
-	const error = message["error"];
+	const { error } = message;
 	if (!isRecord(error)) {
 		return "engine error";
 	}
@@ -28,7 +28,7 @@ export function onEngineLine(state: EngineState, line: string): void {
 	if (message === undefined) {
 		return;
 	}
-	const id = message["id"];
+	const { id, method, result } = message;
 	if (typeof id === "number") {
 		const call = state.pending.get(id);
 		if (call === undefined) {
@@ -39,10 +39,10 @@ export function onEngineLine(state: EngineState, line: string): void {
 			call.reject(new Error(errorMessageOf(message)));
 			return;
 		}
-		call.resolve(message["result"]);
+		call.resolve(result);
 		return;
 	}
-	if (id === undefined && message["method"] === appendedMethod) {
+	if (id === undefined && method === appendedMethod) {
 		for (const listener of [...state.appendedListeners]) {
 			listener(state.folderPath);
 		}

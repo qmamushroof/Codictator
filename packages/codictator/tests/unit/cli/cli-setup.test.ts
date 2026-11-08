@@ -190,7 +190,8 @@ test("[§4.19.6] setup handoff prints exact runnable commands only when packs ar
 
 test("[§4.19.6] the command table routes setup and USAGE names it", async () => {
 	// SPEC §4.19.2: setup is a routed command; the usage line lists it.
-	assert.equal(COMMANDS["setup"], handleSetup);
+	const { setup } = COMMANDS;
+	assert.equal(setup, handleSetup);
 	assert.ok(USAGE.includes("<init|setup|install-hooks|"));
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
