@@ -1,0 +1,96 @@
+{
+	"acceptanceCriteria": [
+		"pre-push duplication findings gone",
+		"typecheck/biome clean",
+		"behavior identical via existing tests"
+	],
+	"branch": "fix/restore-tdd-docs-gates",
+	"bugRowUpdated": true,
+	"diagnosis": "Pre-push blocked on core/duplication (minTokens 50, pack.json default, no override): 60-token run shared between integrity-guards.ts:31-40 (resolveNoAssertionLoss scaffold prefix) and records-guards.ts:234-243 (resolveFileNaming scaffold prefix). 100 percent pre-existing: git diff 99ecef6...HEAD on integrity-guards.ts touches only resolveNoBaselineRaise, adding zero of the flagged lines. Divergent bodies must stay behavior-identical.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/packs/enforcers/integrity-guards.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T06:40:18.907Z",
+		"tree": "3f443f1a31a07bd2cf7eecb1eb0aa92edf7cc416"
+	},
+	"historyStaged": true,
+	"id": "T-0008",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T06:27:52.353Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T06:28:11.276Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T06:40:24.859Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T06:41:45.265Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T06:43:14.025Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-08T06:44:21.182Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T06:28:08.169Z",
+		"commit": "cdadae0f484371f332df84b4df05cfff480489ae",
+		"failing": [
+			"core/duplication packages/codictator/src/features/packs/enforcers/integrity-guards.ts:31 duplicated token run of 60 over a 50 limit",
+			"core/duplication packages/codictator/src/features/packs/enforcers/records-guards.ts:234 duplicated token run of 60 over a 50 limit"
+		],
+		"tree": "3f443f1a31a07bd2cf7eecb1eb0aa92edf7cc416"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T06:42:43.473Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0008-r1",
+			"round": 1,
+			"tree": "3f443f1a31a07bd2cf7eecb1eb0aa92edf7cc416"
+		}
+	],
+	"spec": ["docs/SPEC/05-CORE-RULES.md:64", "docs/SPEC/05-CORE-RULES.md:71"],
+	"tests": [
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-string-anchors-s55.test.ts",
+			"title": "[§5.5] skipped tests ignore fixture strings"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-string-anchors-s55.test.ts",
+			"title": "[§5.5] suppressions match added markers not prose"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-health.test.ts",
+			"title": "[§5.6] health markers parse and apply fallbacks"
+		}
+	],
+	"title": "Dedupe resolver scaffold flagged by pre-push",
+	"type": "chore",
+	"version": 1
+}
