@@ -14,3 +14,7 @@ obj/
 # The hook launcher is manifest-owned and ships in the repo (SPEC §4.19.3);
 # the bin/ rule above would otherwise ignore it.
 !.codictator/bin/
+# Test sources live under a path named `coverage/`; keep them tracked
+# while still ignoring real coverage output elsewhere (SPEC §1.4 single owner: this file).
+!packages/codictator/tests/unit/coverage/
+!packages/codictator/tests/unit/coverage/**

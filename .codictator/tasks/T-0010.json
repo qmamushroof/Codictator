@@ -1,0 +1,127 @@
+{
+	"acceptanceCriteria": [
+		"coverage line threshold met in CI",
+		"typecheck clean",
+		"new tests pass",
+		"no src changes"
+	],
+	"branch": "fix/restore-tdd-docs-gates",
+	"diagnosis": "CI heavy-coverage fails: 70.34 pct lines vs 90 pct threshold (branches 81.04 vs 80 pass). Causes: (1) dist/** build output counted in the report (~15k lines at 10-45 pct); intended denominator is src-only, which scores 90.57 on main. (2) New engine paths lack covering tests: ci-rerun, testing-real, workflow-real, records-guards, git-history, git-hook, task-amend set-accept, waiver-params/evaluate-cache/splits.",
+	"files": {
+		"allow": [
+			"packages/codictator/tests/unit/coverage/**",
+			"package.json",
+			".codictator/tasks/T-0010.json",
+			".gitignore",
+			".codictator/reviews/T-0010-*.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T08:31:53.319Z",
+		"tree": "81c57d9cdcc2fa9d1d84c191f198fb1807bada24"
+	},
+	"historyStaged": true,
+	"id": "T-0010",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T07:57:42.219Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T08:15:22.360Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T08:15:25.940Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T08:39:22.975Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T08:39:27.671Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-08T08:39:52.016Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T08:15:11.601Z",
+		"commit": "65e3e1e196731b0ce4503d39b7f94738df85ae94",
+		"failing": ["CI heavy-coverage fails: 70.34% lines vs 90% threshold"],
+		"tree": "81c57d9cdcc2fa9d1d84c191f198fb1807bada24"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T08:26:47.028Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0010-r1",
+			"round": 1,
+			"tree": "81c57d9cdcc2fa9d1d84c191f198fb1807bada24"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T08:34:41.102Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0010-r2",
+			"round": 2,
+			"tree": "81c57d9cdcc2fa9d1d84c191f198fb1807bada24"
+		}
+	],
+	"spec": ["docs/SPEC/10-TESTING-STRATEGY.md:58"],
+	"tests": [
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/coverage/git-scope.test.ts",
+			"title": "[§10.6] git history reads fail closed over faked proc"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/coverage/ci-rerun.test.ts",
+			"title": "[§10.6] red-proof re-runs judge in-range commits"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/coverage/records-real.test.ts",
+			"title": "[§10.6] real-scope bug registry and diagnosis judge fix tasks"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/coverage/testing-real.test.ts",
+			"title": "[§10.6] real-scope test-kind and red-proof gates"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/coverage/workflow-real.test.ts",
+			"title": "[§10.6] real-scope workflow gates judge claiming tasks"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/coverage/hook-task.test.ts",
+			"title": "[§10.6] hook entry rejects unknown hooks and amend merges set-accept"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/coverage/waiver-cache.test.ts",
+			"title": "[§10.6] waiver params and shared reads stay pure and cached"
+		}
+	],
+	"title": "Cover new engine paths for the CI line threshold",
+	"type": "chore",
+	"version": 1
+}
