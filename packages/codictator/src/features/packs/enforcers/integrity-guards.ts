@@ -273,7 +273,13 @@ export function resolveNoBaselineRaise(
 				if (text === undefined) {
 					continue;
 				}
-				const pair = arrowPair(parseMarkers(text).get("baseline") ?? text);
+				// SPEC §5.5: only a `baseline:` marker line counts; prose
+				// like 3 to 4 elsewhere (task/history text) must not flag.
+				const baseline = parseMarkers(text).get("baseline");
+				if (baseline === undefined) {
+					continue;
+				}
+				const pair = arrowPair(baseline);
 				if (pair !== undefined && pair[1] > pair[0]) {
 					findings.push(
 						findingFor(binding, {
