@@ -56,8 +56,12 @@ export {
 export type {
 	ContextFileOptions,
 	FloorRuleLine,
+	FloorRuleSource,
 } from "./context-file.ts";
-export { buildManagedBlock } from "./context-file.ts";
+export {
+	buildManagedBlock,
+	floorRulesFromManifests,
+} from "./context-file.ts";
 export {
 	evaluateGraphBeforeScanMarkers,
 	graphLookupInstruction,
@@ -89,6 +93,8 @@ export {
 	isRepeatRead,
 	recordRead,
 } from "./read-cache.ts";
+export type { TaskInjection } from "./task-summary.ts";
+export { activeTaskInjection } from "./task-summary.ts";
 export type {
 	HookUsageInput,
 	ResolvedHookUsage,

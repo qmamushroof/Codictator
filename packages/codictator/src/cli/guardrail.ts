@@ -17,6 +17,7 @@ import {
 import type { Result } from "../kernel/index.ts";
 import { err, ok, resolveRepoRoot } from "../kernel/index.ts";
 import { initPreamble } from "./init-plan.ts";
+import { loadFloorRules } from "./packs.ts";
 import { guardrailPlan, writePlan } from "./plan.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
@@ -108,6 +109,10 @@ export async function handleRegen(
 			req.json,
 		);
 	}
+	const floorRules = await loadFloorRules(
+		root.value,
+		configured.packs.map((entry) => entry.id),
+	);
 	const plan = guardrailPlan(
 		loaded.value.effective.config.harnesses,
 		profile,
@@ -118,6 +123,7 @@ export async function handleRegen(
 			tunables: configured.tunables,
 			architecture: configured.architecture,
 			tools: configured.tools,
+			...(floorRules === undefined ? {} : { floorRules }),
 		},
 		req.engineVersion ?? ENGINE_VERSION,
 		root.value,

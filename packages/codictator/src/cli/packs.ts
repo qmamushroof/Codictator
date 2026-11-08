@@ -11,13 +11,17 @@ import {
 	loadPack,
 	selfTest,
 } from "../features/packs/index.ts";
+import {
+	type FloorRuleLine,
+	floorRulesFromManifests,
+} from "../features/steering/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
+import { refuseNonHuman } from "./human-gate.ts";
 import { runServer } from "./index.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
-	checkHuman,
-	commandEnv,
+	type CommandPorts,
 	fail,
 	loadRepoConfig,
 	needRoot,
@@ -30,6 +34,50 @@ import {
 export { handleAdapter } from "./pack-adapters.ts";
 
 const BUILTIN_IDS = ["core", "typescript", "dotnet", "python"];
+
+// SPEC §4.6.2 item 3: the managed block lists every tier:floor rule of the
+// loaded packs. Callers (init, regen, context) build floorRules through
+// this loader over the configured pack ids; an unloadable pack falls back
+// to the default rule set instead of failing the command, and the live
+// gates still enforce the full registry.
+export async function loadFloorRules(
+	root: string,
+	packIds: ReadonlyArray<string>,
+): Promise<Array<FloorRuleLine> | undefined> {
+	const ids = ["core", ...packIds.filter((id) => id !== "core")];
+	const custom = ids.filter((id) => !BUILTIN_IDS.includes(id));
+	let ports: CommandPorts | undefined;
+	if (custom.length > 0) {
+		const made = await portsFor(root);
+		if (!made.ok) {
+			return undefined;
+		}
+		ports = made.value;
+	}
+	const manifests = [];
+	for (const id of ids) {
+		if (BUILTIN_IDS.includes(id)) {
+			const loaded = await loadBuiltinPack(id);
+			if (!loaded.ok) {
+				return undefined;
+			}
+			manifests.push(loaded.value.manifest);
+			continue;
+		}
+		if (ports === undefined) {
+			return undefined;
+		}
+		const loaded = await loadPack(`.codictator/packs/${id}`, {
+			ports,
+			skipAcceptance: true,
+		});
+		if (!loaded.ok) {
+			return undefined;
+		}
+		manifests.push(loaded.value.manifest);
+	}
+	return floorRulesFromManifests(manifests);
+}
 
 export async function handleGenerate(
 	req: CommandRequest,
@@ -145,14 +193,9 @@ async function packAccept(
 	root: string,
 	id: string,
 ): Promise<Result<number>> {
-	const human = checkHuman(commandEnv(), []);
-	if (!human.ok) {
-		return fail(
-			"CDX-E107",
-			human.error.message,
-			human.error.remediation,
-			req.json,
-		);
+	const gated = refuseNonHuman(req);
+	if (gated !== undefined) {
+		return gated;
 	}
 	if (BUILTIN_IDS.includes(id)) {
 		printHuman(`pack ${id} is built in and needs no acceptance`, req.quiet);

@@ -6,11 +6,13 @@ import { buildReportText } from "../features/audit/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
 	buildManagedBlock,
+	type FloorRuleLine,
 	PRECEDENCE_STATEMENT,
 } from "../features/steering/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { readLogEvents } from "./inspect.ts";
+import { loadFloorRules } from "./packs.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
 	fail,
@@ -102,17 +104,24 @@ export async function handleContext(
 		return root;
 	}
 	let extra = "";
-	if (all) {
-		const configured = await loadRepoConfig(
+	let floorRules: Array<FloorRuleLine> | undefined;
+	const configured = await loadRepoConfig(
+		root,
+		undefined,
+		req.engineVersion ?? ENGINE_VERSION,
+	);
+	if (configured.ok) {
+		floorRules = await loadFloorRules(
 			root,
-			undefined,
-			req.engineVersion ?? ENGINE_VERSION,
+			configured.value.effective.config.packs.map((entry) => entry.id),
 		);
-		extra = configured.ok
-			? `\nconfig ${configured.value.effective.configHash} harnesses ${configured.value.effective.config.harnesses.join(",")}`
-			: "\nconfig unknown (unreadable)";
+		if (all) {
+			extra = `\nconfig ${configured.value.effective.configHash} harnesses ${configured.value.effective.config.harnesses.join(",")}`;
+		}
+	} else if (all) {
+		extra = "\nconfig unknown (unreadable)";
 	}
-	const text = `${PRECEDENCE_STATEMENT}\n\n${buildManagedBlock()}${extra}`;
+	const text = `${PRECEDENCE_STATEMENT}\n\n${floorRules === undefined ? buildManagedBlock() : buildManagedBlock({ floorRules })}${extra}`;
 	if (req.json) {
 		printJson({ context: text });
 	} else {

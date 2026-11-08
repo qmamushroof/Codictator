@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { handleRegen } from "../../../src/cli/guardrail.ts";
+import { loadFloorRules } from "../../../src/cli/packs.ts";
 import { guardrailPlan, writePlan } from "../../../src/cli/plan.ts";
 import type { CommandRequest } from "../../../src/cli/shared.ts";
 import { parseJson } from "../../../src/kernel/index.ts";
@@ -114,9 +115,12 @@ test("[§4.5 EC-12] regen reproduces harness adapter files byte-identical", asyn
 			"gemini-cli",
 			"opencode",
 		];
+		const floorRules = await loadFloorRules(repo.dir, []);
 		const wrote = await writePlan(
 			repo.dir,
-			guardrailPlan(allHarnesses, "", path.basename(repo.dir), undefined),
+			guardrailPlan(allHarnesses, "", path.basename(repo.dir), undefined, {
+				...(floorRules === undefined ? {} : { floorRules }),
+			}),
 		);
 		assert.equal(wrote.ok, true);
 		if (!wrote.ok) {
