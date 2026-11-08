@@ -5,7 +5,12 @@
 // failures fail closed with their own code. Custom packs stay out until
 // their acceptance flow lands (core/custom-pack-selftest is red).
 
-import { createEngine } from "../features/engine/index.ts";
+import {
+	createEngine,
+	MAX_WAIVER_DAYS,
+	readWaiverFile,
+	type WaiverStore,
+} from "../features/engine/index.ts";
 import {
 	isBuiltinPackId,
 	loadBuiltinPack,
@@ -14,14 +19,15 @@ import {
 import type {
 	Enforcer,
 	Finding,
-	Fs,
 	Ports,
 	Result,
 	Trigger,
 } from "../kernel/index.ts";
 import { err, isFixturePath, ok } from "../kernel/index.ts";
+import { sharedReads } from "./evaluate-cache.ts";
 import type { CommandPorts } from "./shared.ts";
 import { type EvaluateOptions, emitEngineOptions } from "./verdict-emit.ts";
+import { applyWaiverParams } from "./waiver-params.ts";
 
 export interface VerifyScope {
 	readonly trigger: Trigger;
@@ -141,96 +147,8 @@ export async function resolveVerifyScope(
 	});
 }
 
-// SPEC §4.3.6: one verify evaluation reads each scope file once. Enforcers
-// close over the same ports, so without sharing a full-tree scope costs one
-// sweep per enforcer and every guard exceeds its budget under disk
-// contention. This memo shares in-flight and completed reads across the
-// evaluation; writes, appends and removals invalidate the path. Results are
-// copies, so a guard can never mutate another guard's bytes.
-function sharedRead(
-	inner: Fs,
-	reads: Map<string, Promise<Result<Uint8Array>>>,
-): Fs["read"] {
-	return (path: string): Promise<Result<Uint8Array>> => {
-		const hit = reads.get(path);
-		if (hit !== undefined) {
-			return hit.then((result) =>
-				result.ok ? { ok: true as const, value: result.value.slice() } : result,
-			);
-		}
-		const pending = inner.read(path);
-		reads.set(path, pending);
-		return pending.then((result) =>
-			result.ok ? { ok: true as const, value: result.value.slice() } : result,
-		);
-	};
-}
-
-function sharedReadText(
-	inner: Fs,
-	texts: Map<string, Promise<Result<string>>>,
-): Fs["readText"] {
-	return (path: string): Promise<Result<string>> => {
-		const hit = texts.get(path);
-		if (hit !== undefined) {
-			return hit;
-		}
-		const pending = inner.readText(path);
-		texts.set(path, pending);
-		return pending;
-	};
-}
-
-function sharedRealpath(
-	inner: Fs,
-	reals: Map<string, Promise<Result<string>>>,
-): Fs["realpath"] {
-	return (path: string): Promise<Result<string>> => {
-		const hit = reals.get(path);
-		if (hit !== undefined) {
-			return hit;
-		}
-		const pending = inner.realpath(path);
-		reals.set(path, pending);
-		return pending;
-	};
-}
-
-function sharedReads(inner: Fs): Fs {
-	const reads = new Map<string, Promise<Result<Uint8Array>>>();
-	const texts = new Map<string, Promise<Result<string>>>();
-	const reals = new Map<string, Promise<Result<string>>>();
-	const drop = (path: string): void => {
-		reads.delete(path);
-		texts.delete(path);
-		reals.delete(path);
-	};
-	const invalidate = <T>(
-		done: Promise<Result<T>>,
-		path: string,
-	): Promise<Result<T>> =>
-		done.then((result) => {
-			if (result.ok) {
-				drop(path);
-			}
-			return result;
-		});
-	return {
-		read: sharedRead(inner, reads),
-		readText: sharedReadText(inner, texts),
-		write: (path: string, content: Uint8Array): Promise<Result<void>> =>
-			invalidate(inner.write(path, content), path),
-		append: (path: string, content: Uint8Array): Promise<Result<void>> =>
-			invalidate(inner.append(path, content), path),
-		remove: (path: string): Promise<Result<void>> =>
-			invalidate(inner.remove(path), path),
-		stat: (path: string) => inner.stat(path),
-		list: (dir: string) => inner.list(dir),
-		glob: (pattern: string, dir: string) => inner.glob(pattern, dir),
-		exists: (path: string) => inner.exists(path),
-		realpath: sharedRealpath(inner, reals),
-	};
-}
+// SPEC §4.3.6: one verify evaluation reads each scope file once. The
+// memo lives in evaluate-cache.ts; every scope here runs over it.
 
 // SPEC §4.4.2: the core pack is always loaded; language packs join from
 // config.packs order. A config that names core does not load it twice.
@@ -241,7 +159,12 @@ export async function loadEvalEnforcers(
 	ports: Ports,
 	packIds: ReadonlyArray<string>,
 	excludeRuleIds: ReadonlySet<string> = new Set(),
-): Promise<Result<Array<Enforcer>>> {
+): Promise<
+	Result<{
+		readonly enforcers: Array<Enforcer>;
+		readonly waiverStore: WaiverStore;
+	}>
+> {
 	const core = await loadBuiltinPack("core");
 	if (!core.ok) {
 		return err(core.error);
@@ -257,15 +180,40 @@ export async function loadEvalEnforcers(
 		}
 		manifests.push(loaded.value.manifest);
 	}
+	// SPEC §4.2.1 step 4 + §4.3.3 step 3: the file waivers loosen the
+	// resolved params and ride the engines for suppression. Tiers come
+	// from the evaluated manifests, so an unknown tier fails closed.
+	const now = ports.clock.now();
+	const tiers: Record<string, "floor" | "tunable"> = {};
+	for (const manifest of manifests) {
+		for (const rule of manifest.rules) {
+			tiers[rule.id] = rule.tier === "tunable" ? "tunable" : "floor";
+		}
+	}
+	const days = core.value.manifest.maxWaiverDays;
+	const waiverStore: WaiverStore = {
+		waivers: await readWaiverFile(ports.fs),
+		tiers,
+		maxWaiverDays:
+			typeof days === "number" && Number.isFinite(days) && days > 0
+				? days
+				: MAX_WAIVER_DAYS,
+	};
 	const enforcers: Array<Enforcer> = [];
 	for (const manifest of manifests) {
-		const resolved = resolveManifestEnforcers(manifest, ports);
+		const resolved = resolveManifestEnforcers(
+			applyWaiverParams(manifest, waiverStore, now),
+			ports,
+		);
 		if (!resolved.ok) {
 			return err(resolved.error);
 		}
 		enforcers.push(...resolved.value);
 	}
-	return ok(enforcers.filter((enforcer) => !excludeRuleIds.has(enforcer.id)));
+	return ok({
+		enforcers: enforcers.filter((enforcer) => !excludeRuleIds.has(enforcer.id)),
+		waiverStore,
+	});
 }
 
 export async function evaluateScope(
@@ -284,8 +232,11 @@ export async function evaluateScope(
 	if (!loaded.ok) {
 		return err(loaded.error);
 	}
-	const engineOptions = emitEngineOptions(configHash, options.emit);
-	const engine = createEngine(loaded.value, engineOptions);
+	const engineOptions = {
+		...emitEngineOptions(configHash, options.emit),
+		waiverStore: loaded.value.waiverStore,
+	};
+	const engine = createEngine(loaded.value.enforcers, engineOptions);
 	const verdict = await engine.evaluate(
 		scope.trigger,
 		{

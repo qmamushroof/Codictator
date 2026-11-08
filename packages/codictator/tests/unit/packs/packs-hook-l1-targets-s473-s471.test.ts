@@ -9,7 +9,10 @@ import {
 	runHookEvent,
 } from "../../../src/features/adapters/index.ts";
 
-import type { Enforcer } from "../../../src/features/engine/index.ts";
+import type {
+	Enforcer,
+	WaiverStore,
+} from "../../../src/features/engine/index.ts";
 
 import { resolveNoSecretReads } from "../../../src/features/packs/enforcers/secret-scan.ts";
 
@@ -44,7 +47,12 @@ function ruleFor(id: string): PackRule {
 
 const DECL = { id: "test-enforcer", kind: "code", budgetMs: 1000 } as const;
 
-function stubLoader(ports: Ports): Promise<Result<ReadonlyArray<Enforcer>>> {
+function stubLoader(ports: Ports): Promise<
+	Result<{
+		readonly enforcers: ReadonlyArray<Enforcer>;
+		readonly waiverStore: WaiverStore;
+	}>
+> {
 	const decl: EnforcerDecl = DECL;
 	const confined = resolveWriteConfinement(
 		decl,
@@ -61,7 +69,12 @@ function stubLoader(ports: Ports): Promise<Result<ReadonlyArray<Enforcer>>> {
 	if (!confined.ok || !secrets.ok) {
 		throw new Error("stub enforcers failed to resolve");
 	}
-	return Promise.resolve(ok([confined.value, secrets.value]));
+	return Promise.resolve(
+		ok({
+			enforcers: [confined.value, secrets.value],
+			waiverStore: { waivers: [], tiers: {}, maxWaiverDays: 90 },
+		}),
+	);
 }
 
 function requestFor(

@@ -13,10 +13,12 @@ import type { EngineOptions } from "./evaluate.ts";
 import { createEngine as createEngineImpl } from "./evaluate.ts";
 import { buildMessage as buildMessageImpl } from "./message.ts";
 import {
+	activeWaivers,
 	DEFAULT_WAIVER_STORE,
 	isWaived as isWaivedImpl,
 	MAX_WAIVER_DAYS,
 	matchWaivers as matchWaiversImpl,
+	readWaiverFile,
 	type Waiver,
 	type WaiverStore,
 } from "./waivers.ts";
@@ -37,7 +39,7 @@ export type {
 	Waiver,
 	WaiverStore,
 };
-export { DEFAULT_WAIVER_STORE, MAX_WAIVER_DAYS };
+export { activeWaivers, DEFAULT_WAIVER_STORE, MAX_WAIVER_DAYS, readWaiverFile };
 
 // SPEC §4.3.7: the verdict carries its event id and the waivers that
 // changed it, alongside the decision, findings and agent message.
