@@ -12,12 +12,12 @@ import {
 	resolveRepoRoot,
 	stableStringify,
 } from "../kernel/index.ts";
+import { refuseNonHuman } from "./human-gate.ts";
+import { loadFloorRules } from "./packs.ts";
 import { buildHelperTool, guardrailPlan, writePlan } from "./plan.ts";
 import { ensureGitignoreEntries } from "./setup-gitignore.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
-	checkHuman,
-	commandEnv,
 	fail,
 	loadRepoConfig,
 	printHuman,
@@ -177,14 +177,9 @@ export function emitInitResult(
 export async function initPreamble(
 	req: CommandRequest,
 ): Promise<string | Result<number>> {
-	const human = checkHuman(commandEnv(), []);
-	if (!human.ok) {
-		return fail(
-			"CDX-E107",
-			human.error.message,
-			human.error.remediation,
-			req.json,
-		);
+	const gated = refuseNonHuman(req);
+	if (gated !== undefined) {
+		return gated;
 	}
 	const root = await resolveRepoRoot(req.cwd);
 	if (!root.ok) {
@@ -264,6 +259,7 @@ export async function buildGuardrailPlan(
 	const agents = await readStateText(root, "AGENTS.md");
 	const repoName = root.replaceAll("\\", "/").split("/").pop() ?? "repo";
 	const modules = await detectCodictatorModules(root);
+	const floorRules = await loadFloorRules(root, flags.packs);
 	const architecture =
 		modules === undefined
 			? undefined
@@ -280,6 +276,7 @@ export async function buildGuardrailPlan(
 			packs: flags.packs.map((id) => ({ id, version: engineVersion })),
 			tools: flags.tools.map((tool) => buildHelperTool(tool)),
 			...(architecture === undefined ? {} : { architecture }),
+			...(floorRules === undefined ? {} : { floorRules }),
 		},
 		engineVersion,
 	);

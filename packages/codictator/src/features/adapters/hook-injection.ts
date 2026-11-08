@@ -8,9 +8,11 @@
 // structural literal matching buildInjectionEvent, which audit owns; the
 // contract test pins them equal. Usage threads through only when present
 // and sane, else the band stays unavailable, never estimated (EC-4).
-import type { Result, Scope } from "../../kernel/index.ts";
-import { ok } from "../../kernel/index.ts";
+import type { Fs, Ports, Result, Scope } from "../../kernel/index.ts";
+import { ok, parseJson } from "../../kernel/index.ts";
 import {
+	activeTaskInjection,
+	injectionDigest,
 	renderScopedInjection,
 	SCOPED_INJECTION_MAX_BYTES,
 } from "../steering/index.ts";
@@ -24,11 +26,26 @@ export interface InjectionEmission {
 	readonly configHash: string;
 	readonly root: string;
 	readonly append: HookAppend;
+	// Root-confined ports for the committed-state reads behind the
+	// injection (task records, branch, prior injections). Absent in
+	// unit callers that pin the no-task render, which then stays.
+	readonly ports?: Ports;
+}
+
+// The render inputs emitInjectionEvent shares with the runtime reply, so
+// the audited event and the returned additionalContext carry the same
+// text (SPEC §4.6.3).
+export interface InjectionRenderInput {
+	readonly event: HookEvent;
+	readonly scope: Scope;
+	readonly steering: unknown;
+	readonly ports?: Ports;
+	readonly root?: string;
 }
 
 // SPEC §4.6.3: the injection renders on session start, after compaction
 // and on prompt submit, all L0 triggers. Tool triggers carry no injection.
-function isInjectionTrigger(
+export function isInjectionTrigger(
 	trigger: HookEvent["trigger"],
 ): trigger is "startup" | "compact" | "prompt" {
 	return trigger === "startup" || trigger === "compact" || trigger === "prompt";
@@ -82,6 +99,99 @@ function injectionScope(scope: Scope): ReadonlyArray<string> {
 	return [...scope.files, ...(scope.proposedPaths ?? [])];
 }
 
+// SPEC §4.6.3: the rendered injection for the runtime reply. The task
+// summary comes from the active task for the branch (Slice 1 lookup,
+// re-derived here through steering so the adapter edge stays clean); with
+// no ports, or no task, the render takes the no-task branch.
+export async function renderInjectionContent(
+	input: InjectionRenderInput,
+): Promise<Result<string>> {
+	const usedTokens = usedTokensOf(input.event.usage);
+	const contextWindow = contextWindowOf(input.event.usage, input.steering);
+	const task =
+		input.ports === undefined || input.root === undefined
+			? undefined
+			: await activeTaskInjection(input.ports, input.root);
+	const rendered = await renderScopedInjection(
+		input.event.sessionId,
+		injectionScope(input.scope),
+		SCOPED_INJECTION_MAX_BYTES,
+		{
+			...(usedTokens === undefined ? {} : { usedTokens }),
+			...(contextWindow === undefined ? {} : { contextWindow }),
+			...(task === undefined
+				? {}
+				: {
+						taskSummary: task.taskSummary,
+						allowedFiles: task.allowedFiles,
+						testSummary: task.testSummary,
+						reviewFindings: task.reviewFindings,
+					}),
+		},
+	);
+	return ok(rendered.content);
+}
+
+// SPEC §4.6.3: the prompt.submit dedupe compares against the last
+// injection in the session. The event log is audit-owned (LOG_REL in
+// audit/append.ts); this reader narrows only kind, sessionId and message,
+// so adapters never import audit (§3.3). Files scan oldest rotation to
+// newest, current file last; unreadable files are skipped, never fatal.
+const LOG_REL = ".codictator/state/events.jsonl";
+
+function rotatedRel(n: number): string {
+	return `.codictator/state/events.${String(n)}.jsonl`;
+}
+
+function injectionDigestOfLine(
+	line: string,
+	sessionId: string,
+): string | undefined {
+	const parsed = parseJson(line);
+	if (!parsed.ok || typeof parsed.value !== "object" || parsed.value === null) {
+		return undefined;
+	}
+	const record = parsed.value as {
+		kind?: unknown;
+		sessionId?: unknown;
+		message?: unknown;
+	};
+	if (record.kind !== "injection" || record.sessionId !== sessionId) {
+		return undefined;
+	}
+	return typeof record.message === "string"
+		? injectionDigest(record.message)
+		: undefined;
+}
+
+export async function lastInjectionDigest(
+	fs: Fs,
+	sessionId: string,
+): Promise<string | undefined> {
+	const candidates: Array<string> = [];
+	for (let n = 1; n <= 5; n += 1) {
+		candidates.push(rotatedRel(n));
+	}
+	candidates.push(LOG_REL);
+	let last: string | undefined;
+	for (const path of candidates) {
+		const text = await fs.readText(path);
+		if (!text.ok) {
+			continue;
+		}
+		for (const line of text.value.split("\n")) {
+			if (line.trim() === "") {
+				continue;
+			}
+			const digest = injectionDigestOfLine(line, sessionId);
+			if (digest !== undefined) {
+				last = digest;
+			}
+		}
+	}
+	return last;
+}
+
 // SPEC §4.18.1 + §4.6.3: render the scoped injection for an L0 trigger
 // and append the auditable event. Non-injection triggers append nothing.
 // An append failure returns the audit error so the runtime blocks closed.
@@ -92,17 +202,16 @@ export async function emitInjectionEvent(
 	if (!isInjectionTrigger(trigger)) {
 		return ok(false);
 	}
-	const usedTokens = usedTokensOf(input.event.usage);
-	const contextWindow = contextWindowOf(input.event.usage, input.steering);
-	const rendered = await renderScopedInjection(
-		input.event.sessionId,
-		injectionScope(input.scope),
-		SCOPED_INJECTION_MAX_BYTES,
-		{
-			...(usedTokens === undefined ? {} : { usedTokens }),
-			...(contextWindow === undefined ? {} : { contextWindow }),
-		},
-	);
+	const rendered = await renderInjectionContent({
+		event: input.event,
+		scope: input.scope,
+		steering: input.steering,
+		...(input.ports === undefined ? {} : { ports: input.ports }),
+		root: input.root,
+	});
+	if (!rendered.ok) {
+		return rendered;
+	}
 	const appended = await input.append(input.root, {
 		kind: "injection",
 		layer: "L0",
@@ -113,7 +222,7 @@ export async function emitInjectionEvent(
 		durationMs: 0,
 		configHash: input.configHash,
 		packs: {},
-		message: rendered.content,
+		message: rendered.value,
 	});
 	if (!appended.ok) {
 		return appended;

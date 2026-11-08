@@ -13,6 +13,7 @@ import {
 } from "../features/integrity/index.ts";
 import {
 	buildManagedBlock,
+	type FloorRuleLine,
 	MANAGED_BEGIN,
 	MANAGED_END,
 } from "../features/steering/index.ts";
@@ -89,8 +90,16 @@ function configText(
 
 // SPEC §4.14.1: user text outside the managed block survives regen; a
 // malformed block is replaced rather than duplicated (CDX-E501 avoided).
-function withManagedBlock(existing: string | undefined): string {
-	const block = buildManagedBlock();
+// Callers pass the loaded floor rules (G4); without them the block keeps
+// the default set so regeneration stays byte-identical on unchanged input.
+function withManagedBlock(
+	existing: string | undefined,
+	floorRules?: ReadonlyArray<FloorRuleLine>,
+): string {
+	const block =
+		floorRules === undefined
+			? buildManagedBlock()
+			: buildManagedBlock({ floorRules });
 	if (existing === undefined) {
 		return `${block}\n`;
 	}
@@ -123,6 +132,9 @@ export interface PlanExtras {
 	readonly tunables?: unknown;
 	readonly architecture?: unknown;
 	readonly tools?: unknown;
+	// SPEC §4.6.2 item 3 (G4): floor rules built from the loaded pack
+	// registry; the managed block lists them instead of the default set.
+	readonly floorRules?: ReadonlyArray<FloorRuleLine>;
 }
 
 export function guardrailPlan(
@@ -148,7 +160,7 @@ export function guardrailPlan(
 	});
 	files.push({
 		path: "AGENTS.md",
-		content: withManagedBlock(existingAgents),
+		content: withManagedBlock(existingAgents, extras.floorRules),
 		owner: "codictator",
 		mode: "file",
 	});

@@ -4,8 +4,9 @@
 // with the audit append and the process sinks. Only the reply-capable
 // harnesses dispatch here; universal parses fail-closed (no hook traffic)
 // and every other unknown id stays CDX-E301. The loop breaker (§4.12.5)
-// and steering injection (§4.6.3) run at step 5 once their phases land;
-// until then the verdict decides. Split with hook-dispatch.ts (routing),
+// runs at step 5 once its phase lands; until then the verdict decides.
+// The steering injection (§4.6.3) renders at step 5 for L0 triggers and
+// rides the reply as additionalContext. Split with hook-dispatch.ts (routing),
 // hook-static.ts (pre-engine deny), hook-load.ts (root and config) and
 // hook-scope.ts (L1 scope); this file keeps the public contract and the
 // run composition.
@@ -39,6 +40,7 @@ import {
 	loadEffective,
 	resolveRoots,
 } from "./hook-load.ts";
+import { injectionForReply, replyForVerdict } from "./hook-reply.ts";
 import { hookScope } from "./hook-scope.ts";
 
 // The caller passes the root-independent ports; the runtime confines an Fs
@@ -219,7 +221,23 @@ async function runHookInner(
 	// SPEC §4.6.3 + §4.18.3: the L0 triggers render the scoped injection
 	// and land the auditable event before evaluation, so the status row
 	// reads live evidence even when the verdict blocks. An unwritable log
-	// blocks CDX-E801, like the verdict path.
+	// blocks CDX-E801, like the verdict path. The reply digest compares
+	// against the pre-append log: the reply renders first, then the event
+	// appends, so prompt.submit sees the prior injection and not its own.
+	const injectedReply = await injectionForReply({
+		event,
+		scope,
+		steering: effective.value.config.steering,
+		ports,
+		root,
+	});
+	if (!injectedReply.ok) {
+		return blockReply(
+			adapter,
+			injectedReply.error.code,
+			injectedReply.error.message,
+		);
+	}
 	const injected = await emitInjectionEvent({
 		event,
 		scope,
@@ -227,10 +245,17 @@ async function runHookInner(
 		configHash: effective.value.configHash,
 		root,
 		append: request.append,
+		ports,
 	});
 	if (!injected.ok) {
 		return blockReply(adapter, injected.error.code, injected.error.message);
 	}
+	// SPEC §4.6.3: L0 triggers return the rendered injection as
+	// additionalContext, shaped per harness by the adapter contract
+	// (Claude hookSpecificOutput, OpenCode wire field). Prompt.submit
+	// resends only when its hash differs from the last injection in the
+	// session, so an unchanged state costs nothing.
+	const additionalContext = injectedReply.value;
 	const budgetMs = hookBudgetMs(request.harness, request.budgetMs);
 	const timeoutSignal = Symbol("hook-timeout");
 	let timer: ReturnType<typeof setTimeout> | undefined;
@@ -248,27 +273,7 @@ async function runHookInner(
 				}, budgetMs);
 			}),
 		]);
-		if (verdict.decision === "block" || verdict.decision === "escalate") {
-			return adapter.reply({
-				decision: "block",
-				message: verdict.message,
-				eventId: verdict.eventId,
-			});
-		}
-		// Muse Code has no advise form: without steering injection (phase 9)
-		// an advise collapses to allow. OpenCode carries it on the wire.
-		if (
-			verdict.decision === "advise" &&
-			verdict.message !== "" &&
-			adapter.id === "opencode"
-		) {
-			return adapter.reply({
-				decision: "advise",
-				message: verdict.message,
-				eventId: verdict.eventId,
-			});
-		}
-		return adapter.reply({ decision: "allow", eventId: verdict.eventId });
+		return replyForVerdict(adapter, verdict, additionalContext);
 	} catch (error) {
 		if (error === timeoutSignal) {
 			return blockReply(
