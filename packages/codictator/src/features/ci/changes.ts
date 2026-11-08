@@ -42,7 +42,11 @@ export function isRecognisedBot(
 	return RECOGNISED_BOTS.includes(author) || trailerExempt.includes(author);
 }
 
-function touchesOnlyManifests(files: ReadonlyArray<string>): boolean {
+// SPEC §4.12.2 deps class, shared with the L3 hook legs: a change is
+// deps-shaped when every file is a manifest, lockfile or bot-config
+// basename. The hook legs reuse this so bot dependency updates stay exempt
+// there exactly when they qualify here.
+export function touchesOnlyManifests(files: ReadonlyArray<string>): boolean {
 	if (files.length === 0) {
 		return false;
 	}
