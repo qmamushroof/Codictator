@@ -34,8 +34,8 @@ export async function runGitText(
 	return ok(ran.stdout);
 }
 
-// SPEC §4.7.1 + §4.9.4: hook scope falls back to tracked BUGS rows.
-// Enforcers read worktree text for in-scope paths, so a committed BUGS file
+// SPEC §4.9.4 + §4.9 EC-22: hook and CI scopes fall back to tracked
+// BUGS rows. Enforcers read worktree text for in-scope paths, so a committed BUGS file
 // loads identically whether staged or appended here from HEAD. BUG-0065
 // follow-up: a fix scope staging no docs/BUGS/ file left bugRegistryReal
 // with zero rows and a false unknown-bug block on an already-fixed row.

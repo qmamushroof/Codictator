@@ -27,6 +27,7 @@ import { ciSummaryFor, isUnverifiableFinding } from "./ci-summary.ts";
 import { needCommandContext } from "./command-context.ts";
 import { resolveVerifyScope } from "./evaluate.ts";
 import { evaluateGateScope } from "./gate-scope.ts";
+import { withTrackedBugsFallback } from "./git-history.ts";
 import { printFinding } from "./inspect.ts";
 import type { CommandRequest } from "./shared.ts";
 import { fail, portsFor, printHuman, printJson, usageError } from "./shared.ts";
@@ -138,6 +139,13 @@ async function ciVerify(
 				);
 			}
 		} else {
+			// SPEC §4.9 EC-22: a fix range stages no docs/BUGS/ file, so
+			// the gate reads zero rows and fails closed on unknown-row.
+			// Union the tracked BUGS rows like the hook leg before judging.
+			const scopedFiles = await withTrackedBugsFallback(
+				ports.value,
+				scoped.value.files,
+			);
 			const commitText = await rangeMessages(
 				ports.value,
 				ranged.value.base,
@@ -156,11 +164,11 @@ async function ciVerify(
 				await ciPackIds(root, engineVersion),
 				commitText === ""
 					? {
-							files: [...scoped.value.files],
+							files: [...scopedFiles],
 							note: scoped.value.note,
 						}
 					: {
-							files: [...scoped.value.files],
+							files: [...scopedFiles],
 							note: scoped.value.note,
 							proposedContent: commitText,
 						},
