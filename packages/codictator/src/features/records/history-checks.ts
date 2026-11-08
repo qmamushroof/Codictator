@@ -19,7 +19,9 @@ export function entryFinding(
 }
 
 // SPEC §4.9.3 core/history-entry: the staged diff adds exactly one entry
-// whose Subject equals the message subject.
+// whose Subject equals the message subject. Whole-file counting stays for
+// the single-entry evaluation path; hook paths judge the ADDED subjects
+// (staged minus HEAD) through addedHistoryEntries below.
 export function checkHistoryEntryCount(
 	text: string,
 	path: string,
@@ -49,6 +51,68 @@ export function checkHistoryEntryCount(
 		];
 	}
 	return problems.map((message) =>
+		entryFinding("core/history-entry", message, path),
+	);
+}
+
+// SPEC §4.9.3: the staged DIFF adds exactly one entry. Real history files
+// accumulate entries, so hook paths judge ADDED subjects = staged subjects
+// minus HEAD subjects (multiset subtraction, order-preserving). Missing or
+// unreadable base (new file) means every staged entry is added.
+export function addedHistoryEntries(
+	stagedText: string,
+	baseText?: string,
+): Array<HistoryEntry> {
+	const staged = parseHistoryEntries(stagedText).entries;
+	if (baseText === undefined) {
+		return [...staged];
+	}
+	const remaining = new Map<string, number>();
+	for (const entry of parseHistoryEntries(baseText).entries) {
+		remaining.set(entry.subject, (remaining.get(entry.subject) ?? 0) + 1);
+	}
+	const added: Array<HistoryEntry> = [];
+	for (const entry of staged) {
+		const left = remaining.get(entry.subject) ?? 0;
+		if (left > 0) {
+			remaining.set(entry.subject, left - 1);
+			continue;
+		}
+		added.push(entry);
+	}
+	return added;
+}
+
+// The added-entry count verdict for hook paths: exactly one added entry,
+// and when a commit subject is supplied the added Subject equals it.
+// Message shapes match checkHistoryEntryCount so rule ids and anchors hold.
+export function checkAddedHistoryEntryCount(
+	stagedText: string,
+	baseText: string | undefined,
+	path: string,
+	commitSubject?: string,
+): Array<Finding> {
+	const staged = parseHistoryEntries(stagedText);
+	const added = addedHistoryEntries(stagedText, baseText);
+	if (added.length !== 1) {
+		return [
+			entryFinding(
+				"core/history-entry",
+				`history change holds ${String(added.length)} entries, want exactly one: ${path}`,
+				path,
+			),
+		];
+	}
+	if (commitSubject !== undefined && added[0]?.subject !== commitSubject) {
+		return [
+			entryFinding(
+				"core/history-entry",
+				`history Subject "${added[0]?.subject ?? ""}" differs from the commit subject "${commitSubject}"`,
+				path,
+			),
+		];
+	}
+	return staged.errors.map((message) =>
 		entryFinding("core/history-entry", message, path),
 	);
 }
