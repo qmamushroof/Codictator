@@ -2,7 +2,10 @@
 // steering block, CI workflow, hooks, launcher) and the manifest write are
 // shared by init and regen, so regeneration stays byte-identical.
 import { renderHarnessFiles } from "../features/adapters/index.ts";
-import { renderWorkflow } from "../features/ci/index.ts";
+import {
+	type RenderWorkflowOptions,
+	renderWorkflow,
+} from "../features/ci/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
 	buildManifest,
@@ -27,6 +30,7 @@ import {
 } from "../kernel/index.ts";
 import { LAUNCHER_TEXT } from "./plan-launcher.ts";
 import { portsFor } from "./shared.ts";
+export { detectWorkflowOptions } from "./plan-workflow.ts";
 
 function encode(text: string): Uint8Array {
 	return new TextEncoder().encode(text);
@@ -145,6 +149,7 @@ export function guardrailPlan(
 	extras: PlanExtras = {},
 	engineVersion: string = ENGINE_VERSION,
 	root = ".",
+	workflowOptions: RenderWorkflowOptions = {},
 ): GuardrailPlan {
 	const files: Array<{
 		path: string;
@@ -164,7 +169,10 @@ export function guardrailPlan(
 		owner: "codictator",
 		mode: "file",
 	});
-	const workflow = renderWorkflow(repoName);
+	const workflow = renderWorkflow(repoName, {
+		...workflowOptions,
+		repoName,
+	});
 	files.push({
 		path: ".github/workflows/codictator.yml",
 		content: workflow.text ?? "",

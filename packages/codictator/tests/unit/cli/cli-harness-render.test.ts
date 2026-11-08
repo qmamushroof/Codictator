@@ -102,8 +102,11 @@ test("[§4.14] guardrail plan renders harness adapter files owned by their harne
 test("[§4.5 EC-12] regen reproduces harness adapter files byte-identical", async () => {
 	// SPEC §4.5.8 EC-12: regeneration with no config change is
 	// byte-identical, harness files included. The second regen over the
-	// written tree must reproduce every byte of the first.
-	const repo = createTempRepo();
+	// written tree must reproduce every byte of the first. The lockfile
+	// seed keeps setup detection on the plan defaults (no install
+	// override), so the comparison judges regen fidelity, not detection;
+	// lockfile-less detection is pinned by cli-workflow-setup instead.
+	const repo = createTempRepo({ "package-lock.json": "{}" });
 	try {
 		const allHarnesses = [
 			"muse-code",

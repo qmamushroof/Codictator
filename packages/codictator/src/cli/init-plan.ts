@@ -14,7 +14,13 @@ import {
 } from "../kernel/index.ts";
 import { refuseNonHuman } from "./human-gate.ts";
 import { loadFloorRules } from "./packs.ts";
-import { buildHelperTool, guardrailPlan, writePlan } from "./plan.ts";
+import {
+	buildHelperTool,
+	detectWorkflowOptions,
+	guardrailPlan,
+	writePlan,
+} from "./plan.ts";
+export { detectWorkflowOptions };
 import { ensureGitignoreEntries } from "./setup-gitignore.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
@@ -267,6 +273,7 @@ export async function buildGuardrailPlan(
 					...(flags.profile === "" ? {} : { profile: flags.profile }),
 					modules,
 				};
+	const workflow = await detectWorkflowOptions(root);
 	return guardrailPlan(
 		planned,
 		flags.profile,
@@ -279,5 +286,7 @@ export async function buildGuardrailPlan(
 			...(floorRules === undefined ? {} : { floorRules }),
 		},
 		engineVersion,
+		root,
+		workflow,
 	);
 }

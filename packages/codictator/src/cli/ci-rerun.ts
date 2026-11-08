@@ -10,6 +10,7 @@ import {
 	type DeclaredTest,
 	type ReRunInput,
 } from "../features/testing/proofs.ts";
+import { classifyChange } from "../features/workflow/index.ts";
 import { readTestReport } from "../kernel/index.ts";
 import type { CiRange } from "./ci-range.ts";
 import { GIT_OUTPUT_LIMIT, GIT_TIMEOUT, runGitText } from "./git-history.ts";
@@ -105,6 +106,42 @@ async function rerunInWorktree(
 	}
 }
 
+// SPEC §4.12.3 L4: a code-class range with no task record fails
+// core/workflow-gates instead of passing silently. Records-only ranges owe
+// no task; an unreadable range stays quiet (the trailer gate already fails
+// closed on it).
+async function noTaskFindings(
+	ports: CommandPorts,
+	range: CiRange,
+): Promise<Array<Finding>> {
+	const listed = await runGit(ports, [
+		"git",
+		"diff",
+		"--name-only",
+		range.base,
+		range.head,
+		"--",
+	]);
+	if (listed === undefined) {
+		return [];
+	}
+	const files = listed
+		.split("\n")
+		.map((line) => line.trim())
+		.filter((line) => line !== "");
+	if (files.length === 0 || classifyChange(files) !== "code") {
+		return [];
+	}
+	return [
+		{
+			ruleId: "core/workflow-gates",
+			message: "range has no task record on this branch",
+			remediation:
+				"Run codictator task new --type <type> --title ... to open the branch task.",
+		} satisfies Finding,
+	];
+}
+
 export async function rerunRedProofs(
 	ports: CommandPorts,
 	root: string,
@@ -113,7 +150,7 @@ export async function rerunRedProofs(
 ): Promise<Array<Finding>> {
 	const ids = await listTaskIds(root);
 	if (ids.length === 0) {
-		return [];
+		return noTaskFindings(ports, range);
 	}
 	const byCommit = new Map<string, Array<DeclaredTest>>();
 	for (const id of ids) {
