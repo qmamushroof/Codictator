@@ -145,7 +145,7 @@ export function createFakeVscode(): FakeVscode {
 		folders: [],
 		configPaths: new Set(),
 		enginePaths: new Set(),
-		extensionVersionValue: "0.2.8",
+		extensionVersionValue: "0.2.9",
 		notificationChoice: undefined,
 		commands,
 		commandHandlers,

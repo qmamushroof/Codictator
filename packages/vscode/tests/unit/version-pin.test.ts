@@ -54,9 +54,9 @@ function realPackageVersion(): string {
 }
 
 test("[§4.20.1] extensionVersionOf reads the version through the full extension id", () => {
-	const host = createHost({ packageJSON: { version: "0.2.8" } });
-	assert.equal(extensionVersionOf(host), "0.2.8");
-	assert.equal(buildExtensionApi(host).extensionVersion(), "0.2.8");
+	const host = createHost({ packageJSON: { version: "0.2.9" } });
+	assert.equal(extensionVersionOf(host), "0.2.9");
+	assert.equal(buildExtensionApi(host).extensionVersion(), "0.2.9");
 });
 
 test("[§4.20.1] extension version falls back to the 0.0.0 pin without a surface", () => {
