@@ -1,0 +1,110 @@
+{
+	"acceptanceCriteria": [
+		"SPEC EC-22 documents tracked-BUGS fallback for hook and CI legs",
+		"ci verify range scope unions tracked docs/BUGS rows before evaluateGateScope",
+		"regression test red then green",
+		"typecheck lint coverage clean, verify staged clean"
+	],
+	"branch": "fix/ci-tracked-bugs-fallback",
+	"bugRowUpdated": true,
+	"diagnosis": "Repro: PR #191 range 6e8ac11..0aaf11a carries 8 files, no docs/BUGS row; newest Bug=BUG-0064 from release entry; T-0004 type-fix integrate phase claims .codictator/* and L4 fails closed on core/bug-registry unknown-row. Cause: hook leg unions tracked docs/BUGS via withTrackedBugsFallback (git-history.ts:42-66, wired git-hook.ts:61,202) but CI leg resolveVerifyScope (evaluate.ts:91-148) is base..head diff names only; bugRegistryReal (records-guards.ts:38-65) reads rows only from in-scope BUGS files (81-94). SPEC silent on CI-leg fallback, so SPEC fix first.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/cli/ci.ts",
+			"packages/codictator/src/cli/git-history.ts",
+			"packages/codictator/tests/unit/cli/cli-ci-bugs-fallback.test.ts",
+			"docs/SPEC/04-09-RECORDS.md",
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-08.md",
+			".codictator/tasks/T-0011.json",
+			"packages/codictator/tests/acceptance/ci-bugs-fallback.test.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T09:15:05.074Z",
+		"tree": "24913db1c0e57b31d147573d70234c83c2d707fa"
+	},
+	"historyStaged": true,
+	"id": "T-0011",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T09:09:27.415Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T09:14:23.415Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T09:15:14.045Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T09:51:48.343Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T09:55:08.666Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-08T09:56:20.214Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T09:09:25.979Z",
+		"commit": "6e8ac11bd53b3bed07013b4f82b8bf5899687607",
+		"failing": [
+			"[§4.9 EC-22] ci verify range scope falls back to tracked BUGS rows for fix tasks"
+		],
+		"tree": "0a5fa27a5a7a23ec090fab4759cc8325ee020826"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T09:54:11.016Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0011-r1",
+			"round": 1,
+			"tree": "cadb16039687817942394d86b663486176837f77"
+		}
+	],
+	"spec": [
+		"docs/SPEC/04-09-RECORDS.md:56",
+		"docs/SPEC/04-09-RECORDS.md:65",
+		"SPEC §1.2",
+		"SPEC §4.9.4",
+		"SPEC §4.12.3",
+		"SPEC §4.15"
+	],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-ci-bugs-fallback.test.ts",
+			"title": "[§4.9 EC-22] ci verify range scope falls back to tracked BUGS rows for fix tasks"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/cli/cli-ci-bugs-fallback.test.ts",
+			"title": "[§4.9 EC-22] tracked BUGS fallback keeps the scope when git is unavailable"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/ci-bugs-fallback.test.ts",
+			"title": "[§4.9 EC-22] ci verify range scope falls back to tracked BUGS rows in a real repo"
+		}
+	],
+	"title": "ci verify range scope falls back to tracked BUGS rows",
+	"type": "fix",
+	"version": 1
+}
