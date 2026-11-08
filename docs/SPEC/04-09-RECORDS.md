@@ -87,3 +87,4 @@ Runs at L1 on `tool.post.write` of a `.md` file (that file plus link targets), L
 | EC-19 | Commit adding only an `open` bug row and its history entry | Kind `docs`, Docs `none` |
 | EC-20 | Bug row edited from `fixed` back to `open` | Block `core/bug-rows-immutable` |
 | EC-21 | `docs/HISTORY.md` created | Block `core/doc-placement` |
+| EC-22 | Fix change with no `docs/BUGS/` file in scope | Fall back to tracked `docs/BUGS/` rows before judging `core/bug-registry` (hook and CI legs alike) |
