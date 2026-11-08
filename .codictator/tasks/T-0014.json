@@ -31,7 +31,7 @@
   },
   "historyStaged": true,
   "id": "T-0014",
-  "phase": "validation",
+  "phase": "record",
   "phases": [
     {
       "enteredAt": "2026-11-08T13:42:33.532Z",
@@ -47,6 +47,16 @@
       "enteredAt": "2026-11-08T13:58:45.909Z",
       "evidence": "codictator task phase next",
       "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-08T15:21:14.412Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-08T15:44:32.121Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
     }
   ],
   "redProof": {
@@ -60,6 +70,18 @@
     ],
     "tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
   },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-08T15:22:40.253Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-review-slice3-T0014",
+      "round": 1,
+      "tree": "56d5404d3ec8bcea5a894231209179e5e5659de4"
+    }
+  ],
   "spec": [
     "docs/SPEC/04-12-WORKFLOW.md:42",
     "docs/SPEC/04-09-RECORDS.md:51",
