@@ -38,8 +38,10 @@ export function emitGitVerdict(
 
 // SPEC §4.9: core/history-entry judges at L3 commit-msg (the hook-owned
 // staged-text check in git-hook.ts) and at L4 (the ci verify range) —
-// never the pre-commit/pre-push diff legs, where no entry is staged yet
-// and the presence rule would block every normally-staged change.
+// never the pre-commit/pre-push review legs, where the worktree text is not
+// the staged text. The exclusion stands because both L3 hooks judge staged
+// history explicitly: pre-commit through checkStagedHistory, commit-msg
+// through its required-entry plus added-entry checks (git-history.ts).
 const HOOK_REVIEW_EXCLUDES: ReadonlySet<string> = new Set([
 	"core/history-entry",
 ]);
