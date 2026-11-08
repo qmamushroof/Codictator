@@ -11,7 +11,7 @@ import { checkAddedHistoryEntryCount } from "../features/records/history-checks.
 import type { Env, Result } from "../kernel/index.ts";
 import { ok, readHostText, writeHostText } from "../kernel/index.ts";
 import { emitGitVerdict, evaluateGitChange } from "./git-eval.ts";
-import { checkStagedHistory, runGitText } from "./git-history.ts";
+import { checkStagedHistory, runGitText, withTrackedBugsFallback } from "./git-history.ts";
 import type { CommandPorts, CommandRequest } from "./shared.ts";
 import {
 	commandEnv,
@@ -54,12 +54,13 @@ async function runPreCommit(
 		now,
 		configHash,
 	);
+	const scoped = await withTrackedBugsFallback(ports, staged.value);
 	return evaluateGitChange(
 		ports,
 		req,
 		"pre-commit",
 		packIds,
-		staged.value,
+		scoped,
 		diff.value,
 		now,
 		configHash,
@@ -194,12 +195,13 @@ async function runPrePush(
 		.split("\n")
 		.map((line) => line.trim())
 		.filter((line) => line !== "");
+	const scoped = await withTrackedBugsFallback(ports, files);
 	return evaluateGitChange(
 		ports,
 		req,
 		"pre-push",
 		packIds,
-		files,
+		scoped,
 		diff.value,
 		now,
 		configHash,

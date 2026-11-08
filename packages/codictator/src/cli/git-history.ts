@@ -34,6 +34,37 @@ export async function runGitText(
 	return ok(ran.stdout);
 }
 
+// SPEC §4.7.1 + §4.9.4: hook scope falls back to tracked BUGS rows.
+// Enforcers read worktree text for in-scope paths, so a committed BUGS file
+// loads identically whether staged or appended here from HEAD. BUG-0065
+// follow-up: a fix scope staging no docs/BUGS/ file left bugRegistryReal
+// with zero rows and a false unknown-bug block on an already-fixed row.
+export async function withTrackedBugsFallback(
+	ports: CommandPorts,
+	files: ReadonlyArray<string>,
+): Promise<Array<string>> {
+	if (files.some((file) => file.startsWith("docs/BUGS/"))) {
+		return [...files];
+	}
+	const listed = await runGitText(ports, [
+		"git",
+		"ls-tree",
+		"HEAD",
+		"--name-only",
+		"--",
+		"docs/BUGS/",
+	]);
+	if (!listed.ok) {
+		return [...files];
+	}
+	const extra = listed.value
+		.split("\n")
+		.map((line) => line.trim())
+		.filter((line) => line !== "")
+		.filter((entry) => !files.includes(entry));
+	return [...files, ...extra];
+}
+
 // SPEC §4.9.3 + §4.12.3 L3: the pre-commit history verdict. When the
 // staged change carries a history file, its staged text is judged through
 // records/history-scope.ts checkHistory (count, completeness, append-only
