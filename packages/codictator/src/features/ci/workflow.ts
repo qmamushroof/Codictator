@@ -36,6 +36,15 @@ export interface RenderWorkflowOptions {
 	readonly defaultBranch?: string;
 	readonly pins?: WorkflowPins;
 	readonly bot?: "auto" | "renovate" | "dependabot" | "none";
+	// SPEC §4.15.5/§4.15.6: the self-host flag selects the source
+	// bootstrap; consumer repos run the installed binary. Setup-detected
+	// values arrive from init/regen detection; an omitted build or node
+	// version file omits that step instead of hardcoding one.
+	readonly selfHost?: boolean;
+	readonly runCommand?: string;
+	readonly installCommand?: string;
+	readonly buildCommand?: string;
+	readonly nodeVersionFile?: string;
 }
 
 // SPEC §4.15.1: daily schedule minute and hour derive from a hash of the
@@ -55,30 +64,81 @@ function sweepPermissions(bot: string): string {
 	return "    permissions:\n      contents: read\n";
 }
 
-// SPEC §4.15.1: .github/workflows/codictator.yml, manifest-owned. Workflow
-// default is contents: read; jobs raise only what they need.
 // SPEC §4.15.5: this workflow also governs Codictator's own repo, where no
-// published `codictator` binary exists on PATH yet — every job therefore
-// bootstraps the CLI from the local checkout (setup-node, install, build)
-// and invokes the built entry, instead of assuming a published binary.
-// Build-from-source stays deterministic and keeps working post-publish.
-const CODICTATOR_RUN = "node packages/codictator/dist/cli/main.js";
+// published `codictator` binary exists on PATH yet — the self-host jobs
+// therefore bootstrap the CLI from the local checkout (setup-node,
+// install, build) and invoke the built entry, instead of assuming a
+// published binary. Consumer repos run the installed binary resolved at
+// install time (the plan-launcher.ts engine candidates), so the default
+// render carries no source path, no build step and no version file until
+// setup detection supplies them (§4.15.6 `npx --no-install codictator`).
+const SELF_HOST_RUN = "node packages/codictator/dist/cli/main.js";
+const CONSUMER_RUN = "npx --no-install codictator";
 
-// SPEC §4.15.3: the step passes the PR author and the changed files from
-// the Actions context, so the command's --author/--files contract holds;
-// forks ride along as --fork and are never written to. (Actions
-// expressions stay literal via \${{ escapes; only the runner path
-// interpolates.)
-const recordBotChange: ReadonlyArray<string> = [
-	"      - run: |",
-	`          base_sha="\${{ github.event.pull_request.base.sha }}"`,
-	`          record_args=(--author "\${{ github.event.pull_request.user.login }}")`,
-	"          while IFS= read -r changed_file; do",
-	'            if [ -n "$changed_file" ]; then record_args+=(--files="$changed_file"); fi',
-	'          done < <(git diff --name-only "$base_sha"...HEAD --)',
-	`          if [ "\${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then record_args+=(--fork); fi`,
-	`          ${CODICTATOR_RUN} ci record-bot-change "\${record_args[@]}"`,
-];
+interface ResolvedSetup {
+	readonly run: string;
+	readonly install: string;
+	readonly build: string | undefined;
+	readonly nodeVersionFile: string | undefined;
+}
+
+// SPEC §4.15.1: the run, install, build and Node inputs resolve from the
+// self-host flag plus setup-detected overrides, never from path guessing.
+function resolveSetup(options?: RenderWorkflowOptions): ResolvedSetup {
+	if (options?.selfHost === true) {
+		return {
+			run: options.runCommand ?? SELF_HOST_RUN,
+			install: options.installCommand ?? "npm ci --ignore-scripts",
+			build: options.buildCommand ?? "npm run build",
+			nodeVersionFile: options.nodeVersionFile ?? ".nvmrc",
+		};
+	}
+	return {
+		run: options?.runCommand ?? CONSUMER_RUN,
+		install: options?.installCommand ?? "npm ci --ignore-scripts",
+		build: options?.buildCommand,
+		nodeVersionFile: options?.nodeVersionFile,
+	};
+}
+
+function setupNodeLines(
+	pins: WorkflowPins,
+	setup: ResolvedSetup,
+): ReadonlyArray<string> {
+	return [
+		`      - uses: actions/setup-node@${pins.setupNodeSha} # ${pins.setupNodeVersion}`,
+		"        with:",
+		...(setup.nodeVersionFile === undefined
+			? []
+			: [`          node-version-file: ${setup.nodeVersionFile}`]),
+		"          cache: npm",
+	];
+}
+
+function installLines(setup: ResolvedSetup): ReadonlyArray<string> {
+	return [
+		`      - run: ${setup.install}`,
+		...(setup.build === undefined ? [] : [`      - run: ${setup.build}`]),
+	];
+}
+
+function recordBotChangeLines(run: string): ReadonlyArray<string> {
+	// SPEC §4.15.3: the step passes the PR author and the changed files from
+	// the Actions context, so the command's --author/--files contract holds;
+	// forks ride along as --fork and are never written to. (Actions
+	// expressions stay literal via \${{ escapes; only the runner path
+	// interpolates.)
+	return [
+		"      - run: |",
+		`          base_sha="\${{ github.event.pull_request.base.sha }}"`,
+		`          record_args=(--author "\${{ github.event.pull_request.user.login }}")`,
+		"          while IFS= read -r changed_file; do",
+		'            if [ -n "$changed_file" ]; then record_args+=(--files="$changed_file"); fi',
+		'          done < <(git diff --name-only "$base_sha"...HEAD --)',
+		`          if [ "\${{ github.event.pull_request.head.repo.fork }}" = "true" ]; then record_args+=(--fork); fi`,
+		`          ${run} ci record-bot-change "\${record_args[@]}"`,
+	];
+}
 
 // SPEC §4.15.1: verify job block (EC-12). The full `codictator ci verify`
 // gate runs on every event including pull_request (PRD §6 P6), so the
@@ -88,6 +148,7 @@ const recordBotChange: ReadonlyArray<string> = [
 function renderVerifyJob(
 	matrix: string,
 	pins: WorkflowPins,
+	setup: ResolvedSetup,
 ): ReadonlyArray<string> {
 	return [
 		"  verify:",
@@ -100,18 +161,23 @@ function renderVerifyJob(
 		"      matrix:",
 		`        os: [${matrix}]`,
 		"    steps:",
+		...checkoutLines(pins, true),
+		...setupNodeLines(pins, setup),
+		...installLines(setup),
+		`      - run: ${setup.run} ci verify`,
+		"",
+	];
+}
+
+function checkoutLines(
+	pins: WorkflowPins,
+	persistCredentials: boolean,
+): ReadonlyArray<string> {
+	return [
 		`      - uses: actions/checkout@${pins.checkoutSha} # ${pins.checkoutVersion}`,
 		"        with:",
 		"          fetch-depth: 0",
-		"          persist-credentials: false",
-		`      - uses: actions/setup-node@${pins.setupNodeSha} # ${pins.setupNodeVersion}`,
-		"        with:",
-		"          node-version-file: .nvmrc",
-		"          cache: npm",
-		"      - run: npm ci --ignore-scripts",
-		"      - run: npm run build",
-		`      - run: ${CODICTATOR_RUN} ci verify`,
-		"",
+		...(persistCredentials ? ["          persist-credentials: false"] : []),
 	];
 }
 
@@ -123,6 +189,7 @@ export function renderWorkflow(
 	const branch = options?.defaultBranch ?? "main";
 	const pins = options?.pins ?? FALLBACK_PINS;
 	const bot = options?.bot ?? "none";
+	const setup = resolveSetup(options);
 	const name = repoRoot.replaceAll("\\", "/").split("/").pop() ?? "repo";
 	const cron = scheduleCronFor(options?.repoName ?? name);
 	const matrix = os.map((runner) => `"${runner}"`).join(", ");
@@ -146,39 +213,27 @@ export function renderWorkflow(
 		`  cancel-in-progress: \${{ github.event_name == 'pull_request' }}`,
 		"",
 		"jobs:",
-		...renderVerifyJob(matrix, pins),
+		...renderVerifyJob(matrix, pins, setup),
 		"  record-bot-change:",
 		"    if: github.event_name == 'pull_request'",
 		"    permissions:",
 		"      contents: write",
 		"    runs-on: ubuntu-latest",
 		"    steps:",
-		`      - uses: actions/checkout@${pins.checkoutSha} # ${pins.checkoutVersion}`,
-		"        with:",
-		"          fetch-depth: 0",
-		`      - uses: actions/setup-node@${pins.setupNodeSha} # ${pins.setupNodeVersion}`,
-		"        with:",
-		"          node-version-file: .nvmrc",
-		"          cache: npm",
-		"      - run: npm ci --ignore-scripts",
-		"      - run: npm run build",
-		...recordBotChange,
+		...checkoutLines(pins, false),
+		...setupNodeLines(pins, setup),
+		...installLines(setup),
+		...recordBotChangeLines(setup.run),
 		"",
 		"  sweep:",
 		"    if: github.event_name == 'schedule'",
 		sweepPermissions(bot).trimEnd(),
 		"    runs-on: ubuntu-latest",
 		"    steps:",
-		`      - uses: actions/checkout@${pins.checkoutSha} # ${pins.checkoutVersion}`,
-		"        with:",
-		"          fetch-depth: 0",
-		`      - uses: actions/setup-node@${pins.setupNodeSha} # ${pins.setupNodeVersion}`,
-		"        with:",
-		"          node-version-file: .nvmrc",
-		"          cache: npm",
-		"      - run: npm ci --ignore-scripts",
-		"      - run: npm run build",
-		`      - run: ${CODICTATOR_RUN} ci sweep`,
+		...checkoutLines(pins, false),
+		...setupNodeLines(pins, setup),
+		...installLines(setup),
+		`      - run: ${setup.run} ci sweep`,
 		"",
 		"  live:",
 		"    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'",
@@ -187,15 +242,9 @@ export function renderWorkflow(
 		"      issues: write",
 		"    runs-on: ubuntu-latest",
 		"    steps:",
-		`      - uses: actions/checkout@${pins.checkoutSha} # ${pins.checkoutVersion}`,
-		"        with:",
-		"          fetch-depth: 0",
-		`      - uses: actions/setup-node@${pins.setupNodeSha} # ${pins.setupNodeVersion}`,
-		"        with:",
-		"          node-version-file: .nvmrc",
-		"          cache: npm",
-		"      - run: npm ci --ignore-scripts",
-		"      - run: npm run build",
+		...checkoutLines(pins, false),
+		...setupNodeLines(pins, setup),
+		...installLines(setup),
 		...liveCheck,
 		...liveIssue,
 		"",
@@ -203,7 +252,13 @@ export function renderWorkflow(
 	return {
 		host: "github",
 		os,
-		steps: ["checkout", "setup-node", "install", "build", "verify"],
+		steps: [
+			"checkout",
+			"setup-node",
+			"install",
+			...(setup.build === undefined ? [] : ["build"]),
+			"verify",
+		],
 		text,
 		scheduleCron: cron,
 	};

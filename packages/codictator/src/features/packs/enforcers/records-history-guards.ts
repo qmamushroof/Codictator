@@ -36,10 +36,15 @@ export async function historyEntryReal(
 	if (files.length === 0) {
 		return [];
 	}
-	if (files.some((file) => isRecordFile(file))) {
+	// SPEC §4.9.3 core/history-entry: a record file exempts only a
+	// records-only change. A code change that also carries a BUGS row (the
+	// tracked-BUGS fallback unions tracked rows into the scope) still owes
+	// a HISTORY entry, so only the non-record files are judged.
+	const judged = files.filter((file) => !isRecordFile(file));
+	if (judged.length === 0) {
 		return [];
 	}
-	return files.map((file) =>
+	return judged.map((file) =>
 		entryFinding(
 			"core/history-entry",
 			`commit stages no history entry (checked ${file})`,

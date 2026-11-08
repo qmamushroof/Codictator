@@ -252,3 +252,46 @@ test("[§4.10] a failed worktree add stays quiet", async () => {
 		rmSync(root, { recursive: true, force: true });
 	}
 });
+
+test("[§4.12.3 L4] code-class range with no task fails core/workflow-gates", async () => {
+	// SPEC §4.12.3 L4: with no task record a code-class range owes a task
+	// instead of passing the re-run silently.
+	const root = tempRoot();
+	try {
+		const fake = createFakePorts();
+		fake.proc.when(["git", "diff", "--name-only", "base", "head", "--"], {
+			code: 0,
+			stdout: "src/a.ts\n",
+			stderr: "",
+			timedOut: false,
+			truncated: false,
+		});
+		const ports: CommandPorts = { ...fake.ports, root };
+		const findings = await rerunRedProofs(ports, root, RANGE);
+		assert.equal(findings.length, 1);
+		assert.equal(findings[0]?.ruleId, "core/workflow-gates");
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("[§4.12.3 L4] records-only range with no task stays quiet", async () => {
+	// SPEC §4.12.3 L4: the no-task failure is for code-class ranges; a
+	// records-only range owes no task.
+	const root = tempRoot();
+	try {
+		const fake = createFakePorts();
+		fake.proc.when(["git", "diff", "--name-only", "base", "head", "--"], {
+			code: 0,
+			stdout: "docs/BUGS/2026.md\n",
+			stderr: "",
+			timedOut: false,
+			truncated: false,
+		});
+		const ports: CommandPorts = { ...fake.ports, root };
+		const findings = await rerunRedProofs(ports, root, RANGE);
+		assert.deepEqual(findings, []);
+	} finally {
+		rmSync(root, { recursive: true, force: true });
+	}
+});

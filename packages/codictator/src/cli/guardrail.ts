@@ -16,7 +16,7 @@ import {
 } from "../features/integrity/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { err, ok, resolveRepoRoot } from "../kernel/index.ts";
-import { initPreamble } from "./init-plan.ts";
+import { initPreamble, detectWorkflowOptions } from "./init-plan.ts";
 import { guardrailPlan, writePlan } from "./plan.ts";
 import type { CommandRequest } from "./shared.ts";
 import {
@@ -121,6 +121,7 @@ export async function handleRegen(
 		},
 		req.engineVersion ?? ENGINE_VERSION,
 		root.value,
+		await detectWorkflowOptions(root.value),
 	);
 	// SPEC §4.14.1: custom fragments keep the historical codictator owner.
 	const customOwned = withCodictatorOwner(customFiles.value);

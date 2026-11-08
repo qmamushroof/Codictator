@@ -1,0 +1,151 @@
+{
+  "acceptanceCriteria": [
+    "generated workflow resolves the installed launcher and setup-detected install build node values",
+    "code change carrying a BUGS row still owes a HISTORY entry",
+    "code-class range with no task fails core/workflow-gates"
+  ],
+  "branch": "fix/consumer-slice4-l4",
+  "bugRowUpdated": true,
+  "diagnosis": "G6: CODICTATOR_RUN hardcodes node packages/codictator/dist (missing in consumers), npm run build and .nvmrc are hardcoded, isRecordFile early-return silences history-entry whenever BUGS tracked, rerunRedProofs passes with no tasks",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/ci/workflow.ts",
+      "packages/codictator/src/features/packs/enforcers/records-history-guards.ts",
+      "packages/codictator/src/cli/ci-rerun.ts",
+      "packages/codictator/src/cli/plan.ts",
+      "packages/codictator/src/cli/init-plan.ts",
+      "packages/codictator/tests/unit/integrity/ci-gate-s4154-s4156-s4152-s4157-s4153-s4151.test.ts",
+      "packages/codictator/tests/unit/coverage/ci-rerun.test.ts",
+      "packages/codictator/tests/unit/records/records-history-guards.test.ts",
+      "packages/codictator/tests/unit/ci/ci-workflow-consumer.test.ts",
+      "packages/codictator/tests/unit/records/records-history-entry.test.ts",
+      "docs/BUGS/2026.md",
+      "docs/HISTORY/2026-11-08.md",
+      "package.json",
+      "packages/codictator/tests/red-ledger.json",
+      "packages/codictator/tests/unit/cli/cli-workflow-setup.test.ts",
+      ".codictator/tasks/T-0013.json",
+      "packages/codictator/tests/acceptance/consumer-ci-workflow.test.ts",
+      "packages/codictator/src/cli/guardrail.ts",
+      "packages/codictator/tests/unit/cli/cli-harness-render.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-08T13:54:43.291Z",
+    "tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+  },
+  "historyStaged": true,
+  "id": "T-0013",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-08T13:43:24.178Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-08T13:44:45.097Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-08T13:47:50.310Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-08T14:12:10.329Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-08T15:31:52.621Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-08T14:07:38.751Z",
+    "commit": "cf2fe9be5de9ce0bf03fa096af491d1cf04e372d",
+    "failing": [
+      "[§4.15.6] consumer render runs the installed launcher with setup-detected steps",
+      "[§4.15.1] setup-detected build and node version file render",
+      "[§4.9.3] code change carrying a BUGS row still owes a history entry",
+      "[§4.12.3 L4] code-class range with no task fails core/workflow-gates",
+      "[§4.15.1] setup detection reads the manifest flag lockfile build script and version file",
+      "[§4.15.5] guardrail plan renders the source bootstrap only with the self-host flag"
+    ],
+    "tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-08T15:31:42.930Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-review-slice4-T0013",
+      "round": 1,
+      "tree": "09a249c1d6f74fc5cc5fc42b8948dcf3db6c433e"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-15-CI.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/ci/ci-workflow-consumer.test.ts",
+      "title": "[§4.15.6] consumer render runs the installed launcher with setup-detected steps"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/records/records-history-entry.test.ts",
+      "title": "[§4.9.3] code change carrying a BUGS row still owes a history entry"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/records/records-history-entry.test.ts",
+      "title": "[§4.9.3] records-only change owes no history entry"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/coverage/ci-rerun.test.ts",
+      "title": "[§4.12.3 L4] code-class range with no task fails core/workflow-gates"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/coverage/ci-rerun.test.ts",
+      "title": "[§4.12.3 L4] records-only range with no task stays quiet"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/cli-workflow-setup.test.ts",
+      "title": "[§4.15.1] setup detection reads the manifest flag lockfile build script and version file"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/cli-workflow-setup.test.ts",
+      "title": "[§4.15.5] guardrail plan renders the source bootstrap only with the self-host flag"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-ci-workflow.test.ts",
+      "title": "[§4.15.6] generated workflow in a fresh consumer repo runs the installed launcher"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-ci-workflow.test.ts",
+      "title": "[§4.15.5] generated workflow in the self-host repo bootstraps from source"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/ci/ci-workflow-consumer.test.ts",
+      "title": "[§4.15.1] setup-detected build and node version file render"
+    }
+  ],
+  "title": "consumer L4 CI cannot run in consumer repos",
+  "type": "fix",
+  "version": 1
+}
+
