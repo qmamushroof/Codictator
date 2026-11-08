@@ -17,7 +17,8 @@
 			"docs/BUGS/2026.md",
 			"docs/HISTORY/2026-11-08.md",
 			".codictator/tasks/T-0011.json",
-			"packages/codictator/tests/acceptance/ci-bugs-fallback.test.ts"
+			"packages/codictator/tests/acceptance/ci-bugs-fallback.test.ts",
+			"packages/codictator/tests/unit/integrity/cli-bugs-fallback-modules-s411.test.ts"
 		]
 	},
 	"greenProof": {
@@ -102,6 +103,11 @@
 			"kind": "acceptance",
 			"path": "packages/codictator/tests/acceptance/ci-bugs-fallback.test.ts",
 			"title": "[§4.9 EC-22] ci verify range scope falls back to tracked BUGS rows in a real repo"
+		},
+		{
+			"kind": "architecture",
+			"path": "packages/codictator/tests/unit/integrity/cli-bugs-fallback-modules-s411.test.ts",
+			"title": "[§4.11] cli bugs-fallback modules keep their public import shape"
 		}
 	],
 	"title": "ci verify range scope falls back to tracked BUGS rows",
