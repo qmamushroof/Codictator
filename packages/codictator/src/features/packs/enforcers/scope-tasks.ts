@@ -6,7 +6,7 @@
 // to judge, so the real path stays quiet instead of false-blocking.
 import { globMatch, type Ports, parseJson } from "../../../kernel/index.ts";
 import type { Finding } from "../../engine/index.ts";
-import type { TaskRecord } from "../../workflow/index.ts";
+import { resolveActiveTask, type TaskRecord } from "../../workflow/index.ts";
 
 export const TASKS_DIR = ".codictator/tasks";
 
@@ -94,6 +94,71 @@ export async function collectTaskFindings(
 	const tasks = await readTasksForScope(ports, files);
 	const findings: Array<Finding> = [];
 	for (const task of tasks) {
+		await judge(task, findings);
+	}
+	return findings;
+}
+
+// SPEC §4.12.1: the branch task is the active task for every hook on that
+// branch. The lookup rides the existing git and proc ports, mirroring the
+// CLI branchOf path; an unreadable branch (no root, failed or empty branch
+// read) answers undefined, so the caller judges with no active task instead
+// of judging blind.
+export async function readBranch(ports: Ports): Promise<string | undefined> {
+	const root = await ports.git.root();
+	if (!root.ok) {
+		return undefined;
+	}
+	const ran = await ports.proc.run(["git", "branch", "--show-current"], {
+		cwd: root.value,
+		env: {},
+		timeoutMs: 15_000,
+		maxOutputBytes: 4096,
+	});
+	if (ran.timedOut || ran.truncated || ran.code !== 0) {
+		return undefined;
+	}
+	const branch = ran.stdout.trim();
+	return branch === "" ? undefined : branch;
+}
+
+// SPEC §4.12.1: the active task for the branch, reusing the branch-binding
+// lookup from tasks.ts. An unreadable branch means no active task.
+export async function activeTaskFor(
+	ports: Ports,
+	branch: string | undefined,
+): Promise<TaskRecord | undefined> {
+	if (branch === undefined) {
+		return undefined;
+	}
+	return resolveActiveTask(await readScopeTasks(ports), branch);
+}
+
+// The judged set: the active task for the branch plus every task claiming
+// the scope, id-sorted for deterministic verdicts (§4.3.6). Judging the
+// active task — not only claiming tasks — closes the silent-allow gap: with
+// no active task the caller's EC-1 path fires instead of nothing.
+export async function readJudgedTasks(
+	ports: Ports,
+	files: ReadonlyArray<string>,
+): Promise<Array<TaskRecord>> {
+	const active = await activeTaskFor(ports, await readBranch(ports));
+	const tasks = await readTasksForScope(ports, files);
+	if (active !== undefined && !tasks.some((task) => task.id === active.id)) {
+		tasks.push(active);
+	}
+	return tasks.sort((a, b) => (a.id < b.id ? -1 : 1));
+}
+
+// Shared active-task loop: one call site per judging helper, so the split
+// real modules share no repeated loop run.
+export async function collectActiveTaskFindings(
+	ports: Ports,
+	files: ReadonlyArray<string>,
+	judge: (task: TaskRecord, findings: Array<Finding>) => void | Promise<void>,
+): Promise<Array<Finding>> {
+	const findings: Array<Finding> = [];
+	for (const task of await readJudgedTasks(ports, files)) {
 		await judge(task, findings);
 	}
 	return findings;
