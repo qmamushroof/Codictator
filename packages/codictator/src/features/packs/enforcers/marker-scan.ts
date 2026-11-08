@@ -5,7 +5,7 @@
 // share no duplicated resolver-skeleton token run.
 import type { Ports, Result } from "../../../kernel/index.ts";
 import { ok } from "../../../kernel/index.ts";
-import type { Enforcer, Finding } from "../../engine/index.ts";
+import type { CheckContext, Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import {
@@ -51,6 +51,21 @@ export interface MarkerRealArgs {
 	readonly binding: RuleBinding;
 	readonly files: ReadonlyArray<string>;
 	readonly findings: Array<Finding>;
+	// A live L1 tool call carries its targets in the scope; diagnostic and
+	// gate-leg scopes (verify, pre-commit, pre-push) carry files only. Only
+	// a live write can owe the EC-1 no-task block.
+	readonly hasToolTargets: boolean;
+}
+
+// SPEC §4.3.2 + §4.7: at the pre-tool trigger the L1 scope carries no disk
+// files, so the lexical tool targets judge in their place. The fallback only
+// repoints the file pick — it never probes the disk, so not-yet-existing
+// targets stay allowed unless a rule judges them lexically (§4.7.3).
+function preToolFiles(ctx: CheckContext): ReadonlyArray<string> {
+	if (ctx.trigger === "pre-tool" && ctx.scope.files.length === 0) {
+		return ctx.scope.proposedPaths ?? [];
+	}
+	return ctx.scope.files;
 }
 
 // One resolver skeleton for every marker-first plus real-scope rule: judge
@@ -68,10 +83,13 @@ export function markerRealGuard(
 	return ok(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
-			const files = selectFiles(ctx.scope.files, binding.scopeGlobs);
-			await judgeMarkers({ ports, binding, files, findings });
+			const files = selectFiles(preToolFiles(ctx), binding.scopeGlobs);
+			const hasToolTargets =
+				ctx.trigger === "pre-tool" &&
+				(ctx.scope.proposedPaths?.length ?? 0) > 0;
+			await judgeMarkers({ ports, binding, files, findings, hasToolTargets });
 			if (hasRealScope(files)) {
-				await judgeReal({ ports, binding, files, findings });
+				await judgeReal({ ports, binding, files, findings, hasToolTargets });
 			}
 			return findings;
 		}),
@@ -149,7 +167,13 @@ export function markerGuard(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
 			const files = selectFiles(ctx.scope.files, binding.scopeGlobs);
-			await judgeMarkers({ ports, binding, files, findings });
+			await judgeMarkers({
+				ports,
+				binding,
+				files,
+				findings,
+				hasToolTargets: false,
+			});
 			return findings;
 		}),
 	);

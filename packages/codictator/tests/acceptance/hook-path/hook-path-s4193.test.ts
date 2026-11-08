@@ -10,7 +10,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { runNodeScript } from "../../support/cli-runner.ts";
 
-import { createTempRepo, type TempRepo } from "../../support/temp-repo.ts";
+import {
+	createTempRepo,
+	seedImplementationTask,
+	type TempRepo,
+} from "../../support/temp-repo.ts";
 
 function packageRoot(): string {
 	const here = path.dirname(fileURLToPath(import.meta.url));
@@ -188,10 +192,13 @@ function lastEventLine(repo: TempRepo): {
 
 test("[§4.19.3] hook path allows an OpenCode tool call", async () => {
 	// The OpenCode wire is the HookDecision JSON: exit 0 with decision
-	// allow, and the verdict line records the session.
+	// allow, and the verdict line records the session. SPEC §4.12.3 L1
+	// (slice 1) blocks a taskless write, so the fixture opens an
+	// implementation task; the allow shape stays what the path asserts.
 	const repo = createTempRepo();
 	try {
 		installHookPath(repo, { config: true, engine: true });
+		seedImplementationTask(repo, "T-0099", ["**"]);
 		const result = await runHook(
 			repo,
 			"opencode",

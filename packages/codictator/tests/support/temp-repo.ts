@@ -135,3 +135,34 @@ export function createBareRepo(): BareRepo {
 		},
 	};
 }
+
+// SPEC §4.12.3 L1: an implementation task with its red proof recorded, so
+// hook and gate fixtures can allow a write without tripping the TDD and
+// plan gates. The branch binds at seeding time from the repo's branch.
+export function seedImplementationTask(
+	repo: TempRepo,
+	id: string,
+	allow: ReadonlyArray<string>,
+): void {
+	repo.writeFile(
+		`.codictator/tasks/${id}.json`,
+		JSON.stringify({
+			version: 1,
+			id,
+			type: "feature",
+			title: `${id} probe`,
+			branch: repo.git(["branch", "--show-current"]).trim(),
+			phase: "implementation",
+			phases: [],
+			spec: [],
+			acceptanceCriteria: [],
+			files: { allow: [...allow] },
+			redProof: {
+				commit: "0000000000000000000000000000000000000000",
+				tree: "0000000000000000000000000000000000000000",
+				failing: [`${id} probe`],
+				at: "2026-01-01T00:00:00+00:00",
+			},
+		}),
+	);
+}

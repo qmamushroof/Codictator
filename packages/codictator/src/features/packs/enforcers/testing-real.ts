@@ -11,6 +11,7 @@ import {
 } from "../../testing/scenarios.ts";
 import type { TaskRecord } from "../../workflow/index.ts";
 import {
+	collectActiveTaskFindings,
 	collectTaskFindings,
 	implementationBegan,
 	isCodeTask,
@@ -50,7 +51,7 @@ export async function redBeforeGreenReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
 ): Promise<Array<Finding>> {
-	return collectTaskFindings(ports, files, (task, findings) => {
+	return collectActiveTaskFindings(ports, files, (task, findings) => {
 		if (
 			!isCodeTask(task) ||
 			!implementationBegan(task) ||

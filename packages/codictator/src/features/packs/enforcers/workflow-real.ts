@@ -7,7 +7,11 @@ import { checkPhaseGate, MANDATORY_PHASES } from "../../workflow/phases.ts";
 import { checkWriteWithinPlan, classifyChange } from "../../workflow/writes.ts";
 import type { RuleBinding } from "./binding.ts";
 import { findingFor } from "./binding.ts";
-import { collectTaskFindings } from "./scope-tasks.ts";
+import {
+	collectActiveTaskFindings,
+	collectTaskFindings,
+	readJudgedTasks,
+} from "./scope-tasks.ts";
 
 export function nextPhaseOf(phase: string): string | undefined {
 	const at = MANDATORY_PHASES.indexOf(phase);
@@ -21,7 +25,7 @@ export async function workflowGatesReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
 ): Promise<Array<Finding>> {
-	return collectTaskFindings(ports, files, async (task, findings) => {
+	return collectActiveTaskFindings(ports, files, async (task, findings) => {
 		const next = nextPhaseOf(task.phase);
 		if (next === undefined) {
 			return;
@@ -37,9 +41,25 @@ export async function workflowGatesReal(
 export async function writesWithinPlanReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
+	liveWrite: boolean,
 ): Promise<Array<Finding>> {
 	const changeClass = classifyChange(files);
-	return collectTaskFindings(ports, files, async (task, findings) => {
+	const tasks = await readJudgedTasks(ports, files);
+	// SPEC §4.12.7 EC-1: a live L1 tool write with no active task for the
+	// branch blocks with the task-new command instead of passing silent.
+	// Diagnostic and gate-leg scopes (verify, pre-commit, pre-push) carry no
+	// tool targets, so they judge claiming tasks only and stay silent
+	// without tasks; L3/L4 tasklessness is owned by its own slice. The deps,
+	// bot and docs-only exemptions stay in checkWriteWithinPlan.
+	if (tasks.length === 0) {
+		return liveWrite
+			? checkWriteWithinPlan(undefined, files, "discovery", {
+					changeClass,
+				})
+			: [];
+	}
+	const findings: Array<Finding> = [];
+	for (const task of tasks) {
 		// SPEC §4.12.2: record exits on the staged history entry and
 		// integrate on the commit itself, so a task past review with its
 		// history staged has completed its plan — judging its landing
@@ -49,7 +69,7 @@ export async function writesWithinPlanReal(
 			(task.phase === "record" || task.phase === "integrate") &&
 			task.historyStaged === true
 		) {
-			return;
+			continue;
 		}
 		for (const finding of await checkWriteWithinPlan(task, files, task.phase, {
 			changeClass,
@@ -58,7 +78,8 @@ export async function writesWithinPlanReal(
 				findings.push(finding);
 			}
 		}
-	});
+	}
+	return findings;
 }
 
 export async function reviewGateReal(
