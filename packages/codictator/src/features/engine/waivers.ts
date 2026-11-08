@@ -3,7 +3,10 @@
 // expiry window CDX-E110) belongs to config and packs. This module answers
 // whether a waiver suppresses a finding now: rule plus path scope, expiry
 // against the clock, and one renewal. Invalid entries are inert, so an
-// invalid waiver never suppresses (fail closed, PRD §12 #12).
+// invalid waiver never suppresses (fail closed, PRD §12 #12). Split with
+// waiver-chain.ts (date and renewal math) and waiver-file.ts (disk read
+// and entry shape); this module keeps the types, defaults and the
+// suppression path.
 import type { Finding, Instant } from "../../kernel/index.ts";
 import {
 	err,
@@ -12,6 +15,7 @@ import {
 	ok,
 	type Result,
 } from "../../kernel/index.ts";
+import { activeOn, chainValid, todayOf } from "./waiver-chain.ts";
 
 // SPEC §7.5: one entry of waivers.json. Dates are ISO YYYY-MM-DD, compared
 // at 00:00 UTC.
@@ -90,8 +94,18 @@ export const DEFAULT_WAIVER_STORE: WaiverStore = {
 	maxWaiverDays: MAX_WAIVER_DAYS,
 };
 
-function todayOf(now: Instant): string {
-	return now.slice(0, 10);
+// The disk read and entry shape live in waiver-file.ts; re-exported here
+// so the barrel and the verdict path keep one import.
+export { readWaiverFile } from "./waiver-file.ts";
+
+// SPEC §4.2.1 step 4 + §4.3.3 step 3: the waivers in force now, before
+// rule or path scoping. Date and renewal-chain expiry makes a waiver
+// inert here, exactly as at suppression time.
+export function activeWaivers(store: WaiverStore, now: Instant): Array<Waiver> {
+	const today = todayOf(now);
+	return store.waivers.filter(
+		(waiver) => activeOn(waiver, today) && chainValid(store, waiver),
+	);
 }
 
 function tierOf(store: WaiverStore, ruleId: string): RuleTier {
@@ -102,103 +116,13 @@ function tierOf(store: WaiverStore, ruleId: string): RuleTier {
 }
 
 function pathInScope(waiver: Waiver, path: string): boolean {
-	// A waiver without paths applies repo-wide (SPEC §4.3.4).
-	if (waiver.paths === undefined) {
+	// A waiver without paths applies repo-wide (SPEC §4.3.4). The waive
+	// CLI writes paths: [] when no --paths flag is given, so an empty
+	// list means the same as an absent one.
+	if (waiver.paths === undefined || waiver.paths.length === 0) {
 		return true;
 	}
 	return waiver.paths.some((pattern) => globMatch(pattern, path));
-}
-
-function activeOn(waiver: Waiver, today: string): boolean {
-	return waiver.created <= today && today <= waiver.expires;
-}
-
-function chainHops(store: WaiverStore, waiver: Waiver): number {
-	let hops = 0;
-	let current: Waiver | undefined = waiver;
-	const seen = new Set<string>();
-	while (current?.renews !== undefined) {
-		if (seen.has(current.id)) {
-			return Number.MAX_SAFE_INTEGER;
-		}
-		seen.add(current.id);
-		const previous = store.waivers.find(
-			(entry) => entry.id === current?.renews,
-		);
-		if (previous === undefined) {
-			return Number.MAX_SAFE_INTEGER;
-		}
-		hops += 1;
-		current = previous;
-	}
-	return hops;
-}
-
-// Days from the civil date, Howard Hinnant's algorithm, so waiver spans
-// need no clock: time comes from the Clock port and engine code never
-// touches Date (SPEC §10.3 item 3).
-function daysFromCivil(date: string): number | undefined {
-	const parts = date.split("-");
-	if (parts.length !== 3) {
-		return undefined;
-	}
-	const year = Number.parseInt(parts[0] ?? "", 10);
-	const month = Number.parseInt(parts[1] ?? "", 10);
-	const day = Number.parseInt(parts[2] ?? "", 10);
-	if (
-		!Number.isSafeInteger(year) ||
-		!Number.isSafeInteger(month) ||
-		!Number.isSafeInteger(day)
-	) {
-		return undefined;
-	}
-	const shiftedMonth = month <= 2 ? month + 9 : month - 3;
-	const shiftedYear = month <= 2 ? year - 1 : year;
-	const era = Math.floor(shiftedYear / 400);
-	const yearOfEra = shiftedYear - era * 400;
-	const dayOfYear = Math.floor((153 * shiftedMonth + 2) / 5) + day - 1;
-	const dayOfEra =
-		yearOfEra * 365 +
-		Math.floor(yearOfEra / 4) -
-		Math.floor(yearOfEra / 100) +
-		dayOfYear;
-	return era * 146097 + dayOfEra - 719468;
-}
-
-function chainStart(store: WaiverStore, waiver: Waiver): Waiver {
-	let current = waiver;
-	while (current.renews !== undefined) {
-		const previous = store.waivers.find((entry) => entry.id === current.renews);
-		if (previous === undefined) {
-			return current;
-		}
-		current = previous;
-	}
-	return current;
-}
-
-// SPEC §4.3.4 with §11 S11: one renewal, and the chain may not exceed
-// 2 × maxWaiverDays from the first created date; a single waiver may not
-// exceed maxWaiverDays (the evaluation-side mirror of the CDX-E110 load
-// error). A waiver outside these bounds is inert at evaluation; it never
-// suppresses (fail closed, PRD §12 #12).
-function chainValid(store: WaiverStore, waiver: Waiver): boolean {
-	const hops = chainHops(store, waiver);
-	if (hops > 1) {
-		return false;
-	}
-	const start = chainStart(store, waiver).created;
-	const startDays = daysFromCivil(start);
-	const endDays = daysFromCivil(waiver.expires);
-	if (startDays === undefined || endDays === undefined) {
-		return false;
-	}
-	const spanDays = endDays - startDays;
-	if (spanDays < 0) {
-		return false;
-	}
-	const limit = hops === 0 ? store.maxWaiverDays : 2 * store.maxWaiverDays;
-	return spanDays <= limit;
 }
 
 // SPEC §4.3.9 EC-6/EC-7: the waivers that suppress a finding, or the

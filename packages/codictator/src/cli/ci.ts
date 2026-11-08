@@ -10,6 +10,7 @@ import {
 } from "../features/ci/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import { checkCommitTrailers } from "../features/integrity/index.ts";
+import { checkRedProofReRun } from "../features/testing/proofs.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { ciRecordBotChange } from "./ci-bot-change.ts";
@@ -21,6 +22,7 @@ import {
 	rangeMessages,
 	resolveCiRange,
 } from "./ci-range.ts";
+import { rerunRedProofs } from "./ci-rerun.ts";
 import { ciSummaryFor, isUnverifiableFinding } from "./ci-summary.ts";
 import { needCommandContext } from "./command-context.ts";
 import { resolveVerifyScope } from "./evaluate.ts";
@@ -104,6 +106,10 @@ async function ciVerify(
 	}
 	let evaluated: ReadonlyArray<Finding> = [];
 	let trailered: ReadonlyArray<Finding> = [];
+	// SPEC §4.10.2 + §4.12.3 L4: the red-proof re-run runs on every ranged
+	// verify, PR included — there is no PR early-exit. The gate subset above
+	// judges the range; the re-run below re-proves each in-range red proof.
+	let rerun: ReadonlyArray<Finding> = [];
 	if (ranged.value !== undefined) {
 		// BUG-0014 + SPEC §4.3.2: the L4 gate judges pre-tool plus the
 		// diff-sound review subset, the phase-5 finer trigger as a rule
@@ -206,8 +212,14 @@ async function ciVerify(
 		} else {
 			trailered = checkCommitTrailers(commits.value, trailerExempt);
 		}
+		rerun = await rerunRedProofs(
+			ports.value,
+			root,
+			ranged.value,
+			checkRedProofReRun,
+		);
 	}
-	const findings = [...checks, ...evaluated, ...trailered];
+	const findings = [...checks, ...evaluated, ...trailered, ...rerun];
 	const summary = ciSummaryFor(findings);
 	if (req.json) {
 		printJson({ findings, summary });

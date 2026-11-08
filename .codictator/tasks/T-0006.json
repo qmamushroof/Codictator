@@ -1,0 +1,106 @@
+{
+	"acceptanceCriteria": [
+		"biome clean on owned files (zero errors)",
+		"typecheck clean; no semantic change (whitespace-only on T-0004.json)"
+	],
+	"branch": "fix/restore-tdd-docs-gates",
+	"bugRowUpdated": true,
+	"diagnosis": "PR 190 quick RED: biome ci format errors in generated/config manifests outside T-0005 scope (opencode.json, .muse/hooks.json, .claude/settings.json, .codictator/tasks/T-0004.json). Mechanical conformance only, zero behavior change; mjs default-export verified locally clean (lint+format pass), generator source opencode-bridge.ts untouched.",
+	"files": {
+		"allow": [
+			"opencode.json",
+			".opencode/plugins/codictator.mjs",
+			".muse/hooks.json",
+			".claude/settings.json",
+			".codictator/tasks/T-0004.json",
+			".codictator/tasks/T-0003.json",
+			".codictator/tasks/T-0005.json",
+			".codictator/tasks/T-0006.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T03:55:00.315Z",
+		"tree": "ab6a61eca7a3333ea732608f6f508c8684cf7f23"
+	},
+	"historyStaged": true,
+	"id": "T-0006",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T03:40:46.555Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T03:41:33.703Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T03:43:38.996Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T03:58:37.051Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T04:04:58.031Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-08T04:19:33.957Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T03:41:03.938Z",
+		"commit": "e058c6f06df4426f4e17f3d752fbac451b44996d",
+		"failing": [
+			"biome ci format: opencode.json/.muse/hooks.json/.claude/settings.json/.codictator/tasks/T-0004.json fail formatter check (npx biome check exit 1); .opencode/plugins/codictator.mjs already clean"
+		],
+		"tree": "ab6a61eca7a3333ea732608f6f508c8684cf7f23"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T03:59:58.101Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-t0006-r1",
+			"round": 1,
+			"tree": "34b3f73b050ac5c90c7bddaa1a3c8e884e743856"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T04:03:07.697Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-t0006-r2",
+			"round": 2,
+			"tree": "34b3f73b050ac5c90c7bddaa1a3c8e884e743856"
+		}
+	],
+	"spec": ["docs/SPEC/04-15-CI.md:17"],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-harness-render.test.ts",
+			"title": "packages/codictator/tests/unit/cli/cli-harness-render.test.ts"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/adapters/cursor.test.ts",
+			"title": "packages/codictator/tests/unit/adapters/cursor.test.ts"
+		}
+	],
+	"title": "Biome conformance for generated config and hook manifests",
+	"type": "chore",
+	"version": 1
+}

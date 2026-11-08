@@ -41,13 +41,14 @@ function realPackageVersion(): string {
 		"utf8",
 	);
 	const parsed: unknown = JSON.parse(text);
+	const versionKey = "version";
 	if (
 		typeof parsed === "object" &&
 		parsed !== null &&
 		"version" in parsed &&
-		typeof (parsed as Record<string, unknown>)["version"] === "string"
+		typeof (parsed as Record<string, unknown>)[versionKey] === "string"
 	) {
-		return (parsed as Record<string, string>)["version"] ?? "";
+		return (parsed as Record<string, string>)[versionKey] ?? "";
 	}
 	return "";
 }

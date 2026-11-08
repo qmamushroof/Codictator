@@ -1,0 +1,194 @@
+{
+	"acceptanceCriteria": [
+		"SPEC EC-12 updated in own docs change",
+		"PR verify evaluates gate, no SUCCESS no-op",
+		"ci verify re-runs red proofs over PR range",
+		"L3 judges history entry pre-commit"
+	],
+	"branch": "fix/restore-tdd-docs-gates",
+	"bugRowUpdated": true,
+	"diagnosis": "Repro: commit with no tests/docs passes L3 trailer-only; PR verify SUCCESS via EC-12 no-op. Cause: SPEC 04-15-CI:17,64 + yml:47-49; git-hook.ts:61-126 trailer-only; writes.ts/history-scope.ts/phases.ts no L3/L4 caller; pack triggers review-only. Code matches SPEC EC-12 so SPEC fix first.",
+	"files": {
+		"allow": [
+			"docs/SPEC/04-15-CI.md",
+			"docs/SPEC/04-10-TESTING.md",
+			"docs/SPEC/04-09-RECORDS.md",
+			"docs/SPEC/04-12-WORKFLOW.md",
+			"docs/SPEC/05-CORE-RULES.md",
+			"packages/codictator/src/features/ci/workflow.ts",
+			"packages/codictator/src/cli/ci.ts",
+			"packages/codictator/src/cli/ci-rerun.ts",
+			"packages/codictator/src/cli/git-hook.ts",
+			"packages/codictator/src/cli/git-eval.ts",
+			"packages/codictator/src/cli/gate-scope.ts",
+			"packages/codictator/src/cli/task-advance.ts",
+			"packages/codictator/src/features/ci/workflow*.ts",
+			"packages/codictator/src/features/packs/enforcers/*",
+			"packages/codictator/tests/unit/cli/*tdd*",
+			"packages/codictator/tests/unit/cli/*amend*",
+			".codictator/config.json",
+			"packages/codictator/tests/unit/cli/cli-handlers-s414-split2.test.ts",
+			".codictator/manifest.json",
+			".codictator/config.json",
+			".codictator/*",
+			".codictator/tasks/*",
+			".github/workflows/codictator.yml",
+			"packages/codictator/tests/unit/integrity/*s4154*",
+			"packages/codictator/src/cli/task-amend.ts",
+			"packages/codictator/src/cli/git-history.ts",
+			"packages/codictator/src/features/packs/enforcers/records-history-guards.ts",
+			"packages/codictator/src/features/packs/enforcers/testing-real.ts",
+			"packages/codictator/src/features/packs/enforcers/workflow-real.ts",
+			"packages/codictator/tests/acceptance/pr-verify-gate.test.ts",
+			"packages/codictator/src/features/packs/enforcers/workflow-real.ts",
+			"packages/codictator/src/features/records/*",
+			"packages/codictator/src/features/packs/enforcers/health-measures.ts",
+			"packages/codictator/src/features/packs/enforcers/marker-scan.ts",
+			"packages/codictator/src/features/adapters/opencode-bridge.ts",
+			".opencode/*"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-07T16:50:30.191Z",
+		"tree": "ab6a61eca7a3333ea732608f6f508c8684cf7f23"
+	},
+	"historyStaged": true,
+	"id": "T-0004",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-07T14:34:06.163Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-07T15:40:31.254Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-07T15:50:21.892Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-07T15:55:31.343Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-07T15:55:32.100Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-07T15:57:35.426Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-07T14:33:59.940Z",
+		"commit": "e058c6f06df4426f4e17f3d752fbac451b44996d",
+		"failing": [
+			"[§4.15 EC-12] PR verify evaluates the gate instead of reporting SUCCESS through the no-op",
+			"[§4.10.2] ci verify re-runs red proofs over the PR range",
+			"[§4.9] commit path judges the history entry instead of only appending the trailer"
+		],
+		"tree": "ab6a61eca7a3333ea732608f6f508c8684cf7f23"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-07T15:53:37.114Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-t0004-r1",
+			"round": 1,
+			"tree": "7568def5e138ba01a01c11b1ea6adac0b484226d"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-07T16:20:03.347Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-t0004-r2",
+			"round": 2,
+			"tree": "5aee3ad66e63de80c33c1abea612952f8f8ae604"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-07T16:36:31.505Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-t0004-r3",
+			"round": 3,
+			"tree": "d197991ba379071d4550c3970a2146ead5921e89"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T02:27:26.867Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-t0004-r4",
+			"round": 4,
+			"tree": "f3c95213c2352e46bb444e7e6b5bedca62297e21"
+		}
+	],
+	"spec": [
+		"docs/SPEC/04-15-CI.md:17",
+		"docs/SPEC/04-15-CI.md:28",
+		"docs/SPEC/04-15-CI.md:64",
+		"§4.15.1",
+		"§4.15",
+		"EC-12",
+		"§4.10.2",
+		"§4.10.3",
+		"§4.9",
+		"§4.12.2"
+	],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-pr-tdd-docs-gates.test.ts",
+			"title": "[§4.15 EC-12] PR verify evaluates the gate instead of reporting SUCCESS through the no-op"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-pr-tdd-docs-gates.test.ts",
+			"title": "[§4.10.2] ci verify re-runs red proofs over the PR range"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-pr-tdd-docs-gates.test.ts",
+			"title": "[§4.9] commit path judges the history entry instead of only appending the trailer"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/cli/task-amend-setters.test.ts",
+			"title": "[§4.12 EC-3] amend --allow sets files.allow"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/cli/task-amend-setters.test.ts",
+			"title": "[§4.12.2] amend --spec/--diagnosis/--accept sets planning evidence"
+		},
+		{
+			"kind": "architecture",
+			"path": "packages/codictator/tests/unit/integrity/ci-gate-s4154-s4156-s4152-s4157-s4153-s4151.test.ts",
+			"title": "arch-pin"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/pr-verify-gate.test.ts",
+			"title": "[§4.15 EC-12] generated verify workflow judges pull_request instead of reporting SUCCESS through the no-op"
+		}
+	],
+	"title": "Restore pre-merge TDD and docs gates",
+	"type": "fix",
+	"version": 1
+}

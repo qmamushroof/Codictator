@@ -1,6 +1,8 @@
 // SPEC §4.9.3: history barrel path; parsing lives in history-parse.ts,
 // entry checks in history-checks.ts, kind and scope in history-scope.ts.
 export {
+	addedHistoryEntries,
+	checkAddedHistoryEntryCount,
 	checkHistoryAppendOnly,
 	checkHistoryEntryComplete,
 	checkHistoryEntryCount,

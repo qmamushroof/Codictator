@@ -7,15 +7,15 @@
 
 import path from "node:path";
 import { ENGINE_VERSION, HOOK_MARKER } from "../features/config/index.ts";
+import { checkAddedHistoryEntryCount } from "../features/records/history-checks.ts";
 import type { Env, Result } from "../kernel/index.ts";
-import {
-	err,
-	makeError,
-	ok,
-	readHostText,
-	writeHostText,
-} from "../kernel/index.ts";
+import { ok, readHostText, writeHostText } from "../kernel/index.ts";
 import { emitGitVerdict, evaluateGitChange } from "./git-eval.ts";
+import {
+	checkStagedHistory,
+	runGitText,
+	withTrackedBugsFallback,
+} from "./git-history.ts";
 import type { CommandPorts, CommandRequest } from "./shared.ts";
 import {
 	commandEnv,
@@ -29,31 +29,6 @@ import {
 	usageError,
 } from "./shared.ts";
 import { gateVerdict, type VerdictEmit } from "./verdict-emit.ts";
-
-const GIT_TIMEOUT_MS = 30000;
-const GIT_MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
-
-async function runGitText(
-	ports: CommandPorts,
-	argv: ReadonlyArray<string>,
-): Promise<Result<string>> {
-	const ran = await ports.proc.run(argv, {
-		cwd: ports.root,
-		env: {},
-		timeoutMs: GIT_TIMEOUT_MS,
-		maxOutputBytes: GIT_MAX_OUTPUT_BYTES,
-	});
-	if (ran.timedOut || ran.truncated || ran.code !== 0) {
-		return err(
-			makeError(
-				"CDX-E703",
-				`git ${argv[1] ?? ""} failed while reading the hook scope`,
-				"Run inside a git repository with git on PATH.",
-			),
-		);
-	}
-	return ok(ran.stdout);
-}
 
 // SPEC §4.7.1: L3 scans staged content. The staged file list scopes the
 // disk reads while the staged diff rides as proposed content, so a secret
@@ -77,16 +52,24 @@ async function runPreCommit(
 	if (!diff.ok) {
 		return reportError(diff.error, req.json);
 	}
+	const historyFindings = await checkStagedHistory(
+		ports,
+		staged.value,
+		now,
+		configHash,
+	);
+	const scoped = await withTrackedBugsFallback(ports, staged.value);
 	return evaluateGitChange(
 		ports,
 		req,
 		"pre-commit",
 		packIds,
-		staged.value,
+		scoped,
 		diff.value,
 		now,
 		configHash,
 		emit,
+		historyFindings,
 	);
 }
 
@@ -98,8 +81,14 @@ async function runPreCommit(
 // requires absolute paths — resolving a relative handoff against the
 // invocation cwd first; an unreadable or unwritable message file blocks
 // fail-closed.
+// SPEC §4.14.4 + §4.9.3: commit-msg validates the staged history entry
+// count and subject before appending the trailer. Without a staged history
+// file there is no entry to judge, so the trailer append stands alone; an
+// unreadable staged entry degrades the same way instead of false-blocking
+// (the pre-commit verdict already judged the staged text).
 async function runCommitMsg(
 	req: CommandRequest,
+	ports: CommandPorts,
 	configHash: string,
 ): Promise<Result<number>> {
 	if (req.args.length !== 2 || req.args[1] === undefined) {
@@ -116,6 +105,51 @@ async function runCommitMsg(
 		read.value.split("\n").some((line) => line.startsWith("Codictator-L3: "))
 	) {
 		return ok(0);
+	}
+	const names = await runGitText(ports, [
+		"git",
+		"diff",
+		"--cached",
+		"--name-only",
+		"--",
+	]);
+	if (names.ok) {
+		const historyPath = names.value
+			.split("\n")
+			.map((line) => line.trim())
+			.filter((line) => line !== "")
+			.filter((entry) => entry.startsWith("docs/HISTORY/"))
+			.sort()[0];
+		if (historyPath !== undefined) {
+			const staged = await runGitText(ports, [
+				"git",
+				"show",
+				`:${historyPath}`,
+			]);
+			if (staged.ok) {
+				// SPEC §4.9.3: judge the ADDED entry (staged minus HEAD),
+				// not the whole accumulated file; tolerate a missing HEAD
+				// base for brand-new history files.
+				const base = await runGitText(ports, [
+					"git",
+					"show",
+					`HEAD:${historyPath}`,
+				]);
+				const subject = read.value
+					.split("\n")
+					.map((line) => line.trim())
+					.find((line) => line !== "" && !line.startsWith("#"));
+				const entryFindings = checkAddedHistoryEntryCount(
+					staged.value,
+					base.ok ? base.value : undefined,
+					historyPath,
+					subject === undefined || subject === "" ? undefined : subject,
+				);
+				if (entryFindings.length > 0) {
+					return emitGitVerdict(req, "commit-msg", entryFindings);
+				}
+			}
+		}
 	}
 	const base = read.value.endsWith("\n") ? read.value : `${read.value}\n`;
 	const wrote = await writeHostText(file, `${base}\n${trailer}\n`);
@@ -165,12 +199,13 @@ async function runPrePush(
 		.split("\n")
 		.map((line) => line.trim())
 		.filter((line) => line !== "");
+	const scoped = await withTrackedBugsFallback(ports, files);
 	return evaluateGitChange(
 		ports,
 		req,
 		"pre-push",
 		packIds,
-		files,
+		scoped,
 		diff.value,
 		now,
 		configHash,
@@ -235,7 +270,7 @@ export async function handleGitHook(
 	const now = ports.clock.now();
 	const configHash = configured.value.effective.configHash;
 	if (hook === "commit-msg") {
-		return runCommitMsg(req, configHash);
+		return runCommitMsg(req, ports, configHash);
 	}
 	// SPEC §4.18: the hook verdict carries the evaluated packs and the
 	// branch task, so the Timeline row names what judged the change.

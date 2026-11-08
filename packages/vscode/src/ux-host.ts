@@ -139,11 +139,12 @@ export function createTreeViewOf(
 			},
 			set badge(next: TreeViewHandle["badge"]) {
 				badge = next;
+				const badgeKey = "badge";
 				try {
 					if (next === undefined) {
-						delete view["badge"];
+						delete view[badgeKey];
 					} else {
-						view["badge"] = next;
+						view[badgeKey] = next;
 					}
 				} catch {
 					// An unsettable badge leaves the views unbadged.

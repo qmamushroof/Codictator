@@ -6,8 +6,9 @@
 // and every other unknown id stays CDX-E301. The loop breaker (§4.12.5)
 // and steering injection (§4.6.3) run at step 5 once their phases land;
 // until then the verdict decides. Split with hook-dispatch.ts (routing),
-// hook-load.ts (root and config) and hook-scope.ts (L1 scope); this file
-// keeps the public contract and the run composition.
+// hook-static.ts (pre-engine deny), hook-load.ts (root and config) and
+// hook-scope.ts (L1 scope); this file keeps the public contract and the
+// run composition.
 import type {
 	Clock,
 	Env,
@@ -18,7 +19,7 @@ import type {
 } from "../../kernel/index.ts";
 import { NodeFs, NodeGit, parseJson } from "../../kernel/index.ts";
 import { ENGINE_VERSION } from "../config/index.ts";
-import type { Enforcer, EngineOptions } from "../engine/index.ts";
+import type { Enforcer, EngineOptions, WaiverStore } from "../engine/index.ts";
 import { createEngine, packsRecord } from "../engine/index.ts";
 import type { Adapter, HookReply } from "./contract.ts";
 import { HOOK_PAYLOAD_MAX_BYTES } from "./contract.ts";
@@ -77,14 +78,20 @@ export interface HookRunRequest {
 	readonly loadEnforcers?: HookEnforcerLoader;
 }
 
-// SPEC §4.19.3 step 5: pack enforcers for the hook evaluation, resolved by
-// the composition root against the root-confined ports over the pack ids
-// of the effective config. A resolution failure carries the loader's own
-// code, so the hook blocks with it.
+// SPEC §4.19.3 step 5: pack enforcers plus the file waiver store for the
+// hook evaluation, resolved by the composition root against the
+// root-confined ports over the pack ids of the effective config. A
+// resolution failure carries the loader's own code, so the hook blocks
+// with it.
 export type HookEnforcerLoader = (
 	ports: Ports,
 	packIds: ReadonlyArray<string>,
-) => Promise<Result<ReadonlyArray<Enforcer>>>;
+) => Promise<
+	Result<{
+		readonly enforcers: ReadonlyArray<Enforcer>;
+		readonly waiverStore: WaiverStore;
+	}>
+>;
 
 // SPEC §4.19.3: any uncaught error blocks CDX-E901; the time limit blocks
 // CDX-E902. Both replies go through the adapter so the harness gates
@@ -189,9 +196,10 @@ async function runHookInner(
 		effective.value.config.packs,
 		request.engineVersion ?? ENGINE_VERSION,
 	);
-	const engine = createEngine(loaded.value, {
+	const engine = createEngine(loaded.value.enforcers, {
 		configHash: effective.value.configHash,
 		packs,
+		waiverStore: loaded.value.waiverStore,
 		append: (verdict) =>
 			request.append(root, {
 				...verdict,
@@ -277,21 +285,6 @@ async function runHookInner(
 	}
 }
 
-export function supportedHarness(harness: string): boolean {
-	return adapterFor(harness) !== undefined;
-}
-
-// The pre-engine deny in the harness's own form (SPEC §4.5.1): staticBlock
-// carries no engine state, so the launcher and the CLI start path use it
-// when the engine cannot run (CDX-E002, CDX-E003).
-export function staticBlock(
-	harness: string,
-	code: string,
-	message: string,
-): HookReply | undefined {
-	const adapter = adapterFor(harness);
-	if (adapter === undefined) {
-		return undefined;
-	}
-	return adapter.staticBlock(code, message);
-}
+// The pre-engine deny lives in hook-static.ts; re-exported here so the
+// barrel and the launcher keep one import.
+export { staticBlock, supportedHarness } from "./hook-static.ts";

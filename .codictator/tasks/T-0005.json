@@ -1,0 +1,131 @@
+{
+	"acceptanceCriteria": [
+		"EC-8 test green with no other records-test regressions",
+		"biome clean on all touched files (zero errors)",
+		"typecheck clean; hook pre-commit and verify --staged pass"
+	],
+	"branch": "fix/restore-tdd-docs-gates",
+	"bugRowUpdated": true,
+	"diagnosis": "checkHistoryFiles early-returns count findings before append-only: an in-place edit has the same subject, so addedHistoryEntries yields zero added, checkAddedHistoryEntryCount reports count 0-vs-1, and checkHistoryAppendOnly never runs (history-scope.ts:116-132). Fails in tree, passes on HEAD e058c6f.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/records/history-checks.ts",
+			"packages/codictator/src/features/records/history-scope.ts",
+			"packages/codictator/src/cli/ci-rerun.ts",
+			"packages/codictator/src/features/packs/enforcers/marker-scan.ts",
+			"packages/codictator/src/features/packs/enforcers/records-guards.ts",
+			"packages/codictator/src/features/packs/enforcers/records-history-guards.ts",
+			"packages/codictator/src/features/packs/enforcers/workflow-real.ts",
+			"packages/codictator/src/features/records/history.ts",
+			"packages/codictator/src/features/records/index.ts",
+			"packages/codictator/src/features/packs/enforcers/scope-tasks.ts",
+			"packages/codictator/src/features/packs/enforcers/testing-real.ts",
+			"packages/codictator/tests/acceptance/history-append-only.test.ts",
+			"packages/codictator/tests/unit/records/records-history.test.ts",
+			"packages/codictator/tests/unit/integrity/records-modules-s49.test.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T06:12:28.187Z",
+		"tree": "4aeec1a62505c3d8bf8f920d6ba5ee8fb4662e48"
+	},
+	"historyStaged": true,
+	"id": "T-0005",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T03:36:23.759Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T03:36:39.612Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T03:43:34.847Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T03:57:46.485Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T04:04:51.417Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-08T04:19:21.063Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T03:36:36.043Z",
+		"commit": "e058c6f06df4426f4e17f3d752fbac451b44996d",
+		"failing": ["[§4.9 EC-8] history entry edited after commit blocks"],
+		"tree": "ab6a61eca7a3333ea732608f6f508c8684cf7f23"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T03:59:01.229Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-T-0005-r1",
+			"round": 1,
+			"tree": "34b3f73b050ac5c90c7bddaa1a3c8e884e743856"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T06:15:15.228Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-T-0005-r2",
+			"round": 2,
+			"tree": "4aeec1a62505c3d8bf8f920d6ba5ee8fb4662e48"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T07:11:08.686Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-T-0005-r3",
+			"round": 3,
+			"tree": "85f7d142c7341d1ce7d91f4c4ddd101c93adab5e"
+		}
+	],
+	"spec": ["docs/SPEC/04-09-RECORDS.md:EC-8", "§4.9.3", "§4.9.5 EC-8"],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/records/records.test.ts",
+			"title": "[§4.9 EC-8] history entry edited after commit blocks"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/records/records-history.test.ts",
+			"title": "[§4.9] history append-only keeps base entries under the title"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/history-append-only.test.ts",
+			"title": "[§4.9 EC-8] staged in-place history edit blocks pre-commit"
+		},
+		{
+			"kind": "architecture",
+			"path": "packages/codictator/tests/unit/integrity/records-modules-s49.test.ts",
+			"title": "[§4.11] records split modules keep their public import shape"
+		}
+	],
+	"title": "Restore EC-8 append-only and biome conformance in staged splits",
+	"type": "fix",
+	"version": 1
+}

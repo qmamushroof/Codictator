@@ -42,6 +42,8 @@ export {
 	type RouterTree,
 } from "./docs-structure.ts";
 export {
+	addedHistoryEntries,
+	checkAddedHistoryEntryCount,
 	checkHistory,
 	checkHistoryAppendOnly,
 	checkHistoryEntryComplete,

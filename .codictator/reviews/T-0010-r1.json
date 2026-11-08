@@ -1,0 +1,21 @@
+{
+	"findings": [
+		{
+			"id": "F-001",
+			"line": 128,
+			"message": "Typecheck fails: ports.fs.seedText(...) at lines 128 and 146 errors TS2339 (Property 'seedText' does not exist on type 'Fs'; only FakeFs has it). Fails acceptance criterion 'typecheck clean'. Fix within allowed globs: destructure fs from createFakePorts() and call fs.seedText(...) as the sibling coverage tests do; no src change needed.",
+			"path": "packages/codictator/tests/unit/coverage/workflow-real.test.ts",
+			"severity": "blocker"
+		},
+		{
+			"id": "F-002",
+			"line": 96,
+			"message": "Biome useLiteralKeys info at lines 96, 173 and 180: params[\"maxRounds\"] is auto-fixable to params.maxRounds. Biome ci still exits 0, so no gate fails; optional cleanup.",
+			"path": "packages/codictator/tests/unit/coverage/waiver-cache.test.ts",
+			"severity": "nit"
+		}
+	],
+	"reviewerSession": "fresh-subagent-review-T-0010-r1",
+	"tree": "81c57d9cdcc2fa9d1d84c191f198fb1807bada24",
+	"version": 1
+}

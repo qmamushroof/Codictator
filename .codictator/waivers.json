@@ -1,0 +1,19 @@
+{
+  "maxWaiverDays": 90,
+  "version": 1,
+  "waivers": [
+    {
+      "created": "2026-11-08",
+      "createdBy": "human",
+      "expires": "2026-12-08",
+      "id": "W-0001",
+      "params": {
+        "maxRounds": 4
+      },
+      "paths": [],
+      "reason": "PR-190 landing: 4th review round passed with 0 blockers",
+      "rule": "core/review-round-cap"
+    }
+  ]
+}
+

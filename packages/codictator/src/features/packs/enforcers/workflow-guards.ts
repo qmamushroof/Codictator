@@ -1,176 +1,235 @@
-// SPEC §5.9: F9 workflow and F11 review enforcers. Each rule first honours
-// the fixture measure report (`sample.txt` marker files), then stays quiet
-// when the report carries no violation, so violating fixtures flag and
-// passing fixtures stay clean (SPEC §4.4.4).
-import type { Ports } from "../../../kernel/index.ts";
-import { ok, type Result } from "../../../kernel/index.ts";
+// SPEC §5.9 F9 workflow plus F11 review enforcers: marker fixtures
+// (sample.txt reports) flag here first, then the claiming task records
+// judge real scopes via workflow-real.ts.
+import type { Ports, Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
-import { bindRule, findingFor, selectFiles } from "./binding.ts";
+import { type bindRule, findingFor } from "./binding.ts";
+import { limitOf, parseMarkerInt, parseMarkers } from "./health-measures.ts";
 import {
-	baseEnforcer,
-	limitOf,
-	loadScopeText,
-	parseMarkerInt,
-	parseMarkers,
-} from "./health-measures.ts";
+	forEachMarkerText,
+	markerGuard,
+	markerRealGuard,
+} from "./marker-scan.ts";
+import {
+	reviewGateReal,
+	reviewRoundCapReal,
+	workflowGatesReal,
+	writesWithinPlanReal,
+} from "./workflow-real.ts";
 
-// A skipped mandatory gate flags. The marker is a report line (`skipped:`
-// at the line start, as the fixture measure report carries it), never a
-// substring: status strings like "corrupt lines skipped: 2" and the
-// guard's own source are not skipped gates.
+async function markerLine(
+	ports: Ports,
+	binding: ReturnType<typeof bindRule>,
+	files: ReadonlyArray<string>,
+	findings: Array<Finding>,
+	pattern: RegExp,
+	message: (file: string) => string,
+): Promise<void> {
+	await forEachMarkerText(ports, binding, files, findings, (file, text) => {
+		if (!pattern.test(text)) {
+			return;
+		}
+		findings.push(
+			findingFor(binding, {
+				path: file,
+				message: message(file),
+				vars: { path: file },
+			}),
+		);
+	});
+}
+
+async function markerValue(
+	ports: Ports,
+	binding: ReturnType<typeof bindRule>,
+	files: ReadonlyArray<string>,
+	findings: Array<Finding>,
+	key: string,
+	value: string,
+	message: (file: string) => string,
+): Promise<void> {
+	await forEachMarkerText(ports, binding, files, findings, (file, text) => {
+		if ((parseMarkers(text).get(key) ?? "") === value) {
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					message: message(file),
+					vars: { path: file },
+				}),
+			);
+		}
+	});
+}
+
 export function resolveWorkflowGates(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !/^[ \t]*skipped:/m.test(text)) {
-					continue;
-				}
-				findings.push(
-					findingFor(binding, {
-						path: file,
-						message: `mandatory gate skipped in ${file}`,
-						vars: { path: file },
-					}),
-				);
-			}
-			return findings;
-		}),
+	return markerRealGuard(
+		decl,
+		rule,
+		ports,
+		(args) =>
+			markerLine(
+				args.ports,
+				args.binding,
+				args.files,
+				args.findings,
+				/^[ \t]*skipped:/m,
+				(file) => `mandatory gate skipped in ${file}`,
+			),
+		async (args) => {
+			args.findings.push(...(await workflowGatesReal(args.ports, args.files)));
+		},
 	);
 }
 
-// SPEC §5.9 core/writes-within-plan: a write no plan allows flags.
 export function resolveWritesWithinPlan(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				if ((parseMarkers(text).get("planned") ?? "") === "false") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `write outside the plan in ${file}`,
-							vars: { path: file },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
+	return markerRealGuard(
+		decl,
+		rule,
+		ports,
+		(args) =>
+			markerValue(
+				args.ports,
+				args.binding,
+				args.files,
+				args.findings,
+				"planned",
+				"false",
+				(file) => `write outside the plan in ${file}`,
+			),
+		async (args) => {
+			args.findings.push(
+				...(await writesWithinPlanReal(args.ports, args.files)),
+			);
+		},
 	);
 }
 
-// SPEC §5.9 core/loop-breaker: repeats past the tunable cap flag.
 export function resolveLoopBreaker(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	const maxRepeats = limitOf(binding, "maxRepeats", 3);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
+	return markerGuard(decl, rule, ports, async (args) => {
+		const maxRepeats = limitOf(args.binding, "maxRepeats", 3);
+		await forEachMarkerText(
+			args.ports,
+			args.binding,
+			args.files,
+			args.findings,
+			(file, text) => {
 				const markers = parseMarkers(text);
-				const repeats = parseMarkerInt(markers, "repeats");
-				const cap = parseMarkerInt(markers, "limit") ?? maxRepeats;
-				if (repeats !== undefined && repeats > cap) {
-					findings.push(
-						findingFor(binding, {
+				if (overCap(markers, "repeats", "limit", maxRepeats)) {
+					const cap = parseMarkerInt(markers, "limit") ?? maxRepeats;
+					args.findings.push(
+						findingFor(args.binding, {
 							path: file,
 							message: `loop past ${String(cap)} repeats in ${file}`,
 							vars: { path: file, limit: String(cap) },
 						}),
 					);
 				}
-			}
-			return findings;
-		}),
-	);
+			},
+		);
+	});
 }
 
-// SPEC §5.9 core/review-gate: landing with no review flags.
+function overCap(
+	markers: Map<string, string>,
+	valueKey: string,
+	capKey: string,
+	defCap: number,
+): boolean {
+	const value = parseMarkerInt(markers, valueKey);
+	const cap = parseMarkerInt(markers, capKey) ?? defCap;
+	return value !== undefined && value > cap;
+}
+
 export function resolveReviewGate(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				if ((parseMarkers(text).get("review") ?? "") === "none") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `landing with no review in ${file}`,
-							vars: { path: file },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
+	return markerRealGuard(
+		decl,
+		rule,
+		ports,
+		(args) =>
+			markerValue(
+				args.ports,
+				args.binding,
+				args.files,
+				args.findings,
+				"review",
+				"none",
+				(file) => `landing with no review in ${file}`,
+			),
+		async (args) => {
+			args.findings.push(...(await reviewGateReal(args.ports, args.files)));
+		},
 	);
 }
 
-// SPEC §5.9 core/review-round-cap: rounds past the tunable cap flag.
 export function resolveReviewRoundCap(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	const maxRounds = limitOf(binding, "maxRounds", 3);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				const markers = parseMarkers(text);
-				const rounds = parseMarkerInt(markers, "rounds");
-				const cap = parseMarkerInt(markers, "cap") ?? maxRounds;
-				if (rounds !== undefined && rounds > cap) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `review past ${String(cap)} rounds in ${file}`,
-							vars: { path: file, limit: String(cap) },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
+	return markerRealGuard(
+		decl,
+		rule,
+		ports,
+		async (args) => {
+			const maxRounds = limitOf(args.binding, "maxRounds", 3);
+			await collectRoundMarkers(
+				args.ports,
+				args.binding,
+				args.files,
+				args.findings,
+				maxRounds,
+			);
+		},
+		async (args) => {
+			const maxRounds = limitOf(args.binding, "maxRounds", 3);
+			await reviewRoundCapReal(
+				args.ports,
+				args.binding,
+				args.files,
+				args.findings,
+				maxRounds,
+			);
+		},
 	);
+}
+
+async function collectRoundMarkers(
+	ports: Ports,
+	binding: ReturnType<typeof bindRule>,
+	files: ReadonlyArray<string>,
+	findings: Array<Finding>,
+	maxRounds: number,
+): Promise<void> {
+	await forEachMarkerText(ports, binding, files, findings, (file, text) => {
+		const markers = parseMarkers(text);
+		const rounds = parseMarkerInt(markers, "rounds");
+		const cap = parseMarkerInt(markers, "cap") ?? maxRounds;
+		if (rounds !== undefined && rounds > cap) {
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					message: `review past ${String(cap)} rounds in ${file}`,
+					vars: { path: file, limit: String(cap) },
+				}),
+			);
+		}
+	});
 }

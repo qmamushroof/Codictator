@@ -3,13 +3,13 @@
 // completeness and, when the base text is supplied, append-only.
 import type { CheckContext, Finding } from "../engine/index.ts";
 import {
+	addedHistoryEntries,
+	checkAddedHistoryEntryCount,
 	checkHistoryAppendOnly,
 	checkHistoryEntryComplete,
-	checkHistoryEntryCount,
 	entryFinding,
 } from "./history-checks.ts";
 import type { HistoryKind } from "./history-parse.ts";
-import { parseHistoryEntries } from "./history-parse.ts";
 
 const TOOLCHAIN_FILES: ReadonlySet<string> = new Set([
 	"package.json",
@@ -109,12 +109,30 @@ export function checkHistoryFiles(
 			),
 		];
 	}
-	const findings = checkHistoryEntryCount(text, historyPath, commitSubject);
-	if (findings.length > 0) {
-		return findings;
+	// SPEC §4.9.3: the staged diff adds exactly one entry. Accumulated
+	// history files hold many entries, so the verdict judges ADDED subjects
+	// (staged minus HEAD) and runs completeness on the added entry; the
+	// whole-file count helper stays for the single-entry evaluation path.
+	const countFindings = checkAddedHistoryEntryCount(
+		text,
+		baseText,
+		historyPath,
+		commitSubject,
+	);
+	// SPEC §4.9.5 EC-8: an in-place edit keeps the same Subject, so the
+	// added-entry count fails (zero added) — the append-only verdict must
+	// still run, otherwise the edit reports only core/history-entry and the
+	// EC-8 core/history-append-only block is lost. Collect both verdicts.
+	if (countFindings.length > 0) {
+		if (baseText !== undefined) {
+			countFindings.push(
+				...checkHistoryAppendOnly(baseText, text, historyPath),
+			);
+		}
+		return countFindings;
 	}
-	const parsed = parseHistoryEntries(text);
-	const entry = parsed.entries[0];
+	const findings: Array<Finding> = [];
+	const entry = addedHistoryEntries(text, baseText)[0];
 	if (entry === undefined) {
 		return findings;
 	}

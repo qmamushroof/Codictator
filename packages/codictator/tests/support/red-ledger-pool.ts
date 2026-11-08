@@ -100,8 +100,9 @@ export function resolveJobCount(
 	argv: ReadonlyArray<string>,
 	env: NodeJS.ProcessEnv,
 ): number {
+	const { CODICTATOR_TEST_JOBS } = env;
 	const requested =
-		jobsFromArgv(argv) ?? parsePositiveInt(env["CODICTATOR_TEST_JOBS"]);
+		jobsFromArgv(argv) ?? parsePositiveInt(CODICTATOR_TEST_JOBS);
 	if (requested === undefined) {
 		return DEFAULT_TEST_JOBS;
 	}
@@ -112,7 +113,8 @@ export function isSerialRun(
 	argv: ReadonlyArray<string>,
 	env: NodeJS.ProcessEnv,
 ): boolean {
-	return argv.includes("--serial") || env["CODICTATOR_SERIAL"] === "1";
+	const { CODICTATOR_SERIAL } = env;
+	return argv.includes("--serial") || CODICTATOR_SERIAL === "1";
 }
 
 export interface PoolOptions {

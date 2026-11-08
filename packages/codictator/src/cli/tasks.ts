@@ -22,6 +22,31 @@ import {
 
 export const TASKS_DIR = ".codictator/tasks";
 
+// SPEC §4.12.1: the next id derives from the max live numeric suffix plus
+// one, so gaps left by deleted stale records never collide with a live
+// record. Non-matching names are ignored; empty means the first id.
+export function nextTaskId(ids: ReadonlyArray<string>): string {
+	let max = 0;
+	for (const id of ids) {
+		const match = /^T-(\d+)$/.exec(id);
+		if (match === null) {
+			continue;
+		}
+		const raw = match[1];
+		if (raw === undefined) {
+			continue;
+		}
+		const n = Number.parseInt(raw, 10);
+		if (!Number.isSafeInteger(n) || n <= 0) {
+			continue;
+		}
+		if (n > max) {
+			max = n;
+		}
+	}
+	return taskIdFor(max + 1);
+}
+
 export async function listTaskIds(root: string): Promise<Array<string>> {
 	const ports = await portsFor(root);
 	if (!ports.ok) {
@@ -147,7 +172,7 @@ export async function taskNew(
 	const ids = await listTaskIds(root);
 	const task: TaskRecord = {
 		version: 1,
-		id: taskIdFor(ids.length + 1),
+		id: nextTaskId(ids),
 		type,
 		title,
 		branch,
