@@ -36,6 +36,14 @@ export function emitGitVerdict(
 	return ok(findings.length === 0 ? 0 : 1);
 }
 
+// SPEC §4.9: core/history-entry judges at L3 commit-msg (the hook-owned
+// staged-text check in git-hook.ts) and at L4 (the ci verify range) —
+// never the pre-commit/pre-push diff legs, where no entry is staged yet
+// and the presence rule would block every normally-staged change.
+const HOOK_REVIEW_EXCLUDES: ReadonlySet<string> = new Set([
+	"core/history-entry",
+]);
+
 // SPEC §4.18: the hook verdict routing. Both gate legs land their verdict
 // through the emit, so the Timeline shows what the hook judged.
 export async function evaluateGitChange(
@@ -48,6 +56,7 @@ export async function evaluateGitChange(
 	now: string,
 	configHash: string,
 	emit: VerdictEmit,
+	extra: ReadonlyArray<Finding> = [],
 ): Promise<Result<number>> {
 	// BUG-0014 + SPEC §4.3.2: gates judge pre-tool plus the diff-sound
 	// review subset, the phase-5 finer trigger as a rule subset. The
@@ -64,10 +73,12 @@ export async function evaluateGitChange(
 		},
 		now,
 		configHash,
-		{ emit },
+		{ emit, excludeReviewRuleIds: HOOK_REVIEW_EXCLUDES },
 	);
 	if (!evaluated.ok) {
 		return reportError(evaluated.error, req.json);
 	}
-	return emitGitVerdict(req, hook, evaluated.value);
+	// SPEC §4.9.3: hook-owned checks (history entry on the staged text) land
+	// in the same verdict as the gate legs, so the hook blocks once.
+	return emitGitVerdict(req, hook, [...evaluated.value, ...extra]);
 }

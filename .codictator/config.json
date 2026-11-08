@@ -29,7 +29,10 @@
         "dependsOn": [
           "kernel",
           "config",
-          "engine"
+          "engine",
+          "testing",
+          "records",
+          "workflow"
         ],
         "kind": "feature",
         "name": "packs",

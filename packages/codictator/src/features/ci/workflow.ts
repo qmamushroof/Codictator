@@ -80,9 +80,11 @@ const recordBotChange: ReadonlyArray<string> = [
 	`          ${CODICTATOR_RUN} ci record-bot-change "\${record_args[@]}"`,
 ];
 
-// SPEC §4.15.1: verify job block (EC-12). Extracted from renderWorkflow
-// (S27 core/function-size ratchet): step-level gating with a PR-only
-// no-op, so the matrix leg reports SUCCESS on pull_request.
+// SPEC §4.15.1: verify job block (EC-12). The full `codictator ci verify`
+// gate runs on every event including pull_request (PRD §6 P6), so the
+// required `verify (<os>)` matrix leg reports the gate verdict on the
+// judged change, never SUCCESS through a no-op. (S27 core/function-size
+// ratchet keeps this block extracted.)
 function renderVerifyJob(
 	matrix: string,
 	pins: WorkflowPins,
@@ -91,33 +93,24 @@ function renderVerifyJob(
 		"  verify:",
 		"    # No job-level skip: a skipped matrix job reports `verify` (SKIPPED),",
 		"    # never the required `verify (<os>)` matrix-leg name, so the gate",
-		"    # would block every PR. The expensive steps run only off-PR while a",
-		"    # PR-only no-op reports SUCCESS; full verify stays on push, schedule,",
-		"    # and manual dispatch (§4.15.1, EC-12).",
+		"    # would block every PR. The full gate runs on every event (§4.15.1,",
+		"    # EC-12, PRD §6 P6): push, pull_request, schedule and manual dispatch.",
 		`    runs-on: \${{ matrix.os }}`,
 		"    strategy:",
 		"      matrix:",
 		`        os: [${matrix}]`,
 		"    steps:",
 		`      - uses: actions/checkout@${pins.checkoutSha} # ${pins.checkoutVersion}`,
-		"        if: github.event_name != 'pull_request'",
 		"        with:",
 		"          fetch-depth: 0",
 		"          persist-credentials: false",
 		`      - uses: actions/setup-node@${pins.setupNodeSha} # ${pins.setupNodeVersion}`,
-		"        if: github.event_name != 'pull_request'",
 		"        with:",
 		"          node-version-file: .nvmrc",
 		"          cache: npm",
 		"      - run: npm ci --ignore-scripts",
-		"        if: github.event_name != 'pull_request'",
 		"      - run: npm run build",
-		"        if: github.event_name != 'pull_request'",
 		`      - run: ${CODICTATOR_RUN} ci verify`,
-		"        if: github.event_name != 'pull_request'",
-		"      - name: PR dedup no-op (SPEC §4.15.1, EC-12)",
-		"        if: github.event_name == 'pull_request'",
-		'        run: echo "verify dedupes to required-checks on pull_request"',
 		"",
 	];
 }
