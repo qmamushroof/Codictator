@@ -23,7 +23,7 @@ import { createTempRepo } from "../support/temp-repo.ts";
 test("[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new message", async () => {
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		const result = await runLauncher(
 			repo.dir,
 			["hook", "muse-code", "PreToolUse"],
@@ -46,7 +46,7 @@ test("[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new me
 test("[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof", async () => {
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		const id = await taskId(repo, "consumer widget");
 		await toPlanning(repo, id);
 		const allowed = await runLauncher(
@@ -86,7 +86,7 @@ test("[§4.12.7 EC-2] consumer planning task allows test writes but blocks src w
 test("[§4.12.7 EC-3] consumer write outside files.allow is blocked with the amend hint", async () => {
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		const id = await taskId(repo, "consumer narrow");
 		await toPlanning(repo, id);
 		const narrowed = await srcMain(
@@ -115,7 +115,7 @@ test("[§4.12.7 EC-3] consumer write outside files.allow is blocked with the ame
 test("[§4.6.3] consumer SessionStart reply carries additionalContext", async () => {
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		const result = await runLauncher(
 			repo.dir,
 			["hook", "muse-code", "SessionStart"],
@@ -135,7 +135,7 @@ test("[§4.6.3] consumer SessionStart reply carries additionalContext", async ()
 test("[§4.6.2] consumer AGENTS.md lists every loaded floor rule within 6,000 bytes", async () => {
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		const block = readFileSync(path.join(repo.dir, "AGENTS.md"), "utf8");
 		assert.ok(
 			Buffer.byteLength(block, "utf8") <= 6000,
@@ -165,7 +165,7 @@ test("[§4.6.2] consumer AGENTS.md lists every loaded floor rule within 6,000 by
 test("[§4.12.3 L3] consumer pre-commit without an active record-phase task is blocked", async () => {
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		writeFileSync(path.join(repo.dir, "src/ship.ts"), "export const s = 1;\n");
 		repo.git(["add", "src/ship.ts"]);
 		const result = await runLauncher(repo.dir, ["git", "pre-commit"]);
@@ -179,7 +179,7 @@ test("[§4.12.3 L3] consumer pre-commit without an active record-phase task is b
 test("[§4.9.3] consumer commit-msg without a staged history entry is blocked", async () => {
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		writeFileSync(path.join(repo.dir, "src/ship.ts"), "export const s = 1;\n");
 		repo.git(["add", "src/ship.ts"]);
 		const msgFile = path.join(repo.dir, "COMMIT_MSG");
@@ -221,7 +221,7 @@ test("[§4.15] consumer workflow runs ci verify from the installed launcher", as
 test("[§4.15] consumer ci verify fails history-entry on a codeless-history range with tracked BUGS", async () => {
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		repo.writeFile(
 			"docs/BUGS/2026.md",
 			"# Bugs — 2026\n\n| Id | Status | Title | Found | Fix | Regression test |\n|---|---|---|---|---|---|\n",

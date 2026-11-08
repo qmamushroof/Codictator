@@ -4,15 +4,14 @@
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import {
-	findingIds,
 	installConsumer,
-	MATRIX,
 	runLauncher,
 	srcMain,
 	taskId,
 	toPlanning,
 	writeTreeFile,
 } from "../support/consumer-harness.ts";
+import { findingIds, MATRIX } from "../support/consumer-matrix.ts";
 import { createTempRepo, type TempRepo } from "../support/temp-repo.ts";
 
 const STAGED: ReadonlyArray<{
@@ -203,7 +202,7 @@ test("[consumer] every L3/L4-mapped floor rule fires on its gate probe", async (
 	const tddRepo = createTempRepo();
 	try {
 		for (const repo of [gitRepo, rangeRepo, tddRepo]) {
-			installConsumer(repo);
+			await installConsumer(repo);
 		}
 		const gid = await taskId(gitRepo, "matrix git");
 		await toPlanning(gitRepo, gid);

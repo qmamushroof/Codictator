@@ -6,15 +6,14 @@ import test from "node:test";
 import {
 	denyReason,
 	installConsumer,
-	MATRIX,
 	runLauncher,
 	srcMain,
 	taskId,
 	toPlanning,
-	VECTOR,
 	writePayload,
 	writeTreeFile,
 } from "../support/consumer-harness.ts";
+import { MATRIX, VECTOR } from "../support/consumer-matrix.ts";
 import { createTempRepo } from "../support/temp-repo.ts";
 
 function toolPayload(
@@ -135,7 +134,7 @@ test("[consumer] every L1-mapped floor rule fires on its hook probe", async () =
 	const hits = new Map<string, { fired: boolean; detail: string }>();
 	const repo = createTempRepo();
 	try {
-		installConsumer(repo);
+		await installConsumer(repo);
 		const rulesFor = (probe: string): Array<string> =>
 			MATRIX.filter(([, entry]) => entry === probe).map(([rule]) => rule);
 		const markHook = (probe: string, stdout: string): void => {

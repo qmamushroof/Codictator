@@ -6,6 +6,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { handleRegen } from "../../src/cli/guardrail.ts";
+import { detectWorkflowOptions } from "../../src/cli/init-plan.ts";
+import { loadFloorRules } from "../../src/cli/packs.ts";
 import { guardrailPlan, writePlan } from "../../src/cli/plan.ts";
 import type { CommandRequest } from "../../src/cli/shared.ts";
 import { createTempRepo } from "../support/temp-repo.ts";
@@ -24,9 +26,23 @@ function snapshot(
 async function writeInit(repoDir: string, profile: string): Promise<void> {
 	const harnesses = ["muse-code", "opencode"];
 	const repoName = path.basename(repoDir);
+	// The real init plan assembly (buildGuardrailPlan with default flags)
+	// builds floorRules from the loaded pack registry and detects the
+	// workflow setup from the repo; the helper mirrors both so init and
+	// regen render the same guardrail set byte for byte.
+	const floorRules = await loadFloorRules(repoDir, []);
 	const wrote = await writePlan(
 		repoDir,
-		guardrailPlan(harnesses, profile, repoName, undefined),
+		guardrailPlan(
+			harnesses,
+			profile,
+			repoName,
+			undefined,
+			floorRules === undefined ? {} : { floorRules },
+			undefined,
+			repoDir,
+			await detectWorkflowOptions(repoDir),
+		),
 	);
 	assert.ok(wrote.ok);
 }

@@ -1,11 +1,11 @@
 // Slice 0 meta-guard, part 1: every tier:floor rule in the loaded packs maps
 // to one consumer-shaped scenario through a real entry point (MATRIX in the
-// support harness). A new floor rule with no row fails here; the firing
+// support matrix module). A new floor rule with no row fails here; the firing
 // halves live in the firing-l1/l34 suites. Green by construction.
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import { loadBuiltinPack } from "../../src/features/packs/loader.ts";
-import { MATRIX } from "../support/consumer-harness.ts";
+import { MATRIX } from "../support/consumer-matrix.ts";
 
 async function floorRules(): Promise<Map<string, ReadonlyArray<string>>> {
 	const found = new Map<string, ReadonlyArray<string>>();

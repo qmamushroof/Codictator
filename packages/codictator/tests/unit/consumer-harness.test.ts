@@ -3,7 +3,8 @@
 // rule ids from --json CLI replies. Both stay total on malformed input.
 import { strict as assert } from "node:assert";
 import test from "node:test";
-import { denyReason, findingIds } from "../support/consumer-harness.ts";
+import { denyReason } from "../support/consumer-harness.ts";
+import { findingIds } from "../support/consumer-matrix.ts";
 
 test("[consumer] denyReason passes the allow shape through", () => {
 	assert.equal(denyReason("{}"), undefined);
