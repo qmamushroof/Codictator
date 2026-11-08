@@ -1,0 +1,102 @@
+{
+  "acceptanceCriteria": [
+    "planning test-only writes pass the hook with no denial",
+    "planning src writes still blocked before red proof",
+    "all other gates unchanged"
+  ],
+  "branch": "fix/consumer-ec2-testwrites",
+  "bugRowUpdated": true,
+  "diagnosis": "workflowGatesReal judges the active planning task against the next-phase exit gate on every write scope; missingPlanningEvidence demands redProof, so the failing test write itself - which SPEC 4.12.2 planning writes allow and which produces the red proof - is denied with CDX-E604 core/workflow-gates. Root line: workflow-real.ts workflowGatesReal calling checkPhaseGate(task, next) with no file-class exemption.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/workflow-real.ts",
+      "packages/codictator/src/features/workflow/writes.ts",
+      "packages/codictator/tests/unit/packs/packs-l1-active-task.test.ts",
+      "packages/codictator/tests/unit/coverage/workflow-real.test.ts",
+      "docs/BUGS/2026.md",
+      "docs/HISTORY/2026-11-08.md",
+      ".codictator/tasks/T-0017.json",
+      ".codictator/tasks/T-0018.json",
+      "packages/codictator/tests/red-ledger.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-08T16:41:52.184Z",
+    "tree": "c80f165ab3dfd8f658c109841d37987bc64f7fe0"
+  },
+  "historyStaged": true,
+  "id": "T-0018",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-08T16:33:05.262Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-08T16:34:18.355Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-08T16:38:00.422Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-08T16:41:52.733Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-08T17:01:07.043Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-08T16:33:00.986Z",
+    "commit": "65ddda1fe741706033f44bc6ed36f0c30071d1c2",
+    "failing": [
+      "[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof"
+    ],
+    "tree": "c80f165ab3dfd8f658c109841d37987bc64f7fe0"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-08T17:01:04.716Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0018-r1",
+      "round": 1,
+      "tree": "08de85072405cea56645f8a60ff78ab931541e27"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-12-WORKFLOW.md",
+    "docs/SPEC/10-TESTING-STRATEGY.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+      "title": "[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-active-task.test.ts",
+      "title": "[§4.12.7 EC-2] L1 workflow gates stay quiet for a planning test-only write"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+      "title": "[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof"
+    }
+  ],
+  "title": "EC-2 planning test writes blocked by red-proof phase demand",
+  "type": "fix",
+  "version": 1
+}
+

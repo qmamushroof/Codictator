@@ -4,7 +4,11 @@
 import type { Ports } from "../../../kernel/index.ts";
 import type { Finding } from "../../engine/index.ts";
 import { checkPhaseGate, MANDATORY_PHASES } from "../../workflow/phases.ts";
-import { checkWriteWithinPlan, classifyChange } from "../../workflow/writes.ts";
+import {
+	checkWriteWithinPlan,
+	classifyChange,
+	isTestPath,
+} from "../../workflow/writes.ts";
 import type { RuleBinding } from "./binding.ts";
 import { findingFor } from "./binding.ts";
 import {
@@ -28,6 +32,18 @@ export async function workflowGatesReal(
 	return collectActiveTaskFindings(ports, files, async (task, findings) => {
 		const next = nextPhaseOf(task.phase);
 		if (next === undefined) {
+			return;
+		}
+		// SPEC §4.12.2: planning allows test writes, and the red proof is
+		// the exit gate for advancing — not a precondition for writing the
+		// failing test that produces it (§4.12.7 EC-2). A test-only write in
+		// planning therefore owes no phase-gate evidence; src writes stay
+		// judged below, and every other phase is untouched.
+		if (
+			task.phase === "planning" &&
+			files.length > 0 &&
+			files.every(isTestPath)
+		) {
 			return;
 		}
 		for (const finding of await checkPhaseGate(task, next)) {

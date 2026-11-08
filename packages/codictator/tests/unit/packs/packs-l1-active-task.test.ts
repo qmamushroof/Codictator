@@ -146,6 +146,20 @@ test("[§4.12.3] L1 workflow gates judge the active task for the branch", async 
 	assert.ok(ruleIds(findings).includes("core/workflow-gates"));
 });
 
+test("[§4.12.7 EC-2] L1 workflow gates stay quiet for a planning test-only write", async () => {
+	const fs = new FakeFs();
+	seedTask(fs, {
+		id: "T-0001",
+		branch: "fix/x",
+		type: "feature",
+		phase: "planning",
+		allow: [],
+	});
+	const ports = portsFor(fs, branchResult("fix/x\n"));
+	const findings = await workflowGatesReal(ports, ["tests/widget.test.ts"]);
+	assert.deepEqual(findings, []);
+});
+
 test("[§4.12.7 EC-2] L1 red proof uses the active task before files.allow is set", async () => {
 	const fs = new FakeFs();
 	seedTask(fs, {

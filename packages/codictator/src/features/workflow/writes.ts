@@ -17,7 +17,7 @@ function isDocPath(path: string): boolean {
 	return path.startsWith("docs/") || path.endsWith(".md");
 }
 
-function isTestPath(path: string): boolean {
+export function isTestPath(path: string): boolean {
 	return (
 		path.includes("/tests/") ||
 		path.startsWith("tests/") ||

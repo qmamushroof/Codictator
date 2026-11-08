@@ -4,7 +4,6 @@
 		"tests/acceptance/consumer-enforcement-firing-l1.test.ts::[consumer] every L1-mapped floor rule fires on its hook probe",
 		"tests/acceptance/consumer-enforcement-firing-l34.test.ts::[consumer] every L3/L4-mapped floor rule fires on its gate probe",
 		"tests/acceptance/consumer-enforcement.test.ts::[§4.12.3 L3] consumer pre-commit without an active record-phase task is blocked",
-		"tests/acceptance/consumer-enforcement.test.ts::[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof",
 		"tests/acceptance/consumer-enforcement.test.ts::[§4.15] consumer ci verify fails history-entry on a codeless-history range with tracked BUGS",
 		"tests/acceptance/consumer-enforcement.test.ts::[§4.15] consumer workflow runs ci verify from the installed launcher",
 		"tests/acceptance/consumer-enforcement.test.ts::[§4.6.2] consumer AGENTS.md lists every loaded floor rule within 6,000 bytes",
