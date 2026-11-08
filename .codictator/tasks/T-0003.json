@@ -1,146 +1,145 @@
 {
-  "acceptanceCriteria": [
-    "Active path-less waiver loosens its rule param within bound (W-0001 maxRounds 3 to 4; hook pre-commit passes)",
-    "Floor, out-of-bound, expired and renewed-twice waivers do not loosen and stay loud via core/waivers-valid",
-    "Empty-paths waiver suppresses repo-wide; path-scoped waiver suppresses only matching paths",
-    "Regression tests recorded red then green; typecheck, lint and coverage clean; verify --staged passes",
-    "task new with id gaps issues max-plus-one and never overwrites a live record"
-  ],
-  "branch": "fix/restore-tdd-docs-gates",
-  "bugRowUpdated": true,
-  "diagnosis": "W-0001 (maxRounds 3 to 4) inert: no code builds a WaiverStore from waivers.json (zero waiverStore callers; evaluate.ts:243 defaults empty) and pathInScope treats paths:[] as match-nothing while waive always writes [] (waivers.ts:104-110, cli/waivers.ts:204). SPEC 4.2.1-step4 + 4.3.3-step3 unimplemented on CLI/hook/CI paths; SPEC stands, code is wrong. Counter: taskIdFor(ids.length + 1) collides after stale deletions (issued T-0004 over live T-0004 twice); ids must derive from max numeric suffix plus one.",
-  "files": {
-    "allow": [
-      "packages/codictator/src/features/engine/waivers.ts",
-      "packages/codictator/src/cli/waiver-params.ts",
-      "packages/codictator/src/cli/evaluate.ts",
-      "packages/codictator/src/cli/index.ts",
-      "packages/codictator/src/features/adapters/runtime.ts",
-      "packages/codictator/src/cli/waivers.ts",
-      "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
-      "packages/codictator/tests/unit/engine/waiver-paths.test.ts",
-      "packages/codictator/src/cli/tasks.ts",
-      "packages/codictator/tests/unit/cli/cli-task-new-id.test.ts",
-      ".codictator/waivers.json",
-      "packages/codictator/src/cli/evaluate-cache.ts",
-      "packages/codictator/src/features/adapters/hook-static.ts",
-      "packages/codictator/src/features/engine/waiver-chain.ts",
-      "packages/codictator/src/features/engine/waiver-file.ts",
-      "packages/codictator/src/features/engine/index.ts",
-      "packages/codictator/tests/unit/packs/packs-hook-l1-targets-s47.test.ts",
-      "packages/codictator/tests/unit/packs/packs-hook-l1-targets-s473-s471.test.ts",
-      "packages/codictator/tests/unit/integrity/waiver-modules-s44.test.ts"
-    ]
-  },
-  "greenProof": {
-    "at": "2026-11-08T04:43:19.709Z",
-    "tree": "b85e49c24dcd966664a2e9776a39b670cb912227"
-  },
-  "historyStaged": true,
-  "id": "T-0003",
-  "phase": "integrate",
-  "phases": [
-    {
-      "enteredAt": "2026-11-08T02:51:44.118Z",
-      "evidence": "codictator task phase next",
-      "name": "planning"
-    },
-    {
-      "enteredAt": "2026-11-08T02:54:32.113Z",
-      "evidence": "codictator task phase next",
-      "name": "implementation"
-    },
-    {
-      "enteredAt": "2026-11-08T03:07:52.363Z",
-      "evidence": "codictator task phase next",
-      "name": "validation"
-    },
-    {
-      "enteredAt": "2026-11-08T04:00:16.232Z",
-      "evidence": "codictator task phase next",
-      "name": "review"
-    },
-    {
-      "enteredAt": "2026-11-08T04:04:45.592Z",
-      "evidence": "codictator task phase next",
-      "name": "record"
-    },
-    {
-      "enteredAt": "2026-11-08T04:19:27.702Z",
-      "evidence": "codictator task phase next",
-      "name": "integrate"
-    }
-  ],
-  "redProof": {
-    "at": "2026-11-08T03:33:39.779Z",
-    "commit": "e058c6f06df4426f4e17f3d752fbac451b44996d",
-    "failing": [
-      "[§4.12.1] task new issues max-plus-one ids without overwriting"
-    ],
-    "tree": "ab6a61eca7a3333ea732608f6f508c8684cf7f23"
-  },
-  "reviews": [
-    {
-      "acknowledgedExceptions": [],
-      "at": "2026-11-08T04:00:29.407Z",
-      "identity": "observed",
-      "openBlockers": 0,
-      "openMajors": 0,
-      "reviewerSession": "fresh-review-T-0003-r1",
-      "round": 1,
-      "tree": "34b3f73b050ac5c90c7bddaa1a3c8e884e743856"
-    },
-    {
-      "acknowledgedExceptions": [],
-      "at": "2026-11-08T07:11:08.389Z",
-      "identity": "observed",
-      "openBlockers": 0,
-      "openMajors": 0,
-      "reviewerSession": "fresh-review-T-0003-r3",
-      "round": 2,
-      "tree": "85f7d142c7341d1ce7d91f4c4ddd101c93adab5e"
-    }
-  ],
-  "spec": [
-    "docs/SPEC/04-02-CONFIG.md:12",
-    "docs/SPEC/04-03-ENGINE.md:32",
-    "docs/SPEC/04-03-ENGINE.md:39",
-    "docs/SPEC/07-FILES-AND-FORMATS.md:74"
-  ],
-  "tests": [
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
-      "title": "[§4.2.1] active waiver loosens the evaluated rule param within bound"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
-      "title": "[§4.3.3] file waivers reach the verdict and ride waiversApplied"
-    },
-    {
-      "kind": "unit",
-      "path": "packages/codictator/tests/unit/engine/waiver-paths.test.ts",
-      "title": "[§4.3.4] waiver with empty paths applies repo-wide"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-task-new-id.test.ts",
-      "title": "[§4.12.1] task new issues max-plus-one ids without overwriting"
-    },
-    {
-      "kind": "acceptance",
-      "path": "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
-      "title": "[§4.2.1] active waiver loosens the evaluated rule param within bound"
-    },
-    {
-      "kind": "architecture",
-      "path": "packages/codictator/tests/unit/integrity/waiver-modules-s44.test.ts",
-      "title": "[§4.11] waiver split modules keep their public import shape"
-    }
-  ],
-  "title": "Wire waivers into effective params and verdict suppression",
-  "type": "fix",
-  "version": 1
+	"acceptanceCriteria": [
+		"Active path-less waiver loosens its rule param within bound (W-0001 maxRounds 3 to 4; hook pre-commit passes)",
+		"Floor, out-of-bound, expired and renewed-twice waivers do not loosen and stay loud via core/waivers-valid",
+		"Empty-paths waiver suppresses repo-wide; path-scoped waiver suppresses only matching paths",
+		"Regression tests recorded red then green; typecheck, lint and coverage clean; verify --staged passes",
+		"task new with id gaps issues max-plus-one and never overwrites a live record"
+	],
+	"branch": "fix/restore-tdd-docs-gates",
+	"bugRowUpdated": true,
+	"diagnosis": "W-0001 (maxRounds 3 to 4) inert: no code builds a WaiverStore from waivers.json (zero waiverStore callers; evaluate.ts:243 defaults empty) and pathInScope treats paths:[] as match-nothing while waive always writes [] (waivers.ts:104-110, cli/waivers.ts:204). SPEC 4.2.1-step4 + 4.3.3-step3 unimplemented on CLI/hook/CI paths; SPEC stands, code is wrong. Counter: taskIdFor(ids.length + 1) collides after stale deletions (issued T-0004 over live T-0004 twice); ids must derive from max numeric suffix plus one.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/engine/waivers.ts",
+			"packages/codictator/src/cli/waiver-params.ts",
+			"packages/codictator/src/cli/evaluate.ts",
+			"packages/codictator/src/cli/index.ts",
+			"packages/codictator/src/features/adapters/runtime.ts",
+			"packages/codictator/src/cli/waivers.ts",
+			"packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
+			"packages/codictator/tests/unit/engine/waiver-paths.test.ts",
+			"packages/codictator/src/cli/tasks.ts",
+			"packages/codictator/tests/unit/cli/cli-task-new-id.test.ts",
+			".codictator/waivers.json",
+			"packages/codictator/src/cli/evaluate-cache.ts",
+			"packages/codictator/src/features/adapters/hook-static.ts",
+			"packages/codictator/src/features/engine/waiver-chain.ts",
+			"packages/codictator/src/features/engine/waiver-file.ts",
+			"packages/codictator/src/features/engine/index.ts",
+			"packages/codictator/tests/unit/packs/packs-hook-l1-targets-s47.test.ts",
+			"packages/codictator/tests/unit/packs/packs-hook-l1-targets-s473-s471.test.ts",
+			"packages/codictator/tests/unit/integrity/waiver-modules-s44.test.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T04:43:19.709Z",
+		"tree": "b85e49c24dcd966664a2e9776a39b670cb912227"
+	},
+	"historyStaged": true,
+	"id": "T-0003",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T02:51:44.118Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T02:54:32.113Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T03:07:52.363Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T04:00:16.232Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T04:04:45.592Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-08T04:19:27.702Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T03:33:39.779Z",
+		"commit": "e058c6f06df4426f4e17f3d752fbac451b44996d",
+		"failing": [
+			"[§4.12.1] task new issues max-plus-one ids without overwriting"
+		],
+		"tree": "ab6a61eca7a3333ea732608f6f508c8684cf7f23"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T04:00:29.407Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-T-0003-r1",
+			"round": 1,
+			"tree": "34b3f73b050ac5c90c7bddaa1a3c8e884e743856"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T07:11:08.389Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-T-0003-r3",
+			"round": 2,
+			"tree": "85f7d142c7341d1ce7d91f4c4ddd101c93adab5e"
+		}
+	],
+	"spec": [
+		"docs/SPEC/04-02-CONFIG.md:12",
+		"docs/SPEC/04-03-ENGINE.md:32",
+		"docs/SPEC/04-03-ENGINE.md:39",
+		"docs/SPEC/07-FILES-AND-FORMATS.md:74"
+	],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
+			"title": "[§4.2.1] active waiver loosens the evaluated rule param within bound"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
+			"title": "[§4.3.3] file waivers reach the verdict and ride waiversApplied"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/engine/waiver-paths.test.ts",
+			"title": "[§4.3.4] waiver with empty paths applies repo-wide"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-task-new-id.test.ts",
+			"title": "[§4.12.1] task new issues max-plus-one ids without overwriting"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
+			"title": "[§4.2.1] active waiver loosens the evaluated rule param within bound"
+		},
+		{
+			"kind": "architecture",
+			"path": "packages/codictator/tests/unit/integrity/waiver-modules-s44.test.ts",
+			"title": "[§4.11] waiver split modules keep their public import shape"
+		}
+	],
+	"title": "Wire waivers into effective params and verdict suppression",
+	"type": "fix",
+	"version": 1
 }
-

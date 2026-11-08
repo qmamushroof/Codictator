@@ -1,107 +1,103 @@
 {
-  "acceptanceCriteria": [
-    "biome ci over tracked non-dist files reports zero findings; typecheck clean; each modified test file passes under node --test"
-  ],
-  "branch": "fix/restore-tdd-docs-gates",
-  "bugRowUpdated": true,
-  "diagnosis": "biome ci over tracked non-dist files reports 13 lint/complexity/useLiteralKeys hits in 6 files. Pre-existing: red-ledger-pool.ts:104,115; cli-setup.test.ts:193; vscode stdio-framing.ts:14,31,42,45; ux-host.ts:144,146; version-pin.test.ts:48,50. Ours (T-0003 split fallout): cli-waiver-wiring.test.ts:84,86. dist/ findings are build artifacts absent in CI (lint runs pre-build). All hits are X[lit] to X.lit with identical semantics.",
-  "files": {
-    "allow": [
-      "packages/codictator/tests/support/red-ledger-pool.ts",
-      "packages/codictator/tests/unit/cli/cli-setup.test.ts",
-      "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
-      "packages/vscode/src/stdio-framing.ts",
-      "packages/vscode/src/ux-host.ts",
-      "packages/vscode/tests/unit/version-pin.test.ts",
-      "packages/codictator/src/cli/git-hook.ts",
-      "packages/codictator/tests/unit/integrity/waiver-modules-s44.test.ts",
-      "packages/codictator/tests/unit/integrity/records-modules-s49.test.ts"
-    ]
-  },
-  "greenProof": {
-    "at": "2026-11-08T07:02:47.133Z",
-    "tree": "85f7d142c7341d1ce7d91f4c4ddd101c93adab5e"
-  },
-  "historyStaged": true,
-  "id": "T-0009",
-  "phase": "integrate",
-  "phases": [
-    {
-      "enteredAt": "2026-11-08T06:54:29.477Z",
-      "evidence": "codictator task phase next",
-      "name": "planning"
-    },
-    {
-      "enteredAt": "2026-11-08T06:55:03.588Z",
-      "evidence": "codictator task phase next",
-      "name": "implementation"
-    },
-    {
-      "enteredAt": "2026-11-08T07:02:51.025Z",
-      "evidence": "codictator task phase next",
-      "name": "validation"
-    },
-    {
-      "enteredAt": "2026-11-08T07:09:19.355Z",
-      "evidence": "codictator task phase next",
-      "name": "review"
-    },
-    {
-      "enteredAt": "2026-11-08T07:12:52.208Z",
-      "evidence": "codictator task phase next",
-      "name": "record"
-    },
-    {
-      "enteredAt": "2026-11-08T07:13:09.395Z",
-      "evidence": "codictator task phase next",
-      "name": "integrate"
-    }
-  ],
-  "redProof": {
-    "at": "2026-11-08T06:55:00.646Z",
-    "commit": "eb712cd93f46b1db9250e0fc8385184985effb4f",
-    "failing": [
-      "lint/complexity/useLiteralKeys packages/codictator/tests/support/red-ledger-pool.ts:104:46 env subscript",
-      "lint/complexity/useLiteralKeys packages/codictator/tests/unit/cli/cli-setup.test.ts:193:24 COMMANDS subscript",
-      "lint/complexity/useLiteralKeys packages/vscode/src/stdio-framing.ts:14:24 message subscript"
-    ],
-    "tree": "85f7d142c7341d1ce7d91f4c4ddd101c93adab5e"
-  },
-  "reviews": [
-    {
-      "acknowledgedExceptions": [],
-      "at": "2026-11-08T07:09:11.219Z",
-      "identity": "observed",
-      "openBlockers": 0,
-      "openMajors": 0,
-      "reviewerSession": "fresh-subagent-review-T-0009-r1",
-      "round": 1,
-      "tree": "cff864648b751e7678f009378080f0c56d091e5a"
-    }
-  ],
-  "spec": [
-    "docs/SPEC/02-STACK.md:15",
-    "docs/SPEC/03-ARCHITECTURE.md:12"
-  ],
-  "tests": [
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-setup.test.ts",
-      "title": "[§4.19.6] setup usage names the init-mirroring flags"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
-      "title": "[§4.2.1] active waiver loosens the evaluated rule param within bound"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/vscode/tests/unit/version-pin.test.ts",
-      "title": "[§4.20.1] extensionVersionOf reads the version through the full extension id"
-    }
-  ],
-  "title": "Repo-wide biome conformance for CI lint",
-  "type": "chore",
-  "version": 1
+	"acceptanceCriteria": [
+		"biome ci over tracked non-dist files reports zero findings; typecheck clean; each modified test file passes under node --test"
+	],
+	"branch": "fix/restore-tdd-docs-gates",
+	"bugRowUpdated": true,
+	"diagnosis": "biome ci over tracked non-dist files reports 13 lint/complexity/useLiteralKeys hits in 6 files. Pre-existing: red-ledger-pool.ts:104,115; cli-setup.test.ts:193; vscode stdio-framing.ts:14,31,42,45; ux-host.ts:144,146; version-pin.test.ts:48,50. Ours (T-0003 split fallout): cli-waiver-wiring.test.ts:84,86. dist/ findings are build artifacts absent in CI (lint runs pre-build). All hits are X[lit] to X.lit with identical semantics.",
+	"files": {
+		"allow": [
+			"packages/codictator/tests/support/red-ledger-pool.ts",
+			"packages/codictator/tests/unit/cli/cli-setup.test.ts",
+			"packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
+			"packages/vscode/src/stdio-framing.ts",
+			"packages/vscode/src/ux-host.ts",
+			"packages/vscode/tests/unit/version-pin.test.ts",
+			"packages/codictator/src/cli/git-hook.ts",
+			"packages/codictator/tests/unit/integrity/waiver-modules-s44.test.ts",
+			"packages/codictator/tests/unit/integrity/records-modules-s49.test.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T07:02:47.133Z",
+		"tree": "85f7d142c7341d1ce7d91f4c4ddd101c93adab5e"
+	},
+	"historyStaged": true,
+	"id": "T-0009",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T06:54:29.477Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T06:55:03.588Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T07:02:51.025Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T07:09:19.355Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T07:12:52.208Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-08T07:13:09.395Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T06:55:00.646Z",
+		"commit": "eb712cd93f46b1db9250e0fc8385184985effb4f",
+		"failing": [
+			"lint/complexity/useLiteralKeys packages/codictator/tests/support/red-ledger-pool.ts:104:46 env subscript",
+			"lint/complexity/useLiteralKeys packages/codictator/tests/unit/cli/cli-setup.test.ts:193:24 COMMANDS subscript",
+			"lint/complexity/useLiteralKeys packages/vscode/src/stdio-framing.ts:14:24 message subscript"
+		],
+		"tree": "85f7d142c7341d1ce7d91f4c4ddd101c93adab5e"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T07:09:11.219Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0009-r1",
+			"round": 1,
+			"tree": "cff864648b751e7678f009378080f0c56d091e5a"
+		}
+	],
+	"spec": ["docs/SPEC/02-STACK.md:15", "docs/SPEC/03-ARCHITECTURE.md:12"],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-setup.test.ts",
+			"title": "[§4.19.6] setup usage names the init-mirroring flags"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-waiver-wiring.test.ts",
+			"title": "[§4.2.1] active waiver loosens the evaluated rule param within bound"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/vscode/tests/unit/version-pin.test.ts",
+			"title": "[§4.20.1] extensionVersionOf reads the version through the full extension id"
+		}
+	],
+	"title": "Repo-wide biome conformance for CI lint",
+	"type": "chore",
+	"version": 1
 }
-
