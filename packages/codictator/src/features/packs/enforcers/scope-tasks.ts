@@ -4,58 +4,21 @@
 // task records under .codictator/tasks, which the CLI owns (§4.12.1).
 // No task records on disk (unit fakes, repos without tasks) means nothing
 // to judge, so the real path stays quiet instead of false-blocking.
-import { globMatch, type Ports, parseJson } from "../../../kernel/index.ts";
+import { globMatch, type Ports } from "../../../kernel/index.ts";
 import type { Finding } from "../../engine/index.ts";
-import { resolveActiveTask, type TaskRecord } from "../../workflow/index.ts";
-
-export const TASKS_DIR = ".codictator/tasks";
-
-function taskRecordOf(text: string): TaskRecord | undefined {
-	const parsed = parseJson(text);
-	if (!parsed.ok) {
-		return undefined;
-	}
-	if (typeof parsed.value !== "object" || parsed.value === null) {
-		return undefined;
-	}
-	const record = parsed.value as TaskRecord;
-	if (record.version !== 1 || typeof record.id !== "string") {
-		return undefined;
-	}
-	return record;
-}
+import {
+	readBranchAt,
+	readTaskRecords,
+	resolveActiveTask,
+	type TaskRecord,
+} from "../../workflow/index.ts";
 
 // The on-disk task records, id-sorted for deterministic verdicts (§4.3.6).
 // Unreadable or malformed records are skipped, never fatal: the hook and CI
 // paths judge tasklessness with branch context, while enforcers judge the
-// records they can read.
+// records they can read. The reader is shared with steering and the CLI.
 export async function readScopeTasks(ports: Ports): Promise<Array<TaskRecord>> {
-	const listed = await ports.fs.list(TASKS_DIR);
-	if (!listed.ok) {
-		return [];
-	}
-	const out: Array<TaskRecord> = [];
-	for (const name of listed.value) {
-		const record = await readTaskRecord(ports, name);
-		if (record !== undefined) {
-			out.push(record);
-		}
-	}
-	return out.sort((a, b) => (a.id < b.id ? -1 : 1));
-}
-
-async function readTaskRecord(
-	ports: Ports,
-	name: string,
-): Promise<TaskRecord | undefined> {
-	if (!name.endsWith(".json")) {
-		return undefined;
-	}
-	const text = await ports.fs.readText(`${TASKS_DIR}/${name}`);
-	if (!text.ok) {
-		return undefined;
-	}
-	return taskRecordOf(text.value);
+	return readTaskRecords(ports);
 }
 
 // The tasks claiming the scope: any files.allow glob matching any scope
@@ -109,17 +72,7 @@ export async function readBranch(ports: Ports): Promise<string | undefined> {
 	if (!root.ok) {
 		return undefined;
 	}
-	const ran = await ports.proc.run(["git", "branch", "--show-current"], {
-		cwd: root.value,
-		env: {},
-		timeoutMs: 15_000,
-		maxOutputBytes: 4096,
-	});
-	if (ran.timedOut || ran.truncated || ran.code !== 0) {
-		return undefined;
-	}
-	const branch = ran.stdout.trim();
-	return branch === "" ? undefined : branch;
+	return readBranchAt(ports, root.value);
 }
 
 // SPEC §4.12.1: the active task for the branch, reusing the branch-binding

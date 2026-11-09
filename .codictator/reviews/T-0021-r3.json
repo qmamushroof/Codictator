@@ -1,0 +1,14 @@
+{
+	"findings": [
+		{
+			"id": "F-1",
+			"severity": "nit",
+			"path": "packages/codictator/src/cli/tasks.ts",
+			"line": 247,
+			"message": "The taskIoFail comment says the E903 port-failure shape \"lives once here\", but writeTask (line 109) and taskCheckpoint (line 232) in the same file still spell out fail(\"CDX-E903\", saved.error.message, saved.error.remediation, ...) by hand; either route them through taskIoFail or narrow the comment to taskClose so it does not overclaim."
+		}
+	],
+	"reviewerSession": "fresh-subagent-review-T-0021-r3",
+	"tree": "75a68014b41ab41236db2d809619be75410e5ecf",
+	"version": 1
+}

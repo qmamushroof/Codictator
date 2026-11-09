@@ -10,11 +10,13 @@ import { checkHistory } from "../features/records/history-scope.ts";
 import {
 	classifyChange,
 	MANDATORY_PHASES,
+	readBranchAt,
+	readTaskRecords,
 	resolveActiveTask,
 	type TaskRecord,
 } from "../features/workflow/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
-import { err, makeError, ok, parseJson } from "../kernel/index.ts";
+import { err, makeError, ok } from "../kernel/index.ts";
 import type { CommandPorts } from "./shared.ts";
 
 const GIT_TIMEOUT_MS = 30000;
@@ -91,45 +93,11 @@ function atRecordOrLater(phase: string): boolean {
 	return MANDATORY_PHASES.indexOf(phase) >= MANDATORY_PHASES.indexOf("record");
 }
 
-async function branchName(ports: CommandPorts): Promise<string | undefined> {
-	const ran = await ports.proc.run(["git", "branch", "--show-current"], {
-		cwd: ports.root,
-		env: {},
-		timeoutMs: 15000,
-		maxOutputBytes: 4096,
-	});
-	if (ran.timedOut || ran.truncated || ran.code !== 0) {
-		return undefined;
-	}
-	const branch = ran.stdout.trim();
-	return branch === "" ? undefined : branch;
-}
-
-async function taskEntry(
-	ports: CommandPorts,
-	name: string,
-): Promise<TaskRecord | undefined> {
-	if (!name.endsWith(".json")) {
-		return undefined;
-	}
-	const text = await ports.fs.readText(`.codictator/tasks/${name}`);
-	if (!text.ok) {
-		return undefined;
-	}
-	const parsed = parseJson(text.value);
-	if (!parsed.ok || typeof parsed.value !== "object" || parsed.value === null) {
-		return undefined;
-	}
-	const record = parsed.value as TaskRecord;
-	if (
-		record.version !== 1 ||
-		typeof record.id !== "string" ||
-		typeof record.branch !== "string" ||
-		typeof record.phase !== "string"
-	) {
-		return undefined;
-	}
-	return record;
+// An L3 task record also needs its branch and phase as strings: the gate
+// matches the branch and orders the phase, so a record missing either is
+// skipped like any malformed record.
+function isGateRecord(record: TaskRecord): boolean {
+	return typeof record.branch === "string" && typeof record.phase === "string";
 }
 
 // SPEC §4.12.1: the branch task is the active task for every hook on that
@@ -137,21 +105,11 @@ async function taskEntry(
 export async function readActiveTask(
 	ports: CommandPorts,
 ): Promise<{ branch: string | undefined; task: TaskRecord | undefined }> {
-	const branch = await branchName(ports);
+	const branch = await readBranchAt(ports, ports.root);
 	if (branch === undefined) {
 		return { branch, task: undefined };
 	}
-	const listed = await ports.fs.list(".codictator/tasks");
-	if (!listed.ok) {
-		return { branch, task: undefined };
-	}
-	const records: Array<TaskRecord> = [];
-	for (const name of [...listed.value].sort()) {
-		const record = await taskEntry(ports, name);
-		if (record !== undefined) {
-			records.push(record);
-		}
-	}
+	const records = (await readTaskRecords(ports)).filter(isGateRecord);
 	return { branch, task: resolveActiveTask(records, branch) };
 }
 

@@ -25,6 +25,12 @@ export {
 	validatePhaseOrder,
 } from "./phases.ts";
 export type { ReviewFinding, ReviewSeverity } from "./review.ts";
+export {
+	readBranchAt,
+	readTaskRecords,
+	TASKS_DIR,
+	taskRecordOf,
+} from "./task-store.ts";
 export type {
 	AgentRole,
 	ChangeClass,

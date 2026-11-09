@@ -1,0 +1,14 @@
+{
+	"findings": [
+		{
+			"id": "F-1",
+			"severity": "nit",
+			"path": "packages/codictator/tests/unit/packs/packs-task-reader-duplication.test.ts",
+			"line": 52,
+			"message": "Missing reader files are skipped silently, so a later rename or move of any READERS entry (including task-store.ts) drops it from the duplication check with the test still green; after the loop, assert the post-fix set is present (e.g. present includes src/features/workflow/task-store.ts) so the regression guard cannot hollow out."
+		}
+	],
+	"reviewerSession": "fresh-subagent-review-T-0021-r2",
+	"tree": "52e16f0cc08d64843e11af61ac9951abb287e56a",
+	"version": 1
+}
