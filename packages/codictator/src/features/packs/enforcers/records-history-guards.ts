@@ -36,10 +36,17 @@ export async function historyEntryReal(
 	if (files.length === 0) {
 		return [];
 	}
-	// SPEC §4.9.3 core/history-entry: a record file exempts only a
-	// records-only change. A code change that also carries a BUGS row (the
-	// tracked-BUGS fallback unions tracked rows into the scope) still owes
-	// a HISTORY entry, so only the non-record files are judged.
+	// SPEC §4.9.3 core/history-entry: a docs/HISTORY/ file in scope carries
+	// the entry (history-append-only forbids edits, so a changed file is an
+	// added entry; L3 commit-msg judges the per-commit count and subject).
+	// This union-scope verdict cannot see per-commit counts across an L4
+	// range; that gap is BUG-0083, so here the change owes nothing more.
+	// A BUGS row alone exempts only a records-only change: a code change that
+	// carries one (the tracked-BUGS fallback unions tracked rows into the
+	// scope) still owes a HISTORY entry, so only non-record files are judged.
+	if (files.some((file) => isHistoryFile(file))) {
+		return [];
+	}
 	const judged = files.filter((file) => !isRecordFile(file));
 	if (judged.length === 0) {
 		return [];

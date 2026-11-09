@@ -1,0 +1,35 @@
+{
+	"findings": [
+		{
+			"id": "F1",
+			"severity": "major",
+			"path": "packages/codictator/tests/acceptance/ci-history-entry-range.test.ts",
+			"line": 52,
+			"message": "SPEC §4.9.3 core/history-entry at L4: every non-merge commit in range adds one entry. This test commits test(app): cover a with no HISTORY entry and asserts the range yields no core/history-entry finding, so it pins behaviour the SPEC forbids. Either each commit in the fixture adds its own entry (title: a range whose every commit carries its entry passes), or a SPEC change must first relax L4 to one entry per range."
+		},
+		{
+			"id": "F2",
+			"severity": "major",
+			"path": "packages/codictator/src/features/packs/enforcers/records-history-guards.ts",
+			"line": 45,
+			"message": "Any docs/HISTORY/ path in scope now exempts the whole scope, so at L4 a range with one entry and N commits passes core/history-entry, contrary to §4.9.3 (one entry per non-merge commit in range; EC-9 says L4 blocks a commit that bypassed L3). The comment defers counting to staged-history and history-entry-complete, but no test in this change proves an L4 per-commit count fires for a range short of entries; add that missing-entry-commit case or judge per commit."
+		},
+		{
+			"id": "F3",
+			"severity": "minor",
+			"path": "packages/codictator/src/features/packs/enforcers/records-history-guards.ts",
+			"line": 45,
+			"message": "Presence of a HISTORY path is not an added entry: a code change that only edits an old HISTORY file (or a whitespace touch on one) now passes core/history-entry. core/history-append-only may block edits in place but not a pure append-free touch; the exemption should key on an added entry, not on the path."
+		},
+		{
+			"id": "F4",
+			"severity": "nit",
+			"path": ".codictator/tasks/T-0020.json",
+			"line": 63,
+			"message": "The regression and unit test entries name the same test (same path and title); list it once or name a distinct unit test."
+		}
+	],
+	"reviewerSession": "fresh-subagent-review-T-0020-r1",
+	"tree": "d1f2d32c3f137f3531a3b4b5c00ff6ddc3a74c04",
+	"version": 1
+}

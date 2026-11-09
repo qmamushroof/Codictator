@@ -19,3 +19,15 @@ test("[§4.9.3] code change carrying a BUGS row still owes a history entry", asy
 	assert.equal(findings[0]?.ruleId, "core/history-entry");
 	assert.equal(findings[0]?.path, "docs/HISTORY/");
 });
+
+test("[§4.9.3] code range carrying a HISTORY entry owes no further entry", async () => {
+	assert.deepEqual(
+		await historyEntryReal([
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-09.md",
+			"packages/codictator/src/cli/ci.ts",
+			"packages/codictator/tests/red-ledger.json",
+		]),
+		[],
+	);
+});
