@@ -65,6 +65,14 @@ function seedTask(repo: TempRepo): void {
 			spec: [],
 			acceptanceCriteria: [],
 			files: { allow: [] },
+			historyStaged: true,
+			bugRowUpdated: true,
+			redProof: {
+				commit: "0".repeat(40),
+				tree: "0".repeat(40),
+				failing: [],
+				at: "2026-01-01T00:00:00.000Z",
+			},
 		}),
 	);
 }
