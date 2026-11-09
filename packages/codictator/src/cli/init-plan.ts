@@ -20,7 +20,9 @@ import {
 	guardrailPlan,
 	writePlan,
 } from "./plan.ts";
+
 export { detectWorkflowOptions };
+
 import { ensureGitignoreEntries } from "./setup-gitignore.ts";
 import type { CommandRequest } from "./shared.ts";
 import {

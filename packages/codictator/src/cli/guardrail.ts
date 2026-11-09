@@ -16,7 +16,7 @@ import {
 } from "../features/integrity/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { err, ok, resolveRepoRoot } from "../kernel/index.ts";
-import { initPreamble, detectWorkflowOptions } from "./init-plan.ts";
+import { detectWorkflowOptions, initPreamble } from "./init-plan.ts";
 import { loadFloorRules } from "./packs.ts";
 import { guardrailPlan, writePlan } from "./plan.ts";
 import type { CommandRequest } from "./shared.ts";

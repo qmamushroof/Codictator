@@ -1,178 +1,177 @@
 {
-  "acceptanceCriteria": [
-    "9 consumer scenarios red on clean main",
-    "meta-guard completeness green, firing red with 59 silent rules"
-  ],
-  "branch": "fix/consumer-slice0-harness",
-  "files": {
-    "allow": [
-      "packages/codictator/tests/acceptance/consumer-enforcement*.test.ts",
-      "packages/codictator/tests/support/consumer-harness.ts",
-      "packages/codictator/tests/unit/consumer-harness.test.ts",
-      "packages/codictator/tests/red-ledger.json",
-      "docs/BUGS/2026.md",
-      "docs/HISTORY/2026-11-08.md",
-      ".codictator/tasks/T-0017.json",
-      "packages/codictator/tests/support/consumer-matrix.ts",
-      "packages/codictator/tests/acceptance/init-regen.test.ts",
-      ".codictator/tasks/T-0019.json",
-      ".codictator/reviews/T-0019-r1.json"
-    ]
-  },
-  "greenProof": {
-    "at": "2026-11-09T13:54:44.473Z",
-    "tree": "0134fbd775a47ace943897dc5a9490e7b4771a85"
-  },
-  "historyStaged": true,
-  "id": "T-0017",
-  "phase": "integrate",
-  "phases": [
-    {
-      "enteredAt": "2026-11-08T14:55:55.560Z",
-      "evidence": "codictator task phase next",
-      "name": "planning"
-    },
-    {
-      "enteredAt": "2026-11-08T14:56:23.261Z",
-      "evidence": "codictator task phase next",
-      "name": "implementation"
-    },
-    {
-      "enteredAt": "2026-11-09T13:51:39.992Z",
-      "evidence": "codictator task phase next",
-      "name": "validation"
-    },
-    {
-      "enteredAt": "2026-11-09T13:54:45.097Z",
-      "evidence": "codictator task phase next",
-      "name": "review"
-    },
-    {
-      "enteredAt": "2026-11-09T13:57:26.230Z",
-      "evidence": "codictator task phase next",
-      "name": "record"
-    },
-    {
-      "enteredAt": "2026-11-09T14:01:31.025Z",
-      "evidence": "codictator task phase next",
-      "name": "integrate"
-    }
-  ],
-  "redProof": {
-    "at": "2026-11-08T14:56:02.917Z",
-    "commit": "cf2fe9be5de9ce0bf03fa096af491d1cf04e372d",
-    "failing": [
-      "[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new message",
-      "[§4.12.3 L3] consumer pre-commit without an active record-phase task is blocked",
-      "[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof",
-      "[§4.12.7 EC-3] consumer write outside files.allow is blocked with the amend hint",
-      "[§4.15] consumer ci verify fails history-entry on a codeless-history range with tracked BUGS",
-      "[§4.15] consumer workflow runs ci verify from the installed launcher",
-      "[§4.6.2] consumer AGENTS.md lists every loaded floor rule within 6,000 bytes",
-      "[§4.6.3] consumer SessionStart reply carries additionalContext",
-      "[§4.9.3] consumer commit-msg without a staged history entry is blocked",
-      "[consumer] every L1-mapped floor rule fires on its hook probe",
-      "[consumer] every L3/L4-mapped floor rule fires on its gate probe"
-    ],
-    "tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
-  },
-  "reviews": [
-    {
-      "acknowledgedExceptions": [],
-      "at": "2026-11-09T13:57:20.754Z",
-      "identity": "observed",
-      "openBlockers": 0,
-      "openMajors": 0,
-      "reviewerSession": "fresh-subagent-review-T-0017-r1",
-      "round": 1,
-      "tree": "6e1427cf6d752be6fc542428f4990d72a4aa7686"
-    }
-  ],
-  "spec": [
-    "docs/SPEC/04-12-WORKFLOW.md",
-    "docs/SPEC/04-06-STEERING.md",
-    "docs/SPEC/04-15-CI.md",
-    "docs/SPEC/10-TESTING-STRATEGY.md"
-  ],
-  "tests": [
-    {
-      "kind": "acceptance",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement-matrix.test.ts",
-      "title": "[consumer] every tier:floor rule has a mapped scenario"
-    },
-    {
-      "kind": "unit",
-      "path": "packages/codictator/tests/unit/consumer-harness.test.ts",
-      "title": "[consumer] denyReason passes the allow shape through"
-    },
-    {
-      "kind": "unit",
-      "path": "packages/codictator/tests/unit/consumer-harness.test.ts",
-      "title": "[consumer] denyReason surfaces the harness deny reason"
-    },
-    {
-      "kind": "unit",
-      "path": "packages/codictator/tests/unit/consumer-harness.test.ts",
-      "title": "[consumer] denyReason stays total on non-JSON output"
-    },
-    {
-      "kind": "unit",
-      "path": "packages/codictator/tests/unit/consumer-harness.test.ts",
-      "title": "[consumer] findingIds extracts rule ids from a json reply"
-    },
-    {
-      "kind": "unit",
-      "path": "packages/codictator/tests/unit/consumer-harness.test.ts",
-      "title": "[consumer] findingIds stays empty without findings"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new message"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.12.3 L3] consumer pre-commit without an active record-phase task is blocked"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.12.7 EC-3] consumer write outside files.allow is blocked with the amend hint"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.15] consumer ci verify fails history-entry on a codeless-history range with tracked BUGS"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.15] consumer workflow runs ci verify from the installed launcher"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.6.2] consumer AGENTS.md lists every loaded floor rule within 6,000 bytes"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.6.3] consumer SessionStart reply carries additionalContext"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
-      "title": "[§4.9.3] consumer commit-msg without a staged history entry is blocked"
-    }
-  ],
-  "title": "consumer conformance harness (slice 0)",
-  "type": "feature",
-  "version": 1
+	"acceptanceCriteria": [
+		"9 consumer scenarios red on clean main",
+		"meta-guard completeness green, firing red with 59 silent rules"
+	],
+	"branch": "fix/consumer-slice0-harness",
+	"files": {
+		"allow": [
+			"packages/codictator/tests/acceptance/consumer-enforcement*.test.ts",
+			"packages/codictator/tests/support/consumer-harness.ts",
+			"packages/codictator/tests/unit/consumer-harness.test.ts",
+			"packages/codictator/tests/red-ledger.json",
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-08.md",
+			".codictator/tasks/T-0017.json",
+			"packages/codictator/tests/support/consumer-matrix.ts",
+			"packages/codictator/tests/acceptance/init-regen.test.ts",
+			".codictator/tasks/T-0019.json",
+			".codictator/reviews/T-0019-r1.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-09T13:54:44.473Z",
+		"tree": "0134fbd775a47ace943897dc5a9490e7b4771a85"
+	},
+	"historyStaged": true,
+	"id": "T-0017",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T14:55:55.560Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T14:56:23.261Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-09T13:51:39.992Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-09T13:54:45.097Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-09T13:57:26.230Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-09T14:01:31.025Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T14:56:02.917Z",
+		"commit": "cf2fe9be5de9ce0bf03fa096af491d1cf04e372d",
+		"failing": [
+			"[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new message",
+			"[§4.12.3 L3] consumer pre-commit without an active record-phase task is blocked",
+			"[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof",
+			"[§4.12.7 EC-3] consumer write outside files.allow is blocked with the amend hint",
+			"[§4.15] consumer ci verify fails history-entry on a codeless-history range with tracked BUGS",
+			"[§4.15] consumer workflow runs ci verify from the installed launcher",
+			"[§4.6.2] consumer AGENTS.md lists every loaded floor rule within 6,000 bytes",
+			"[§4.6.3] consumer SessionStart reply carries additionalContext",
+			"[§4.9.3] consumer commit-msg without a staged history entry is blocked",
+			"[consumer] every L1-mapped floor rule fires on its hook probe",
+			"[consumer] every L3/L4-mapped floor rule fires on its gate probe"
+		],
+		"tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-09T13:57:20.754Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0017-r1",
+			"round": 1,
+			"tree": "6e1427cf6d752be6fc542428f4990d72a4aa7686"
+		}
+	],
+	"spec": [
+		"docs/SPEC/04-12-WORKFLOW.md",
+		"docs/SPEC/04-06-STEERING.md",
+		"docs/SPEC/04-15-CI.md",
+		"docs/SPEC/10-TESTING-STRATEGY.md"
+	],
+	"tests": [
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement-matrix.test.ts",
+			"title": "[consumer] every tier:floor rule has a mapped scenario"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/consumer-harness.test.ts",
+			"title": "[consumer] denyReason passes the allow shape through"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/consumer-harness.test.ts",
+			"title": "[consumer] denyReason surfaces the harness deny reason"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/consumer-harness.test.ts",
+			"title": "[consumer] denyReason stays total on non-JSON output"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/consumer-harness.test.ts",
+			"title": "[consumer] findingIds extracts rule ids from a json reply"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/consumer-harness.test.ts",
+			"title": "[consumer] findingIds stays empty without findings"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new message"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.3 L3] consumer pre-commit without an active record-phase task is blocked"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.7 EC-2] consumer planning task allows test writes but blocks src writes before red proof"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.7 EC-3] consumer write outside files.allow is blocked with the amend hint"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.15] consumer ci verify fails history-entry on a codeless-history range with tracked BUGS"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.15] consumer workflow runs ci verify from the installed launcher"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.6.2] consumer AGENTS.md lists every loaded floor rule within 6,000 bytes"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.6.3] consumer SessionStart reply carries additionalContext"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.9.3] consumer commit-msg without a staged history entry is blocked"
+		}
+	],
+	"title": "consumer conformance harness (slice 0)",
+	"type": "feature",
+	"version": 1
 }
-

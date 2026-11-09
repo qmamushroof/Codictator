@@ -1,133 +1,132 @@
 {
-  "acceptanceCriteria": [
-    "pre-commit on a code-class staged set with no active task is blocked with core/workflow-gates naming codictator task new",
-    "pre-commit on a code-class staged set with the active task below record is blocked",
-    "pre-commit on a code-class staged set with the active task at record or integrate passes the task gate",
-    "commit-msg on a code/docs staged set with no staged docs/HISTORY entry is blocked with core/history-entry",
-    "commit-msg on a deps-shaped staged set with no staged history entry still appends the trailer",
-    "existing cli-commit-msg and git-hook-verdict tests still pass"
-  ],
-  "branch": "fix/consumer-slice3-l3",
-  "bugRowUpdated": true,
-  "diagnosis": "G5: L3 is soft. pre-commit never requires an active task at phase >= record; core/history-entry is excluded from hook review legs (HOOK_REVIEW_EXCLUDES) and commit-msg appends the trailer when no history file is staged, so code commits without a task or without a history entry pass silently. Fix in git-eval/git-hook/git-history: task-phase gate on code-class pre-commit scope, staged-history requirement on code/docs commit-msg scope, deps-shaped changes exempt.",
-  "files": {
-    "allow": [
-      "packages/codictator/src/cli/git-eval.ts",
-      "packages/codictator/src/cli/git-hook.ts",
-      "packages/codictator/src/cli/git-history.ts",
-      "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
-      "docs/BUGS/2026.md",
-      "docs/HISTORY/2026-11-08.md",
-      ".codictator/tasks/T-0014.json",
-      "packages/codictator/tests/acceptance/l34-secret-gate.test.ts",
-      "packages/codictator/src/features/ci/changes.ts",
-      "packages/codictator/src/features/ci/index.ts",
-      "packages/codictator/src/cli/git-commit-msg.ts"
-    ]
-  },
-  "greenProof": {
-    "at": "2026-11-08T14:36:53.614Z",
-    "tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
-  },
-  "historyStaged": true,
-  "id": "T-0014",
-  "phase": "record",
-  "phases": [
-    {
-      "enteredAt": "2026-11-08T13:42:33.532Z",
-      "evidence": "codictator task phase next",
-      "name": "planning"
-    },
-    {
-      "enteredAt": "2026-11-08T13:53:25.584Z",
-      "evidence": "codictator task phase next",
-      "name": "implementation"
-    },
-    {
-      "enteredAt": "2026-11-08T13:58:45.909Z",
-      "evidence": "codictator task phase next",
-      "name": "validation"
-    },
-    {
-      "enteredAt": "2026-11-08T15:21:14.412Z",
-      "evidence": "codictator task phase next",
-      "name": "review"
-    },
-    {
-      "enteredAt": "2026-11-08T15:44:32.121Z",
-      "evidence": "codictator task phase next",
-      "name": "record"
-    }
-  ],
-  "redProof": {
-    "at": "2026-11-08T13:53:22.793Z",
-    "commit": "cf2fe9be5de9ce0bf03fa096af491d1cf04e372d",
-    "failing": [
-      "[§4.12.3 L3] pre-commit on a code-class staged set with no active task is blocked",
-      "[§4.12.3 L3] pre-commit on a code-class staged set with the active task below record is blocked",
-      "[§4.9.3] commit-msg on a code staged set with no staged history entry is blocked",
-      "[§4.9.3] commit-msg on a docs staged set with no staged history entry is blocked"
-    ],
-    "tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
-  },
-  "reviews": [
-    {
-      "acknowledgedExceptions": [],
-      "at": "2026-11-08T15:22:40.253Z",
-      "identity": "observed",
-      "openBlockers": 0,
-      "openMajors": 0,
-      "reviewerSession": "fresh-review-slice3-T0014",
-      "round": 1,
-      "tree": "56d5404d3ec8bcea5a894231209179e5e5659de4"
-    }
-  ],
-  "spec": [
-    "docs/SPEC/04-12-WORKFLOW.md:42",
-    "docs/SPEC/04-09-RECORDS.md:51",
-    "SPEC §4.12.3",
-    "SPEC §4.9.3",
-    "SPEC §7.7"
-  ],
-  "tests": [
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
-      "title": "[§4.12.3 L3] pre-commit on a code-class staged set with no active task is blocked"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
-      "title": "[§4.12.3 L3] pre-commit on a code-class staged set with the active task below record is blocked"
-    },
-    {
-      "kind": "acceptance",
-      "path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
-      "title": "[§4.12.3 L3] pre-commit on a code-class staged set with the active task at record passes the task gate"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
-      "title": "[§4.9.3] commit-msg on a code staged set with no staged history entry is blocked"
-    },
-    {
-      "kind": "regression",
-      "path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
-      "title": "[§4.9.3] commit-msg on a docs staged set with no staged history entry is blocked"
-    },
-    {
-      "kind": "acceptance",
-      "path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
-      "title": "[§4.12.7 EC-12] commit-msg on a deps-shaped staged set with no history entry still trailers"
-    },
-    {
-      "kind": "unit",
-      "path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
-      "title": "[§4.9.3] missing-history entry check answers the change class without git"
-    }
-  ],
-  "title": "enforce L3 git hooks: task-phase pre-commit gate and staged-history commit-msg gate",
-  "type": "fix",
-  "version": 1
+	"acceptanceCriteria": [
+		"pre-commit on a code-class staged set with no active task is blocked with core/workflow-gates naming codictator task new",
+		"pre-commit on a code-class staged set with the active task below record is blocked",
+		"pre-commit on a code-class staged set with the active task at record or integrate passes the task gate",
+		"commit-msg on a code/docs staged set with no staged docs/HISTORY entry is blocked with core/history-entry",
+		"commit-msg on a deps-shaped staged set with no staged history entry still appends the trailer",
+		"existing cli-commit-msg and git-hook-verdict tests still pass"
+	],
+	"branch": "fix/consumer-slice3-l3",
+	"bugRowUpdated": true,
+	"diagnosis": "G5: L3 is soft. pre-commit never requires an active task at phase >= record; core/history-entry is excluded from hook review legs (HOOK_REVIEW_EXCLUDES) and commit-msg appends the trailer when no history file is staged, so code commits without a task or without a history entry pass silently. Fix in git-eval/git-hook/git-history: task-phase gate on code-class pre-commit scope, staged-history requirement on code/docs commit-msg scope, deps-shaped changes exempt.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/cli/git-eval.ts",
+			"packages/codictator/src/cli/git-hook.ts",
+			"packages/codictator/src/cli/git-history.ts",
+			"packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-08.md",
+			".codictator/tasks/T-0014.json",
+			"packages/codictator/tests/acceptance/l34-secret-gate.test.ts",
+			"packages/codictator/src/features/ci/changes.ts",
+			"packages/codictator/src/features/ci/index.ts",
+			"packages/codictator/src/cli/git-commit-msg.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T14:36:53.614Z",
+		"tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+	},
+	"historyStaged": true,
+	"id": "T-0014",
+	"phase": "record",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T13:42:33.532Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T13:53:25.584Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T13:58:45.909Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T15:21:14.412Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T15:44:32.121Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T13:53:22.793Z",
+		"commit": "cf2fe9be5de9ce0bf03fa096af491d1cf04e372d",
+		"failing": [
+			"[§4.12.3 L3] pre-commit on a code-class staged set with no active task is blocked",
+			"[§4.12.3 L3] pre-commit on a code-class staged set with the active task below record is blocked",
+			"[§4.9.3] commit-msg on a code staged set with no staged history entry is blocked",
+			"[§4.9.3] commit-msg on a docs staged set with no staged history entry is blocked"
+		],
+		"tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T15:22:40.253Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-review-slice3-T0014",
+			"round": 1,
+			"tree": "56d5404d3ec8bcea5a894231209179e5e5659de4"
+		}
+	],
+	"spec": [
+		"docs/SPEC/04-12-WORKFLOW.md:42",
+		"docs/SPEC/04-09-RECORDS.md:51",
+		"SPEC §4.12.3",
+		"SPEC §4.9.3",
+		"SPEC §7.7"
+	],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
+			"title": "[§4.12.3 L3] pre-commit on a code-class staged set with no active task is blocked"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
+			"title": "[§4.12.3 L3] pre-commit on a code-class staged set with the active task below record is blocked"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
+			"title": "[§4.12.3 L3] pre-commit on a code-class staged set with the active task at record passes the task gate"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
+			"title": "[§4.9.3] commit-msg on a code staged set with no staged history entry is blocked"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
+			"title": "[§4.9.3] commit-msg on a docs staged set with no staged history entry is blocked"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
+			"title": "[§4.12.7 EC-12] commit-msg on a deps-shaped staged set with no history entry still trailers"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/cli/cli-git-l3-gates.test.ts",
+			"title": "[§4.9.3] missing-history entry check answers the change class without git"
+		}
+	],
+	"title": "enforce L3 git hooks: task-phase pre-commit gate and staged-history commit-msg gate",
+	"type": "fix",
+	"version": 1
 }
-

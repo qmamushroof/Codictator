@@ -33,10 +33,7 @@ export async function detectWorkflowOptions(
 			const flag = parsed.value[codictatorKey];
 			selfHost = isRecordValue(flag) && flag[selfHostKey] === true;
 			const scripts = parsed.value[scriptsKey];
-			if (
-				isRecordValue(scripts) &&
-				typeof scripts[buildKey] === "string"
-			) {
+			if (isRecordValue(scripts) && typeof scripts[buildKey] === "string") {
 				buildCommand = "npm run build";
 			}
 		}

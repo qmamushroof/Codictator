@@ -8,9 +8,7 @@ import { detectWorkflowOptions } from "../../../src/cli/init-plan.ts";
 import { guardrailPlan } from "../../../src/cli/plan.ts";
 import { createTempRepo } from "../../support/temp-repo.ts";
 
-function workflowText(
-	plan: ReturnType<typeof guardrailPlan>,
-): string {
+function workflowText(plan: ReturnType<typeof guardrailPlan>): string {
 	return (
 		plan.files.find((file) => file.path === ".github/workflows/codictator.yml")
 			?.content ?? ""
@@ -81,8 +79,6 @@ test("[§4.15.5] guardrail plan renders the source bootstrap only with the self-
 		),
 	);
 	assert.ok(
-		selfHost.includes(
-			"node packages/codictator/dist/cli/main.js ci verify",
-		),
+		selfHost.includes("node packages/codictator/dist/cli/main.js ci verify"),
 	);
 });
