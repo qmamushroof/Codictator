@@ -83,6 +83,44 @@ test("[§4.12.7 EC-2] consumer planning task allows test writes but blocks src w
 	}
 });
 
+test("[§4.12.3] consumer planning task allows a src read but still blocks the src write", async () => {
+	const repo = createTempRepo();
+	try {
+		await installConsumer(repo);
+		const id = await taskId(repo, "consumer reader");
+		await toPlanning(repo, id);
+		const read = await runLauncher(
+			repo.dir,
+			["hook", "muse-code", "PreToolUse"],
+			JSON.stringify({
+				...writePayload(repo.dir, "src/x.ts", ""),
+				tool_name: "Read",
+				tool_input: { file_path: path.join(repo.dir, "src/x.ts") },
+			}),
+		);
+		assert.equal(
+			denyReason(read.stdout),
+			undefined,
+			`planning src read blocked: ${read.stdout}${read.stderr}`,
+		);
+		const write = await runLauncher(
+			repo.dir,
+			["hook", "muse-code", "PreToolUse"],
+			JSON.stringify(
+				writePayload(repo.dir, "src/x.ts", "export const x = 1;\n"),
+			),
+		);
+		const reason = denyReason(write.stdout);
+		assert.ok(
+			reason !== undefined,
+			`planning src write allowed: ${write.stdout}`,
+		);
+		assert.match(reason, /core\/workflow-gates/);
+	} finally {
+		repo.cleanup();
+	}
+});
+
 test("[§4.12.7 EC-3] consumer write outside files.allow is blocked with the amend hint", async () => {
 	const repo = createTempRepo();
 	try {
