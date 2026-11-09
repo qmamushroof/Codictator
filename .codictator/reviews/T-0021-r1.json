@@ -1,0 +1,21 @@
+{
+	"findings": [
+		{
+			"id": "F-1",
+			"severity": "minor",
+			"path": "packages/codictator/src/cli/tasks.ts",
+			"line": 24,
+			"message": "cli/tasks.ts still declares its own TASKS_DIR = \".codictator/tasks\" while features/workflow/task-store.ts now owns and exports the same constant; import TASKS_DIR from features/workflow/index.ts so the directory has one owner (SPEC §1.4 one fact, one owner)."
+		},
+		{
+			"id": "F-2",
+			"severity": "nit",
+			"path": "packages/codictator/tests/unit/workflow/task-store.test.ts",
+			"line": 44,
+			"message": "readBranchAt treats timedOut as undefined (the stated behaviour change for task-summary and cli branchOf) but the test covers only empty, nonzero-code and truncated reads; add a timedOut: true case."
+		}
+	],
+	"reviewerSession": "fresh-subagent-review-T-0021-r1",
+	"tree": "38419864a6d59ff36f384aecf3c78e399a63dddd",
+	"version": 1
+}

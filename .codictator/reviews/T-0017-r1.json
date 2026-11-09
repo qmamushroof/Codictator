@@ -1,0 +1,28 @@
+{
+	"reviewerSession": "fresh-subagent-review-T-0017-r1",
+	"tree": "6e1427cf6d752be6fc542428f4990d72a4aa7686",
+	"findings": [
+		{
+			"id": "T-0017-r1-f1",
+			"severity": "minor",
+			"path": "packages/codictator/tests/support/consumer-harness.ts",
+			"line": 157,
+			"message": "denyReason returns the raw text for any non-empty, non-deny reply (e.g. an allow carrying additionalContext), so a future allow-with-context reply would read as a deny. wontfix: Slice 0 PreToolUse allows reply exactly {} today and the unit test pins that shape; revisit when L1 allows start carrying context."
+		},
+		{
+			"id": "T-0017-r1-f2",
+			"severity": "nit",
+			"path": "packages/codictator/tests/support/consumer-matrix.ts",
+			"line": 84,
+			"message": "findingIds parses from the first '{' in stdout, so a human prefix containing a brace would break extraction. wontfix: callers always pass --json, whose stdout is one JSON document."
+		},
+		{
+			"id": "T-0017-r1-f3",
+			"severity": "nit",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"line": 5,
+			"message": "Header says scenarios 1-7 start red; after this merge all nine are green and delisted. wontfix: the comment states the slice-0 origin and remains accurate history; the red ledger is the live owner of red status."
+		}
+	],
+	"version": 1
+}

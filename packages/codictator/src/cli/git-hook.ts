@@ -2,16 +2,16 @@
 // the launcher as `run.mjs git <hook>`; the launcher routes the `git` word
 // here (SPEC §4.19.3). pre-commit and pre-push evaluate the staged or pushed
 // the change with the gate rule subset `verify` loads over staged scopes —
-// new scope plumbing, no new detection logic. commit-msg appends
-// the Codictator-L3 trailer §4.14.2 checks at L4.
+// new scope plumbing, no new detection logic. commit-msg lives in
+// git-commit-msg.ts; it appends the Codictator-L3 trailer §4.14.2 checks
+// at L4.
 
-import path from "node:path";
 import { ENGINE_VERSION, HOOK_MARKER } from "../features/config/index.ts";
-import { checkAddedHistoryEntryCount } from "../features/records/history-checks.ts";
 import type { Env, Result } from "../kernel/index.ts";
-import { ok, readHostText, writeHostText } from "../kernel/index.ts";
+import { runCommitMsg } from "./git-commit-msg.ts";
 import { emitGitVerdict, evaluateGitChange } from "./git-eval.ts";
 import {
+	checkPreCommitTaskGate,
 	checkStagedHistory,
 	runGitText,
 	withTrackedBugsFallback,
@@ -59,6 +59,9 @@ async function runPreCommit(
 		configHash,
 	);
 	const scoped = await withTrackedBugsFallback(ports, staged.value);
+	// SPEC §4.12.3 L3: the task gate rides in the same verdict as the gate
+	// legs, so a code commit with no task (or a task below record) blocks.
+	const taskFindings = await checkPreCommitTaskGate(ports, staged.value);
 	return evaluateGitChange(
 		ports,
 		req,
@@ -69,94 +72,8 @@ async function runPreCommit(
 		now,
 		configHash,
 		emit,
-		historyFindings,
+		[...historyFindings, ...taskFindings],
 	);
-}
-
-// SPEC §4.14.4: git hands commit-msg the COMMIT_EDITMSG path, absolute in a
-// linked worktree (under the main repo's .git/worktrees/<name>/ dir, outside
-// the worktree root) but relative to the repo root (`.git/COMMIT_EDITMSG`)
-// in the main worktree. The confined Fs port rejects absolute paths
-// (CDX-E701), so the hook uses kernel-owned host I/O — which itself
-// requires absolute paths — resolving a relative handoff against the
-// invocation cwd first; an unreadable or unwritable message file blocks
-// fail-closed.
-// SPEC §4.14.4 + §4.9.3: commit-msg validates the staged history entry
-// count and subject before appending the trailer. Without a staged history
-// file there is no entry to judge, so the trailer append stands alone; an
-// unreadable staged entry degrades the same way instead of false-blocking
-// (the pre-commit verdict already judged the staged text).
-async function runCommitMsg(
-	req: CommandRequest,
-	ports: CommandPorts,
-	configHash: string,
-): Promise<Result<number>> {
-	if (req.args.length !== 2 || req.args[1] === undefined) {
-		return usageError("usage: codictator git commit-msg <file>");
-	}
-	const raw = req.args[1];
-	const file = path.isAbsolute(raw) ? raw : path.resolve(req.cwd, raw);
-	const trailer = `Codictator-L3: ${configHash.slice(0, 12)}`;
-	const read = await readHostText(file);
-	if (!read.ok) {
-		return reportError(read.error, req.json);
-	}
-	if (
-		read.value.split("\n").some((line) => line.startsWith("Codictator-L3: "))
-	) {
-		return ok(0);
-	}
-	const names = await runGitText(ports, [
-		"git",
-		"diff",
-		"--cached",
-		"--name-only",
-		"--",
-	]);
-	if (names.ok) {
-		const historyPath = names.value
-			.split("\n")
-			.map((line) => line.trim())
-			.filter((line) => line !== "")
-			.filter((entry) => entry.startsWith("docs/HISTORY/"))
-			.sort()[0];
-		if (historyPath !== undefined) {
-			const staged = await runGitText(ports, [
-				"git",
-				"show",
-				`:${historyPath}`,
-			]);
-			if (staged.ok) {
-				// SPEC §4.9.3: judge the ADDED entry (staged minus HEAD),
-				// not the whole accumulated file; tolerate a missing HEAD
-				// base for brand-new history files.
-				const base = await runGitText(ports, [
-					"git",
-					"show",
-					`HEAD:${historyPath}`,
-				]);
-				const subject = read.value
-					.split("\n")
-					.map((line) => line.trim())
-					.find((line) => line !== "" && !line.startsWith("#"));
-				const entryFindings = checkAddedHistoryEntryCount(
-					staged.value,
-					base.ok ? base.value : undefined,
-					historyPath,
-					subject === undefined || subject === "" ? undefined : subject,
-				);
-				if (entryFindings.length > 0) {
-					return emitGitVerdict(req, "commit-msg", entryFindings);
-				}
-			}
-		}
-	}
-	const base = read.value.endsWith("\n") ? read.value : `${read.value}\n`;
-	const wrote = await writeHostText(file, `${base}\n${trailer}\n`);
-	if (!wrote.ok) {
-		return reportError(wrote.error, req.json);
-	}
-	return ok(0);
 }
 
 // SPEC §4.3.2: pre-push judges the `@{push}..HEAD` diff. Without an

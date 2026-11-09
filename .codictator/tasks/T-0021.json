@@ -1,0 +1,133 @@
+{
+	"acceptanceCriteria": [
+		"ci verify reports no core/duplication finding on scope-tasks.ts, task-summary.ts or git-history.ts",
+		"task-record and branch reads behave as before; full suite green before and after"
+	],
+	"branch": "refactor/task-store-dedupe",
+	"bugRowUpdated": true,
+	"diagnosis": "Reproduced with ci verify --base origin/main --head HEAD on PR 194: core/duplication at scope-tasks.ts:32/:115, task-summary.ts:70 and git-history.ts:98. Root cause: the L0, L1 and L3 slices each copied the .codictator/tasks reader and the git branch --show-current read into their own layer (steering cannot import packs per SPEC 3.3), so three token runs over the 50-token limit landed. Fix moves one reader and one branch read into workflow/task-store.ts, which packs, steering and cli already import.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/workflow/task-store.ts",
+			"packages/codictator/src/features/workflow/index.ts",
+			"packages/codictator/src/features/packs/enforcers/scope-tasks.ts",
+			"packages/codictator/src/features/steering/task-summary.ts",
+			"packages/codictator/src/cli/git-history.ts",
+			"packages/codictator/src/cli/tasks.ts",
+			"packages/codictator/tests/unit/workflow/task-store.test.ts",
+			"packages/codictator/tests/red-ledger.json",
+			"docs/HISTORY/2026-11-09.md",
+			".codictator/tasks/T-0021.json",
+			".codictator/reviews/T-0021-r*.json",
+			"docs/BUGS/2026.md",
+			"packages/codictator/tests/unit/packs/packs-task-reader-duplication.test.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-09T15:11:53.995Z",
+		"tree": "b60bd1bb449a2540b550cb23a8dbcb06afb01ff7"
+	},
+	"historyStaged": true,
+	"id": "T-0021",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-09T14:55:14.033Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-09T14:55:55.745Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-09T14:57:10.677Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-09T15:02:14.974Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-09T15:03:16.018Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-09T15:03:18.538Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-09T15:04:57.907Z",
+		"commit": "fb2bee4b6b4a652ad090e9a3c28ea9d06892fb10",
+		"failing": [
+			"[§4.12.1] task records read id-sorted, skipping malformed entries",
+			"[§4.12.1] branch read trims the current branch and answers undefined when unreadable",
+			"[§5.6] task-record and branch reads keep one copy across packs, steering and cli"
+		],
+		"tree": "1e0668306432d3767286ba31e23b0f23ae9f0be2"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-09T15:02:50.068Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0021-r1",
+			"round": 1,
+			"tree": "38419864a6d59ff36f384aecf3c78e399a63dddd"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-09T15:06:07.337Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0021-r2",
+			"round": 2,
+			"tree": "52e16f0cc08d64843e11af61ac9951abb287e56a"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-09T15:12:25.554Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0021-r3",
+			"round": 3,
+			"tree": "75a68014b41ab41236db2d809619be75410e5ecf"
+		}
+	],
+	"spec": ["docs/SPEC/04-12-WORKFLOW.md", "docs/SPEC/05-CORE-RULES.md"],
+	"tests": [
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/workflow/task-store.test.ts",
+			"title": "[§4.12.1] task records read id-sorted, skipping malformed entries"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/workflow/task-store.test.ts",
+			"title": "[§4.12.1] branch read trims the current branch and answers undefined when unreadable"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new message"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/packs/packs-task-reader-duplication.test.ts",
+			"title": "[§5.6] task-record and branch reads keep one copy across packs, steering and cli"
+		}
+	],
+	"title": "dedupe task-record and branch reads across packs, steering and cli",
+	"type": "fix",
+	"version": 1
+}

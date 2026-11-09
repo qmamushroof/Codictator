@@ -2,6 +2,9 @@
 	"name": "codictator-root",
 	"version": "0.0.0",
 	"private": true,
+	"codictator": {
+		"selfHost": true
+	},
 	"packageManager": "npm@11.19.1",
 	"workspaces": [
 		"packages/*"

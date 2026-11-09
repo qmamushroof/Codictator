@@ -108,7 +108,11 @@ export function resolveWritesWithinPlan(
 			),
 		async (args) => {
 			args.findings.push(
-				...(await writesWithinPlanReal(args.ports, args.files)),
+				...(await writesWithinPlanReal(
+					args.ports,
+					args.files,
+					args.hasToolTargets,
+				)),
 			);
 		},
 	);

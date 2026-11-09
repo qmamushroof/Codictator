@@ -1,0 +1,130 @@
+{
+	"acceptanceCriteria": [
+		"SessionStart reply carries additionalContext with task id, phase, next gate and command, or task-new text with no active task",
+		"prompt.submit resends additionalContext only when its hash differs from the last session injection",
+		"Managed block lists every loaded tier:floor rule plus per-phase gate commands and stays within 6000 bytes on the maximal builtin pack set"
+	],
+	"branch": "fix/consumer-slice2-l0",
+	"bugRowUpdated": true,
+	"diagnosis": "Repro: SessionStart hook reply carries no additionalContext (runtime.ts allow/advise replies omit it; emitInjectionEvent renders then only appends the audit event, hook-injection.ts:97-122). AGENTS.md block lists 8 hardcoded floor rules (context-file.ts:27-54) while 70 tier:floor rules ship in builtin packs; callers pass nothing (cli/plan.ts:93, cli/report.ts:115). Cause: G3 render-then-log with no reply path; G4 floorRules option exists but no caller builds it from the pack registry, and the workflow line names no per-gate commands.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/adapters/hook-injection.ts",
+			"packages/codictator/src/features/adapters/runtime.ts",
+			"packages/codictator/src/features/steering/task-summary.ts",
+			"packages/codictator/src/features/steering/context-file.ts",
+			"packages/codictator/src/features/steering/index.ts",
+			"packages/codictator/src/cli/plan.ts",
+			"packages/codictator/src/cli/init-plan.ts",
+			"packages/codictator/src/cli/guardrail.ts",
+			"packages/codictator/src/cli/report.ts",
+			"packages/codictator/src/cli/packs.ts",
+			"packages/codictator/tests/unit/adapters/hook-injection-l0.test.ts",
+			"packages/codictator/tests/unit/steering/context-file-packs.test.ts",
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-08.md",
+			".codictator/tasks/T-0012.json",
+			"packages/codictator/src/features/adapters/hook-reply.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T14:36:09.141Z",
+		"tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+	},
+	"historyStaged": true,
+	"id": "T-0012",
+	"phase": "record",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T13:50:45.839Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T14:02:44.650Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T14:18:59.832Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T14:28:45.894Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T15:49:25.518Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T13:50:49.354Z",
+		"commit": "cf2fe9be5de9ce0bf03fa096af491d1cf04e372d",
+		"failing": [
+			"[§4.6.2] managed block names the gate command for every phase",
+			"[§4.6.2] maximal pack set block lists every floor rule within 6,000 bytes",
+			"[§4.6.2] plan threads caller floor rules into the managed block",
+			"[§4.6.3] startup reply carries additionalContext with the active task",
+			"[§4.6.3] startup with no active task carries task-new instructions",
+			"[§4.6.3] prompt.submit resends additionalContext only on state change"
+		],
+		"tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T15:49:20.898Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-integrator-review-T-0012-r1",
+			"round": 1,
+			"tree": "7c8a355594c60cc58a009fb525952db4c71afa5b"
+		}
+	],
+	"spec": ["docs/SPEC/04-06-STEERING.md", "docs/SPEC/04-12-WORKFLOW.md"],
+	"tests": [
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/steering/context-file-packs.test.ts",
+			"title": "[§4.6.2] managed block names the gate command for every phase"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/steering/context-file-packs.test.ts",
+			"title": "[§4.6.2] maximal pack set block lists every floor rule within 6,000 bytes"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/steering/context-file-packs.test.ts",
+			"title": "[§4.6.2] plan threads caller floor rules into the managed block"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/unit/adapters/hook-injection-l0.test.ts",
+			"title": "[§4.6.3] startup reply carries additionalContext with the active task"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/unit/adapters/hook-injection-l0.test.ts",
+			"title": "[§4.6.3] startup with no active task carries task-new instructions"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/adapters/hook-injection-l0.test.ts",
+			"title": "[§4.6.3] prompt.submit resends additionalContext only on state change"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/unit/adapters/hook-injection-l0.test.ts",
+			"title": "[§4.6.3] claude startup reply carries hookSpecificOutput.additionalContext"
+		}
+	],
+	"title": "L0 steering injection and floor rules",
+	"type": "fix",
+	"version": 1
+}

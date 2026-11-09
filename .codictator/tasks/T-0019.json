@@ -1,0 +1,119 @@
+{
+	"acceptanceCriteria": [
+		"G4 consumer test passes within 6000 bytes",
+		"EC-12 init-regen tests pass byte-identical"
+	],
+	"branch": "fix/consumer-g4-init",
+	"bugRowUpdated": true,
+	"diagnosis": "G4 red at base with 58 core floor rules missing from the consumer AGENTS.md and EC-12 red on the default block plus the workflow install command. Root cause is drift in the two hand-rolled init stand-ins: installConsumer and writeInit still render the default eight-rule block and skip setup detection, while the real plan assembly loads floor rules and detects setup. Fix threads loadFloorRules and detectWorkflowOptions through both helpers.",
+	"files": {
+		"allow": [
+			"packages/codictator/tests/support/consumer-harness.ts",
+			"packages/codictator/tests/support/consumer-matrix.ts",
+			"packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"packages/codictator/tests/acceptance/init-regen.test.ts",
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-08.md",
+			".codictator/tasks/T-0019.json",
+			"packages/codictator/tests/acceptance/consumer-enforcement-firing-l1.test.ts",
+			"packages/codictator/tests/acceptance/consumer-enforcement-firing-l34.test.ts",
+			".codictator/reviews/T-0019-r1.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T16:48:47.836Z",
+		"tree": "c80f165ab3dfd8f658c109841d37987bc64f7fe0"
+	},
+	"historyStaged": true,
+	"id": "T-0019",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T16:45:42.446Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T16:46:12.763Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T16:46:19.010Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T16:48:48.137Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T17:14:54.974Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-08T17:48:19.726Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T16:46:08.345Z",
+		"commit": "65ddda1fe741706033f44bc6ed36f0c30071d1c2",
+		"failing": [
+			"G4 agents block lists loaded floor rules",
+			"init then regen byte-identical"
+		],
+		"tree": "c80f165ab3dfd8f658c109841d37987bc64f7fe0"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T17:14:51.255Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0019-r1",
+			"round": 1,
+			"tree": "7a3386683b5536770f7f9ec72dfe2656a61ffa07"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T17:51:10.367Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0019-r1",
+			"round": 2,
+			"tree": "142379fe43a40fbafe65c0f6334a1fc3212d41ef"
+		}
+	],
+	"spec": ["docs/SPEC/04-06-STEERING.md", "docs/SPEC/04-14-INTEGRITY.md"],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "G4 agents block lists loaded floor rules"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/init-regen.test.ts",
+			"title": "init then regen byte-identical"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/init-regen.test.ts",
+			"title": "init then regen byte-identical"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/consumer-harness.test.ts",
+			"title": "denyReason passes the allow shape through"
+		}
+	],
+	"title": "consumer G4 init/regen list loaded floor rules",
+	"type": "fix",
+	"version": 1
+}

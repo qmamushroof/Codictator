@@ -17,8 +17,36 @@ export interface FloorRuleLine {
 
 export interface ContextFileOptions {
 	readonly floorRules?: ReadonlyArray<FloorRuleLine>;
+	readonly gateCommands?: ReadonlyArray<string>;
 	readonly nonDefaultLimits?: ReadonlyArray<string>;
 	readonly workflowPhases?: ReadonlyArray<string>;
+}
+
+// A pack manifest narrowed to the fields the floor-rule projection reads,
+// so callers pass PackManifest values with no new module edge (SPEC §3.3).
+export interface FloorRuleSource {
+	readonly rules: ReadonlyArray<{
+		readonly id: string;
+		readonly tier: string;
+		readonly statement: string;
+	}>;
+}
+
+// SPEC §4.6.2 item 3: every tier:floor rule of the loaded packs, one line
+// each, id-sorted for deterministic output (§4.3.6).
+export function floorRulesFromManifests(
+	manifests: ReadonlyArray<FloorRuleSource>,
+): Array<FloorRuleLine> {
+	const out: Array<FloorRuleLine> = [];
+	for (const manifest of manifests) {
+		for (const rule of manifest.rules) {
+			if (rule.tier === "floor") {
+				out.push({ id: rule.id, statement: rule.statement });
+			}
+		}
+	}
+	out.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+	return out;
 }
 
 // SPEC §5.1 and §5.9: the steering-owned floor and band rules with their
@@ -64,6 +92,17 @@ const DEFAULT_WORKFLOW_PHASES: ReadonlyArray<string> = [
 	"integrate",
 ];
 
+// SPEC §4.6.2 item 2 + §4.12.2: the command satisfying each phase's exit
+// gate, in phase order. Custom phases reuse the advance command.
+const DEFAULT_GATE_COMMANDS: ReadonlyArray<string> = [
+	"codictator task new",
+	"codictator test red",
+	"codictator test green",
+	"codictator verify --staged",
+	"codictator review submit",
+	"codictator task phase next",
+];
+
 function floorLines(rules: ReadonlyArray<FloorRuleLine>): Array<string> {
 	return rules.map((rule) => `${rule.id} — ${rule.statement}`);
 }
@@ -107,12 +146,14 @@ function fitBlock(
 export function buildManagedBlock(options: ContextFileOptions = {}): string {
 	const rules = options.floorRules ?? DEFAULT_FLOOR_RULES;
 	const phases = options.workflowPhases ?? DEFAULT_WORKFLOW_PHASES;
+	const gates = options.gateCommands ?? DEFAULT_GATE_COMMANDS;
 	const limits = options.nonDefaultLimits ?? [];
 	const head: Array<string> = [
 		MANAGED_BEGIN,
 		PRECEDENCE_STATEMENT,
 		"",
 		`Workflow: ${phases.join(" > ")}. Advance with codictator task phase next.`,
+		`Gates: ${gates.join(" > ")}.`,
 		"",
 		"Floor rules:",
 	];

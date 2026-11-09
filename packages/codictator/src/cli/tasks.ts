@@ -4,6 +4,7 @@
 import { parseArgs } from "node:util";
 import {
 	isTaskId,
+	readBranchAt,
 	type TaskRecord,
 	taskIdFor,
 	validateTaskRecord,
@@ -124,17 +125,7 @@ export async function branchOf(root: string): Promise<string | undefined> {
 	if (!ports.ok) {
 		return undefined;
 	}
-	const result = await ports.value.proc.run(
-		["git", "branch", "--show-current"],
-		{
-			cwd: root,
-			env: {},
-			timeoutMs: 15000,
-			maxOutputBytes: 4096,
-		},
-	);
-	const branch = result.stdout.trim();
-	return result.code === 0 && branch !== "" ? branch : undefined;
+	return readBranchAt(ports.value, root);
 }
 
 export async function taskNew(
@@ -253,6 +244,16 @@ export async function taskCheckpoint(
 	return ok(0);
 }
 
+// CDX-E903 for a task-record I/O failure, carrying the port's own message
+// and remediation. taskClose fails at three ports in a row (ports, read,
+// move), so the shape lives once here.
+function taskIoFail(
+	error: { readonly message: string; readonly remediation: string },
+	json: boolean,
+): Result<number> {
+	return fail("CDX-E903", error.message, error.remediation, json);
+}
+
 export async function taskClose(
 	req: CommandRequest,
 	root: string,
@@ -260,33 +261,18 @@ export async function taskClose(
 ): Promise<Result<number>> {
 	const ports = await portsFor(root);
 	if (!ports.ok) {
-		return fail(
-			"CDX-E903",
-			ports.error.message,
-			ports.error.remediation,
-			req.json,
-		);
+		return taskIoFail(ports.error, req.json);
 	}
 	const bytes = await ports.value.fs.read(`${TASKS_DIR}/${id}.json`);
 	if (!bytes.ok) {
-		return fail(
-			"CDX-E903",
-			bytes.error.message,
-			bytes.error.remediation,
-			req.json,
-		);
+		return taskIoFail(bytes.error, req.json);
 	}
 	const moved = await ports.value.fs.write(
 		`.codictator/state/closed-tasks/${id}.json`,
 		bytes.value,
 	);
 	if (!moved.ok) {
-		return fail(
-			"CDX-E903",
-			moved.error.message,
-			moved.error.remediation,
-			req.json,
-		);
+		return taskIoFail(moved.error, req.json);
 	}
 	await ports.value.fs.remove(`${TASKS_DIR}/${id}.json`);
 	printHuman(`closed ${id}`, req.quiet);

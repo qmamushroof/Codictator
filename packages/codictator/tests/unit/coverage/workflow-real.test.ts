@@ -95,6 +95,7 @@ test("[§5.9] real scope flags writes outside the plan", async () => {
 	const findings = await writesWithinPlanReal(
 		portsWith(taskJson({ files: { allow: ["src/kept.ts"] } })),
 		["src/kept.ts", "src/other.ts"],
+		false,
 	);
 	assert.equal(findings.length, 1);
 	assert.equal(findings[0]?.ruleId, "core/writes-within-plan");
@@ -111,6 +112,7 @@ test("[§5.9] real scope stays quiet for the staged record landing", async () =>
 			}),
 		),
 		["src/kept.ts", "docs/HISTORY/2026-10-05.md"],
+		false,
 	);
 	assert.deepEqual(findings, []);
 });

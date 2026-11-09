@@ -1,7 +1,20 @@
 // Hook-scope git history judging (split from git-hook.ts by file size):
 // staged history text judged as ADDED entries through records/history
-// checks. Gate evaluation stays in git-eval.ts; dispatch in git-hook.ts.
+// checks, plus the SPEC §4.12.3 L3 hook-owned gates: pre-commit needs an
+// active task at phase record or later on a code-class staged set, and
+// commit-msg needs a staged history entry on a code/docs-class staged set.
+// Gate evaluation stays in git-eval.ts; dispatch in git-hook.ts.
+import { touchesOnlyManifests } from "../features/ci/index.ts";
+import { entryFinding } from "../features/records/history-checks.ts";
 import { checkHistory } from "../features/records/history-scope.ts";
+import {
+	classifyChange,
+	MANDATORY_PHASES,
+	readBranchAt,
+	readTaskRecords,
+	resolveActiveTask,
+	type TaskRecord,
+} from "../features/workflow/index.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { err, makeError, ok } from "../kernel/index.ts";
 import type { CommandPorts } from "./shared.ts";
@@ -63,6 +76,110 @@ export async function withTrackedBugsFallback(
 		.filter((line) => line !== "")
 		.filter((entry) => !files.includes(entry));
 	return [...files, ...extra];
+}
+
+// SPEC §4.12.2 deps class + §4.9 EC-22: manifests and lockfiles only. The
+// chore class covers manifest-owned paths; touchesOnlyManifests covers the
+// remaining lockfile and bot-config basenames. Bot dependency updates take
+// this path, so the task and history gates below exempt exactly what
+// qualifyBotChange accepts without an entry.
+function isDepsShapedChange(files: ReadonlyArray<string>): boolean {
+	return classifyChange(files) === "chore" || touchesOnlyManifests(files);
+}
+
+// SPEC §4.12.2: record and integrate sit at or past record in the mandatory
+// order; custom phases fail closed because they are not in that order.
+function atRecordOrLater(phase: string): boolean {
+	return MANDATORY_PHASES.indexOf(phase) >= MANDATORY_PHASES.indexOf("record");
+}
+
+// An L3 task record also needs its branch and phase as strings: the gate
+// matches the branch and orders the phase, so a record missing either is
+// skipped like any malformed record.
+function isGateRecord(record: TaskRecord): boolean {
+	return typeof record.branch === "string" && typeof record.phase === "string";
+}
+
+// SPEC §4.12.1: the branch task is the active task for every hook on that
+// branch. Unreadable state degrades to no task so the gates fail closed.
+export async function readActiveTask(
+	ports: CommandPorts,
+): Promise<{ branch: string | undefined; task: TaskRecord | undefined }> {
+	const branch = await readBranchAt(ports, ports.root);
+	if (branch === undefined) {
+		return { branch, task: undefined };
+	}
+	const records = (await readTaskRecords(ports)).filter(isGateRecord);
+	return { branch, task: resolveActiveTask(records, branch) };
+}
+
+function taskGateBlock(
+	branch: string | undefined,
+	task: TaskRecord | undefined,
+): { message: string; remediation: string } | undefined {
+	if (branch === undefined) {
+		return {
+			message: "commit on a code-class change with no readable branch",
+			remediation: "Commit from a git branch with an active task, then retry.",
+		};
+	}
+	if (task === undefined) {
+		return {
+			message: `commit with no active task on branch "${branch}"`,
+			remediation:
+				"Run codictator task new --type <type> --title ... to open the branch task.",
+		};
+	}
+	if (!atRecordOrLater(task.phase)) {
+		return {
+			message: `commit before phase record (task ${task.id} in ${task.phase})`,
+			remediation: `Run codictator task phase next to advance ${task.id}, then retry.`,
+		};
+	}
+	return undefined;
+}
+
+// SPEC §4.12.3 L3: pre-commit on a code-class staged set needs an active
+// task at phase record or later. Docs-only sets owe the history entry at
+// commit-msg instead; deps-shaped sets owe neither (SPEC §4.12.7 EC-12).
+export async function checkPreCommitTaskGate(
+	ports: CommandPorts,
+	files: ReadonlyArray<string>,
+): Promise<Array<Finding>> {
+	if (files.length === 0 || isDepsShapedChange(files)) {
+		return [];
+	}
+	if (classifyChange(files) !== "code") {
+		return [];
+	}
+	const { branch, task } = await readActiveTask(ports);
+	const blocked = taskGateBlock(branch, task);
+	if (blocked === undefined) {
+		return [];
+	}
+	return [{ ruleId: "core/workflow-gates", ...blocked }];
+}
+
+// SPEC §4.12.3 L3 + §4.9.3: commit-msg on a code/docs-class staged set owes
+// a staged docs/HISTORY/ entry. A bot change touching anything beyond
+// manifests owes the entry like any other change (§4.15.3).
+export function checkMissingHistoryEntry(
+	files: ReadonlyArray<string>,
+): Array<Finding> {
+	if (files.length === 0 || isDepsShapedChange(files)) {
+		return [];
+	}
+	const changeClass = classifyChange(files);
+	if (changeClass !== "code" && changeClass !== "docs") {
+		return [];
+	}
+	return [
+		entryFinding(
+			"core/history-entry",
+			"commit stages no history entry",
+			"docs/HISTORY/",
+		),
+	];
 }
 
 // SPEC §4.9.3 + §4.12.3 L3: the pre-commit history verdict. When the

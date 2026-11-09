@@ -1,0 +1,139 @@
+{
+	"acceptanceCriteria": [
+		"pre-tool Edit with no task blocks naming task new",
+		"active task judges unclaimed scope",
+		"pre-tool targets visible to TDD workflow history guards"
+	],
+	"branch": "fix/consumer-slice1-l1",
+	"bugRowUpdated": true,
+	"diagnosis": "G1: collectTaskFindings loops only claiming tasks so the checkWriteWithinPlan(undefined) EC-1 path is unreachable. G2: L1 scope.files is always empty while targets ride proposedPaths which markerRealGuard never reads.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/packs/enforcers/*.ts",
+			"packages/codictator/tests/unit/packs/packs-l1-active-task.test.ts",
+			"packages/codictator/tests/red-ledger.json",
+			"docs/BUGS/2026.md",
+			"packages/codictator/tests/unit/cli/cli.test.ts",
+			"packages/codictator/tests/unit/coverage/workflow-real.test.ts",
+			"packages/codictator/tests/acceptance/hook-path/*.test.ts",
+			".codictator/tasks/T-0016.json",
+			"packages/codictator/tests/unit/packs/packs-l1-tool-targets.test.ts",
+			"packages/codictator/tests/support/temp-repo.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-08T13:49:43.207Z",
+		"tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+	},
+	"historyStaged": true,
+	"id": "T-0016",
+	"phase": "record",
+	"phases": [
+		{
+			"enteredAt": "2026-11-08T13:50:18.133Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-08T13:50:25.084Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-08T15:06:38.465Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-08T15:25:31.001Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-08T15:26:52.957Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-08T13:47:18.568Z",
+		"commit": "cf2fe9be5de9ce0bf03fa096af491d1cf04e372d",
+		"failing": [
+			"[§4.12.3] L1 blocks a code write with no active task and names task new",
+			"[§4.12.3] L1 judges the active task even when no task claims the scope",
+			"[§4.12.3] L1 fails a code write closed when the branch is unreadable",
+			"[§4.12.3] L1 fails a code write closed when the repo root is unreadable",
+			"[§4.12.3] L1 workflow gates judge the active task for the branch",
+			"[§4.12.7 EC-2] L1 red proof uses the active task before files.allow is set",
+			"[§4.3.2] L1 pre-tool judges proposedPaths when files is empty",
+			"[§4.7.3] L1 history-append-only judges an edited pre-tool target"
+		],
+		"tree": "47c58a8aa55f41d9a2ec1b3752cf1f28bf4b082a"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T15:26:48.316Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0016-r1",
+			"round": 1,
+			"tree": "d69c76201225eff16d68220a0bbcf25b1b2fee28"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T15:28:46.180Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0016-r2",
+			"round": 2,
+			"tree": "79aa504faf1100013f1e295e56b6908b8ef13a18"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-08T15:30:10.290Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0016-r3",
+			"round": 3,
+			"tree": "74780c539b0f3e12a54aa30cb8f40907f1908091"
+		}
+	],
+	"spec": [
+		"SPEC-4.12.1",
+		"SPEC §4.12.1",
+		"SPEC §4.12.3",
+		"SPEC §4.12.7 EC-1",
+		"SPEC §4.12.7 EC-2",
+		"SPEC §4.3.2",
+		"SPEC §4.7.3"
+	],
+	"tests": [
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-l1-active-task.test.ts",
+			"title": "[§4.12.3] L1 blocks a code write with no active task and names task new"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/packs/packs-l1-active-task.test.ts",
+			"title": "[§4.12.3] L1 blocks a code write with no active task and names task new"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-l1-tool-targets.test.ts",
+			"title": "[§4.3.2] L1 pre-tool judges proposedPaths when files is empty"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/hook-path/hook-path.test.ts",
+			"title": "[§4.19.3] hook path allows a Muse Code write"
+		}
+	],
+	"title": "L1 hook enforcement: judge active task and pre-tool targets",
+	"type": "fix",
+	"version": 1
+}

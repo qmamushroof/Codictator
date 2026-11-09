@@ -1,6 +1,8 @@
 {
 	"version": 1,
 	"red": [
+		"tests/acceptance/consumer-enforcement-firing-l1.test.ts::[consumer] every L1-mapped floor rule fires on its hook probe",
+		"tests/acceptance/consumer-enforcement-firing-l34.test.ts::[consumer] every L3/L4-mapped floor rule fires on its gate probe",
 		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo dotnet builds into temp git repo",
 		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo mixed builds into temp git repo",
 		"tests/acceptance/repos-goldens.test.ts::[§10.2] fixture repo python builds into temp git repo",

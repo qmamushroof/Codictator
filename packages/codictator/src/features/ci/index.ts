@@ -7,6 +7,7 @@ import {
 	planSweep,
 	qualifyBotChange,
 	type SweepInput,
+	touchesOnlyManifests,
 } from "./changes.ts";
 import {
 	type BaseRefInput,
@@ -46,6 +47,7 @@ export {
 	readProtection,
 	resolveBaseRef,
 	scheduleCronFor,
+	touchesOnlyManifests,
 };
 
 export interface CiEvidence {

@@ -171,11 +171,16 @@ test("[§4.15.6] external evidence flows through the gate", async () => {
 });
 
 test("[§4.15.1] rendered workflow pins and verifies", async () => {
-	// SPEC §4.15.1 + §4.15.5: generated workflow pins actions by SHA and
+	// SPEC §4.15.1 + §4.15.5: the self-host workflow pins actions by SHA and
 	// every job bootstraps the CLI from the local checkout (no published
 	// binary on PATH pre-publish), invoking the built entry. Four jobs
-	// (verify, record-bot-change, sweep, live) share the pins.
-	const workflow = renderWorkflow("/repo", { repoName: "app" });
+	// (verify, record-bot-change, sweep, live) share the pins. Consumer
+	// defaults (installed launcher, detected steps) live under
+	// ci-workflow-consumer.test.ts.
+	const workflow = renderWorkflow("/repo", {
+		repoName: "app",
+		selfHost: true,
+	});
 	const text = workflow.text ?? "";
 	assert.ok(text.includes(`actions/checkout@${PINNED_SHA}`));
 	assert.equal(text.split(`actions/checkout@${PINNED_SHA}`).length - 1, 4);

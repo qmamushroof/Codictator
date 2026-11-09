@@ -36,10 +36,22 @@ export async function historyEntryReal(
 	if (files.length === 0) {
 		return [];
 	}
-	if (files.some((file) => isRecordFile(file))) {
+	// SPEC §4.9.3 core/history-entry: a docs/HISTORY/ file in scope carries
+	// the entry (history-append-only forbids edits, so a changed file is an
+	// added entry; L3 commit-msg judges the per-commit count and subject).
+	// This union-scope verdict cannot see per-commit counts across an L4
+	// range; that gap is BUG-0083, so here the change owes nothing more.
+	// A BUGS row alone exempts only a records-only change: a code change that
+	// carries one (the tracked-BUGS fallback unions tracked rows into the
+	// scope) still owes a HISTORY entry, so only non-record files are judged.
+	if (files.some((file) => isHistoryFile(file))) {
 		return [];
 	}
-	return files.map((file) =>
+	const judged = files.filter((file) => !isRecordFile(file));
+	if (judged.length === 0) {
+		return [];
+	}
+	return judged.map((file) =>
 		entryFinding(
 			"core/history-entry",
 			`commit stages no history entry (checked ${file})`,
@@ -50,20 +62,29 @@ export async function historyEntryReal(
 
 export async function historyAppendOnlyReal(
 	ports: Ports,
-	texts: ReadonlyMap<string, string>,
+	binding: RuleBinding,
+	files: ReadonlyArray<string>,
+	findings: Array<Finding>,
 ): Promise<Array<Finding>> {
-	const findings: Array<Finding> = [];
-	for (const [file, text] of texts) {
-		if (!isHistoryFile(file)) {
+	const out: Array<Finding> = [];
+	for (const file of files) {
+		if (!isHistoryFile(file) || isMarkerFile(file)) {
 			continue;
 		}
+		// A target with no HEAD base is new, so there is nothing earlier to
+		// have edited. The base check comes first, so a not-yet-existing
+		// pre-tool target never pays a fail-closed content read (§4.7.3).
 		const base = await ports.git.show("HEAD", file);
 		if (!base.ok) {
 			continue;
 		}
-		findings.push(...checkHistoryAppendOnly(base.value, text, file));
+		const text = await loadScopeText(ports, binding, file, findings);
+		if (text === undefined) {
+			continue;
+		}
+		out.push(...checkHistoryAppendOnly(base.value, text, file));
 	}
-	return findings;
+	return out;
 }
 
 export function historyEntryCompleteReal(
@@ -164,7 +185,9 @@ export function resolveHistoryAppendOnly(
 			args.findings.push(
 				...(await historyAppendOnlyReal(
 					args.ports,
-					await realTexts(args.ports, args.binding, args.files, args.findings),
+					args.binding,
+					args.files,
+					args.findings,
 				)),
 			);
 		},

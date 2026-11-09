@@ -10,7 +10,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { runNodeScript } from "../../support/cli-runner.ts";
 
-import { createTempRepo, type TempRepo } from "../../support/temp-repo.ts";
+import {
+	createTempRepo,
+	seedImplementationTask,
+	type TempRepo,
+} from "../../support/temp-repo.ts";
 
 function packageRoot(): string {
 	const here = path.dirname(fileURLToPath(import.meta.url));
@@ -188,10 +192,13 @@ function lastEventLine(repo: TempRepo): {
 
 test("[§4.19.3] hook path allows a Muse Code write", async () => {
 	// Launcher → engine → allow reply: exit 0, stdout exactly {}, and the
-	// verdict line lands in the event log with the engine decision.
+	// verdict line lands in the event log with the engine decision. SPEC
+	// §4.12.3 L1 (slice 1) blocks a taskless write, so the fixture opens an
+	// implementation task; the allow shape stays what the path asserts.
 	const repo = createTempRepo();
 	try {
 		installHookPath(repo, { config: true, engine: true });
+		seedImplementationTask(repo, "T-0099", ["**"]);
 		const subdir = path.join(repo.dir, "sub", "dir");
 		mkdirSync(subdir, { recursive: true });
 		const result = await runHook(

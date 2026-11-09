@@ -1,0 +1,113 @@
+{
+	"acceptanceCriteria": [
+		"a judged range carrying a docs/HISTORY/ file yields no core/history-entry finding",
+		"a code change carrying only a docs/BUGS/ row still owes a history entry",
+		"ci verify on PR 194 reports no core/history-entry finding"
+	],
+	"branch": "fix/ci-history-entry-scope",
+	"bugRowUpdated": true,
+	"diagnosis": "Reproduced with ci verify --base origin/main --head HEAD on PR 194: 70 core/history-entry findings, one per non-record file, although the range adds docs/HISTORY/2026-11-08.md entries. Root cause is historyEntryReal in records-history-guards.ts (changed by d31aa56, T-0016): it now filters record files out and flags every remaining file, so a docs/HISTORY/ file in scope no longer exempts the change; the intended narrowing was only that a docs/BUGS/ row alone must not exempt a code change. Fix lets a docs/HISTORY/ file in scope exempt the change while a BUGS-only record still does not.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/packs/enforcers/records-history-guards.ts",
+			"packages/codictator/tests/unit/records/records-history-entry.test.ts",
+			"packages/codictator/tests/red-ledger.json",
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-09.md",
+			".codictator/tasks/T-0020.json",
+			".codictator/reviews/T-0020-r*.json",
+			"packages/codictator/tests/acceptance/ci-history-entry-range.test.ts"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-09T14:52:34.619Z",
+		"tree": "6721a6bff15b7480bdec28bd02e3313bd14b26b7"
+	},
+	"historyStaged": true,
+	"id": "T-0020",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-09T14:31:58.195Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-09T14:32:04.843Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-09T14:34:20.187Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-09T14:39:42.688Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-09T14:54:50.539Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-09T14:54:55.341Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-09T14:34:11.794Z",
+		"commit": "50218135201391eb34c0405bb8f54cc3e6902d09",
+		"failing": [
+			"[§4.9.3] code range carrying a HISTORY entry owes no further entry",
+			"[§4.9.3] ci verify passes a multi-commit range carrying its HISTORY entry"
+		],
+		"tree": "6721a6bff15b7480bdec28bd02e3313bd14b26b7"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-09T14:40:36.412Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0020-r1",
+			"round": 1,
+			"tree": "d1f2d32c3f137f3531a3b4b5c00ff6ddc3a74c04"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-09T14:54:25.839Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0020-r2",
+			"round": 2,
+			"tree": "584c1f8141b778e7bccd5f3a0996727e5a33c6d3"
+		}
+	],
+	"spec": ["docs/SPEC/04-09-RECORDS.md", "docs/SPEC/04-15-CI.md"],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/records/records-history-entry.test.ts",
+			"title": "[§4.9.3] code range carrying a HISTORY entry owes no further entry"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/ci-history-entry-range.test.ts",
+			"title": "[§4.9.3] ci verify passes a multi-commit range carrying its HISTORY entry"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/records/records-history-entry.test.ts",
+			"title": "[§4.9.3] code change carrying a BUGS row still owes a history entry"
+		}
+	],
+	"title": "L4 history-entry exempts a range carrying a HISTORY entry",
+	"type": "fix",
+	"version": 1
+}

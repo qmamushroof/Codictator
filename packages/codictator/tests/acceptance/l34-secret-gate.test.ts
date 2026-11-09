@@ -46,6 +46,37 @@ function seedConfig(repo: TempRepo): void {
 	);
 }
 
+function seedTask(repo: TempRepo): void {
+	// SPEC §4.12.3 L3: the pre-commit task gate needs a branch task at
+	// phase record or later for code-class staged sets, so the hook fixtures
+	// carry one; the secret assertions below judge the secret gate, not the
+	// task gate.
+	const branch = repo.git(["branch", "--show-current"]).trim();
+	repo.writeFile(
+		".codictator/tasks/T-0099.json",
+		JSON.stringify({
+			version: 1,
+			id: "T-0099",
+			type: "fix",
+			title: "l3 secret gate probe",
+			branch,
+			phase: "record",
+			phases: [],
+			spec: [],
+			acceptanceCriteria: [],
+			files: { allow: [] },
+			historyStaged: true,
+			bugRowUpdated: true,
+			redProof: {
+				commit: "0".repeat(40),
+				tree: "0".repeat(40),
+				failing: [],
+				at: "2026-01-01T00:00:00.000Z",
+			},
+		}),
+	);
+}
+
 // The engine shim re-exports src/cli/main, so the real launcher resolves
 // exactly like production without a build (hook-path acceptance pattern).
 function installLauncher(repo: TempRepo): void {
@@ -106,6 +137,7 @@ test("[§4.14] installed pre-commit hook blocks a staged secret (L3)", async () 
 	const repo = createTempRepo();
 	try {
 		seedConfig(repo);
+		seedTask(repo);
 		installLauncher(repo);
 		const installed = await cli(["install-hooks"], repo.dir);
 		assert.equal(installed.code, 0);
@@ -138,6 +170,7 @@ test("[§4.7.1] pre-commit passes a removal-only secret diff (BUG-0022)", async 
 	const repo = createTempRepo();
 	try {
 		seedConfig(repo);
+		seedTask(repo);
 		installLauncher(repo);
 		const installed = await cli(["install-hooks"], repo.dir);
 		assert.equal(installed.code, 0);
@@ -165,6 +198,7 @@ test("[§4.14] installed pre-commit hook passes a normally-commented file (L3 ga
 	const repo = createTempRepo();
 	try {
 		seedConfig(repo);
+		seedTask(repo);
 		installLauncher(repo);
 		const installed = await cli(["install-hooks"], repo.dir);
 		assert.equal(installed.code, 0);
@@ -187,6 +221,7 @@ test("[§4.3] pre-commit blocks a diff-sound review-only finding (L3 gate subset
 	const repo = createTempRepo();
 	try {
 		seedConfig(repo);
+		seedTask(repo);
 		installLauncher(repo);
 		const installed = await cli(["install-hooks"], repo.dir);
 		assert.equal(installed.code, 0);

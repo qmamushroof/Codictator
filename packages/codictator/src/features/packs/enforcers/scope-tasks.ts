@@ -4,58 +4,21 @@
 // task records under .codictator/tasks, which the CLI owns (§4.12.1).
 // No task records on disk (unit fakes, repos without tasks) means nothing
 // to judge, so the real path stays quiet instead of false-blocking.
-import { globMatch, type Ports, parseJson } from "../../../kernel/index.ts";
+import { globMatch, type Ports } from "../../../kernel/index.ts";
 import type { Finding } from "../../engine/index.ts";
-import type { TaskRecord } from "../../workflow/index.ts";
-
-export const TASKS_DIR = ".codictator/tasks";
-
-function taskRecordOf(text: string): TaskRecord | undefined {
-	const parsed = parseJson(text);
-	if (!parsed.ok) {
-		return undefined;
-	}
-	if (typeof parsed.value !== "object" || parsed.value === null) {
-		return undefined;
-	}
-	const record = parsed.value as TaskRecord;
-	if (record.version !== 1 || typeof record.id !== "string") {
-		return undefined;
-	}
-	return record;
-}
+import {
+	readBranchAt,
+	readTaskRecords,
+	resolveActiveTask,
+	type TaskRecord,
+} from "../../workflow/index.ts";
 
 // The on-disk task records, id-sorted for deterministic verdicts (§4.3.6).
 // Unreadable or malformed records are skipped, never fatal: the hook and CI
 // paths judge tasklessness with branch context, while enforcers judge the
-// records they can read.
+// records they can read. The reader is shared with steering and the CLI.
 export async function readScopeTasks(ports: Ports): Promise<Array<TaskRecord>> {
-	const listed = await ports.fs.list(TASKS_DIR);
-	if (!listed.ok) {
-		return [];
-	}
-	const out: Array<TaskRecord> = [];
-	for (const name of listed.value) {
-		const record = await readTaskRecord(ports, name);
-		if (record !== undefined) {
-			out.push(record);
-		}
-	}
-	return out.sort((a, b) => (a.id < b.id ? -1 : 1));
-}
-
-async function readTaskRecord(
-	ports: Ports,
-	name: string,
-): Promise<TaskRecord | undefined> {
-	if (!name.endsWith(".json")) {
-		return undefined;
-	}
-	const text = await ports.fs.readText(`${TASKS_DIR}/${name}`);
-	if (!text.ok) {
-		return undefined;
-	}
-	return taskRecordOf(text.value);
+	return readTaskRecords(ports);
 }
 
 // The tasks claiming the scope: any files.allow glob matching any scope
@@ -94,6 +57,61 @@ export async function collectTaskFindings(
 	const tasks = await readTasksForScope(ports, files);
 	const findings: Array<Finding> = [];
 	for (const task of tasks) {
+		await judge(task, findings);
+	}
+	return findings;
+}
+
+// SPEC §4.12.1: the branch task is the active task for every hook on that
+// branch. The lookup rides the existing git and proc ports, mirroring the
+// CLI branchOf path; an unreadable branch (no root, failed or empty branch
+// read) answers undefined, so the caller judges with no active task instead
+// of judging blind.
+export async function readBranch(ports: Ports): Promise<string | undefined> {
+	const root = await ports.git.root();
+	if (!root.ok) {
+		return undefined;
+	}
+	return readBranchAt(ports, root.value);
+}
+
+// SPEC §4.12.1: the active task for the branch, reusing the branch-binding
+// lookup from tasks.ts. An unreadable branch means no active task.
+export async function activeTaskFor(
+	ports: Ports,
+	branch: string | undefined,
+): Promise<TaskRecord | undefined> {
+	if (branch === undefined) {
+		return undefined;
+	}
+	return resolveActiveTask(await readScopeTasks(ports), branch);
+}
+
+// The judged set: the active task for the branch plus every task claiming
+// the scope, id-sorted for deterministic verdicts (§4.3.6). Judging the
+// active task — not only claiming tasks — closes the silent-allow gap: with
+// no active task the caller's EC-1 path fires instead of nothing.
+export async function readJudgedTasks(
+	ports: Ports,
+	files: ReadonlyArray<string>,
+): Promise<Array<TaskRecord>> {
+	const active = await activeTaskFor(ports, await readBranch(ports));
+	const tasks = await readTasksForScope(ports, files);
+	if (active !== undefined && !tasks.some((task) => task.id === active.id)) {
+		tasks.push(active);
+	}
+	return tasks.sort((a, b) => (a.id < b.id ? -1 : 1));
+}
+
+// Shared active-task loop: one call site per judging helper, so the split
+// real modules share no repeated loop run.
+export async function collectActiveTaskFindings(
+	ports: Ports,
+	files: ReadonlyArray<string>,
+	judge: (task: TaskRecord, findings: Array<Finding>) => void | Promise<void>,
+): Promise<Array<Finding>> {
+	const findings: Array<Finding> = [];
+	for (const task of await readJudgedTasks(ports, files)) {
 		await judge(task, findings);
 	}
 	return findings;

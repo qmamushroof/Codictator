@@ -2,7 +2,10 @@
 // steering block, CI workflow, hooks, launcher) and the manifest write are
 // shared by init and regen, so regeneration stays byte-identical.
 import { renderHarnessFiles } from "../features/adapters/index.ts";
-import { renderWorkflow } from "../features/ci/index.ts";
+import {
+	type RenderWorkflowOptions,
+	renderWorkflow,
+} from "../features/ci/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
 	buildManifest,
@@ -13,6 +16,7 @@ import {
 } from "../features/integrity/index.ts";
 import {
 	buildManagedBlock,
+	type FloorRuleLine,
 	MANAGED_BEGIN,
 	MANAGED_END,
 } from "../features/steering/index.ts";
@@ -26,6 +30,8 @@ import {
 } from "../kernel/index.ts";
 import { LAUNCHER_TEXT } from "./plan-launcher.ts";
 import { portsFor } from "./shared.ts";
+
+export { detectWorkflowOptions } from "./plan-workflow.ts";
 
 function encode(text: string): Uint8Array {
 	return new TextEncoder().encode(text);
@@ -89,8 +95,16 @@ function configText(
 
 // SPEC §4.14.1: user text outside the managed block survives regen; a
 // malformed block is replaced rather than duplicated (CDX-E501 avoided).
-function withManagedBlock(existing: string | undefined): string {
-	const block = buildManagedBlock();
+// Callers pass the loaded floor rules (G4); without them the block keeps
+// the default set so regeneration stays byte-identical on unchanged input.
+function withManagedBlock(
+	existing: string | undefined,
+	floorRules?: ReadonlyArray<FloorRuleLine>,
+): string {
+	const block =
+		floorRules === undefined
+			? buildManagedBlock()
+			: buildManagedBlock({ floorRules });
 	if (existing === undefined) {
 		return `${block}\n`;
 	}
@@ -123,6 +137,9 @@ export interface PlanExtras {
 	readonly tunables?: unknown;
 	readonly architecture?: unknown;
 	readonly tools?: unknown;
+	// SPEC §4.6.2 item 3 (G4): floor rules built from the loaded pack
+	// registry; the managed block lists them instead of the default set.
+	readonly floorRules?: ReadonlyArray<FloorRuleLine>;
 }
 
 export function guardrailPlan(
@@ -133,6 +150,7 @@ export function guardrailPlan(
 	extras: PlanExtras = {},
 	engineVersion: string = ENGINE_VERSION,
 	root = ".",
+	workflowOptions: RenderWorkflowOptions = {},
 ): GuardrailPlan {
 	const files: Array<{
 		path: string;
@@ -148,11 +166,14 @@ export function guardrailPlan(
 	});
 	files.push({
 		path: "AGENTS.md",
-		content: withManagedBlock(existingAgents),
+		content: withManagedBlock(existingAgents, extras.floorRules),
 		owner: "codictator",
 		mode: "file",
 	});
-	const workflow = renderWorkflow(repoName);
+	const workflow = renderWorkflow(repoName, {
+		...workflowOptions,
+		repoName,
+	});
 	files.push({
 		path: ".github/workflows/codictator.yml",
 		content: workflow.text ?? "",

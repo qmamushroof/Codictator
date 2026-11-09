@@ -8,7 +8,10 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import type { CliOptions } from "../../../src/cli/index.ts";
 import { runCommand, runHook, runServer } from "../../../src/cli/index.ts";
-import { createTempRepo } from "../../support/temp-repo.ts";
+import {
+	createTempRepo,
+	seedImplementationTask,
+} from "../../support/temp-repo.ts";
 
 function optionsFor(argv: ReadonlyArray<string>): CliOptions {
 	return { argv, cwd: "/repo" };
@@ -127,6 +130,10 @@ test("[§4.19 EC-7] effective-config cache stale after waiver edit", async () =>
 		}),
 	});
 	try {
+		// SPEC §4.12.3 L1 (slice 1): a taskless pre-tool write blocks, so the
+		// fixture opens an implementation task covering src/**; the
+		// cache-staleness assertions below are unchanged.
+		seedImplementationTask(repo, "T-0007", ["src/**"]);
 		const here = path.dirname(fileURLToPath(import.meta.url));
 		const golden = JSON.parse(
 			readFileSync(
