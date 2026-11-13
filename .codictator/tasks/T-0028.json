@@ -1,0 +1,125 @@
+{
+  "acceptanceCriteria": [
+    "A docs task whose files.allow includes a non-doc path owes declared tests, red proof and green proof",
+    "A docs task whose files.allow is all docs paths still skips the proofs"
+  ],
+  "branch": "fix/bug-0087-docs-reclassify",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: a docs-typed task whose files.allow includes src/** leaves planning and validation with no declared tests, red proof or green proof. Root cause: missingPlanningEvidence and missingExitEvidence in workflow/phases.ts test task.type === 'docs', ignoring the files the task touches, while SPEC 4.12.2 says a change touching code files is reclassified as code. The existing classifyChange (workflow/writes.ts) already classifies file paths; fix applies it to files.allow.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/workflow/phases.ts",
+      "packages/codictator/tests/unit/workflow/workflow-gates-s412.test.ts",
+      "packages/codictator/tests/red-ledger.json",
+      "docs/HISTORY/2026-11-13.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0028.json",
+      ".codictator/reviews/T-0028-r*.json",
+      "packages/codictator/tests/unit/workflow/workflow-gates-docs-class-s412.test.ts",
+      "packages/codictator/tests/acceptance/consumer-docs-reclassify.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-13T14:55:29.732Z",
+    "tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+  },
+  "historyStaged": true,
+  "id": "T-0028",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-13T13:25:38.919Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-13T13:26:18.892Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-13T13:26:45.345Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-13T14:45:58.152Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-13T14:46:40.747Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-13T14:46:46.280Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-13T14:55:28.722Z",
+    "commit": "0c84b454ddf9c7e14821f5b3e5bb131ad40b684f",
+    "failing": [
+      "[§4.12.2] consumer docs task that plans a src write is reclassified as code and owes the red proof"
+    ],
+    "tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:46:37.817Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0028-r1",
+      "round": 1,
+      "tree": "036e346f09c2f0bcc72da05eb9bffc8519cb5005"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:50:32.157Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0028-r2",
+      "round": 2,
+      "tree": "da1ab713d5a5bd688e6ff56be282632f471d9f9d"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:56:25.084Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0028-r3",
+      "round": 3,
+      "tree": "19db98240b2164beb371048e9bc70e2616869524"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-12-WORKFLOW.md"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/workflow/workflow-gates-s412.test.ts",
+      "title": "[§4.12.2] docs class skips the red and green proofs while feature still owes them"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/workflow/workflow-gates-docs-class-s412.test.ts",
+      "title": "[§4.12.2] a docs task whose files.allow touches code files is reclassified as code and owes the proofs"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-docs-reclassify.test.ts",
+      "title": "[§4.12.2] consumer docs task that plans a src write is reclassified as code and owes the red proof"
+    }
+  ],
+  "title": "docs task touching code is reclassified as code",
+  "type": "fix",
+  "version": 1
+}
+
