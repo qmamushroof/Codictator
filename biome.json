@@ -6,7 +6,12 @@
 	},
 	"overrides": [
 		{
-			"includes": [".codictator/bin/**", ".codictator/*.json"],
+			"includes": [
+				".codictator/bin/**",
+				".codictator/*.json",
+				".codictator/tasks/*.json",
+				".codictator/reviews/*.json"
+			],
 			"formatter": { "enabled": false },
 			"linter": { "enabled": false }
 		},
