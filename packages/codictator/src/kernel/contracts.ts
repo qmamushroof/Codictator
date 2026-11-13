@@ -38,6 +38,10 @@ export interface Scope {
 	readonly proposedContent?: string;
 	readonly shellCommand?: string;
 	readonly proposedPaths?: ReadonlyArray<string>;
+	// SPEC §4.12.3 L1: "A write is blocked" — the tool call's access kind,
+	// so live-write gates skip read-only calls while read guards (secret
+	// reads) still judge their targets. Unset outside the L1 hook scope.
+	readonly toolAccess?: "read" | "write";
 }
 
 export interface Finding {

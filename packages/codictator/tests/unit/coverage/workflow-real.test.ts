@@ -13,7 +13,7 @@ import {
 	writesWithinPlanReal,
 } from "../../../src/features/packs/enforcers/workflow-real.ts";
 import type { PackRule, Ports } from "../../../src/kernel/index.ts";
-import { createFakePorts } from "../../support/fake-ports.ts";
+import { activeTaskPorts } from "../../support/active-task-ports.ts";
 
 function ruleFor(id: string): PackRule {
 	return {
@@ -49,9 +49,7 @@ function taskJson(over: Record<string, unknown> = {}): string {
 }
 
 function portsWith(task: string): Ports {
-	const { ports, fs } = createFakePorts();
-	fs.seedText(".codictator/tasks/T-0001.json", task);
-	return ports;
+	return activeTaskPorts(task);
 }
 
 function reviewRound(round: number): Record<string, unknown> {
@@ -126,9 +124,7 @@ test("[§5.9] real scope flags a review without a completed round", async () => 
 });
 
 test("[§5.9] real scope flags review rounds past the cap", async () => {
-	const { ports, fs } = createFakePorts();
-	fs.seedText(
-		".codictator/tasks/T-0001.json",
+	const ports = portsWith(
 		taskJson({ reviews: [reviewRound(1), reviewRound(2)] }),
 	);
 	const findings: Array<Finding> = [];
@@ -144,11 +140,7 @@ test("[§5.9] real scope flags review rounds past the cap", async () => {
 });
 
 test("[§5.9] real scope stays quiet within the round cap", async () => {
-	const { ports, fs } = createFakePorts();
-	fs.seedText(
-		".codictator/tasks/T-0001.json",
-		taskJson({ reviews: [reviewRound(1)] }),
-	);
+	const ports = portsWith(taskJson({ reviews: [reviewRound(1)] }));
 	const findings: Array<Finding> = [];
 	await reviewRoundCapReal(
 		ports,

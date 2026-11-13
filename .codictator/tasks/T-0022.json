@@ -1,0 +1,128 @@
+{
+	"acceptanceCriteria": [
+		"A pre-tool Read of src/x.ts in a planning task is allowed by core/workflow-gates and core/writes-within-plan",
+		"A pre-tool Write of src/x.ts in a planning task is still blocked",
+		"core/no-secret-reads still fires on a Read of .env"
+	],
+	"branch": "fix/consumer-t0020-firing",
+	"bugRowUpdated": true,
+	"diagnosis": "Reproduced: in a consumer repo with a planning task, a Read of src/x.ts through the PreToolUse hook is denied by core/workflow-gates and core/writes-within-plan. Root cause: hookScope puts every tool target (Read paths included) into scope.proposedPaths with no tool kind, and markerRealGuard treats any pre-tool scope with targets as a live write (hasToolTargets), so workflowGatesReal and writesWithinPlanReal judge reads as writes. SPEC 4.12.3 L1 blocks a write only. Fix: carry toolAccess read|write on Scope, set it from the tool kind in hookScope, and skip live-write workflow judging for read-only tool calls; no-secret-reads keeps judging reads.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/kernel/contracts.ts",
+			"packages/codictator/src/features/adapters/hook-scope.ts",
+			"packages/codictator/src/features/packs/enforcers/marker-scan.ts",
+			"packages/codictator/src/features/packs/enforcers/workflow-guards.ts",
+			"packages/codictator/tests/unit/packs/packs-l1-read-scope.test.ts",
+			"packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"packages/codictator/tests/red-ledger.json",
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-09.md",
+			".codictator/tasks/T-0022.json",
+			".codictator/reviews/T-0022-*.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-09T14:30:42.373Z",
+		"tree": "6721a6bff15b7480bdec28bd02e3313bd14b26b7"
+	},
+	"historyStaged": true,
+	"id": "T-0022",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-09T14:22:35.957Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-09T14:24:06.703Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-09T14:26:21.671Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-09T14:30:42.940Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-09T14:32:11.772Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-09T14:32:27.207Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-09T14:24:01.596Z",
+		"commit": "50218135201391eb34c0405bb8f54cc3e6902d09",
+		"failing": [
+			"[§4.12.3] L1 hook scope marks a read tool call as read access",
+			"[§4.12.3] L1 hook scope marks a write tool call as write access",
+			"[§4.12.3] L1 workflow gates allow a planning-phase read of a src file",
+			"[§4.12.3] consumer planning task allows a src read but still blocks the src write"
+		],
+		"tree": "6721a6bff15b7480bdec28bd02e3313bd14b26b7"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-09T14:32:11.266Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0022-r1",
+			"round": 1,
+			"tree": "4fff19c8b18fb863407890cd03fab1e37f4bdada"
+		}
+	],
+	"spec": ["docs/SPEC/04-12-WORKFLOW.md", "docs/SPEC/04-05-ADAPTERS.md"],
+	"tests": [
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-l1-read-scope.test.ts",
+			"title": "[§4.12.3] L1 hook scope marks a read tool call as read access"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-l1-read-scope.test.ts",
+			"title": "[§4.12.3] L1 hook scope marks a write tool call as write access"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/packs/packs-l1-read-scope.test.ts",
+			"title": "[§4.12.3] L1 workflow gates allow a planning-phase read of a src file"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-l1-read-scope.test.ts",
+			"title": "[§4.12.3] L1 workflow gates still block a planning-phase write of a src file"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-l1-read-scope.test.ts",
+			"title": "[§4.7.1] L1 no-secret-reads still judges a read of a secret path"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.3] consumer planning task allows a src read but still blocks the src write"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.3] consumer planning task allows a src read but still blocks the src write"
+		}
+	],
+	"title": "L1 read tool calls skip live-write workflow judging",
+	"type": "fix",
+	"version": 1
+}

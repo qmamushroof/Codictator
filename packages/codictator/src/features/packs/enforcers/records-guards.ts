@@ -26,7 +26,7 @@ import { isHistoryFile, realTexts } from "./records-history-guards.ts";
 import {
 	collectTaskFindings,
 	implementationBegan,
-	readTasksForScope,
+	readJudgedTasks,
 } from "./scope-tasks.ts";
 
 export {
@@ -40,7 +40,7 @@ async function bugRegistryReal(
 	files: ReadonlyArray<string>,
 	texts: ReadonlyMap<string, string>,
 ): Promise<Array<Finding>> {
-	const tasks = (await readTasksForScope(ports, files)).filter(
+	const tasks = (await readJudgedTasks(ports, files)).filter(
 		(task) => task.type === "fix" && implementationBegan(task),
 	);
 	if (tasks.length === 0) {

@@ -55,6 +55,9 @@ export interface MarkerRealArgs {
 	// gate-leg scopes (verify, pre-commit, pre-push) carry files only. Only
 	// a live write can owe the EC-1 no-task block.
 	readonly hasToolTargets: boolean;
+	// SPEC §4.12.3 L1 blocks a write, not a read: a read-only tool call
+	// (scope toolAccess "read") owes no live-write workflow judging.
+	readonly readOnlyTool: boolean;
 }
 
 // SPEC §4.3.2 + §4.7: at the pre-tool trigger the L1 scope carries no disk
@@ -84,12 +87,23 @@ export function markerRealGuard(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
 			const files = selectFiles(preToolFiles(ctx), binding.scopeGlobs);
+			const readOnlyTool =
+				ctx.trigger === "pre-tool" && ctx.scope.toolAccess === "read";
 			const hasToolTargets =
 				ctx.trigger === "pre-tool" &&
+				!readOnlyTool &&
 				(ctx.scope.proposedPaths?.length ?? 0) > 0;
-			await judgeMarkers({ ports, binding, files, findings, hasToolTargets });
+			const args = {
+				ports,
+				binding,
+				files,
+				findings,
+				hasToolTargets,
+				readOnlyTool,
+			};
+			await judgeMarkers(args);
 			if (hasRealScope(files)) {
-				await judgeReal({ ports, binding, files, findings, hasToolTargets });
+				await judgeReal(args);
 			}
 			return findings;
 		}),
@@ -173,6 +187,7 @@ export function markerGuard(
 				files,
 				findings,
 				hasToolTargets: false,
+				readOnlyTool: false,
 			});
 			return findings;
 		}),

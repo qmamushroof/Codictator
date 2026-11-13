@@ -1,0 +1,14 @@
+{
+	"findings": [
+		{
+			"id": "R1",
+			"line": 94,
+			"message": "readOnlyTool is applied twice for core/writes-within-plan: it already zeroes hasToolTargets here and the resolver also returns early on it; one guard would do (the early return alone covers both workflow resolvers), so the extra boolean on MarkerRealArgs widens the flag surface for no behaviour.",
+			"path": "packages/codictator/src/features/packs/enforcers/marker-scan.ts",
+			"severity": "nit"
+		}
+	],
+	"reviewerSession": "fresh-subagent-review-T-0022-r1",
+	"tree": "4fff19c8b18fb863407890cd03fab1e37f4bdada",
+	"version": 1
+}

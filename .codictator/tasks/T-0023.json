@@ -1,0 +1,132 @@
+{
+	"acceptanceCriteria": [
+		"An active task on one branch writes its planned src file while a parallel task on another branch claims it",
+		"core/bug-registry does not judge a finished fix task that only claims the staged history file",
+		"With no readable branch, the tasks whose records the scope touches are judged"
+	],
+	"branch": "fix/bug-0075-active-task",
+	"bugRowUpdated": true,
+	"diagnosis": "Reproduced: in a consumer repo, task B in implementation on feature/active-b writes its planned src/widget.ts and is denied by core/workflow-gates and core/writes-within-plan on behalf of task A, a planning task on feature/parallel-a whose files.allow also claims src/**; at L3 a docs commit on a branch whose history entry has no Bug field is blocked by core/bug-registry because finished fix tasks T-0020..T-0022 claim docs/HISTORY. Root cause: scope-tasks.ts readJudgedTasks and collectTaskFindings add every task whose files.allow glob matches a scope file (tasksForScope), and records-guards.ts bugRegistryReal reads only those claiming tasks, assuming a claim means ownership of the change. SPEC 4.12.1 makes the branch's active task the task every hook judges and 4.12.3 L4 judges the tasks touched in the PR. Fix: the judged set is the active task plus each task whose record (.codictator/tasks/<id>.json) is in the judged scope; every task-judging helper and bugRegistryReal use it.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/packs/enforcers/*.ts",
+			"packages/codictator/tests/**",
+			"docs/BUGS/2026.md",
+			"docs/HISTORY/2026-11-09.md",
+			".codictator/tasks/T-0023.json",
+			".codictator/reviews/T-0023-*.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-13T12:03:01.115Z",
+		"tree": "ffe8d310f945e7183bcd5f0d9ef7d8779dd70ffb"
+	},
+	"historyStaged": true,
+	"id": "T-0023",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-09T15:25:54.478Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-09T15:25:55.421Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-09T15:36:25.684Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-09T15:36:27.189Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-13T12:30:57.786Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-13T12:32:46.704Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-09T15:25:54.978Z",
+		"commit": "2acbbb4dfa4ba3168abd4bfdaa018a885f17807e",
+		"failing": [
+			"[§4.12.1] judged tasks skip a task that only claims a changed file",
+			"[§4.12.3] judged tasks include a task whose record the change touches",
+			"[§4.9.4] bug-registry ignores a finished fix task that only claims the staged history file",
+			"[§4.12.3] consumer task writes its planned src file while a parallel task claims it"
+		],
+		"tree": "ffe8d310f945e7183bcd5f0d9ef7d8779dd70ffb"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-13T12:02:08.922Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0023-r1",
+			"round": 1,
+			"tree": "b62322e0995dda1d700cddcde4e94281960ea397"
+		},
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-13T12:29:54.392Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "human-review-T-0023-r2",
+			"round": 2,
+			"tree": "e5c166b42a59a22b57ab61e7ed06d25e040fdc86"
+		}
+	],
+	"spec": [
+		"docs/SPEC/04-12-WORKFLOW.md",
+		"docs/SPEC/04-09-RECORDS.md",
+		"docs/SPEC/04-10-TESTING.md"
+	],
+	"tests": [
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/packs/packs-judged-tasks.test.ts",
+			"title": "[§4.12.1] judged tasks skip a task that only claims a changed file"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-judged-tasks.test.ts",
+			"title": "[§4.12.1] judged tasks skip a task that only claims a changed file"
+		},
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/packs/packs-judged-tasks.test.ts",
+			"title": "[§4.12.3] judged tasks include a task whose record the change touches"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/packs/packs-judged-tasks.test.ts",
+			"title": "[§4.9.4] bug-registry ignores a finished fix task that only claims the staged history file"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/consumer-parallel-tasks.test.ts",
+			"title": "[§4.12.3] consumer task writes its planned src file while a parallel task claims it"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/acceptance/consumer-parallel-tasks.test.ts",
+			"title": "[§4.12.3] consumer task writes its planned src file while a parallel task claims it"
+		}
+	],
+	"title": "task-judging gates judge the active task and touched records, not claiming tasks",
+	"type": "fix",
+	"version": 1
+}

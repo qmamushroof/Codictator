@@ -11,11 +11,7 @@ import {
 } from "../../workflow/writes.ts";
 import type { RuleBinding } from "./binding.ts";
 import { findingFor } from "./binding.ts";
-import {
-	collectActiveTaskFindings,
-	collectTaskFindings,
-	readJudgedTasks,
-} from "./scope-tasks.ts";
+import { collectTaskFindings, readJudgedTasks } from "./scope-tasks.ts";
 
 export function nextPhaseOf(phase: string): string | undefined {
 	const at = MANDATORY_PHASES.indexOf(phase);
@@ -29,7 +25,7 @@ export async function workflowGatesReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
 ): Promise<Array<Finding>> {
-	return collectActiveTaskFindings(ports, files, async (task, findings) => {
+	return collectTaskFindings(ports, files, async (task, findings) => {
 		const next = nextPhaseOf(task.phase);
 		if (next === undefined) {
 			return;

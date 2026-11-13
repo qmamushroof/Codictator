@@ -82,6 +82,9 @@ export function resolveWorkflowGates(
 				(file) => `mandatory gate skipped in ${file}`,
 			),
 		async (args) => {
+			if (args.readOnlyTool) {
+				return;
+			}
 			args.findings.push(...(await workflowGatesReal(args.ports, args.files)));
 		},
 	);
@@ -107,6 +110,9 @@ export function resolveWritesWithinPlan(
 				(file) => `write outside the plan in ${file}`,
 			),
 		async (args) => {
+			if (args.readOnlyTool) {
+				return;
+			}
 			args.findings.push(
 				...(await writesWithinPlanReal(
 					args.ports,

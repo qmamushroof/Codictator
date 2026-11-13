@@ -4,12 +4,13 @@
 // task records under .codictator/tasks, which the CLI owns (§4.12.1).
 // No task records on disk (unit fakes, repos without tasks) means nothing
 // to judge, so the real path stays quiet instead of false-blocking.
-import { globMatch, type Ports } from "../../../kernel/index.ts";
+import type { Ports } from "../../../kernel/index.ts";
 import type { Finding } from "../../engine/index.ts";
 import {
 	readBranchAt,
 	readTaskRecords,
 	resolveActiveTask,
+	TASKS_DIR,
 	type TaskRecord,
 } from "../../workflow/index.ts";
 
@@ -21,42 +22,27 @@ export async function readScopeTasks(ports: Ports): Promise<Array<TaskRecord>> {
 	return readTaskRecords(ports);
 }
 
-// The tasks claiming the scope: any files.allow glob matching any scope
-// file. The gate judges the change against the plan that claims it, so an
-// unrelated scope never inherits another task's missing evidence.
-export function tasksForScope(
+// SPEC §4.12.3: a task is touched when its record is in the judged scope
+// (the staged set or the PR range adds or changes it). A files.allow glob
+// that merely matches a scope file is not ownership of the change, so a
+// finished or parallel task never inherits another task's verdict.
+export function touchedTasks(
 	tasks: ReadonlyArray<TaskRecord>,
 	files: ReadonlyArray<string>,
 ): Array<TaskRecord> {
-	return tasks.filter((task) =>
-		(task.files?.allow ?? []).some((glob) =>
-			files.some((file) => globMatch(glob, file)),
-		),
-	);
+	return tasks.filter((task) => files.includes(`${TASKS_DIR}/${task.id}.json`));
 }
 
-// Shared real-scope read: the committed task records claiming the scope.
-// One call site per enforcer keeps the split real files free of the
-// repeated read-then-filter token run.
-export async function readTasksForScope(
-	ports: Ports,
-	files: ReadonlyArray<string>,
-): Promise<Array<TaskRecord>> {
-	return tasksForScope(await readScopeTasks(ports), files);
-}
-
-// Shared task-loop verdict: read the claiming records once and judge each
-// in id order, collecting findings. One loop site for every real-scope
-// helper, so the split real modules share no duplicated task-loop run
-// (core/duplication counts exact token runs across scope files).
+// Shared task-loop verdict over the judged set, in id order. One loop site
+// for every real-scope helper, so the split real modules share no
+// duplicated task-loop run (core/duplication counts exact token runs).
 export async function collectTaskFindings(
 	ports: Ports,
 	files: ReadonlyArray<string>,
 	judge: (task: TaskRecord, findings: Array<Finding>) => void | Promise<void>,
 ): Promise<Array<Finding>> {
-	const tasks = await readTasksForScope(ports, files);
 	const findings: Array<Finding> = [];
-	for (const task of tasks) {
+	for (const task of await readJudgedTasks(ports, files)) {
 		await judge(task, findings);
 	}
 	return findings;
@@ -75,46 +61,23 @@ export async function readBranch(ports: Ports): Promise<string | undefined> {
 	return readBranchAt(ports, root.value);
 }
 
-// SPEC §4.12.1: the active task for the branch, reusing the branch-binding
-// lookup from tasks.ts. An unreadable branch means no active task.
-export async function activeTaskFor(
-	ports: Ports,
-	branch: string | undefined,
-): Promise<TaskRecord | undefined> {
-	if (branch === undefined) {
-		return undefined;
-	}
-	return resolveActiveTask(await readScopeTasks(ports), branch);
-}
-
-// The judged set: the active task for the branch plus every task claiming
-// the scope, id-sorted for deterministic verdicts (§4.3.6). Judging the
-// active task — not only claiming tasks — closes the silent-allow gap: with
-// no active task the caller's EC-1 path fires instead of nothing.
+// The judged set (SPEC §4.12.1, §4.12.3): the active task for the branch
+// plus every task whose record the scope touches, id-sorted for
+// deterministic verdicts (§4.3.6). With neither, the caller's EC-1 path
+// fires on a live write and gate legs stay quiet.
 export async function readJudgedTasks(
 	ports: Ports,
 	files: ReadonlyArray<string>,
 ): Promise<Array<TaskRecord>> {
-	const active = await activeTaskFor(ports, await readBranch(ports));
-	const tasks = await readTasksForScope(ports, files);
+	const records = await readScopeTasks(ports);
+	const branch = await readBranch(ports);
+	const active =
+		branch === undefined ? undefined : resolveActiveTask(records, branch);
+	const tasks = touchedTasks(records, files);
 	if (active !== undefined && !tasks.some((task) => task.id === active.id)) {
 		tasks.push(active);
 	}
 	return tasks.sort((a, b) => (a.id < b.id ? -1 : 1));
-}
-
-// Shared active-task loop: one call site per judging helper, so the split
-// real modules share no repeated loop run.
-export async function collectActiveTaskFindings(
-	ports: Ports,
-	files: ReadonlyArray<string>,
-	judge: (task: TaskRecord, findings: Array<Finding>) => void | Promise<void>,
-): Promise<Array<Finding>> {
-	const findings: Array<Finding> = [];
-	for (const task of await readJudgedTasks(ports, files)) {
-		await judge(task, findings);
-	}
-	return findings;
 }
 
 // Code classes owe the TDD proofs; docs, refactor, deps and chore follow

@@ -3,7 +3,7 @@
 // harness path judges the one tool call, not the tree.
 import { analyseShell } from "../../kernel/index.ts";
 import type { Scope } from "../engine/index.ts";
-import type { HookEvent } from "./contract.ts";
+import type { HookEvent, ToolKind } from "./contract.ts";
 
 // SPEC §4.3.2 + §4.7: the L1 hook scope is the one tool call, not the
 // disk tree. Harness tool paths are absolute and usually name files that
@@ -81,5 +81,13 @@ export function hookScope(
 			: { proposedContent: tool.proposedContent }),
 		...(command === undefined ? {} : { shellCommand: command }),
 		...(targets.size === 0 ? {} : { proposedPaths: [...targets].sort() }),
+		...(tool === undefined ? {} : { toolAccess: toolAccessOf(tool.kind) }),
 	};
+}
+
+// SPEC §4.12.3 L1 blocks writes only. Only kinds that cannot change the
+// tree count as reads; every other kind (shell, mcp, other) fails closed as
+// a write.
+function toolAccessOf(kind: ToolKind): "read" | "write" {
+	return kind === "read" || kind === "search" ? "read" : "write";
 }
