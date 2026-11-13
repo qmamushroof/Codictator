@@ -127,3 +127,15 @@ test("[§5.4] real scope stays quiet once the regression test lands", async () =
 	);
 	assert.deepEqual(findings, []);
 });
+
+test("[§5.4] Codictator task and review records are not code for test kinds", async () => {
+	const findings = await testKindsReal(
+		portsWith(taskJson({ type: "feature" })),
+		[
+			".codictator/tasks/T-0001.json",
+			".codictator/reviews/T-0001-r1.json",
+			"docs/BUGS/2026.md",
+		],
+	);
+	assert.deepEqual(findings, []);
+});
