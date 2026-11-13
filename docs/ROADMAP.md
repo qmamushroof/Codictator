@@ -1,6 +1,6 @@
 # Roadmap
 
-Build order from an empty repo to the first release. Read the how-to-use leaf first, then only the current phase.
+Build order from an empty repo to the first release, then on to the product goal of PRD §1.2. Read the how-to-use leaf first, then only the current phase.
 
 | Phase | Name | Delivers | Tier | File |
 |---|---|---|---|---|
@@ -18,3 +18,9 @@ Build order from an empty repo to the first release. Read the how-to-use leaf fi
 | 11 | Extension | VS Code extension with the P0 views, stdio server | P0 | [11-EXTENSION.md](ROADMAP/11-EXTENSION.md) |
 | 12 | P1 scope | Cursor, Gemini CLI, custom adapters, .NET and Python packs, generator, LLM client, P1 views and rules | P1 | [12-P1-SCOPE.md](ROADMAP/12-P1-SCOPE.md) |
 | 13 | Release | Cross-OS determinism, stress budgets, packaging, publishing | P0 | [13-RELEASE.md](ROADMAP/13-RELEASE.md) |
+| 14 | Close-out | Empty red ledger, no open bug, docs that match what ships | P0 | [14-CLOSE-OUT.md](ROADMAP/14-CLOSE-OUT.md) |
+| 15 | Consumer proof | Every rule family proven on target repos and live harnesses; PRD §10 metrics measured | P0 | [15-CONSUMER-PROOF.md](ROADMAP/15-CONSUMER-PROOF.md) |
+| 16 | First run | One command from a bare repo to a green verify, inside a time budget | P0 | [16-FIRST-RUN.md](ROADMAP/16-FIRST-RUN.md) |
+| 17 | Extension experience | Reviewed, accessible, self-explaining extension and store listing | P0 | [17-EXTENSION-UX.md](ROADMAP/17-EXTENSION-UX.md) |
+| 18 | Launch | Public surface, demo, feedback loop and reach tracking | P0 | [18-LAUNCH.md](ROADMAP/18-LAUNCH.md) |
+| 19 | Breadth | PRD §9.2 items, each pulled in by recorded demand | Later | [19-BREADTH.md](ROADMAP/19-BREADTH.md) |

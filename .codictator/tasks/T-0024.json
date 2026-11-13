@@ -1,0 +1,74 @@
+{
+	"acceptanceCriteria": [
+		"docs/ROADMAP.md router links leaves 00-19 once each in file-name order with the new intro line",
+		"leaves 14-CLOSE-OUT to 19-BREADTH exist with navigation lines matching router order; 13-RELEASE navigation points to 14",
+		"00-HOW-TO-USE states the phase 15-17 overlap, the labelled step lines, the Human and PRD-first/SPEC-first rules, and the phase 14-19 scope",
+		".gitignore ignores .vs/",
+		"codictator verify --staged reports zero findings; typecheck, lint and test:coverage green"
+	],
+	"branch": "docs/14-goal-gap-roadmap",
+	"files": {
+		"allow": [
+			"docs/ROADMAP.md",
+			"docs/ROADMAP/*.md",
+			".gitignore",
+			"docs/HISTORY/*.md"
+		]
+	},
+	"historyStaged": true,
+	"id": "T-0024",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-13T12:23:03.744Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-13T13:18:35.891Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-13T13:18:44.284Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-13T13:31:25.747Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-13T13:52:32.182Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-13T13:52:39.333Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-13T13:50:03.848Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0024-r1",
+			"round": 1,
+			"tree": "40c4788b6118f068ff33046100ddb6015a691950"
+		}
+	],
+	"spec": [
+		"docs/SPEC/01-DOCUMENT-IDENTITY.md",
+		"docs/SPEC/04-09-RECORDS.md",
+		"docs/SPEC/05-CORE-RULES.md",
+		"docs/ROADMAP/00-HOW-TO-USE.md"
+	],
+	"title": "extend the roadmap past release toward the product goal",
+	"type": "docs",
+	"version": 1
+}

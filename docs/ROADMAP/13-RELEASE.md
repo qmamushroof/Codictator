@@ -1,6 +1,6 @@
 # 13. Release
 
-**[◀ 12. P1 Scope](12-P1-SCOPE.md)** · [Roadmap index](../ROADMAP.md) · **(last)**
+**[◀ 12. P1 Scope](12-P1-SCOPE.md)** · [Roadmap index](../ROADMAP.md) · **[14. Close-Out ▶](14-CLOSE-OUT.md)**
 
 | | |
 |---|---|
