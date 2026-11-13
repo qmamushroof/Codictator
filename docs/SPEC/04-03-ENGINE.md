@@ -65,7 +65,7 @@ Deleted files drop their keys. A pure rename (same normalised content) moves its
 
 ## 4.3.6 Determinism
 
-The verdict is a pure function of: repo content in scope, `configHash`, pack versions, registry snapshot hash (§4.8.4), the hook input, and `now`. All five are recorded in the event, so `codictator replay <eventId>` re-evaluates and must produce a byte-identical verdict (PRD §6 P1; §10.4). Enforcers receive the clock and data only from `CheckContext`; iteration over maps and file lists is sorted.
+The verdict is a pure function of: repo content in scope, `configHash`, pack versions, registry snapshot hash (§4.8.4), the hook input, and `now`. The hook input includes the trigger's session state (§4.6.5, §4.14.2; field in §7.8), so it enters `inputDigest`. All five are recorded in the event, so `codictator replay <eventId>` re-evaluates and must produce a byte-identical verdict (PRD §6 P1; §10.4). Enforcers receive the clock and data only from `CheckContext`; iteration over maps and file lists is sorted.
 
 ## 4.3.7 Verdict and message
 

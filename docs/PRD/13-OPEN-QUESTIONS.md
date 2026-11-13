@@ -4,4 +4,6 @@
 
 Founder answers are recorded in §12 and the answered row is removed; a new question is added here as a row with a working default. Ids are never reused (Q1 answered by §12 #38).
 
-No questions are open.
+| Id | Question | Working default |
+|---|---|---|
+| Q2 | Where does a `knowledge-graph` helper leave its output on disk, and what is its lookup instruction (SPEC §4.6.5)? The helper contract (SPEC §4.4.5) names neither | `core/graph-before-scan` stays inactive until answered |

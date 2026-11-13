@@ -43,6 +43,8 @@ Each run stores the fetched documents it used in `.codictator/cache/registry/<ec
 | L1, L3 | Reuse snapshot younger than 24 h; dependency rules run only when a manifest, lockfile or toolchain file is in scope | Offline: use the last snapshot and say "as of <fetchedAt>"; no snapshot → block dependency changes with `CDX-E401` (PRD §7.5) |
 | L4, L5 | Always fetch fresh | Fetch failure → `CDX-E401`, block (fail closed) |
 
+**Hermetic judging.** `core/dep-no-vulnerable` and `core/dep-no-deprecated` read `advisories` and `deprecated`/`yanked` only from the snapshot (§7.12), delivered through `CheckContext`; an enforcer never calls the net port itself (§4.3.6). Fresh layers fetch into the snapshot first. A fixture case or test repo supplies its snapshot as `.codictator/cache/registry/<ecosystem>.json` in its tree, and fetching tests use fake registries or the local server of §10.2, so no rule judgement reaches a public network.
+
 ## 4.8.5 Verdicts
 
 | Situation | Rule | Verdict |

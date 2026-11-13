@@ -26,6 +26,8 @@ What Codictator's own suite must prove (PRD §12 #7, §6 P11). How to write and 
 | Extension | `packages/vscode/tests/` | Unit with a fake `vscode` API object; integration on the compiled `dist/` (the extension host does not strip types) in a real extension host via `@vscode/test-electron` (activate, rules view, diagnostics after save, human-only command opens a terminal) | Runs on all three OSes |
 | Packaging | `tests/acceptance/packaging/` | `npm pack --dry-run` file list equals the allowlist (§9.2); the `.vsix` contains no `node_modules` | — |
 
+A test repo built to fire a rule is configured as `init` would configure the repo it simulates (§4.13.1): `config.packs` lists exactly the language packs of its languages (`typescript` for a TypeScript tree, `python` for a Python tree, both for `mixed`, §6.4 EC-10), so a `ts/*` or `python/*` rule fires only in a repo that declares its pack. An empty list means core rules only (§4.19.6). Each such repo also pins the toolchain its pack rules run (§6).
+
 ## 10.3 Architecture tests
 
 1. Codictator's arch guard runs on its own `src/` with the module map of §3.3 and must report zero findings (dogfooding PRD §6 P11).

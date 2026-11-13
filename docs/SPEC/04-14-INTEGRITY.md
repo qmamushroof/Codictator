@@ -19,6 +19,17 @@ The guardrail lockfile, drift and tamper detection, self-protection and git-hook
 
 Every integrity finding is floor, emits an `integrity` event, and is listed first in the CI summary. L0 detection at session start blocks all tool calls except `codictator regen`, `codictator status` and reads, so an agent repairs guardrails before working.
 
+**L0 reply and latch.** `session.start` is advisory (§4.3.3), so it never blocks. Its reply is decision `advise` whose `additionalContext` leads with the integrity findings in the message form of §4.3.7, then the scoped injection (§4.6.3). The block is a per-session latch:
+
+| Aspect | Specification |
+|---|---|
+| Storage | Marker `.codictator/state/sessions/<sessionId>/integrity.latch`, created exclusively as budget markers are (§4.6.4) and holding the finding rule ids |
+| While it exists | Every `tool.pre.*` first re-runs the L0 integrity checks. A finding blocks with the same message, except for the commands and reads named above. A clean run removes the marker and the call is judged normally |
+| New session | A new session id has no marker; its own `session.start` recreates it |
+| No session id | No marker is kept; the checks run on every `tool.pre.*` |
+
+Each latch creation and removal is an `integrity` event (§7.10).
+
 ## 4.14.3 Self-protection (L1, `core/no-bypass`)
 
 | Target | Blocked for agents |

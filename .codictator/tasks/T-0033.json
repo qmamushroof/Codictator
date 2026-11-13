@@ -1,0 +1,78 @@
+{
+	"acceptanceCriteria": [
+		"L0 SessionStart reply shape and latch storage are specified",
+		"L1 TDD rules and L4 judged-task scope are specified",
+		"Hermetic advisory and deprecation data source is specified",
+		"Read-dedupe session state location is specified; graph helper output location is an open question",
+		"Missing lint/typecheck toolchain behaviour and consumer harness packs are specified"
+	],
+	"branch": "docs/spec-firing-gaps",
+	"files": {
+		"allow": [
+			"docs/SPEC/04-14-INTEGRITY.md",
+			"docs/SPEC/04-12-WORKFLOW.md",
+			"docs/SPEC/04-08-DEPENDENCIES.md",
+			"docs/SPEC/04-06-STEERING.md",
+			"docs/SPEC/06-LANGUAGE-PACKS.md",
+			"docs/SPEC/10-TESTING-STRATEGY.md",
+			"docs/PRD/13-OPEN-QUESTIONS.md",
+			"docs/HISTORY/2026-11-13.md",
+			".codictator/tasks/T-0033.json",
+			".codictator/reviews/T-0033-r*.json",
+			"docs/SPEC/07-FILES-AND-FORMATS.md",
+			"docs/PRD/13-OPEN-QUESTIONS.md",
+			"docs/SPEC/04-03-ENGINE.md"
+		]
+	},
+	"historyStaged": true,
+	"id": "T-0033",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-13T14:07:10.862Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-13T14:07:24.296Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-13T14:08:33.577Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-13T14:10:39.560Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-13T14:15:11.324Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-13T14:17:42.077Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-13T14:14:58.780Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0033-r1",
+			"round": 1,
+			"tree": "f1df89c289a3b20e12475251d6b9cdf7048401f5"
+		}
+	],
+	"spec": ["§4.14.2", "§4.12.3", "§4.8.4", "§4.6.5", "§6", "§10.2"],
+	"title": "spec closes firing-guard gaps a to e",
+	"type": "docs",
+	"version": 1
+}
