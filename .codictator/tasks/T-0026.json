@@ -1,0 +1,125 @@
+{
+  "acceptanceCriteria": [
+    "biome ci leaves CLI-written (stableStringify, 2-space) task and review records unformatted",
+    "stableStringify and the SPEC 2-space format are unchanged"
+  ],
+  "branch": "fix/bug-0080-record-indent",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: biome format --stdin-file-path=.codictator/tasks/T-9999.json turns the 2-space stableStringify record into tab-indented text. Root cause: SPEC 4.1.2 mandates 2-space stableStringify for every generated JSON file and task and review records (SPEC 7.11) use it, but biome.json only exempts .codictator/*.json (top level), not .codictator/tasks/ or .codictator/reviews/, so the tab formatter flags every CLI write. SPEC is consistent, so the writer stays and the fix is a formatter-disabled biome override for those two directories.",
+  "files": {
+    "allow": [
+      "biome.json",
+      "packages/codictator/tests/unit/workflow/record-format-s41.test.ts",
+      "packages/codictator/tests/red-ledger.json",
+      "docs/HISTORY/2026-11-13.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0026.json",
+      ".codictator/reviews/T-0026-r*.json",
+      "packages/codictator/tests/acceptance/record-format-biome.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-13T14:55:34.599Z",
+    "tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+  },
+  "historyStaged": true,
+  "id": "T-0026",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-13T13:25:37.200Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-13T13:25:55.750Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-13T13:26:26.738Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-13T14:37:52.363Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-13T14:49:28.959Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-13T14:49:42.702Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-13T14:52:33.555Z",
+    "commit": "0c84b454ddf9c7e14821f5b3e5bb131ad40b684f",
+    "failing": [
+      "[§4.1.2] a CLI-written task record passes the repo biome format unchanged"
+    ],
+    "tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:49:24.105Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0026-r1",
+      "round": 1,
+      "tree": "b6b677686b47aa8aa97a74f25b49f78e6a31580d"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:54:44.247Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0026-r2",
+      "round": 2,
+      "tree": "078f468cf2495c2dcd0fa057506368541d941c68"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:55:47.714Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0026-r3",
+      "round": 3,
+      "tree": "944c84ee95e243dd8b28b569743d22317e680916"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-01-KERNEL.md",
+    "docs/SPEC/07-FILES-AND-FORMATS.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/workflow/record-format-s41.test.ts",
+      "title": "[§4.1.2] biome leaves 2-space task and review records unformatted"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/workflow/record-format-s41.test.ts",
+      "title": "[§4.1.2] biome leaves 2-space task and review records unformatted"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/record-format-biome.test.ts",
+      "title": "[§4.1.2] a CLI-written task record passes the repo biome format unchanged"
+    }
+  ],
+  "title": "biome format override for CLI-written task and review records",
+  "type": "fix",
+  "version": 1
+}
+
