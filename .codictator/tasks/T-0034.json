@@ -1,0 +1,71 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.3.2 owns when L1 proposed content is whole and how whole-document and line rules judge it",
+    "SPEC 7.8 lists proposedContentWhole and the keys that set it"
+  ],
+  "branch": "docs/spec-proposed-content-whole",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-03-ENGINE.md",
+      "docs/SPEC/07-FILES-AND-FORMATS.md",
+      "docs/HISTORY/2026-11-13.md",
+      ".codictator/tasks/T-0034.json",
+      ".codictator/reviews/T-0034-r*.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0034",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-13T14:50:23.177Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-13T14:50:30.441Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-13T14:50:32.653Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-13T14:50:51.087Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-13T14:57:06.918Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-13T14:57:07.915Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:57:06.116Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0034-r1",
+      "round": 1,
+      "tree": "b424229b5f4d5ae9baef2cff35a11af89506a863"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-03-ENGINE.md",
+    "docs/SPEC/07-FILES-AND-FORMATS.md"
+  ],
+  "title": "specify whole-content flag on hook tool calls",
+  "type": "docs",
+  "version": 1
+}
+
