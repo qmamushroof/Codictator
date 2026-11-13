@@ -16,6 +16,16 @@ import {
 	isCodeTask,
 } from "./scope-tasks.ts";
 
+// SPEC §4.10.3: Codictator's own task and review records are records, not
+// code; .codictator/config.json stays code (it widens to architecture).
+function isCodictatorRecord(path: string): boolean {
+	return (
+		(path.startsWith(".codictator/tasks/") ||
+			path.startsWith(".codictator/reviews/")) &&
+		path.endsWith(".json")
+	);
+}
+
 export function scenarioChanges(
 	files: ReadonlyArray<string>,
 ): Array<ScenarioChange> {
@@ -26,7 +36,7 @@ export function scenarioChanges(
 			path.includes("/tests/") ||
 			path.startsWith("tests/") ||
 			path.includes(".test."),
-		isDoc: path.endsWith(".md"),
+		isDoc: path.endsWith(".md") || isCodictatorRecord(path),
 		isEntryPoint: false,
 		addsCrossModuleImport: false,
 		importsIoPackage: false,

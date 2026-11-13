@@ -1,0 +1,99 @@
+{
+	"acceptanceCriteria": [
+		"A change touching only task, review and BUGS records owes no test kinds",
+		"A code change still owes its test kinds, and config.json still widens to architecture"
+	],
+	"branch": "fix/bug-0088",
+	"bugRowUpdated": true,
+	"diagnosis": "Reproduced: testKindsReal over .codictator/tasks and .codictator/reviews json files for a feature task reports missing acceptance and unit tests. Root cause: scenarioChanges sets isDoc only for .md paths, so Codictator record JSON counts as code and requiredTestKinds demands tests (SPEC 4.10.3 exempts docs and records). Fix: classify .codictator/tasks and .codictator/reviews json as non-code in scenarioChanges; config.json stays code.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/packs/enforcers/testing-real.ts",
+			"packages/codictator/tests/unit/coverage/testing-real.test.ts",
+			"docs/HISTORY/2026-11-13.md",
+			"docs/BUGS/2026.md",
+			".codictator/tasks/T-0030.json",
+			".codictator/reviews/T-0030-r*.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-13T14:14:10.025Z",
+		"tree": "b054d60dd1ec05d6d473954e5f945ca7461f2157"
+	},
+	"historyStaged": true,
+	"id": "T-0030",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-13T14:13:44.015Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-13T14:13:53.068Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-13T14:14:17.375Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-13T14:14:43.143Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-13T14:18:05.327Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-13T14:18:56.862Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-13T14:13:49.126Z",
+		"commit": "e198ba9e6ce23df8e55e464248e40a8f6a46bf9c",
+		"failing": [
+			"[§5.4] Codictator task and review records are not code for test kinds"
+		],
+		"tree": "b054d60dd1ec05d6d473954e5f945ca7461f2157"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-13T14:15:47.198Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0030-r1",
+			"round": 1,
+			"tree": "05dabe9b15765a574673e26945257fadd67067c2"
+		}
+	],
+	"spec": ["docs/SPEC/04-10-TESTING.md"],
+	"tests": [
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/coverage/testing-real.test.ts",
+			"title": "[§5.4] Codictator task and review records are not code for test kinds"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/coverage/testing-real.test.ts",
+			"title": "[§5.4] Codictator task and review records are not code for test kinds"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new message"
+		}
+	],
+	"title": "task and review records are not code for test kinds",
+	"type": "fix",
+	"version": 1
+}
