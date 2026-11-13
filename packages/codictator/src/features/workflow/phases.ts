@@ -101,6 +101,10 @@ function missingPlanningEvidence(task: TaskRecord): Array<string> {
 	if (task.acceptanceCriteria.length === 0) {
 		missing.push("acceptance criteria");
 	}
+	// SPEC §4.12.2 change classes: docs skips the red and green proofs.
+	if (task.type === "docs") {
+		return missing;
+	}
 	if ((task.tests ?? []).length === 0) {
 		missing.push("declared tests");
 	}
@@ -128,7 +132,9 @@ function missingExitEvidence(task: TaskRecord, phase: string): Array<string> {
 		case "planning":
 			return missingPlanningEvidence(task);
 		case "validation":
-			return task.greenProof === undefined ? ["green proof"] : [];
+			return task.type !== "docs" && task.greenProof === undefined
+				? ["green proof"]
+				: [];
 		case "review":
 			return missingReviewEvidence(task);
 		case "record":
