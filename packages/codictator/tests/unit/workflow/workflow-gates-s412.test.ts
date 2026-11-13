@@ -245,3 +245,36 @@ test("[§4.12] workflow phase gates demand exit evidence", async () => {
 	);
 	assert.deepEqual(good, []);
 });
+
+test("[§4.12.2] docs class skips the red and green proofs while feature still owes them", async () => {
+	const docsPlanning = await checkPhaseGate(
+		taskFor({ type: "docs", phase: "planning" }),
+		"implementation",
+	);
+	assert.deepEqual(docsPlanning, []);
+	const docsValidation = await checkPhaseGate(
+		taskFor({ type: "docs", phase: "validation" }),
+		"review",
+	);
+	assert.deepEqual(docsValidation, []);
+	const featurePlanning = await checkPhaseGate(
+		taskFor({ type: "feature", phase: "planning" }),
+		"implementation",
+	);
+	assert.ok(
+		featurePlanning.some(
+			(finding) =>
+				finding.code === "CDX-E604" && finding.message.includes("red proof"),
+		),
+	);
+	const featureValidation = await checkPhaseGate(
+		taskFor({ type: "feature", phase: "validation" }),
+		"review",
+	);
+	assert.ok(
+		featureValidation.some(
+			(finding) =>
+				finding.code === "CDX-E604" && finding.message.includes("green proof"),
+		),
+	);
+});

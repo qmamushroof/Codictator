@@ -1,0 +1,100 @@
+{
+	"acceptanceCriteria": [
+		"A docs task leaves planning without declared tests or red proof and leaves validation without green proof",
+		"A feature task still owes declared tests, red proof and green proof"
+	],
+	"branch": "fix/docs-class-proof-gate",
+	"bugRowUpdated": true,
+	"diagnosis": "Reproduced: a docs task with spec, files.allow and acceptance criteria but no tests or proofs fails task phase next in planning with CDX-E604 'declared tests, red proof'. Root cause: missingPlanningEvidence in workflow/phases.ts demands declared tests and red proof for every task.type, and missingExitEvidence demands a green proof at validation for every type, while SPEC 4.12.2 change classes say docs skips the red and green proofs. Only the docs class is in scope here; refactor/deps/chore class paths are unchanged.",
+	"files": {
+		"allow": [
+			"packages/codictator/src/features/workflow/phases.ts",
+			"packages/codictator/tests/unit/workflow/workflow-gates-s412.test.ts",
+			"packages/codictator/tests/red-ledger.json",
+			"docs/HISTORY/2026-11-13.md",
+			"docs/BUGS/2026.md",
+			".codictator/tasks/T-0025.json",
+			".codictator/reviews/T-0025-r*.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-13T12:26:07.862Z",
+		"tree": "2affc33883b906e32ccfbe4aaa43734f05375188"
+	},
+	"historyStaged": true,
+	"id": "T-0025",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-13T12:25:01.619Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-13T12:25:51.202Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-13T12:25:57.675Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-13T12:45:12.049Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-13T12:47:29.125Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-13T12:48:06.047Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-13T12:25:50.508Z",
+		"commit": "b65c55b85124be340a2868a38c2f48282dc499f3",
+		"failing": [
+			"[§4.12.2] docs class skips the red and green proofs while feature still owes them"
+		],
+		"tree": "2affc33883b906e32ccfbe4aaa43734f05375188"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-13T12:46:36.056Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "human-review-T-0025-r1",
+			"round": 1,
+			"tree": "9e6c283c40ef046ea840096afc73ca9346272eb8"
+		}
+	],
+	"spec": ["docs/SPEC/04-12-WORKFLOW.md"],
+	"tests": [
+		{
+			"kind": "unit",
+			"path": "packages/codictator/tests/unit/workflow/workflow-gates-s412.test.ts",
+			"title": "[§4.12.2] docs class skips the red and green proofs while feature still owes them"
+		},
+		{
+			"kind": "regression",
+			"path": "packages/codictator/tests/unit/workflow/workflow-gates-s412.test.ts",
+			"title": "[§4.12.2] docs class skips the red and green proofs while feature still owes them"
+		},
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement.test.ts",
+			"title": "[§4.12.3 EC-1] consumer edit with no task is blocked with the task-new message"
+		}
+	],
+	"title": "docs class skips red and green proof gates",
+	"type": "fix",
+	"version": 1
+}
