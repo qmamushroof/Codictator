@@ -2,7 +2,7 @@
 
 **[◀ 5. Core Rules](05-CORE-RULES.md)** · [SPEC index](../SPEC.md) · **[7. Files and Formats ▶](07-FILES-AND-FORMATS.md)**
 
-Each pack supplies the language knowledge that core rules need (drivers, extractors, measures, patterns, commands) plus its own rules (PRD §7.2, §12 #4). Order of delivery: TypeScript/JavaScript (P0), .NET, Python (P1, PRD §9.1). A pack never runs a tool the repo has not pinned; it uses the repo's own compiler, linter and test runner.
+Each pack supplies the language knowledge that core rules need (drivers, extractors, measures, patterns, commands) plus its own rules (PRD §7.2, §12 #4). Order of delivery: TypeScript/JavaScript (P0), .NET, Python (P1, PRD §9.1). A pack never runs a tool the repo has not pinned; it uses the repo's own compiler, linter and test runner. When a pack rule's scope holds a file and its tool is absent (no linter, no `tsconfig` covering the file, a pin not installed), the rule fails closed: `CDX-E209` or `CDX-E903` blocks at every layer the rule declares, L2 advising, with the install or `init` proposal as remediation (§4.4.5, §4.3.8). It is never a silent skip.
 
 ## 6.1 TypeScript / JavaScript (`typescript`)
 

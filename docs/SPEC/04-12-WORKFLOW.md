@@ -42,6 +42,18 @@ A task is `.codictator/tasks/<id>.json` (schema §7.11), committed, created by `
 | L3 | `pre-commit`: active task in phase ≥ record; `commit-msg`: history entry (§4.9) |
 | L4 | Every task touched in the PR has evidence for every gate of its class; red proofs re-run (§4.10.2) |
 
+**Judged tasks.** Every hook judges the branch's active task (§4.12.1) plus each task whose record the judged scope adds or changes. A `files.allow` claim is permission, not ownership, so a task that merely claims a path is never judged for it.
+
+**Evidence, not phase.** The TDD rules judge the record's evidence, never the phase it claims:
+
+| Rule | L1 write of a non-test, non-doc source file (§4.10.3) | L4 |
+|---|---|---|
+| `core/red-before-green` | Blocked while the active task owes a red proof (class per §4.12.2) and holds none, in any phase; `core/workflow-gates` blocks the same write by phase, so both may report | Each judged task of a class owing the proof holds one that re-runs red (§4.10.2) |
+| `core/diagnose-before-fix` | Blocked while the active task has type `fix` and no `diagnosis` | Each judged `fix` task holds a `diagnosis` |
+| `core/regression-test-for-fix` | — | Each judged `fix` task declares a test with a red proof |
+
+Editing a record's proofs is tamper under `core/no-bypass` (§4.14.3), not under these rules. L4 does not trust the recorded phase: a record in the PR whose evidence is missing fails whatever phase it names, because CI is the source of truth (PRD §6 P6).
+
 ## 4.12.4 Review gate (F11)
 
 | Step | Specification |
