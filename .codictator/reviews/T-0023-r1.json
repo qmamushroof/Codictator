@@ -1,0 +1,14 @@
+{
+	"version": 1,
+	"findings": [
+		{
+			"id": "F-1",
+			"severity": "minor",
+			"path": "packages/codictator/tests/acceptance/consumer-parallel-tasks.test.ts",
+			"line": 46,
+			"message": "The acceptance test only asserts the deny reason does not name the parallel task or the two gates; it never asserts the write is allowed (denyReason undefined) or that the launcher exited 0, so a crashed hook with empty stdout, or a deny on another rule, passes vacuously. Acceptance criterion 1 says the active task writes its planned file; assert denyReason(write.stdout) === undefined (as consumer-enforcement.test.ts does for its allowed control) and check write.code."
+		}
+	],
+	"tree": "b62322e0995dda1d700cddcde4e94281960ea397",
+	"reviewerSession": "fresh-subagent-review-T-0023-r1"
+}

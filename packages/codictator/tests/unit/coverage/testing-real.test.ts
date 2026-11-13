@@ -9,7 +9,7 @@ import {
 	testKindsReal,
 } from "../../../src/features/packs/enforcers/testing-real.ts";
 import type { Ports } from "../../../src/kernel/index.ts";
-import { createFakePorts } from "../../support/fake-ports.ts";
+import { activeTaskPorts } from "../../support/active-task-ports.ts";
 
 function taskJson(over: Record<string, unknown> = {}): string {
 	return JSON.stringify({
@@ -28,9 +28,7 @@ function taskJson(over: Record<string, unknown> = {}): string {
 }
 
 function portsWith(task: string): Ports {
-	const { ports, fs } = createFakePorts();
-	fs.seedText(".codictator/tasks/T-0001.json", task);
-	return ports;
+	return activeTaskPorts(task);
 }
 
 test("[§5.4] real scope flags a fix without a red proof", async () => {

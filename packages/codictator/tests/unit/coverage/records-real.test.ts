@@ -12,9 +12,10 @@ import {
 	resolveDiagnoseBeforeFix,
 } from "../../../src/features/packs/enforcers/records-guards.ts";
 import type { EnforcerDecl } from "../../../src/features/packs/manifest.ts";
-import type { PackRule, Result } from "../../../src/kernel/index.ts";
+import type { PackRule, Ports, Result } from "../../../src/kernel/index.ts";
+import { activeTaskPorts } from "../../support/active-task-ports.ts";
 import { FIXED_INSTANT } from "../../support/fake-clock.ts";
-import { createFakePorts } from "../../support/fake-ports.ts";
+import { FakeFs } from "../../support/fake-fs.ts";
 
 function ruleFor(id: string): PackRule {
 	return {
@@ -71,17 +72,17 @@ async function findingsOf(
 	resolve: (
 		decl: EnforcerDecl,
 		rule: PackRule,
-		ports: ReturnType<typeof createFakePorts>["ports"],
+		ports: Ports,
 	) => Result<Enforcer>,
 	ruleId: string,
 	scope: Readonly<Record<string, string>>,
 	tasks: ReadonlyArray<string>,
 ): Promise<Array<string>> {
-	const { ports, fs } = createFakePorts();
+	const fs = new FakeFs();
 	for (const [file, text] of Object.entries(scope)) {
 		fs.seedText(file, text);
 	}
-	fs.seedText(".codictator/tasks/T-0001.json", tasks[0] ?? taskJson());
+	const ports = activeTaskPorts(tasks[0] ?? taskJson(), fs);
 	const resolved = resolve(
 		{ id: "test-enforcer", kind: "code", budgetMs: 1000 },
 		ruleFor(ruleId),

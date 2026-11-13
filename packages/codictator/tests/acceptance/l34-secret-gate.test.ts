@@ -57,7 +57,7 @@ function seedTask(repo: TempRepo): void {
 		JSON.stringify({
 			version: 1,
 			id: "T-0099",
-			type: "fix",
+			type: "feature",
 			title: "l3 secret gate probe",
 			branch,
 			phase: "record",
@@ -66,7 +66,10 @@ function seedTask(repo: TempRepo): void {
 			acceptanceCriteria: [],
 			files: { allow: [] },
 			historyStaged: true,
-			bugRowUpdated: true,
+			tests: [
+				{ path: "tests/a.test.ts", title: "[§4.12] a", kind: "unit" },
+				{ path: "tests/a.test.ts", title: "[§4.12] a", kind: "acceptance" },
+			],
 			redProof: {
 				commit: "0".repeat(40),
 				tree: "0".repeat(40),
