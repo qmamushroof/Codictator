@@ -8,10 +8,10 @@ Codictator is built SPEC-driven ATDD (PRD §12 #7). Phase 2 writes every SPEC ed
 
 ## Phase loop
 
-1. **Enter** a phase only when the previous phase's exit gate is green and all its steps are ticked. Phases 11 and 12 may run in parallel once phase 10 is done; no other overlap.
+1. **Enter** a phase only when the previous phase's exit gate is green and all its steps are ticked. Phases 11 and 12 may run in parallel once phase 10 is done. Phases 15, 16 and 17 may run in parallel once phase 14 is done; no other overlap.
 2. **Discover:** read this file, the phase leaf in full, and every reference on its **Read** line.
 3. **Split** the phase into tasks, normally one per step or one per SPEC leaf, each on its own branch. A step is never shrunk to fit a session; it is split.
-4. **Run each task** through [AGENTIC_WORKFLOW.md](../AGENTIC_WORKFLOW.md). For phases 3–13 the declared tests are the ledger entries citing the task's SPEC rows.
+4. **Run each task** through [AGENTIC_WORKFLOW.md](../AGENTIC_WORKFLOW.md). For phases 3–13 the declared tests are the ledger entries citing the task's SPEC rows; from phase 14 on they are the tests the step names.
 5. **Tick** a step (`[ ]` → `[x]`) in the commit that completes it, after its verify ran green locally. CI on that commit is the merge gate.
 6. **Close** the phase with the exit gate commands. A finding goes to its owning doc or to `docs/BUGS/`; an out-of-scope idea goes to PRD §13 as a question, never into the phase.
 
@@ -26,9 +26,16 @@ Codictator is built SPEC-driven ATDD (PRD §12 #7). Phase 2 writes every SPEC ed
 | **Steps** | Numbered checkboxes `N.k`, each with how it is verified |
 | **Exit gate** | Mechanical checks, every one a command or an observable state |
 
+From phase 14 on, each step also carries the labelled lines that apply to it, so an agent needs no context beyond the leaf:
+
+- **Task:** the task type and the branch name to use, or that the step writes nothing tracked; a Human-only step may omit it.
+- **Do:** the actions, in order, with exact file paths, test titles and commands.
+- **Verify:** the command or observable state that proves the step; tick only after it holds.
+- **Stop:** when to halt and ask the human instead of guessing.
+
 ## Done
 
-A phase is done when every step is ticked, `npm run ledger -- --covers <Covers rows>` exits 0, the [VALIDATION.md](../VALIDATION.md) always-set is green on all three OSes in CI, and every earlier phase's tests are still green.
+A phase is done when every step is ticked, `npm run ledger -- --covers <Covers rows>` exits 0 (a phase with no Covers rows skips that check), the [VALIDATION.md](../VALIDATION.md) always-set is green on all three OSes in CI, and every earlier phase's tests are still green.
 
 ## Rules for every phase
 
@@ -37,10 +44,12 @@ A phase is done when every step is ticked, `npm run ledger -- --covers <Covers r
 - A fixture test asserts a real finding of its rule, never the fail-closed `CDX-E9xx` finding (SPEC §4.3.8). A stub enforcer must not make a violating fixture pass.
 - Stress rows of SPEC §10.5 leave the ledger in the phase that delivers their path; [phase 13](13-RELEASE.md) re-checks them all.
 - Bootstrap mode is retired since [phase 10](10-SELF-HOST.md) closed ([AGENTIC_WORKFLOW.md §Modes](../AGENTIC_WORKFLOW.md#modes)).
+- A step or line marked "Human:" (or "Human and agent:" when shared) is carried out by the founder. An agent prepares what it names, reports, and waits.
+- From phase 14 on, behaviour that PRD or SPEC does not yet own enters through a "PRD first" or "SPEC first" step. That step is a docs change of its own, and the build steps after it stay blocked until it merges.
 
 ## Scope and cut order
 
-Phases 1–11 and 13 are P0 and are never cut. Phase 12 is P1 and is cut first, item by item, under SPEC §1.6. A cut item's tests stay in the ledger and are named in the release notes.
+Phases 1–11 and 13 are P0 and are never cut. Phase 12 is P1 and is cut first, item by item, under SPEC §1.6. A cut item's tests stay in the ledger and are named in the release notes. Phases 14–18 carry the released product to the goal of PRD §1.2 and are not cut. Phase 19 is demand-driven: an item starts only when its entry move holds.
 
 ## Changing the plan
 

@@ -18,3 +18,4 @@ obj/
 # while still ignoring real coverage output elsewhere (SPEC §1.4 single owner: this file).
 !packages/codictator/tests/unit/coverage/
 !packages/codictator/tests/unit/coverage/**
+.vs/
