@@ -248,12 +248,20 @@ test("[§4.12] workflow phase gates demand exit evidence", async () => {
 
 test("[§4.12.2] docs class skips the red and green proofs while feature still owes them", async () => {
 	const docsPlanning = await checkPhaseGate(
-		taskFor({ type: "docs", phase: "planning" }),
+		taskFor({
+			type: "docs",
+			phase: "planning",
+			files: { allow: ["docs/**"] },
+		}),
 		"implementation",
 	);
 	assert.deepEqual(docsPlanning, []);
 	const docsValidation = await checkPhaseGate(
-		taskFor({ type: "docs", phase: "validation" }),
+		taskFor({
+			type: "docs",
+			phase: "validation",
+			files: { allow: ["docs/**"] },
+		}),
 		"review",
 	);
 	assert.deepEqual(docsValidation, []);

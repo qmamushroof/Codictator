@@ -3,6 +3,7 @@
 // single write. Both return findings, never throws.
 import type { Finding } from "../engine/index.ts";
 import type { TaskRecord } from "./tasks.ts";
+import { classifyChange } from "./writes.ts";
 
 // SPEC §4.12.2: the seven mandatory phases in order.
 export const MANDATORY_PHASES: ReadonlyArray<string> = [
@@ -93,6 +94,19 @@ function missingDiscoveryEvidence(task: TaskRecord): Array<string> {
 	return missing;
 }
 
+// SPEC §4.12.2: a docs task keeps the docs class only while every planned
+// file is a docs path; one code path reclassifies it as code. The task's
+// own record and review globs under .codictator/ never count.
+function skipsProofs(task: TaskRecord): boolean {
+	const planned = task.files.allow.filter(
+		(glob) => !glob.startsWith(".codictator/"),
+	);
+	return (
+		task.type === "docs" &&
+		(planned.length === 0 || classifyChange(planned) === "docs")
+	);
+}
+
 function missingPlanningEvidence(task: TaskRecord): Array<string> {
 	const missing: Array<string> = [];
 	if (task.files.allow.length === 0) {
@@ -102,7 +116,7 @@ function missingPlanningEvidence(task: TaskRecord): Array<string> {
 		missing.push("acceptance criteria");
 	}
 	// SPEC §4.12.2 change classes: docs skips the red and green proofs.
-	if (task.type === "docs") {
+	if (skipsProofs(task)) {
 		return missing;
 	}
 	if ((task.tests ?? []).length === 0) {
@@ -132,7 +146,7 @@ function missingExitEvidence(task: TaskRecord, phase: string): Array<string> {
 		case "planning":
 			return missingPlanningEvidence(task);
 		case "validation":
-			return task.type !== "docs" && task.greenProof === undefined
+			return !skipsProofs(task) && task.greenProof === undefined
 				? ["green proof"]
 				: [];
 		case "review":
