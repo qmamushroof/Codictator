@@ -20,7 +20,8 @@ import { reportError, usageError } from "./shared.ts";
 // invocation cwd first; an unreadable or unwritable message file blocks
 // fail-closed.
 // SPEC §4.14.4 + §4.9.3: commit-msg validates the staged history entry
-// count and subject before appending the trailer. Without a staged history
+// count and subject before appending the trailer; a merge in progress
+// (MERGE_HEAD) is exempt and only gets the trailer. Without a staged history
 // file there is no entry to judge, so the trailer append stands alone; an
 // unreadable staged entry degrades the same way instead of false-blocking
 // (the pre-commit verdict already judged the staged text).
@@ -44,14 +45,20 @@ export async function runCommitMsg(
 	) {
 		return ok(0);
 	}
-	const names = await runGitText(ports, [
+	// SPEC §4.9.3 Exempt: a merge commit owes no history entry of its own.
+	// The index differs from the first parent by the merged branch's own
+	// entries, which the merge did not add, so only the trailer is appended.
+	const merging = await runGitText(ports, [
 		"git",
-		"diff",
-		"--cached",
-		"--name-only",
-		"--",
+		"rev-parse",
+		"-q",
+		"--verify",
+		"MERGE_HEAD",
 	]);
-	if (names.ok) {
+	const names = merging.ok
+		? undefined
+		: await runGitText(ports, ["git", "diff", "--cached", "--name-only", "--"]);
+	if (names?.ok) {
 		const stagedFiles = names.value
 			.split("\n")
 			.map((line) => line.trim())

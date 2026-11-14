@@ -1,0 +1,114 @@
+{
+  "acceptanceCriteria": [
+    "commit-msg on a merge commit that stages a merged-in history entry is not blocked and still gets the Codictator-L3 trailer",
+    "commit-msg on a non-merge commit still judges the added entry"
+  ],
+  "branch": "fix/bug-0079-merge-commit-msg",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: in a repo mid-merge (MERGE_HEAD set, merged branch added a docs/HISTORY entry), commit-msg diffs the index against HEAD (first parent), so the merged branch's own entry counts as added and its Subject differs from the merge subject; the hook blocks core/history-entry. Root cause: runCommitMsg in cli/git-commit-msg.ts never checks for a merge in progress, though SPEC 4.9.3 Exempt lists merge commits (and L4 judges only non-merge commits). Fix: skip the staged history judgment and the missing-entry check when MERGE_HEAD exists; still append the trailer.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/cli/git-commit-msg.ts",
+      "packages/codictator/tests/unit/cli/cli-commit-msg.test.ts",
+      "docs/HISTORY/2026-11-13.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0027.json",
+      ".codictator/reviews/T-0027-r*.json",
+      "packages/codictator/tests/acceptance/merge-commit-msg.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-13T14:55:32.596Z",
+    "tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+  },
+  "historyStaged": true,
+  "id": "T-0027",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-13T13:25:36.739Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-13T13:26:18.860Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-13T13:27:24.920Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-13T14:50:07.407Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-13T14:50:15.675Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-13T14:50:23.037Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-13T14:55:31.479Z",
+    "commit": "0c84b454ddf9c7e14821f5b3e5bb131ad40b684f",
+    "failing": [
+      "[§4.9.3] installed commit-msg hook lets a git merge commit through with the trailer"
+    ],
+    "tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:50:12.442Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0027-r1",
+      "round": 1,
+      "tree": "e999c1194c2d8a713c27603044108bc20bc9375a"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-13T14:56:21.181Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0027-r2",
+      "round": 2,
+      "tree": "184fc5d2653fe932a7b1cac2f7534dc279509e7c"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-09-RECORDS.md",
+    "docs/SPEC/04-14-INTEGRITY.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/cli-commit-msg.test.ts",
+      "title": "[§4.9.3] commit-msg exempts a merge commit from the history entry judgment"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-commit-msg.test.ts",
+      "title": "[§4.9.3] commit-msg still judges the added entry of a non-merge commit"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/merge-commit-msg.test.ts",
+      "title": "[§4.9.3] installed commit-msg hook lets a git merge commit through with the trailer"
+    }
+  ],
+  "title": "commit-msg exempts merge commits from history entry judgment",
+  "type": "fix",
+  "version": 1
+}
+

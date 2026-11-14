@@ -169,3 +169,70 @@ test("[§4.14.4] commit-msg with an unreadable message file blocks", async () =>
 		repo.cleanup();
 	}
 });
+
+const ENTRY = (subject: string): string =>
+	`# History\n\n## 2026-11-13 · ${subject}\n- **Kind:** docs\n- **Task:** T-0001\n- **Why:** x\n- **Docs:** none\n`;
+
+// Builds a repo mid-merge: main moved on, the merged branch added its own
+// history entry, and `git merge --no-ff --no-commit` leaves MERGE_HEAD set
+// with that entry staged relative to the first parent.
+function seedMergeInProgress(repo: ReturnType<typeof createTempRepo>): void {
+	seedConfig(repo);
+	repo.writeFile("README.md", "base\n");
+	repo.writeFile("docs/HISTORY/2026-11-13.md", "# History\n");
+	repo.git(["add", "-A"]);
+	repo.commit("chore: base");
+	repo.git(["checkout", "-b", "feature"]);
+	repo.writeFile("docs/HISTORY/2026-11-13.md", ENTRY("feat: merged branch"));
+	repo.git(["add", "-A"]);
+	repo.commit("feat: merged branch");
+	repo.git(["checkout", "main"]);
+	repo.writeFile("other.txt", "main moved\n");
+	repo.git(["add", "-A"]);
+	repo.commit("chore: main moved");
+	repo.git(["merge", "--no-ff", "--no-commit", "feature"]);
+}
+
+test("[§4.9.3] commit-msg exempts a merge commit from the history entry judgment", async () => {
+	// SPEC §4.9.3 Exempt: merge commits. The index differs from the first
+	// parent by the merged branch's own entry, which is not an entry added
+	// by the merge, so the hook must trailer it instead of blocking.
+	const repo = createTempRepo();
+	try {
+		seedMergeInProgress(repo);
+		const msgFile = path.join(repo.dir, "COMMIT_EDITMSG");
+		writeFileSync(msgFile, "Merge branch 'feature'\n", "utf8");
+		const ran = await handleGitHook(req(["commit-msg", msgFile], repo.dir));
+		assert.equal(ran.ok, true);
+		if (ran.ok) {
+			assert.equal(ran.value, 0);
+		}
+		assert.match(readFileSync(msgFile, "utf8"), /^Codictator-L3: /m);
+	} finally {
+		repo.cleanup();
+	}
+});
+
+test("[§4.9.3] commit-msg still judges the added entry of a non-merge commit", async () => {
+	// Control for the merge exemption: without MERGE_HEAD a staged entry
+	// whose Subject differs from the message subject still blocks.
+	const repo = createTempRepo();
+	try {
+		seedConfig(repo);
+		repo.writeFile("docs/HISTORY/2026-11-13.md", "# History\n");
+		repo.git(["add", "-A"]);
+		repo.commit("chore: base");
+		repo.writeFile("docs/HISTORY/2026-11-13.md", ENTRY("feat: something"));
+		repo.git(["add", "-A"]);
+		const msgFile = path.join(repo.dir, "COMMIT_EDITMSG");
+		writeFileSync(msgFile, "feat: different subject\n", "utf8");
+		const ran = await handleGitHook(req(["commit-msg", msgFile], repo.dir));
+		assert.equal(ran.ok, true);
+		if (ran.ok) {
+			assert.notEqual(ran.value, 0);
+		}
+		assert.doesNotMatch(readFileSync(msgFile, "utf8"), /^Codictator-L3: /m);
+	} finally {
+		repo.cleanup();
+	}
+});
