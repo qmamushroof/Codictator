@@ -1,0 +1,116 @@
+{
+  "acceptanceCriteria": [
+    "Every sha rangeCommits returns is free of whitespace",
+    "The core/no-bypass message names each commit by its bare sha"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: ci verify over a two-commit range without the L3 trailer prints core/no-bypass as 'commit <newline><sha> lacks'. Root cause: git log separates records with a newline, parseCommitRange splits on the record separator only, so every sha after the first starts with that newline; ci-history.ts trimmed it locally, masking the bug for its own check. Fix: strip the newline in the parser and drop the workaround.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/cli/ci-range.ts",
+      "packages/codictator/src/cli/ci-history.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-14.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0039.json",
+      ".codictator/reviews/T-0039-r*.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T02:50:57.739Z",
+    "tree": "a9e339d98b1b9739fcf8eeaf1c977bae0ce3d11c"
+  },
+  "historyStaged": true,
+  "id": "T-0039",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T02:47:53.103Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T02:47:54.196Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:48:12.455Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:48:39.486Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T02:51:34.383Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T02:51:35.350Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T02:50:52.678Z",
+    "commit": "61adca4003702af0bde763c529ac7e5a0161c84c",
+    "failing": [
+      "[§4.14.2] rangeCommits returns every sha of a multi-commit range clean",
+      "[§4.14.2] rangeCommits strips a CRLF record separator from the next sha",
+      "[§4.14.2] ci verify names every untrailered commit by a clean sha (BUG-0090)"
+    ],
+    "tree": "a9e339d98b1b9739fcf8eeaf1c977bae0ce3d11c"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T02:51:26.869Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "independent-review-T-0039-r1",
+      "round": 1,
+      "tree": "ace167a7e4257a1331a676eb1c5b2f69adeeac1d"
+    }
+  ],
+  "spec": [
+    "SPEC §4.14.2",
+    "SPEC §4.9.3"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/ci-range-commits.test.ts",
+      "title": "[§4.14.2] rangeCommits returns every sha of a multi-commit range clean"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/ci-range-commits.test.ts",
+      "title": "[§4.14.2] rangeCommits keeps each commit message intact across records (BUG-0090)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/ci-range-commits.test.ts",
+      "title": "[§4.14.2] rangeCommits strips a CRLF record separator from the next sha"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/ci-range-commits.test.ts",
+      "title": "[§4.14.2] rangeCommits returns no commits for an empty range"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/ci-no-bypass-sha.test.ts",
+      "title": "[§4.14.2] ci verify names every untrailered commit by a clean sha (BUG-0090)"
+    }
+  ],
+  "title": "fix(cli): parse commit ranges without a leading newline on each sha",
+  "type": "fix",
+  "version": 1
+}
+

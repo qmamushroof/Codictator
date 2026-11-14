@@ -39,8 +39,7 @@ export async function rangeHistoryFindings(
 		if (commit.isMerge) {
 			continue;
 		}
-		// git log leaves a newline before every record after the first.
-		const sha = commit.sha.trim();
+		const sha = commit.sha;
 		const short = sha.slice(0, 7);
 		const files = await commitFiles(ports, sha);
 		if (files === undefined) {
