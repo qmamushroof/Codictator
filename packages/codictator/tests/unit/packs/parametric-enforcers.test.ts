@@ -222,13 +222,15 @@ test("[§4.4.6] file-size still skips fixture and lockfile paths", async () => {
 	// SPEC §4.4.1 + §5.6: pack case data stays governed by the pack self-test
 	// and lockfiles by dep-lockfile, not the line cap (BUG-0101).
 	const fakes = createFakePorts();
-	fakes.fs.seedText("packs/demo/pack.json", "{}");
 	fakes.fs.seedText(CASE_PATH, "one\ntwo\nthree\nfour\n");
 	fakes.fs.seedText("pnpm-lock.yaml", "one\ntwo\nthree\nfour\n");
 	const rule = makeRule("test/rule", {
 		maxLines: { type: "integer", default: 3, bound: 5, stricter: "lower" },
 	});
-	const made = resolveParametric(makeDecl("file-size", {}), rule, fakes.ports);
+	const made = resolveParametric(makeDecl("file-size", {}), rule, {
+		...fakes.ports,
+		packRoots: ["packs/demo"],
+	});
 	assert.equal(made.ok, true);
 	if (!made.ok || made.value === undefined) {
 		assert.fail("expected a bound enforcer");

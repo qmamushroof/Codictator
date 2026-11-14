@@ -77,7 +77,7 @@ export async function checkSize(
 ): Promise<Array<Finding>> {
 	const findings: Array<Finding> = [];
 	for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-		if (await isPackCasePath(file, ports.fs)) {
+		if (isPackCasePath(file, ports.packRoots ?? [])) {
 			continue;
 		}
 		if (binding.ruleId !== "core/max-file-bytes" && isLockfilePath(file)) {

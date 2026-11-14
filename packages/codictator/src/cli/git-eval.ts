@@ -69,7 +69,7 @@ export async function evaluateGitChange(
 	// diff-unsound rules (spec-trace, dead-code) stay on the human
 	// `review` command over the tree; a review trigger here once blocked
 	// every normally-commented file.
-	const judgedDiff = await diffWithoutPackCases(content, ports);
+	const judgedDiff = diffWithoutPackCases(content, ports);
 	const evaluated = await evaluateGateScope(
 		ports,
 		packIds,

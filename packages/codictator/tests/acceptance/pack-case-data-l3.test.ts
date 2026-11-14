@@ -32,7 +32,7 @@ function seedConfig(repo: TempRepo): void {
 		JSON.stringify({
 			version: 1,
 			codictator: "unknown",
-			packs: [],
+			packs: [{ id: "demo", version: "1.0.0", path: "packs/demo" }],
 			harnesses: ["muse-code", "opencode"],
 		}),
 	);
@@ -179,6 +179,43 @@ test("[§4.4.1] verify and pre-commit judge a dangerous script under testdata (B
 			verified.stdout.includes("core/dangerous-shell"),
 			verified.stdout,
 		);
+	} finally {
+		repo.cleanup();
+	}
+});
+
+test("[§4.4.1] pre-commit blocks a dangerous script beside a stray pack.json but passes a configured pack case (BUG-0102)", async () => {
+	const repo = createTempRepo();
+	try {
+		setup(repo);
+		repo.writeFile("evil/pack.json", "{}");
+		const installed = await cli(["install-hooks"], repo.dir);
+		assert.equal(installed.code, 0);
+		const stray = "evil/fixtures/a/passing/b/run.sh";
+		stage(repo, stray, DANGEROUS);
+		const hook = await runGitHook(repo, "pre-commit");
+		assert.equal(hook.code, 1, hook.stdout);
+		assert.ok(hook.stdout.includes("core/dangerous-shell"), hook.stdout);
+		const verified = await cli(["--json", "verify", "--staged"], repo.dir);
+		assert.equal(verified.code, 1, verified.stdout);
+		assert.ok(
+			verified.stdout.includes("core/dangerous-shell"),
+			verified.stdout,
+		);
+		repo.git(["rm", "-f", stray]);
+		repo.writeFile(
+			CASE,
+			JSON.stringify({
+				files: { "run.sh": DANGEROUS, "big.txt": "x".repeat(1048576 + 1) },
+			}),
+		);
+		stage(
+			repo,
+			`${PACK}/fixtures/core-dangerous-shell/passing/basic/run.sh`,
+			DANGEROUS,
+		);
+		const configured = await runGitHook(repo, "pre-commit");
+		assert.equal(configured.code, 0, configured.stdout);
 	} finally {
 		repo.cleanup();
 	}

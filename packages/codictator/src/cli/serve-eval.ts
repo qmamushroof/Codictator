@@ -96,9 +96,9 @@ async function evaluateFiles(
 					ok: true as const,
 					value: {
 						trigger: triggerForLayer(layer),
-						files: await withoutPackCases(
+						files: withoutPackCases(
 							[...new Set(files)].sort(),
-							configured.value.ports.fs,
+							configured.value.ports.packRoots ?? [],
 						),
 						note: "stdio files",
 					},

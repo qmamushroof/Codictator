@@ -10,6 +10,7 @@ export interface VerifyInputs {
 	readonly packEntries: ReadonlyArray<{
 		readonly id: string;
 		readonly version?: string;
+		readonly path?: string;
 	}>;
 }
 
@@ -25,6 +26,7 @@ export async function verifyInputs(
 	let packEntries: ReadonlyArray<{
 		readonly id: string;
 		readonly version?: string;
+		readonly path?: string;
 	}> = [];
 	const configured = await loadRepoConfig(root, undefined, engineVersion);
 	if (configured.ok) {

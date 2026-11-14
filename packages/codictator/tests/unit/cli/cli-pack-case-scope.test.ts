@@ -12,14 +12,21 @@ const STAGED_CASE = "packs/demo/fixtures/core-x/passing/basic/case.json";
 
 test("[§4.4.1] verify scope drops pack case paths but keeps testdata and fixtures dirs (BUG-0101)", async () => {
 	const repo = createTempRepo({
-		"packs/demo/pack.json": "{}",
 		[CASE]: "{}",
 		"testdata/run.sh": "echo\n",
 		"fixtures/plain/a.txt": "x\n",
 	});
 	try {
 		repo.writeFile(STAGED_CASE, "{}");
-		const ports = await portsFor(repo.dir);
+		const made = await portsFor(repo.dir);
+		assert.equal(made.ok, true);
+		if (!made.ok) {
+			return;
+		}
+		const ports = {
+			ok: true as const,
+			value: { ...made.value, packRoots: ["packs/demo"] },
+		};
 		assert.equal(ports.ok, true);
 		if (!ports.ok) {
 			return;
@@ -45,6 +52,46 @@ test("[§4.4.1] verify scope drops pack case paths but keeps testdata and fixtur
 				assert.ok(scope.value.files.includes("fixtures/plain/a.txt"));
 			}
 		}
+	} finally {
+		repo.cleanup();
+	}
+});
+
+test("[§4.4.1] verify scope keeps a stray pack.json fixtures path judged (BUG-0102)", async () => {
+	const stray = "evil/fixtures/a/passing/b/run.sh";
+	const repo = createTempRepo({
+		"evil/pack.json": "{}",
+		[stray]: "echo\n",
+		[CASE]: "{}",
+	});
+	try {
+		const made = await portsFor(repo.dir);
+		assert.equal(made.ok, true);
+		if (!made.ok) {
+			return;
+		}
+		const ports = { ...made.value, packRoots: ["packs/demo"] };
+		const scope = await resolveVerifyScope(ports, {
+			staged: false,
+			all: true,
+			base: undefined,
+			head: undefined,
+			layer: undefined,
+		});
+		assert.equal(scope.ok, true);
+		if (!scope.ok) {
+			return;
+		}
+		assert.ok(scope.value.files.includes(stray));
+		assert.ok(!scope.value.files.includes(CASE));
+		const bare = await resolveVerifyScope(made.value, {
+			staged: false,
+			all: true,
+			base: undefined,
+			head: undefined,
+			layer: undefined,
+		});
+		assert.equal(bare.ok && bare.value.files.includes(CASE), true);
 	} finally {
 		repo.cleanup();
 	}

@@ -99,7 +99,7 @@ export async function resolveVerifyScope(
 		if (!staged.ok) {
 			return err(staged.error);
 		}
-		const files = await withoutPackCases(staged.value, ports.fs);
+		const files = withoutPackCases(staged.value, ports.packRoots ?? []);
 		return ok({
 			trigger,
 			files,
@@ -120,7 +120,7 @@ export async function resolveVerifyScope(
 		if (!ranged.ok) {
 			return err(ranged.error);
 		}
-		const files = await withoutPackCases(ranged.value, ports.fs);
+		const files = withoutPackCases(ranged.value, ports.packRoots ?? []);
 		return ok({
 			trigger,
 			files,
@@ -138,7 +138,10 @@ export async function resolveVerifyScope(
 	return ok({
 		trigger,
 		files: sortedUnique(
-			await withoutPackCases([...tracked.value, ...staged.value], ports.fs),
+			withoutPackCases(
+				[...tracked.value, ...staged.value],
+				ports.packRoots ?? [],
+			),
 		),
 		note: "tracked tree",
 	});

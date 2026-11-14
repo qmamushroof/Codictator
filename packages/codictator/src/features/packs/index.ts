@@ -43,5 +43,6 @@ export type { LoadPackOptions } from "./loader.ts";
 export { composePacks, loadBuiltinPack, loadPack } from "./loader.ts";
 export { isBuiltinPackId } from "./manifest.ts";
 export { resolveManifestEnforcers, resolvePackEnforcers } from "./registry.ts";
+export { loadedPackRoots } from "./roots.ts";
 // SPEC §4.4.4: self-test every rule against its fixtures before use.
 export { selfTest } from "./selftest.ts";
