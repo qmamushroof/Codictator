@@ -1,0 +1,63 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.7.2 states compound commands, array assignments, process substitution, heredoc bodies and the inline-program pipe exemption"
+  ],
+  "branch": "work/serial-queue",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-07-SECURITY-GUARDS.md",
+      "docs/HISTORY/2026-11-14.md",
+      ".codictator/tasks/T-0045.json",
+      ".codictator/reviews/T-0045-r*.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0045",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T06:31:52.980Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T06:31:57.790Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T06:32:05.020Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T06:32:11.592Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T06:33:39.019Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T06:33:28.009Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0045-r1",
+      "round": 1,
+      "tree": "17a9a9d61d15b41d7e7be6568f5ae5fb20b360fa"
+    }
+  ],
+  "spec": [
+    "SPEC §4.7.2"
+  ],
+  "title": "docs(spec): specify shell analyser compound commands, heredocs and inline-program pipes",
+  "type": "docs",
+  "version": 1
+}
+
