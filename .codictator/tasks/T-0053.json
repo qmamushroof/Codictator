@@ -1,0 +1,112 @@
+{
+  "acceptanceCriteria": [
+    "A pack case path (under <pack>/fixtures/<slug>/(violating|passing)/<case>/ with a pack.json) is dropped by verify, serve and the L3 hooks (file list and added lines) and by every size rule incl. core/max-file-bytes",
+    "Every other fixtureGlobs path (testdata/, fixtures/ without a pack) stays judged by every rule; fixtureGlobs only relaxes secret detection",
+    "Editing a pack case.json holding marker text that core/no-assertion-loss flags, or over 1 MiB, is not blocked by the pre-commit hook"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: staging a pack case.json over 1 MiB blocks pre-commit with core/max-file-bytes, and verify drops testdata/danger.sh. Root cause: sizes.ts exempts isFixturePath from every size rule except max-file-bytes and git-hook/gate-scope pass pack case files and diff hunks to rules, while cli/evaluate.ts withoutFixtures and serve-eval.ts drop every default fixture glob path (testdata/, fixtures/) for every rule, on the false assumption that all fixture-glob paths are pack self-test data. SPEC 4.4.1 now confines the exemption to pack case data.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/**",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/*.md",
+      "docs/BUGS/2026.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T07:47:43.491Z",
+    "tree": "72f739993388ef4e670093c19b679c541045d6e1"
+  },
+  "historyStaged": true,
+  "id": "T-0053",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T07:36:03.869Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T07:36:17.228Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:46:02.688Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:46:08.753Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T07:48:19.495Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T07:36:09.166Z",
+    "commit": "5fc39a9b082b9e9e1d86e96b27cf98ca5686c16f",
+    "failing": [
+      "[§4.4.1] isPackCasePath names only files under a pack fixtures case dir (BUG-0101)",
+      "[§4.4.1] gate scope drops pack case files and their diff hunks but keeps testdata (BUG-0101)",
+      "[§4.4.1] verify scope drops pack case paths but keeps testdata and fixtures dirs (BUG-0101)",
+      "[§4.4.1] pre-commit does not block editing a pack case holding marker text or over 1 MiB (BUG-0101)",
+      "[§4.4.1] verify and pre-commit judge a dangerous script under testdata (BUG-0101)"
+    ],
+    "tree": "72f739993388ef4e670093c19b679c541045d6e1"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T07:47:56.362Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0053-r1",
+      "round": 1,
+      "tree": "1969340d43d9eab93043966409808e512592feb6"
+    }
+  ],
+  "spec": [
+    "SPEC §4.4.1",
+    "SPEC §4.4.4",
+    "SPEC §4.7.1"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/pack-case.test.ts",
+      "title": "[§4.4.1] isPackCasePath names only files under a pack fixtures case dir (BUG-0101)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/pack-case.test.ts",
+      "title": "[§4.4.1] gate scope drops pack case files and their diff hunks but keeps testdata (BUG-0101)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/cli-pack-case-scope.test.ts",
+      "title": "[§4.4.1] verify scope drops pack case paths but keeps testdata and fixtures dirs (BUG-0101)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/pack-case-data-l3.test.ts",
+      "title": "[§4.4.1] pre-commit does not block editing a pack case holding marker text or over 1 MiB (BUG-0101)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/pack-case-data-l3.test.ts",
+      "title": "[§4.4.1] verify and pre-commit judge a dangerous script under testdata (BUG-0101)"
+    }
+  ],
+  "title": "fix(packs): judge pack case data by one path predicate across verify, serve and the L3 hooks",
+  "type": "fix",
+  "version": 1
+}
+

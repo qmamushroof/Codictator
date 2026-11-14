@@ -216,11 +216,14 @@ test("[§4.4.6] file-size flags an over-limit test file", async () => {
 	assert.equal(findings[0]?.path, "tests/unit/packs/size-cap.test.ts");
 });
 
+const CASE_PATH = "packs/demo/fixtures/core-x/violating/basic/case.json";
+
 test("[§4.4.6] file-size still skips fixture and lockfile paths", async () => {
-	// SPEC §5.6: generated vectors stay governed by the pack self-test and
-	// dep-lockfile, not the line cap.
+	// SPEC §4.4.1 + §5.6: pack case data stays governed by the pack self-test
+	// and lockfiles by dep-lockfile, not the line cap (BUG-0101).
 	const fakes = createFakePorts();
-	fakes.fs.seedText("fixtures/big/data.txt", "one\ntwo\nthree\nfour\n");
+	fakes.fs.seedText("packs/demo/pack.json", "{}");
+	fakes.fs.seedText(CASE_PATH, "one\ntwo\nthree\nfour\n");
 	fakes.fs.seedText("pnpm-lock.yaml", "one\ntwo\nthree\nfour\n");
 	const rule = makeRule("test/rule", {
 		maxLines: { type: "integer", default: 3, bound: 5, stricter: "lower" },
@@ -231,7 +234,7 @@ test("[§4.4.6] file-size still skips fixture and lockfile paths", async () => {
 		assert.fail("expected a bound enforcer");
 	}
 	const findings = await made.value.check(
-		context(["fixtures/big/data.txt", "pnpm-lock.yaml"]),
+		context([CASE_PATH, "pnpm-lock.yaml"]),
 		{},
 	);
 	assert.deepEqual(findings, []);

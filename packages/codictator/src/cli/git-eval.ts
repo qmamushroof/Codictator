@@ -3,7 +3,11 @@
 // their verdict through the emit; git-hook.ts keeps hook dispatch.
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
-import { addedLines, evaluateGateScope } from "./gate-scope.ts";
+import {
+	addedLines,
+	diffWithoutPackCases,
+	evaluateGateScope,
+} from "./gate-scope.ts";
 import { printFinding } from "./inspect.ts";
 import type { CommandPorts, CommandRequest } from "./shared.ts";
 import { printHuman, printJson, reportError } from "./shared.ts";
@@ -65,13 +69,14 @@ export async function evaluateGitChange(
 	// diff-unsound rules (spec-trace, dead-code) stay on the human
 	// `review` command over the tree; a review trigger here once blocked
 	// every normally-commented file.
+	const judgedDiff = await diffWithoutPackCases(content, ports);
 	const evaluated = await evaluateGateScope(
 		ports,
 		packIds,
 		{
 			files: [...files],
 			note: hook,
-			...(content === "" ? {} : { proposedContent: addedLines(content) }),
+			...(judgedDiff === "" ? {} : { proposedContent: addedLines(judgedDiff) }),
 		},
 		now,
 		configHash,

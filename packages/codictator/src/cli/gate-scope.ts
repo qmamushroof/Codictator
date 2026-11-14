@@ -8,7 +8,7 @@
 // The phase-5 finer trigger is this rule subset, not a new trigger name.
 
 import type { Finding, Result } from "../kernel/index.ts";
-import { err, ok, stableStringify } from "../kernel/index.ts";
+import { err, ok, stableStringify, withoutPackCases } from "../kernel/index.ts";
 import { evaluateScope } from "./evaluate.ts";
 import type { CommandPorts } from "./shared.ts";
 import type { VerdictEmit } from "./verdict-emit.ts";
@@ -87,6 +87,29 @@ export function addedLines(diff: string): string {
 		.join("\n");
 }
 
+// BUG-0101 + SPEC §4.4.1: the gate diff drops the file sections of pack case
+// paths, so their added lines never ride as proposed content. A section runs
+// from its `diff --git a/<old> b/<new>` header to the next one.
+export async function diffWithoutPackCases(
+	diff: string,
+	ports: CommandPorts,
+): Promise<string> {
+	const sections = diff.split(/^(?=diff --git )/m);
+	const kept: Array<string> = [];
+	for (const section of sections) {
+		const header = /^diff --git a\/.* b\/(.+)$/m.exec(section);
+		const path = header?.[1];
+		if (
+			path !== undefined &&
+			(await withoutPackCases([path], ports.fs)).length === 0
+		) {
+			continue;
+		}
+		kept.push(section);
+	}
+	return kept.join("");
+}
+
 // BUG-0014 + SPEC §4.3.2: the gate evaluation over a diff scope. The
 // pre-tool leg keeps today's fail-closed local verdict byte for byte; the
 // review leg adds the diff-sound review subset over the same files, so the
@@ -108,6 +131,7 @@ export async function evaluateGateScope(
 		readonly excludeReviewRuleIds?: ReadonlySet<string>;
 	} = {},
 ): Promise<Result<Array<Finding>>> {
+	const files = await withoutPackCases(scope.files, ports.fs);
 	const input =
 		scope.proposedContent === undefined || scope.proposedContent === ""
 			? {}
@@ -117,7 +141,7 @@ export async function evaluateGateScope(
 		packIds,
 		{
 			trigger: "pre-tool",
-			files: [...scope.files],
+			files,
 			note: scope.note,
 			...input,
 		},
@@ -133,7 +157,7 @@ export async function evaluateGateScope(
 		packIds,
 		{
 			trigger: "review",
-			files: [...scope.files],
+			files,
 			note: scope.note,
 			...input,
 		},
