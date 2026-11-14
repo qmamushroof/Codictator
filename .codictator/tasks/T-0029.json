@@ -1,0 +1,109 @@
+{
+  "acceptanceCriteria": [
+    "A range where a non-merge code or docs commit adds no HISTORY entry blocks core/history-entry",
+    "A range where every such commit adds its entry, or the extra commit is deps-only or a merge, passes"
+  ],
+  "branch": "fix/bug-0083",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: ci verify over a two-commit range where only the first commit adds a HISTORY entry passes. Root cause: ci.ts judges the range as one union scope, so historyEntryReal sees a docs/HISTORY/ file anywhere in the union and exempts everything; no code lists the range's commits against their own files. SPEC 4.9.3 says L4 requires every non-merge commit in range to add one. Fix: a per-commit check over rangeCommits in a new cli/ci-history.ts, merge and deps-shaped commits exempt like the L3 gate.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/cli/ci-history.ts",
+      "packages/codictator/tests/unit/cli/ci-history-range.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T01:52:59.606Z",
+    "tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+  },
+  "historyStaged": true,
+  "id": "T-0029",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-13T14:03:33.146Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-13T14:04:30.584Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-13T14:09:50.691Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-13T14:20:24.314Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T01:51:56.642Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T01:51:57.926Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T01:52:47.107Z",
+    "commit": "0c84b454ddf9c7e14821f5b3e5bb131ad40b684f",
+    "failing": [
+      "[§4.9.3 EC-9] a code commit with no HISTORY file is flagged",
+      "[§4.9.3 EC-9] a commit whose files cannot be read fails closed"
+    ],
+    "tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T01:51:50.926Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0029-r1",
+      "round": 1,
+      "tree": "24a6243134cda4e398e09bd524e9ddec5c8739cc"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T01:53:51.403Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0029-r2",
+      "round": 2,
+      "tree": "c0cce70029cebaabdbc9677be5af4db75015ebad"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-09-RECORDS.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/acceptance/ci-history-entry-range.test.ts",
+      "title": "[§4.9.3 EC-9] ci verify blocks a range where one entry covers several commits"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/ci-history-entry-range.test.ts",
+      "title": "[§4.9.3 EC-9] ci verify leaves a deps-only commit owing no entry"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/ci-history-range.test.ts",
+      "title": "[§4.9.3 EC-9] a code commit with no HISTORY file is flagged"
+    }
+  ],
+  "title": "L4 history-entry judges each non-merge commit in range",
+  "type": "fix",
+  "version": 1
+}
+
