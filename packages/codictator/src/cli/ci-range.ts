@@ -258,7 +258,8 @@ function parseCommitRange(text: string): Result<ReadonlyArray<CommitInRange>> {
 	}
 	const commits: Array<CommitInRange> = [];
 	for (const record of records) {
-		const fields = splitCommitFields(record);
+		// git log leaves a newline before every record after the first.
+		const fields = splitCommitFields(record.replace(/^\r?\n/, ""));
 		if (fields === undefined) {
 			return unparseable;
 		}
