@@ -1,0 +1,148 @@
+{
+  "acceptanceCriteria": [
+    "A write: or run: line that is object syntax in a source file yields no target and no command",
+    "A real write: path and a real run: command are still judged"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: a source file holding an object property written 'write: (' before a multi-line arrow, or a call-shaped 'write:' line, makes core/write-confinement resolve the code token as a write target and report it unresolvable; a source line opening 'run: (' is read by core/dangerous-shell as a shell command and reported unparseable (CDX-E306). Root cause: writeLineTarget and extractShellSources take any text after a leading write: or run: marker as the target or command, only write-confine's CODE_CHARS filter rejecting some quote and operator characters. Fix: one shared code-shape test rejects a bare opener, an arrow fragment, a trailing opener or comma, and a call-shaped token, in both extractors.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/write-confine.ts",
+      "packages/codictator/src/features/packs/enforcers/shell-analyse.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-14.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0042.json",
+      ".codictator/reviews/T-0042-r*.json",
+      "packages/codictator/src/features/packs/enforcers/plain-enforcer.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T03:22:41.293Z",
+    "tree": "484222326976fe82d9dd6fa79b5e718b0a0a686e"
+  },
+  "historyStaged": true,
+  "id": "T-0042",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T03:11:47.988Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T03:11:49.193Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T03:15:24.647Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T03:15:25.228Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T03:23:20.539Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T03:23:21.572Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T03:19:32.509Z",
+    "commit": "82991bd323c8165214ba20e1ae02821eb9eead01",
+    "failing": [
+      "[§4.7.3] write-confinement ignores a multi-line write: arrow property (BUG-0094)",
+      "[§4.7.3] write-confinement ignores a call-shaped write: line such as fs.write(",
+      "[§4.7.2] dangerous-shell ignores a run: arrow property in source (BUG-0094)",
+      "[§4.7.3] verify at the local gate ignores write: and run: arrow properties in source (BUG-0094)"
+    ],
+    "tree": "484222326976fe82d9dd6fa79b5e718b0a0a686e"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T03:23:13.366Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "independent-review-T-0042-r1",
+      "round": 1,
+      "tree": "52c77fd0fb72e537e89886fb53fc1cbde28d2f33"
+    }
+  ],
+  "spec": [
+    "SPEC §4.7.2",
+    "SPEC §4.7.3"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] write-confinement ignores a multi-line write: arrow property (BUG-0094)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] write-confinement ignores a call-shaped write: line such as fs.write("
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] write-confinement still judges a real write: path line"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.2] dangerous-shell ignores a run: arrow property in source (BUG-0094)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.2] dangerous-shell still judges a real run: command line"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.2] dangerous-shell still blocks every workflow run: line that looks like code"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.2] dangerous-shell judges a code-shaped run: line in an unknown file"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] write-confinement still judges a workflow write: line ending in a comma or opener"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.2] dangerous-shell judges a source-file run: call that holds a shell operator"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/code-line-targets.test.ts",
+      "title": "[§4.7.3] verify at the local gate ignores write: and run: arrow properties in source (BUG-0094)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.2] dangerous-shell judges a source-file run: shell command that ends in an arrow"
+    }
+  ],
+  "title": "fix(packs): ignore write: and run: object syntax in source files",
+  "type": "fix",
+  "version": 1
+}
+

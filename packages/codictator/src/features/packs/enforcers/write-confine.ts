@@ -10,26 +10,26 @@ import {
 	type Ports,
 	toRepoPath,
 } from "../../../kernel/index.ts";
-import type { CheckContext, Finding } from "../../engine/index.ts";
+import type { Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import {
-	bindRule,
 	findingFor,
 	type RuleBinding,
 	readErrorFinding,
 	readLossyText,
 	selectFiles,
 } from "./binding.ts";
-import { extractShellSources } from "./shell-analyse.ts";
+import { plainEnforcer } from "./plain-enforcer.ts";
+import { extractShellSources, isCodeShape } from "./shell-analyse.ts";
 
-function writeLineTarget(line: string): string | undefined {
+function writeLineTarget(line: string, file: string): string | undefined {
 	const trimmed = line.trimStart();
 	if (!trimmed.toLowerCase().startsWith("write:")) {
 		return undefined;
 	}
 	const target = trimmed.slice("write:".length).trim();
-	return target === "" ? undefined : target;
+	return target === "" || isCodeShape(target, file) ? undefined : target;
 }
 
 function escapeFinding(
@@ -138,7 +138,7 @@ async function judgeFile(
 		return;
 	}
 	for (const line of loaded.value.text.split("\n")) {
-		const target = writeLineTarget(line);
+		const target = writeLineTarget(line, file);
 		if (target !== undefined) {
 			targets.add(target);
 		}
@@ -162,26 +162,17 @@ export function resolveWriteConfinement(
 	rule: PackRule,
 	ports: Ports,
 ) {
-	const binding: RuleBinding = bindRule(rule);
-	return {
-		ok: true as const,
-		value: {
-			id: rule.id,
-			kinds: binding.triggers,
-			budgetMs: decl.budgetMs,
-			check: async (ctx: CheckContext): Promise<Array<Finding>> => {
-				const findings: Array<Finding> = [];
-				for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-					await judgeFile(binding, ports, file, findings);
-				}
-				// L1 hook targets are lexical only: no disk read, so benign
-				// writes to not-yet-existing files stay allowed while lexical
-				// escapes (EC-8 shape) still block.
-				for (const target of [...(ctx.scope.proposedPaths ?? [])].sort()) {
-					checkProposedTarget(binding, target, findings);
-				}
-				return findings;
-			},
-		},
-	};
+	return plainEnforcer(decl, rule, (binding) => async (ctx) => {
+		const findings: Array<Finding> = [];
+		for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+			await judgeFile(binding, ports, file, findings);
+		}
+		// L1 hook targets are lexical only: no disk read, so benign
+		// writes to not-yet-existing files stay allowed while lexical
+		// escapes (EC-8 shape) still block.
+		for (const target of [...(ctx.scope.proposedPaths ?? [])].sort()) {
+			checkProposedTarget(binding, target, findings);
+		}
+		return findings;
+	});
 }
