@@ -50,6 +50,7 @@ export {
 	netHostAllowed,
 	rejectNetUrl,
 } from "./net.ts";
+export { isPackCasePath, withoutPackCases } from "./pack-case.ts";
 export { isGitDirPath, toRepoPath } from "./path.ts";
 export { checkPattern } from "./pattern.ts";
 export { buildProcEnv, NodeProc, PROC_ENV_ALLOWLIST } from "./proc.ts";

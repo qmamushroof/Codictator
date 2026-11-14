@@ -23,7 +23,7 @@ import type {
 	Result,
 	Trigger,
 } from "../kernel/index.ts";
-import { err, isFixturePath, ok } from "../kernel/index.ts";
+import { err, ok, withoutPackCases } from "../kernel/index.ts";
 import { sharedReads } from "./evaluate-cache.ts";
 import type { CommandPorts } from "./shared.ts";
 import { type EvaluateOptions, emitEngineOptions } from "./verdict-emit.ts";
@@ -80,14 +80,9 @@ async function runGitList(
 
 // SPEC §4.19.2: --staged evaluates the staged tree, --base/--head the
 // range, --all and the bare command the tracked tree plus staged edits.
-// SPEC §4.4.1 + §10.2: pack self-test fixtures are rule test data, judged
-// by `pack test` and the red suite, not by verify. A committed violating
-// fixture would flag on every run and can never be "fixed" without breaking
-// the self-test, so every scope here excludes fixture dirs.
-function withoutFixtures(files: ReadonlyArray<string>): Array<string> {
-	return files.filter((file) => !isFixturePath(file));
-}
-
+// SPEC §4.4.1 pack case data: a committed violating case would flag on every
+// run and can never be "fixed" without breaking the self-test, so every scope
+// here drops pack case paths only; fixtureGlobs never narrows a scope.
 export async function resolveVerifyScope(
 	ports: CommandPorts,
 	flags: {
@@ -104,7 +99,7 @@ export async function resolveVerifyScope(
 		if (!staged.ok) {
 			return err(staged.error);
 		}
-		const files = withoutFixtures(staged.value);
+		const files = await withoutPackCases(staged.value, ports.fs);
 		return ok({
 			trigger,
 			files,
@@ -125,7 +120,7 @@ export async function resolveVerifyScope(
 		if (!ranged.ok) {
 			return err(ranged.error);
 		}
-		const files = withoutFixtures(ranged.value);
+		const files = await withoutPackCases(ranged.value, ports.fs);
 		return ok({
 			trigger,
 			files,
@@ -142,7 +137,9 @@ export async function resolveVerifyScope(
 	}
 	return ok({
 		trigger,
-		files: sortedUnique(withoutFixtures([...tracked.value, ...staged.value])),
+		files: sortedUnique(
+			await withoutPackCases([...tracked.value, ...staged.value], ports.fs),
+		),
 		note: "tracked tree",
 	});
 }

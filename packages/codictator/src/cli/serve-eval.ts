@@ -4,7 +4,7 @@
 
 import { hookEnv } from "../features/adapters/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
-import { isFixturePath } from "../kernel/index.ts";
+import { withoutPackCases } from "../kernel/index.ts";
 import {
 	evaluateScope,
 	resolveVerifyScope,
@@ -96,9 +96,10 @@ async function evaluateFiles(
 					ok: true as const,
 					value: {
 						trigger: triggerForLayer(layer),
-						files: [...new Set(files)]
-							.sort()
-							.filter((file) => !isFixturePath(file)),
+						files: await withoutPackCases(
+							[...new Set(files)].sort(),
+							configured.value.ports.fs,
+						),
 						note: "stdio files",
 					},
 				};

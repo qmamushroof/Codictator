@@ -4,7 +4,7 @@
 // fails the load instead of checking nothing.
 
 import type { Ports } from "../../../kernel/index.ts";
-import { err, isFixturePath, ok, type Result } from "../../../kernel/index.ts";
+import { err, isPackCasePath, ok, type Result } from "../../../kernel/index.ts";
 import type { CheckContext, Finding } from "../../engine/index.ts";
 import { field } from "../manifest.ts";
 import {
@@ -77,10 +77,10 @@ export async function checkSize(
 ): Promise<Array<Finding>> {
 	const findings: Array<Finding> = [];
 	for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-		if (
-			binding.ruleId !== "core/max-file-bytes" &&
-			(isFixturePath(file) || isLockfilePath(file))
-		) {
+		if (await isPackCasePath(file, ports.fs)) {
+			continue;
+		}
+		if (binding.ruleId !== "core/max-file-bytes" && isLockfilePath(file)) {
 			continue;
 		}
 		if (
