@@ -11,12 +11,13 @@ Loads, composes and self-tests packs (PRD §7.2), and runs external tools as enf
   pack.json                         manifest (§7.3): id, version, rules, enforcers, drivers, assets
   enforcers/*.ts | *.mjs            code enforcers (built-in: .ts; custom: .mjs)
   fixtures/<rule-slug>/
-    violating/<case>/case.json      trigger, hook input or diff, expected rule ids
-    violating/<case>/tree/...       files the case evaluates
-    passing/<case>/...              same shape, expects zero findings for the rule
+    violating/<case>/case.json      one case file (below), expects findings
+    passing/<case>/case.json        same shape, expects none for the rule
   assets/                           agent asset templates (skills, subagents, commands, §4.6.6)
   accepted.json                     custom packs only (§7.4)
 ```
+
+**Case file.** `case.json` is `{ rule, section, expectation, trigger, description?, expectRules[], files }`: `rule` is the rule id, `section` its SPEC section, `expectation` is `violating` or `passing`, `trigger` is a Trigger value (§4.3.2), `description` is optional prose, `expectRules` lists rule ids, and `files` maps a repo-relative path to its UTF-8 content. `files` is the only source of the case's files. Self-test (§4.4.4) loads it into an in-memory `Fs`, sets `scope.files` to the sorted keys of `files` and runs the rule's enforcer with `trigger`. A violating case needs a non-empty `expectRules` and every listed id must appear in the findings; a passing case must yield no finding carrying `rule`. A `case.json` that is missing or malformed fails its case: under `violating/` with `CDX-E212`, under `passing/` with `CDX-E213`.
 
 ## 4.4.2 Built-in packs
 
