@@ -1,0 +1,63 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.4.1 defines the case.json contract",
+    "BUG-0095 filed open"
+  ],
+  "branch": "work/serial-queue",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-04-PACKS.md",
+      "docs/BUGS/2026.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0050",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T07:17:26.442Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T07:17:26.923Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:17:46.411Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:18:00.372Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T07:19:57.871Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T07:19:49.027Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0050-r1",
+      "round": 1,
+      "tree": "2cbc4fe644bd551b4c643cc9fcb3b9d3a4e55680"
+    }
+  ],
+  "spec": [
+    "SPEC §4.4.1",
+    "SPEC §4.4.4"
+  ],
+  "title": "docs(packs): specify the fixture case.json contract and file BUG-0095",
+  "type": "docs",
+  "version": 1
+}
+

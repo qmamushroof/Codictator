@@ -1,0 +1,65 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.4.1 states fixture paths are outside every rule's scope at every layer",
+    "BUG-0101 filed open",
+    "SPEC 4.4.1 narrows the exemption to pack case data"
+  ],
+  "branch": "work/serial-queue",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-04-PACKS.md",
+      "docs/BUGS/2026.md",
+      "docs/HISTORY/*.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0052",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T07:29:39.707Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T07:29:40.149Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:29:40.599Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:29:45.332Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T07:31:13.081Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T07:31:06.781Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0052-r1",
+      "round": 1,
+      "tree": "b96031436e4768005a64bb0a93e35232cc9fbc4b"
+    }
+  ],
+  "spec": [
+    "SPEC §4.4.1",
+    "SPEC §4.4.4"
+  ],
+  "title": "docs(packs): confine rule exemption to pack case data and file BUG-0101",
+  "type": "docs",
+  "version": 1
+}
+

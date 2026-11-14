@@ -11,12 +11,15 @@ Loads, composes and self-tests packs (PRD §7.2), and runs external tools as enf
   pack.json                         manifest (§7.3): id, version, rules, enforcers, drivers, assets
   enforcers/*.ts | *.mjs            code enforcers (built-in: .ts; custom: .mjs)
   fixtures/<rule-slug>/
-    violating/<case>/case.json      trigger, hook input or diff, expected rule ids
-    violating/<case>/tree/...       files the case evaluates
-    passing/<case>/...              same shape, expects zero findings for the rule
+    violating/<case>/case.json      one case file (below), expects findings
+    passing/<case>/case.json        same shape, expects none for the rule
   assets/                           agent asset templates (skills, subagents, commands, §4.6.6)
   accepted.json                     custom packs only (§7.4)
 ```
+
+**Case file.** `case.json` is `{ rule, section, expectation, trigger, description?, expectRules[], files }`: `rule` is the rule id, `section` its SPEC section, `expectation` is `violating` or `passing`, `trigger` is a Trigger value (§4.3.2), `description` is optional prose, `expectRules` lists rule ids, and `files` maps a repo-relative path to its UTF-8 content. `files` is the only source of the case's files. Self-test (§4.4.4) loads it into an in-memory `Fs`, sets `scope.files` to the sorted keys of `files` and runs the rule's enforcer with `trigger`. A violating case needs a non-empty `expectRules` and every listed id must appear in the findings; a passing case must yield no finding carrying `rule`. A `case.json` that is missing or malformed fails its case: under `violating/` with `CDX-E212`, under `passing/` with `CDX-E213`.
+
+**Pack case data.** A pack case path is a file under `<pack>/fixtures/<rule-slug>/(violating|passing)/<case>/`, where `<pack>` is a directory holding a `pack.json` (built-in or custom). Its content is rule test data that violates rules on purpose, judged only by self-test (§4.4.4), which also fails a deleted or emptied case because the `pack.json` fixtures list must resolve. So no rule at any layer lists a pack case path as a judged file or passes its content or diff hunks as proposed content, including `core/max-file-bytes`; `codictator verify`, the server scope and the L3 hooks drop it by one shared predicate. Every other path under a fixture glob stays judged by every rule: `config.security.fixtureGlobs` only relaxes secret detection (§4.7.1).
 
 ## 4.4.2 Built-in packs
 
