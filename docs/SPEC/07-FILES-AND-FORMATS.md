@@ -120,7 +120,8 @@ The date is the commit date in UTC. Which fields a kind requires is §4.9.3; a f
 |---|---|
 | `harness`, `event` (native name), `trigger` (§4.3.2) | |
 | `sessionId`, `agentId?`, `role?`, `cwd`, `source?` (`startup` \| `resume` \| `clear` \| `compact`) | |
-| `tool?` | `{ kind, name, paths[], command?, proposedContent?, edits?: [{ old, new }], range?: { offset, limit }, query? }` |
+| `tool?` | `{ kind, name, paths[], command?, proposedContent?, proposedContentWhole?, edits?: [{ old, new }], range?: { offset, limit }, query? }` |
+| `tool.proposedContentWhole` | `true` when `proposedContent` is a whole file: the tool input key is `content`, `new_content` or `newContent`. Fragment keys (`new_string`, `newString`, `text`, `proposedContent`) leave it unset; a whole key wins when both appear. Judging: §4.3.2 |
 | `sessionState?` | `{ reads: [{ path, hash, range, call }], integrityLatch?: [ruleId] }`, loaded by the hook entry from `.codictator/state/sessions/<sessionId>/` (§4.6.5, §4.14.2), never by an adapter; absent without a session id |
 | `prompt?` | Digest and length only beyond the evaluation |
 | `usage?` | `{ contextTokens, contextWindow }` when the adapter has it |

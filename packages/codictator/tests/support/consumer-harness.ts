@@ -54,7 +54,7 @@ export async function installConsumer(repo: TempRepo): Promise<void> {
 		JSON.stringify({
 			version: 1,
 			codictator: "unknown",
-			packs: [],
+			packs: [{ id: "typescript" }, { id: "python" }],
 			harnesses: ["muse-code", "opencode"],
 		}),
 	);

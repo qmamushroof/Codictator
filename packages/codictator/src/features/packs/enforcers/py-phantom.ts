@@ -8,19 +8,20 @@
 // `pyproject.toml` declare; other requirements variant names still judge
 // pins under core/dep-exact-pin but do not declare here.
 import type { Ports } from "../../../kernel/index.ts";
-import { makeError, ok, type Result } from "../../../kernel/index.ts";
+import { makeError, type Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
+import { findingFor, type RuleBinding, readErrorFinding } from "./binding.ts";
+import { scanEnforcer } from "./marker-scan.ts";
 import {
-	bindRule,
-	findingFor,
-	type RuleBinding,
-	readErrorFinding,
-	readLossyText,
-	selectFiles,
-} from "./binding.ts";
-import { baseEnforcer } from "./health-measures.ts";
+	type DeclaredNames,
+	type EffectiveFile,
+	effectiveFiles,
+	firstPartyNearby,
+	loadEffectiveText,
+	parentDir,
+} from "./pre-tool-files.ts";
 import {
 	extractPythonSpecifiers,
 	isPythonFile,
@@ -30,18 +31,10 @@ import {
 } from "./py-lex.ts";
 import { collectPyprojectNames, parsePythonRequirements } from "./py-pins.ts";
 
-function parentDir(path: string): string {
-	const slash = path.lastIndexOf("/");
-	return slash < 0 ? "" : path.slice(0, slash);
-}
-
 async function declaredNamesFor(
 	ports: Ports,
 	file: string,
-): Promise<{
-	readonly names: Set<string>;
-	readonly broken: string | undefined;
-}> {
+): Promise<DeclaredNames> {
 	// Nearest requirements.txt or pyproject.toml walking up from the
 	// importing file; no manifest means no declared dependency, so every
 	// third-party import is phantom. A throw reads as missing (the fake
@@ -153,16 +146,22 @@ function isFirstParty(top: string, files: ReadonlyArray<string>): boolean {
 async function checkPythonFileForPhantoms(
 	binding: RuleBinding,
 	ports: Ports,
-	file: string,
+	entry: EffectiveFile,
 	scopeFiles: ReadonlyArray<string>,
 ): Promise<Array<Finding>> {
+	const file = entry.path;
 	const findings: Array<Finding> = [];
 	if (!isPythonFile(file)) {
 		return findings;
 	}
-	const loaded = await readLossyText(ports.fs, file);
-	if (!loaded.ok) {
-		findings.push(readErrorFinding(binding, file, loaded.error, "read"));
+	const text = await loadEffectiveText(
+		ports,
+		binding,
+		entry,
+		findings,
+		"lines",
+	);
+	if (text === undefined) {
 		return findings;
 	}
 	const declared = await declaredNamesFor(ports, file);
@@ -184,13 +183,14 @@ async function checkPythonFileForPhantoms(
 	// raw text, so specifiers inside strings, comments and
 	// fixture text never count.
 	findings.push(
-		...phantomFindings(
+		...(await phantomFindings(
 			binding,
 			file,
-			loaded.value.text,
+			text,
 			declared.names,
 			scopeFiles,
-		),
+			entry.proposed ? (top) => firstPartyNearby(ports, top, file) : undefined,
+		)),
 	);
 	return findings;
 }
@@ -203,33 +203,29 @@ export function resolvePythonNoPhantomImport(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			const scopeFiles = [...ctx.scope.files].sort();
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				findings.push(
-					...(await checkPythonFileForPhantoms(
-						binding,
-						ports,
-						file,
-						scopeFiles,
-					)),
-				);
-			}
-			return findings;
-		}),
-	);
+	return scanEnforcer(decl, rule, async (ctx, binding, findings) => {
+		const scopeFiles = [...ctx.scope.files].sort();
+		for (const entry of effectiveFiles(ctx, binding.scopeGlobs)) {
+			findings.push(
+				...(await checkPythonFileForPhantoms(
+					binding,
+					ports,
+					entry,
+					scopeFiles,
+				)),
+			);
+		}
+	});
 }
 
-function phantomFindings(
+async function phantomFindings(
 	binding: RuleBinding,
 	file: string,
 	text: string,
 	declared: ReadonlySet<string>,
 	scopeFiles: ReadonlyArray<string>,
-): Array<Finding> {
+	nearby: ((top: string) => Promise<boolean>) | undefined,
+): Promise<Array<Finding>> {
 	const findings: Array<Finding> = [];
 	const seen = new Set<string>();
 	for (const { spec, line } of extractPythonSpecifiers(text)) {
@@ -244,7 +240,8 @@ function phantomFindings(
 		if (
 			isPythonStdlib(top) ||
 			isFirstParty(top, scopeFiles) ||
-			declared.has(top)
+			declared.has(top) ||
+			(nearby !== undefined && (await nearby(top)))
 		) {
 			continue;
 		}

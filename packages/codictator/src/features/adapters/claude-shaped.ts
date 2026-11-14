@@ -8,54 +8,18 @@ import { err, makeError, ok } from "../../kernel/index.ts";
 import type { Trigger } from "../engine/index.ts";
 import type { HookEvent, HookToolCall, ToolKind } from "./contract.ts";
 import { normalizeToolName } from "./contract.ts";
+import {
+	collectPaths,
+	type FieldRecord,
+	isRecord,
+	readCallFields,
+	readFirstRecord,
+	readString,
+} from "./tool-fields.ts";
 
-type RawRecord = Record<string, unknown>;
+export { readString };
 
-// SPEC §4.5.3: first non-empty string under any of the keys. Shared with
-// the sibling adapters, so the field readers never drift apart.
-export function readString(
-	record: Record<string, unknown>,
-	keys: ReadonlyArray<string>,
-): string | undefined {
-	for (const key of keys) {
-		const value: unknown = record[key];
-		if (typeof value === "string" && value.length > 0) {
-			return value;
-		}
-	}
-	return undefined;
-}
-
-function isRecord(value: unknown): value is RawRecord {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readToolInput(raw: RawRecord): RawRecord {
-	for (const key of ["tool_input", "toolInput", "input", "args"]) {
-		const value: unknown = raw[key];
-		if (isRecord(value)) {
-			return value;
-		}
-	}
-	return {};
-}
-
-function collectPaths(input: RawRecord): Array<string> {
-	const found = new Set<string>();
-	for (const key of ["file_path", "filePath", "path", "file", "filename"]) {
-		const value: unknown = input[key];
-		if (typeof value === "string" && value.length > 0) {
-			found.add(value);
-		} else if (Array.isArray(value)) {
-			for (const entry of value) {
-				if (typeof entry === "string" && entry.length > 0) {
-					found.add(entry);
-				}
-			}
-		}
-	}
-	return [...found].sort();
-}
+type RawRecord = FieldRecord;
 
 // SPEC §4.5.3: event names map to triggers through one table, so adding a
 // harness alias is a row, not a branch.
@@ -152,25 +116,23 @@ function readToolFields(
 	if (toolName === undefined) {
 		return err(blockError(harness, "missing tool_name"));
 	}
-	const input = readToolInput(raw);
-	const command = readString(input, ["command"]);
-	const proposedContent = readString(input, [
-		"content",
-		"new_content",
-		"newContent",
-		"new_string",
-		"newString",
-		"text",
-		"proposedContent",
+	const input = readFirstRecord(raw, [
+		"tool_input",
+		"toolInput",
+		"input",
+		"args",
 	]);
-	const query = readString(input, ["query", "pattern", "prompt"]);
 	return ok({
 		kind: normalizeToolName(table, toolName),
 		name: toolName,
-		paths: collectPaths(input),
-		...(command === undefined ? {} : { command }),
-		...(proposedContent === undefined ? {} : { proposedContent }),
-		...(query === undefined ? {} : { query }),
+		paths: collectPaths(input, [
+			"file_path",
+			"filePath",
+			"path",
+			"file",
+			"filename",
+		]),
+		...readCallFields(input),
 	});
 }
 

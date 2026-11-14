@@ -1,0 +1,70 @@
+{
+  "acceptanceCriteria": [
+    "SPEC §4.3.2 and §7.8 define proposedContentWhole: true only when the tool input holds a whole file, judged by whole-document rules only then"
+  ],
+  "branch": "work/serial-queue",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-03-ENGINE.md",
+      "docs/SPEC/07-FILES-AND-FORMATS.md",
+      "docs/HISTORY/2026-11-14.md",
+      ".codictator/tasks/T-0037.json",
+      ".codictator/reviews/T-0037-r*.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0037",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T02:25:55.957Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T02:26:00.291Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:26:00.856Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:26:01.418Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T02:27:30.182Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T02:27:31.079Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T02:26:49.470Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0037-r1",
+      "round": 1,
+      "tree": "fee47c5bd74c047ea06bd58e627910532d0945d4"
+    }
+  ],
+  "spec": [
+    "SPEC §4.3.2",
+    "SPEC §7.8"
+  ],
+  "title": "docs: spec the proposedContentWhole field",
+  "type": "docs",
+  "version": 1
+}
+

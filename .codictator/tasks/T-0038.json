@@ -1,0 +1,212 @@
+{
+  "acceptanceCriteria": [
+    "A whole-file L1 write is judged by history-append-only, dep-exact-pin, dep-one-per-capability, ts and python no-phantom-import and security-patterns through one shared pre-tool file adapter",
+    "An L1 edit fragment is never judged as a whole document and a read-only call is never judged as a write",
+    "The consumer harness config loads the typescript and python packs so those rules can fire"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: a Write of a rewritten history file, a package.json with a range, a ts file importing a missing package or calling the dynamic-eval sink, and the python equivalents each pass the L1 hook silently in a consumer repo. Root cause: hookScope sets files: [] and carries the tool call in proposedPaths/proposedContent, but history-append-only, dep-exact-pin, dep-one-per-capability and the ts/python phantom and security-patterns enforcers loop ctx.scope.files and read the disk, so none sees the L1 call; the consumer harness also loaded no ts/python pack.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/**",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-14.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0038.json",
+      ".codictator/reviews/T-0038-r*.json",
+      "packages/codictator/src/**"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T02:44:06.844Z",
+    "tree": "76105c04e3de24caee9a4ca876c9d252e092f0ad"
+  },
+  "historyStaged": true,
+  "id": "T-0038",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T02:29:31.710Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T02:29:45.785Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:29:58.721Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:32:50.922Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T02:37:38.598Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T02:37:39.547Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T02:29:41.407Z",
+    "commit": "d779dc102c4ea0c43f78a2a2934373ad5c02ff27",
+    "failing": [
+      "[§4.3.2] L1 history-append-only judges the proposed whole-file content against HEAD\r",
+      "[§4.3.2] L1 history-append-only does not judge an edit fragment as a whole file\r",
+      "[§4.3.2] L1 dep-exact-pin judges the proposed package.json content\r",
+      "[§4.3.2] L1 dep-exact-pin does not judge an edit fragment or a read\r",
+      "[§4.3.2] L1 dep-exact-pin judges proposed requirements lines\r",
+      "[§4.3.2] L1 dep-one-per-capability judges the proposed package.json content\r",
+      "[§4.3.2] L1 hook scope marks a whole-file write and not an edit fragment\r",
+      "[§4.12.3] L1 history-append-only does not judge a read-only call\r",
+      "[§4.5.8] opencode parse marks a whole-file write and not an edit fragment\r",
+      "[§4.3.2] L1 ts/no-phantom-import judges the proposed content imports\r",
+      "[§4.3.2] L1 ts/no-phantom-import accepts an import the nearest manifest declares\r",
+      "[§4.3.2] L1 ts/security-patterns judges the proposed content\r",
+      "[§4.3.2] L1 python/no-phantom-import judges the proposed content imports\r",
+      "[§4.3.2] L1 python/no-phantom-import accepts a first-party sibling module\r",
+      "[§4.3.2] L1 python/security-patterns judges the proposed content\r",
+      "[§4.3.2] consumer L1 content rules fire on a Write through the installed launcher\r"
+    ],
+    "tree": "76105c04e3de24caee9a4ca876c9d252e092f0ad"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T02:37:24.398Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "independent-review-T-0038-r1",
+      "round": 1,
+      "tree": "3e432a0cadd20cca08c4906de6797bccafc18fa3"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T02:46:46.774Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "independent-review-T-0038-r2",
+      "round": 2,
+      "tree": "88f6eb99f8e3132bb102945fe957ff35a483f1c3"
+    }
+  ],
+  "spec": [
+    "SPEC §4.3.2",
+    "SPEC §4.7",
+    "SPEC §4.12.3",
+    "SPEC §7.8"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 history-append-only judges the proposed whole-file content against HEAD"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 history-append-only does not judge an edit fragment as a whole file"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 dep-exact-pin judges the proposed package.json content"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 dep-exact-pin does not judge an edit fragment or a read"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 dep-exact-pin judges proposed requirements lines"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 dep-one-per-capability judges the proposed package.json content"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 hook scope marks a whole-file write and not an edit fragment"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.12.3] L1 history-append-only does not judge a read-only call"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.5.8] opencode parse marks a whole-file write and not an edit fragment"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-lang.test.ts",
+      "title": "[§4.3.2] L1 ts/no-phantom-import judges the proposed content imports"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-lang.test.ts",
+      "title": "[§4.3.2] L1 ts/no-phantom-import accepts an import the nearest manifest declares"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-lang.test.ts",
+      "title": "[§4.3.2] L1 ts/security-patterns judges the proposed content"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-lang.test.ts",
+      "title": "[§4.3.2] L1 python/no-phantom-import judges the proposed content imports"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-lang.test.ts",
+      "title": "[§4.3.2] L1 python/no-phantom-import accepts a first-party sibling module"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-lang.test.ts",
+      "title": "[§4.3.2] L1 python/security-patterns judges the proposed content"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 history-append-only judges the proposed whole-file content against HEAD"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-lang.test.ts",
+      "title": "[§4.3.2] L1 ts/security-patterns judges the proposed content"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-l1-content-rules.test.ts",
+      "title": "[§4.3.2] consumer L1 content rules fire on a Write through the installed launcher"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-pre-tool-file-adapter.test.ts",
+      "title": "[§4.3.2] L1 dep-exact-pin skips a requirements edit fragment"
+    }
+  ],
+  "title": "fix(packs): judge L1 tool-call content through one pre-tool file adapter",
+  "type": "fix",
+  "version": 1
+}
+

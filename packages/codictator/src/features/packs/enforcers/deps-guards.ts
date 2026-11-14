@@ -6,19 +6,13 @@
 // because §3.3 forbids the packs module from importing it; the policy
 // resolvers in deps-policy-guards.ts share the mirrors below.
 import type { Ports } from "../../../kernel/index.ts";
-import { ok, parseJson, type Result } from "../../../kernel/index.ts";
+import { parseJson, type Result } from "../../../kernel/index.ts";
 import type { Enforcer } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
-import { bindRule, findingFor, selectFiles } from "./binding.ts";
-import {
-	baseEnforcer,
-	isMarkerFile,
-	limitOf,
-	loadScopeText,
-	parseMarkerInt,
-	parseMarkers,
-} from "./health-measures.ts";
+import { findingFor } from "./binding.ts";
+import { isMarkerFile, limitOf, parseMarkerInt } from "./health-measures.ts";
+import { documentRule, markerFindingRule } from "./marker-scan.ts";
 import { checkPythonPins, isRequirementsFile } from "./py-pins.ts";
 
 const EXACT_PIN = /^v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/;
@@ -27,16 +21,6 @@ const FULL_SHA = /^[0-9a-f]{40}$/i;
 // SPEC §6.1 mirror of isExactNpmPin: exact, alias-exact and workspace-exact
 // pins plus pinned-content forms (file/link/git-sha/tarball) pass; ranges,
 // tags and unpinned forms block core/dep-exact-pin.
-function isGitPin(range: string): boolean {
-	const schemes = ["git+", "git://", "github:"];
-	return schemes.some((scheme) => range.startsWith(scheme));
-}
-
-function isTrivialPin(range: string): boolean {
-	const prefixes = ["file:", "link:", "http://", "https://"];
-	return prefixes.some((prefix) => range.startsWith(prefix));
-}
-
 function isExactPinLocal(range: string): boolean {
 	if (range.startsWith("workspace:")) {
 		const rest = range.slice("workspace:".length);
@@ -46,10 +30,11 @@ function isExactPinLocal(range: string): boolean {
 		const at = range.lastIndexOf("@");
 		return at > 4 && EXACT_PIN.test(range.slice(at + 1));
 	}
-	if (isGitPin(range)) {
+	if (["git+", "git://", "github:"].some((p) => range.startsWith(p))) {
 		return FULL_SHA.test(range.split("#")[1] ?? "");
 	}
-	return isTrivialPin(range) || EXACT_PIN.test(range);
+	const trivial = ["file:", "link:", "http://", "https://"];
+	return trivial.some((p) => range.startsWith(p)) || EXACT_PIN.test(range);
 }
 
 // SPEC §6.1 mirror of the npm capability catalogue: every package of every
@@ -164,43 +149,26 @@ export function resolveDepExactPin(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (isMarkerFile(file)) {
-					continue;
-				}
-				if (file.endsWith("package.json")) {
-					const text = await loadScopeText(ports, binding, file, findings);
-					if (text === undefined) {
-						continue;
-					}
-					for (const { name, range } of collectPinRanges(text)) {
-						if (!isExactPinLocal(range)) {
-							findings.push(
-								findingFor(binding, {
-									path: file,
-									message: `${name}@${range} in ${file} is not an exact pin`,
-									vars: { path: file, value: `${name}@${range}` },
-								}),
-							);
-						}
-					}
-					continue;
-				}
-				if (isRequirementsFile(file)) {
-					const text = await loadScopeText(ports, binding, file, findings);
-					if (text === undefined) {
-						continue;
-					}
-					checkPythonPins(binding, file, text, findings);
+	return documentRule(decl, rule, ports, (binding, file, text, findings) => {
+		if (isMarkerFile(file)) {
+			return;
+		}
+		if (file.endsWith("package.json")) {
+			for (const { name, range } of collectPinRanges(text)) {
+				if (!isExactPinLocal(range)) {
+					findings.push(
+						findingFor(binding, {
+							path: file,
+							message: `${name}@${range} in ${file} is not an exact pin`,
+							vars: { path: file, value: `${name}@${range}` },
+						}),
+					);
 				}
 			}
-			return findings;
-		}),
-	);
+		} else if (isRequirementsFile(file)) {
+			checkPythonPins(binding, file, text, findings);
+		}
+	});
 }
 
 // SPEC §5.3 core/dep-lockfile: a missing lockfile blocks.
@@ -209,27 +177,14 @@ export function resolveDepLockfile(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !isMarkerFile(file)) {
-					continue;
-				}
-				if ((parseMarkers(text).get("lockfile") ?? "missing") === "missing") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `no lockfile committed for ${file}`,
-							vars: { path: file },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
+	return markerFindingRule(decl, rule, ports, (binding, file, markers) =>
+		(markers.get("lockfile") ?? "missing") === "missing"
+			? findingFor(binding, {
+					path: file,
+					message: `no lockfile committed for ${file}`,
+					vars: { path: file },
+				})
+			: undefined,
 	);
 }
 
@@ -239,31 +194,19 @@ export function resolveDepLatestStable(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	const lagDays = limitOf(binding, "lagDays", 30);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !isMarkerFile(file)) {
-					continue;
-				}
-				const lag = parseMarkerInt(parseMarkers(text), "lag-days");
-				if (lag !== undefined && lag > lagDays) {
-					const dep = parseMarkers(text).get("dep") ?? "the dependency";
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `${dep} in ${file} lags latest stable by ${String(lag)} days`,
-							vars: { path: file, value: dep, limit: String(lagDays) },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerFindingRule(decl, rule, ports, (binding, file, markers) => {
+		const lagDays = limitOf(binding, "lagDays", 30);
+		const lag = parseMarkerInt(markers, "lag-days");
+		if (lag === undefined || lag <= lagDays) {
+			return undefined;
+		}
+		const dep = markers.get("dep") ?? "the dependency";
+		return findingFor(binding, {
+			path: file,
+			message: `${dep} in ${file} lags latest stable by ${String(lag)} days`,
+			vars: { path: file, value: dep, limit: String(lagDays) },
+		});
+	});
 }
 
 // SPEC §5.3 core/dep-new-needs-reason: an unexplained addition blocks.
@@ -272,29 +215,15 @@ export function resolveDepNewNeedsReason(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !isMarkerFile(file)) {
-					continue;
-				}
-				const markers = parseMarkers(text);
-				const added = markers.get("added") ?? "";
-				const reason = markers.get("reason") ?? "none";
-				if (added !== "" && reason === "none") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `${added} in ${file} has no recorded reason`,
-							vars: { path: file, value: added },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerFindingRule(decl, rule, ports, (binding, file, markers) => {
+		const added = markers.get("added") ?? "";
+		if (added === "" || (markers.get("reason") ?? "none") !== "none") {
+			return undefined;
+		}
+		return findingFor(binding, {
+			path: file,
+			message: `${added} in ${file} has no recorded reason`,
+			vars: { path: file, value: added },
+		});
+	});
 }

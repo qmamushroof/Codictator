@@ -21,6 +21,8 @@ A rule is data in a pack manifest (schema §7.3): `id`, `family` (`F1`–`F16`, 
 | `ci.verify` | L4 | `base..head` diff plus repo-wide rules |
 | `schedule.sweep` | L5 | whole repo, fresh registry data |
 
+**L1 proposed content.** An L1 scope carries no files, only the call: `proposedPaths`, `proposedContent` and `proposedContentWhole` (§7.8). `proposedContentWhole` is true only when the tool input holds a whole file, so the content is the file as it will stand after the call; an edit fragment leaves it unset. A rule that judges a whole document (dependency manifests, history append-only) judges proposed content only when it is whole and skips a fragment. A rule that judges lines (phantom imports, security patterns) judges a whole file or a fragment alike. Content belongs to a target only when the call has one target and no shell command; a read-only call judges nothing as a write (§4.12.3).
+
 A rule runs on a trigger only if the trigger is in its `triggers`; L4 runs every rule whose `triggers` include any L1–L4 trigger, so CI is a superset of every local layer (PRD §6 P6).
 
 **Pre-push range.** The pushed range is the commits reachable from `HEAD` but from neither `@{push}` nor the default branch's remote-tracking ref. The default branch is the one `refs/remotes/origin/HEAD` names (the same read as §4.15.7 EC-3); no config field names it. The diff and file list run from the first parent of the oldest such commit to `HEAD`, so commits already merged into the default branch are never judged as the branch's after a rebase and force-push.

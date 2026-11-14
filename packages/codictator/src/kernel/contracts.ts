@@ -38,6 +38,10 @@ export interface Scope {
 	readonly proposedContent?: string;
 	readonly shellCommand?: string;
 	readonly proposedPaths?: ReadonlyArray<string>;
+	// True when proposedContent is the complete file after the tool call
+	// (a whole-file write), unset for an edit fragment or a non-L1 scope.
+	// Whole-document rules judge it only when true.
+	readonly proposedContentWhole?: boolean;
 	// SPEC §4.12.3 L1: "A write is blocked" — the tool call's access kind,
 	// so live-write gates skip read-only calls while read guards (secret
 	// reads) still judge their targets. Unset outside the L1 hook scope.

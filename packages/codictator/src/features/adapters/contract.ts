@@ -14,12 +14,29 @@ export type ToolKind =
 	| "task"
 	| "other";
 
+// Tool-input keys that carry a whole file versus an edit fragment, shared by
+// every harness parser so the whole-versus-fragment split is spelled once.
+export const WHOLE_CONTENT_KEYS: ReadonlyArray<string> = [
+	"content",
+	"new_content",
+	"newContent",
+];
+export const FRAGMENT_CONTENT_KEYS: ReadonlyArray<string> = [
+	"new_string",
+	"newString",
+	"text",
+	"proposedContent",
+];
+
 export interface HookToolCall {
 	readonly kind: ToolKind;
 	readonly name: string;
 	readonly paths: ReadonlyArray<string>;
 	readonly command?: string;
 	readonly proposedContent?: string;
+	// True when proposedContent is the complete file after the call (a
+	// whole-file write), false or unset for an edit fragment.
+	readonly proposedContentWhole?: boolean;
 	readonly range?: { readonly offset: number; readonly limit: number };
 	readonly query?: string;
 }

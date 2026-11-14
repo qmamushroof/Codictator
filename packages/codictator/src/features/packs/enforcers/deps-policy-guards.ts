@@ -28,6 +28,7 @@ import {
 	loadScopeText,
 	parseMarkers,
 } from "./health-measures.ts";
+import { documentRule, markerFindingRule } from "./marker-scan.ts";
 
 // SPEC §5.3 core/dep-no-vulnerable: a pinned advisory blocks.
 export function resolveDepNoVulnerable(
@@ -35,31 +36,18 @@ export function resolveDepNoVulnerable(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !isMarkerFile(file)) {
-					continue;
-				}
-				const markers = parseMarkers(text);
-				const advisory = markers.get("advisory") ?? "";
-				if (advisory !== "" && advisory !== "none") {
-					const dep = markers.get("dep") ?? "the dependency";
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `${dep} in ${file} has known advisory ${advisory}`,
-							vars: { path: file, value: dep, detail: advisory },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerFindingRule(decl, rule, ports, (binding, file, markers) => {
+		const advisory = markers.get("advisory") ?? "";
+		if (advisory === "" || advisory === "none") {
+			return undefined;
+		}
+		const dep = markers.get("dep") ?? "the dependency";
+		return findingFor(binding, {
+			path: file,
+			message: `${dep} in ${file} has known advisory ${advisory}`,
+			vars: { path: file, value: dep, detail: advisory },
+		});
+	});
 }
 
 // SPEC §5.3 core/dep-no-deprecated: a deprecated package blocks.
@@ -68,30 +56,17 @@ export function resolveDepNoDeprecated(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !isMarkerFile(file)) {
-					continue;
-				}
-				const markers = parseMarkers(text);
-				if ((markers.get("status") ?? "") === "deprecated") {
-					const dep = markers.get("dep") ?? "the dependency";
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `${dep} in ${file} is deprecated`,
-							vars: { path: file, value: dep },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return markerFindingRule(decl, rule, ports, (binding, file, markers) => {
+		if ((markers.get("status") ?? "") !== "deprecated") {
+			return undefined;
+		}
+		const dep = markers.get("dep") ?? "the dependency";
+		return findingFor(binding, {
+			path: file,
+			message: `${dep} in ${file} is deprecated`,
+			vars: { path: file, value: dep },
+		});
+	});
 }
 
 // SPEC §6.4 EC-1: Biome and Prettier together block on the shared "format"
@@ -122,23 +97,12 @@ export function resolveDepOnePerCapability(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				const dup = dupFinding(binding, file, text);
-				if (dup !== undefined) {
-					findings.push(dup);
-				}
-			}
-			return findings;
-		}),
-	);
+	return documentRule(decl, rule, ports, (binding, file, text, findings) => {
+		const dup = dupFinding(binding, file, text);
+		if (dup !== undefined) {
+			findings.push(dup);
+		}
+	});
 }
 
 function dupFinding(

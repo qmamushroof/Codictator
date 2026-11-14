@@ -15,14 +15,14 @@ import {
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
-import {
-	bindRule,
-	type RuleBinding,
-	readErrorFinding,
-	readLossyText,
-	selectFiles,
-} from "./binding.ts";
+import { bindRule, type RuleBinding, readErrorFinding } from "./binding.ts";
 import { baseEnforcer, isTsFile } from "./health-measures.ts";
+import {
+	type DeclaredNames,
+	type EffectiveFile,
+	effectiveFiles,
+	loadEffectiveText,
+} from "./pre-tool-files.ts";
 import {
 	type HostProvidedConfig,
 	narrowHostProvidedArgs,
@@ -67,10 +67,7 @@ function collectDeclaredNames(manifest: unknown): Set<string> {
 async function declaredNamesFor(
 	ports: Ports,
 	file: string,
-): Promise<{
-	readonly names: Set<string>;
-	readonly broken: string | undefined;
-}> {
+): Promise<DeclaredNames> {
 	// Nearest package.json walking up from the importing file; no manifest
 	// means no declared dependency, so every bare import is phantom.
 	// A throw reads as missing (the fake port throws for unseeded paths);
@@ -112,11 +109,13 @@ async function findingsForFile(
 	ports: Ports,
 	binding: RuleBinding,
 	grants: Readonly<HostProvidedConfig["grants"]>,
-	file: string,
+	entry: EffectiveFile,
 ): Promise<Array<Finding>> {
-	const loaded = await readLossyText(ports.fs, file);
-	if (!loaded.ok) {
-		return [readErrorFinding(binding, file, loaded.error, "read")];
+	const file = entry.path;
+	const early: Array<Finding> = [];
+	const text = await loadEffectiveText(ports, binding, entry, early, "lines");
+	if (text === undefined) {
+		return early;
 	}
 	const declared = await declaredNamesFor(ports, file);
 	const findings: Array<Finding> = [];
@@ -140,7 +139,7 @@ async function findingsForFile(
 	for (const found of phantomFindings(
 		binding,
 		file,
-		loaded.value.text,
+		text,
 		declared.names,
 		grants,
 	)) {
@@ -166,15 +165,15 @@ export function resolveTsNoPhantomImport(
 	return ok(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (!isTsFile(file)) {
+			for (const entry of effectiveFiles(ctx, binding.scopeGlobs)) {
+				if (!isTsFile(entry.path)) {
 					continue;
 				}
 				for (const found of await findingsForFile(
 					ports,
 					binding,
 					grants,
-					file,
+					entry,
 				)) {
 					findings.push(found);
 				}
