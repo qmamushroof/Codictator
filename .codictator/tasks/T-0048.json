@@ -1,0 +1,136 @@
+{
+  "acceptanceCriteria": [
+    "A write: target holding code characters outside a source-file code shape is judged as a path: an escape blocks, an unresolvable target fails closed",
+    "TS and Python source object syntax in write: lines is still skipped (BUG-0094)",
+    "A shell source that cannot be parsed, including the lone-quote sentinel of an unreadable run value, blocks with CDX-E306"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: judging a plan.yml holding 'write: ../../etc/x=>y' gives no finding, and a ci.yml step written as a flow mapping holding run: gives none either. Root cause 1: write-confine.ts isPathLike tests CODE_CHARS (quotes, =, <, >, |, &, $, backtick) and checkTarget and checkProposedTarget return before the escape check, on the false assumption that such a target is code; the source-file object-syntax skip already lives in isCodeShape (shell-sources.ts, BUG-0094) applied by writeLineTarget, so the filter is redundant there and fail-open elsewhere. Root cause 2: judgeFile does 'if (!parsed.ok) continue' on analyseShell, so the lone quote sentinel extractShellSources emits for an unreadable run value (T-0043) is dropped; core/dangerous-shell reports CDX-E306 for the same case. SPEC 4.7.3 states the fail-closed rule since T-0047.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/write-confine.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-14.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0048.json",
+      ".codictator/reviews/T-0048-r*.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T07:14:53.563Z",
+    "tree": "a883506e5d32da1712aa75bc352a185b0338d59d"
+  },
+  "historyStaged": true,
+  "id": "T-0048",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T07:07:35.027Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T07:08:11.056Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:11:00.183Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:11:14.067Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T07:15:13.714Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T07:14:48.367Z",
+    "commit": "443e6fa34aac8659d8d26eba450885096718bb2c",
+    "failing": [
+      "[§4.7.3] write-confinement judges a write: target holding code characters outside source files (BUG-0100)",
+      "[§4.7.3] write-confinement blocks a ../ escape holding =>, ( or ; outside source files (BUG-0100)",
+      "[§4.7.3] write-confinement judges a proposed L1 target holding code characters (BUG-0100)",
+      "[§4.7.3] write-confinement blocks an unparseable run source with CDX-E306 (BUG-0100)",
+      "[§4.7.3] regression: write-confinement blocks the ../../etc/x=>y escape (BUG-0100)",
+      "[§4.7.3] verify at the local gate blocks a workflow write: target that escapes with => (BUG-0100)",
+      "[§4.7.3] write-confinement blocks a ../ escape in a source file or behind a shell expansion (BUG-0100)"
+    ],
+    "tree": "a883506e5d32da1712aa75bc352a185b0338d59d"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T07:15:07.607Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0048-r1",
+      "round": 1,
+      "tree": "08f117beca9e4a47cc4da49aefac7ef0290727df"
+    }
+  ],
+  "spec": [
+    "SPEC §4.7.3",
+    "SPEC §4.7.2",
+    "SPEC §4.7.2 EC-10"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/write-confine-fail-closed.test.ts",
+      "title": "[§4.7.3] write-confinement judges a write: target holding code characters outside source files (BUG-0100)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/write-confine-fail-closed.test.ts",
+      "title": "[§4.7.3] write-confinement blocks a ../ escape holding =>, ( or ; outside source files (BUG-0100)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/write-confine-fail-closed.test.ts",
+      "title": "[§4.7.3] write-confinement judges a proposed L1 target holding code characters (BUG-0100)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/write-confine-fail-closed.test.ts",
+      "title": "[§4.7.3] write-confinement still ignores TS and Python source object syntax (BUG-0094, BUG-0100)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/write-confine-fail-closed.test.ts",
+      "title": "[§4.7.3] write-confinement blocks an unparseable run source with CDX-E306 (BUG-0100)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/write-confine-arrow-escape.test.ts",
+      "title": "[§4.7.3] regression: write-confinement blocks the ../../etc/x=>y escape (BUG-0100)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/write-confine-code-chars.test.ts",
+      "title": "[§4.7.3] verify at the local gate blocks a workflow write: target that escapes with => (BUG-0100)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/write-confine-fail-closed.test.ts",
+      "title": "[§4.7.3] write-confinement blocks a ../ escape in a source file or behind a shell expansion (BUG-0100)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/write-confine-fail-closed.test.ts",
+      "title": "[§4.7.3] write-confinement leaves code-shaped source targets and shell expansions unresolved but unblocked (BUG-0100)"
+    }
+  ],
+  "title": "fix(packs): judge code-shaped write targets and fail closed on unparseable shell sources",
+  "type": "fix",
+  "version": 1
+}
+

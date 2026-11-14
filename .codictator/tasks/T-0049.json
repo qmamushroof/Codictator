@@ -1,0 +1,63 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.7.3 states which write targets are judged lexically and that the lexical check still blocks a ../ escape and a .git/ path"
+  ],
+  "branch": "work/serial-queue",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-07-SECURITY-GUARDS.md",
+      "docs/HISTORY/2026-11-14.md",
+      ".codictator/tasks/T-0049.json",
+      ".codictator/reviews/T-0049-r*.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0049",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T07:13:01.068Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T07:13:05.512Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:13:12.772Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:13:19.028Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T07:13:45.304Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T07:13:39.653Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0049-r1",
+      "round": 1,
+      "tree": "980e3a612ce92bf772dddf83547be0f37d698274"
+    }
+  ],
+  "spec": [
+    "SPEC §4.7.3"
+  ],
+  "title": "docs(spec): specify lexical judging of expansion and source code-character write targets",
+  "type": "docs",
+  "version": 1
+}
+
