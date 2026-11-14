@@ -1,0 +1,242 @@
+{
+  "acceptanceCriteria": [
+    "Every line of a run: block scalar body reaches the analyser",
+    "A list-item run: step is judged",
+    "A clean block stays clean"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: a workflow step written 'run: |' (or '>') followed by an indented body, or written as a list item '- run: ...', is never judged beyond the key line: extractShellSources takes only the text after a line starting with run: and never starts a line at a list dash. Root cause: the extractor treats run: as a single-line key, so a block scalar yields the indicator character alone and its body lines, which hold the real shell, never reach analyseShell (fail open). Fix: recognise the block indicator, collect the indented body (literal joined by newlines, folded joined by spaces), and read the key after list dashes.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/shell-sources.ts",
+      "packages/codictator/src/features/packs/enforcers/shell-analyse.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-14.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0043.json",
+      ".codictator/reviews/T-0043-r*.json",
+      "packages/codictator/src/features/packs/enforcers/yaml-scalars.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T06:19:33.923Z",
+    "tree": "dd7beeebd14e4b03e6e1508d2deed4f9196657a3"
+  },
+  "historyStaged": true,
+  "id": "T-0043",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T03:25:57.361Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T03:25:58.529Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T03:32:31.314Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T03:32:31.949Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T06:20:42.477Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T06:20:43.345Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T06:18:38.642Z",
+    "commit": "562b48225c6fb4ae5812285da7be310038ebb8e5",
+    "failing": [
+      "[§4.7.2] dangerous-shell blocks a block scalar behind an anchor or a tag (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks a block scalar whose indent digit lets the first line sit deeper (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks a plain multi-line run: scalar (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks a plain run: continuation that indents less than the line before it (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks a quoted run: value, not its literal text (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks real shell in a folded run: block (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks real shell in a list-item run: step (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks real shell inside a run: block scalar body (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks shell behind a comment line in a plain run: body (BUG-0096)",
+      "[§4.7.2] dangerous-shell blocks shell on the continuation line of a plain run: scalar (BUG-0096)",
+      "[§4.7.2] dangerous-shell fails closed on a flow mapping that holds a run key",
+      "[§4.7.2] dangerous-shell fails closed on a quoted run: value it cannot decode",
+      "[§4.7.2] dangerous-shell reads a run: key after a dash and a tab (BUG-0096)",
+      "[§4.7.2] dangerous-shell reads a spaced or quoted run key (BUG-0096)",
+      "[§4.7.2] extractShellSources decodes single and double quoted run: values",
+      "[§4.7.2] extractShellSources drops comment lines from a plain run: body but keeps them in a block",
+      "[§4.7.2] extractShellSources folds a folded block scalar and honours indicators",
+      "[§4.7.2] extractShellSources folds the continuation lines of a plain run: scalar (BUG-0096)",
+      "[§4.7.2] extractShellSources keeps every character of a shallower plain continuation",
+      "[§4.7.2] extractShellSources never strips more than the shallowest block line",
+      "[§4.7.2] extractShellSources reads a list-item run: key and stops at a dedent",
+      "[§4.7.2] extractShellSources returns the whole body of a literal block scalar",
+      "[§4.7.2] verify judges every line of a workflow run: block scalar (BUG-0096)"
+    ],
+    "tree": "dd7beeebd14e4b03e6e1508d2deed4f9196657a3"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T06:20:31.476Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "indep-reviewer-T-0043-r1",
+      "round": 1,
+      "tree": "29755914bbe420dbfae0c8904c189ed216eacc50"
+    }
+  ],
+  "spec": [
+    "SPEC §4.7.2"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] extractShellSources returns the whole body of a literal block scalar"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] extractShellSources folds a folded block scalar and honours indicators"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] extractShellSources reads a list-item run: key and stops at a dedent"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks real shell inside a run: block scalar body (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks real shell in a list-item run: step (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks real shell in a folded run: block (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] dangerous-shell leaves a safe run: block scalar clean"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/workflow-run-blocks.test.ts",
+      "title": "[§4.7.2] verify judges every line of a workflow run: block scalar (BUG-0096)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks a quoted run: value, not its literal text (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] extractShellSources decodes single and double quoted run: values"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] dangerous-shell fails closed on a quoted run: value it cannot decode"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks a block scalar behind an anchor or a tag (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] dangerous-shell reads a spaced or quoted run key (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] dangerous-shell fails closed on a flow mapping that holds a run key"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks a plain multi-line run: scalar (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] dangerous-shell reads a run: key after a dash and a tab (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] extractShellSources leaves a multi-line run: property in a source file unread"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] extractShellSources folds the continuation lines of a plain run: scalar (BUG-0096)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks shell on the continuation line of a plain run: scalar (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] extractShellSources drops comment lines from a plain run: body but keeps them in a block"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks shell behind a comment line in a plain run: body (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] extractShellSources reads a run: mapping key as no command"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks a plain run: continuation that indents less than the line before it (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-blocks.test.ts",
+      "title": "[§4.7.2] extractShellSources keeps every character of a shallower plain continuation"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] dangerous-shell blocks a block scalar whose indent digit lets the first line sit deeper (BUG-0096)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/shell-sources-forms.test.ts",
+      "title": "[§4.7.2] extractShellSources never strips more than the shallowest block line"
+    }
+  ],
+  "title": "fix(packs): judge the body of a workflow run block scalar",
+  "type": "fix",
+  "version": 1
+}
+
