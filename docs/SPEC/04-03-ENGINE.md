@@ -17,11 +17,20 @@ A rule is data in a pack manifest (schema §7.3): `id`, `family` (`F1`–`F16`, 
 | `tool.post.write`, `stop` | L1 (feedback only, §4.5.2) | files written in the call or session |
 | `editor.save` | L2 | the saved file |
 | `git.pre-commit`, `git.commit-msg` | L3 | staged files, message |
-| `git.pre-push` | L3 | `@{push}..HEAD` diff |
+| `git.pre-push` | L3 | the branch's own new commits' diff (see Pre-push range below) |
 | `ci.verify` | L4 | `base..head` diff plus repo-wide rules |
 | `schedule.sweep` | L5 | whole repo, fresh registry data |
 
 A rule runs on a trigger only if the trigger is in its `triggers`; L4 runs every rule whose `triggers` include any L1–L4 trigger, so CI is a superset of every local layer (PRD §6 P6).
+
+**Pre-push range.** The pushed range is the commits reachable from `HEAD` but from neither `@{push}` nor the default branch's remote-tracking ref. The default branch is the one `refs/remotes/origin/HEAD` names (the same read as §4.15.7 EC-3); no config field names it. The diff and file list run from the first parent of the oldest such commit to `HEAD`, so commits already merged into the default branch are never judged as the branch's after a rebase and force-push.
+
+| Case | Range |
+|---|---|
+| No `@{push}` | No range; nothing is judged (the commits were gated at commit time) |
+| `origin/HEAD` or its target ref unreadable | Fail closed to `@{push}..HEAD`, the stricter and larger range |
+| The oldest own commit has no parent, or a merge of the default branch sits among the own commits | Fail closed to `@{push}..HEAD` |
+| No commit of its own (every commit is in `@{push}` or the default branch) | Nothing is judged |
 
 ## 4.3.3 Evaluation
 

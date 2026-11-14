@@ -92,7 +92,13 @@ export interface FsStat {
 export interface Fs {
 	readonly read: (path: string) => Promise<Result<Uint8Array>>;
 	readonly readText: (path: string) => Promise<Result<string>>;
-	readonly write: (path: string, content: Uint8Array) => Promise<Result<void>>;
+	// `mode` (POSIX permission bits) is set only for the git hooks (SPEC §9.2);
+	// omitted, a write is never executable.
+	readonly write: (
+		path: string,
+		content: Uint8Array,
+		mode?: number,
+	) => Promise<Result<void>>;
 	readonly append: (path: string, content: Uint8Array) => Promise<Result<void>>;
 	readonly stat: (path: string) => Promise<Result<FsStat>>;
 	readonly list: (dir: string) => Promise<Result<Array<string>>>;

@@ -1,0 +1,70 @@
+{
+  "acceptanceCriteria": [
+    "SPEC §4.3.2 states the pre-push range as the branch's own commits, with its default-branch source and fail-closed fallback"
+  ],
+  "branch": "fix/bug-0092-prepush-range",
+  "diagnosis": "SPEC §4.3.2 says pre-push judges @{push}..HEAD, which after a rebase and force-push includes every commit already merged into the default branch; the range must exclude the default branch's remote ref.",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-03-ENGINE.md",
+      "docs/HISTORY/2026-11-14.md",
+      ".codictator/tasks/T-0034.json",
+      ".codictator/reviews/T-0034-r*.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0034",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T01:52:28.484Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T01:52:33.338Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T01:52:33.924Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T01:52:48.291Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T01:53:59.990Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T01:54:00.979Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T01:53:51.990Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0034-r1",
+      "round": 1,
+      "tree": "1fc6f962b72ba6edf7805c91967cc4813e362c24"
+    }
+  ],
+  "spec": [
+    "SPEC §4.3.2",
+    "SPEC §4.15.7 EC-3"
+  ],
+  "title": "docs: judge only the branch's own commits at pre-push",
+  "type": "docs",
+  "version": 1
+}
+

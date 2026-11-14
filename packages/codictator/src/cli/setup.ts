@@ -6,11 +6,8 @@
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import type { Result } from "../kernel/index.ts";
 import { err, ok } from "../kernel/index.ts";
-import {
-	configureHooksPath,
-	handleRegen,
-	writeHookFiles,
-} from "./guardrail.ts";
+import { configureHooksPath, handleRegen } from "./guardrail.ts";
+import { writeHookFiles } from "./hook-files.ts";
 import { parseInitFlags } from "./init.ts";
 import {
 	defaultHarnesses,

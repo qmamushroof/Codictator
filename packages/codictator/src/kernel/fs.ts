@@ -128,6 +128,7 @@ export class NodeFs implements Fs {
 		real: string,
 		rel: string,
 		content: Uint8Array,
+		mode: number,
 	): Promise<Result<void>> {
 		const dir = path.dirname(real);
 		const tmp = path.join(
@@ -136,7 +137,7 @@ export class NodeFs implements Fs {
 		);
 		try {
 			await fsp.mkdir(dir, { recursive: true });
-			await fsp.writeFile(tmp, content, { mode: 0o666 });
+			await fsp.writeFile(tmp, content, { mode });
 			await fsp.rename(tmp, real);
 			return ok(undefined);
 		} catch (cause) {
@@ -145,16 +146,21 @@ export class NodeFs implements Fs {
 		}
 	}
 
-	async write(input: string, content: Uint8Array): Promise<Result<void>> {
+	async write(
+		input: string,
+		content: Uint8Array,
+		mode: number = 0o666,
+	): Promise<Result<void>> {
 		this.confiner.clear();
 		const confined = await this.confine(input);
 		if (!confined.ok) {
 			return err(confined.error);
 		}
-		if (isRootPath(confined.value.real, this.root, this.tempRoot)) {
+		const { real, rel } = confined.value;
+		if (isRootPath(real, this.root, this.tempRoot)) {
 			return err(outsideError());
 		}
-		return this.writeAtomic(confined.value.real, confined.value.rel, content);
+		return this.writeAtomic(real, rel, content, mode);
 	}
 
 	async append(input: string, content: Uint8Array): Promise<Result<void>> {

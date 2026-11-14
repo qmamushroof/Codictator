@@ -76,8 +76,69 @@ async function runPreCommit(
 	);
 }
 
-// SPEC §4.3.2: pre-push judges the `@{push}..HEAD` diff. Without an
-// upstream there is no pushed range; the commits were gated at commit time.
+// SPEC §4.3.2 pre-push range: the diff base is the first parent of the
+// oldest commit reachable from HEAD but from neither @{push} nor the
+// default branch's remote ref (BUG-0092), so a rebased branch is not judged
+// for commits already merged there. Undefined means no commit of its own.
+// Every unreadable input, a root commit or a merge in range falls back to
+// the wider @{push} base, so the gate never narrows on a guess.
+async function pushedBase(
+	ports: CommandPorts,
+	upstream: string,
+): Promise<string | undefined> {
+	const head = await runGitText(ports, [
+		"git",
+		"symbolic-ref",
+		"refs/remotes/origin/HEAD",
+	]);
+	const defaultRef = head.ok ? head.value.trim() : "";
+	if (defaultRef === "") {
+		return upstream;
+	}
+	const resolved = await runGitText(ports, [
+		"git",
+		"rev-parse",
+		"--verify",
+		defaultRef,
+	]);
+	if (!resolved.ok || resolved.value.trim() === "") {
+		return upstream;
+	}
+	const range = ["HEAD", "--not", upstream, resolved.value.trim()];
+	const merges = await runGitText(ports, [
+		"git",
+		"rev-list",
+		"--merges",
+		...range,
+	]);
+	const own = await runGitText(ports, [
+		"git",
+		"rev-list",
+		"--reverse",
+		"--topo-order",
+		...range,
+	]);
+	if (!merges.ok || !own.ok || merges.value.trim() !== "") {
+		return upstream;
+	}
+	const oldest = own.value.split("\n")[0]?.trim() ?? "";
+	if (oldest === "") {
+		return undefined;
+	}
+	const parent = await runGitText(ports, [
+		"git",
+		"rev-parse",
+		"--verify",
+		`${oldest}^`,
+	]);
+	return parent.ok && parent.value.trim() !== ""
+		? parent.value.trim()
+		: upstream;
+}
+
+// SPEC §4.3.2: pre-push judges the branch's own commits (pushedBase).
+// Without an upstream there is no pushed range; the commits were gated at
+// commit time.
 async function runPrePush(
 	req: CommandRequest,
 	ports: CommandPorts,
@@ -95,7 +156,11 @@ async function runPrePush(
 	if (!upstream.ok || upstream.value.trim() === "") {
 		return emitGitVerdict(req, "pre-push", []);
 	}
-	const base = upstream.value.trim(); // BUG-0043 ACMR only: a pushed deletion has no worktree content.
+	const base = await pushedBase(ports, upstream.value.trim());
+	if (base === undefined) {
+		return emitGitVerdict(req, "pre-push", []);
+	}
+	// BUG-0043 ACMR only: a pushed deletion has no worktree content.
 	const names = await runGitText(ports, [
 		"git",
 		"diff",

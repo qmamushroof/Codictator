@@ -1,0 +1,110 @@
+{
+  "acceptanceCriteria": [
+    "install-hooks writes each hook with the plan mode 755; other generated files stay non-executable",
+    "On POSIX a real git commit runs the installed pre-commit hook"
+  ],
+  "branch": "fix/bug-0092-prepush-range",
+  "bugRowUpdated": true,
+  "diagnosis": "writeHookFiles writes through Fs.write, whose writeAtomic creates the temp file with mode 0o666, so hooks land 0644 and git skips them under core.hooksPath. hookInstallPlan().mode (0o755) was never applied. Fix: an optional mode argument on Fs.write, passed only for hooks (SPEC 9.2 allows executable git hooks).",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/index.ts",
+      "packages/codictator/src/kernel/fs.ts",
+      "packages/codictator/src/cli/guardrail.ts",
+      "packages/codictator/src/cli/evaluate-cache.ts",
+      "packages/codictator/tests/unit/cli/hook-install-mode.test.ts",
+      "packages/codictator/tests/acceptance/hooks-run-on-commit.test.ts",
+      "docs/BUGS/2026.md",
+      "docs/HISTORY/2026-11-14.md",
+      ".codictator/tasks/T-0036.json",
+      ".codictator/reviews/T-0036-r*.json",
+      "packages/codictator/src/cli/hook-files.ts",
+      "packages/codictator/src/cli/setup.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T02:17:08.798Z",
+    "tree": "b373ce366ccd52db58f41ca46d94ab3106e5ff7e"
+  },
+  "historyStaged": true,
+  "id": "T-0036",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T02:08:08.525Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T02:08:09.606Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:10:25.273Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:10:25.868Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T02:17:51.979Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T02:17:53.162Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T02:08:09.091Z",
+    "commit": "4a957e66d7d8d0f06c73aebf68384e6547184106",
+    "failing": [
+      "[§4.14.4] install-hooks asks the Fs port for mode 755 on every hook (BUG-0093)"
+    ],
+    "tree": "b373ce366ccd52db58f41ca46d94ab3106e5ff7e"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T02:17:41.016Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0036-r1",
+      "round": 1,
+      "tree": "28302b23e5c4bbb5ae7a3c3890154811b91c2498"
+    }
+  ],
+  "spec": [
+    "SPEC §4.14.4",
+    "SPEC §9.2",
+    "SPEC §4.1.1"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/hook-install-mode.test.ts",
+      "title": "[§4.14.4] install-hooks asks the Fs port for mode 755 on every hook (BUG-0093)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/hook-install-mode.test.ts",
+      "title": "[§4.14.4] install-hooks leaves each written hook executable on POSIX (BUG-0093)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/hooks-run-on-commit.test.ts",
+      "title": "[§4.14.4] a real git commit runs the installed pre-commit hook (BUG-0093)"
+    }
+  ],
+  "title": "fix(cli): install-hooks writes executable hooks",
+  "type": "fix",
+  "version": 1
+}
+
