@@ -14,6 +14,7 @@ import { checkRedProofReRun } from "../features/testing/proofs.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import { ciRecordBotChange } from "./ci-bot-change.ts";
+import { rangeHistoryFindings } from "./ci-history.ts";
 import { verifyInputs } from "./ci-inputs.ts";
 import {
 	ciPackIds,
@@ -218,7 +219,11 @@ async function ciVerify(
 				);
 			}
 		} else {
-			trailered = checkCommitTrailers(commits.value, trailerExempt);
+			trailered = [
+				...checkCommitTrailers(commits.value, trailerExempt),
+				// SPEC §4.9.3 EC-9: each non-merge commit owes its own entry.
+				...(await rangeHistoryFindings(ports.value, commits.value)),
+			];
 		}
 		rerun = await rerunRedProofs(
 			ports.value,

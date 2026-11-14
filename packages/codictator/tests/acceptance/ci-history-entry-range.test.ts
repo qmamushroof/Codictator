@@ -87,3 +87,76 @@ test("[§4.9.3] ci verify blocks a code range with no HISTORY entry", async () =
 		repo.cleanup();
 	}
 });
+
+test("[§4.9.3 EC-9] ci verify blocks a range where one entry covers several commits", async () => {
+	const { repo, base } = rangeRepo();
+	try {
+		repo.writeFile("src/a.ts", "export const a = 1;\n");
+		repo.writeFile(
+			"docs/HISTORY/2026-01-01.md",
+			TITLE + entry("feat(app): add a"),
+		);
+		repo.commit("feat(app): add a");
+		repo.writeFile("src/b.ts", "export const b = 2;\n");
+		repo.commit("feat(app): add b");
+		const head = repo.git(["rev-parse", "HEAD"]).trim();
+		const ids = await verifyRuleIds(repo, base, head);
+		assert.ok(
+			ids.includes("core/history-entry"),
+			`commit without its own entry passed: ${ids.join(", ")}`,
+		);
+	} finally {
+		repo.cleanup();
+	}
+});
+
+test("[§4.9.3 EC-9] ci verify leaves a deps-only commit owing no entry", async () => {
+	const { repo, base } = rangeRepo();
+	try {
+		repo.writeFile("src/a.ts", "export const a = 1;\n");
+		repo.writeFile(
+			"docs/HISTORY/2026-01-01.md",
+			TITLE + entry("feat(app): add a"),
+		);
+		repo.commit("feat(app): add a");
+		repo.writeFile("package.json", '{"name":"x"}\n');
+		repo.commit("chore(deps): bump x");
+		const head = repo.git(["rev-parse", "HEAD"]).trim();
+		const ids = await verifyRuleIds(repo, base, head);
+		assert.ok(
+			!ids.includes("core/history-entry"),
+			`deps-only commit flagged: ${ids.join(", ")}`,
+		);
+	} finally {
+		repo.cleanup();
+	}
+});
+
+test("[§4.9.3 EC-9] ci verify leaves a merge commit in range owing no entry", async () => {
+	const { repo, base } = rangeRepo();
+	try {
+		repo.git(["checkout", "-b", "side"]);
+		repo.writeFile("src/a.ts", "export const a = 1;\n");
+		repo.writeFile(
+			"docs/HISTORY/2026-01-02.md",
+			TITLE + entry("feat(app): add a"),
+		);
+		repo.commit("feat(app): add a");
+		repo.git(["checkout", "-"]);
+		repo.writeFile("src/b.ts", "export const b = 2;\n");
+		repo.writeFile(
+			"docs/HISTORY/2026-01-03.md",
+			TITLE + entry("feat(app): add b"),
+		);
+		repo.commit("feat(app): add b");
+		repo.git(["merge", "--no-ff", "-m", "Merge side", "side"]);
+		const head = repo.git(["rev-parse", "HEAD"]).trim();
+		const ids = await verifyRuleIds(repo, base, head);
+		assert.ok(
+			!ids.includes("core/history-entry"),
+			`merge commit flagged: ${ids.join(", ")}`,
+		);
+	} finally {
+		repo.cleanup();
+	}
+});

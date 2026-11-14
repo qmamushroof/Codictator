@@ -40,7 +40,7 @@ export async function historyEntryReal(
 	// the entry (history-append-only forbids edits, so a changed file is an
 	// added entry; L3 commit-msg judges the per-commit count and subject).
 	// This union-scope verdict cannot see per-commit counts across an L4
-	// range; that gap is BUG-0083, so here the change owes nothing more.
+	// range; ci verify judges each commit in cli/ci-history.ts (BUG-0083).
 	// A BUGS row alone exempts only a records-only change: a code change that
 	// carries one (the tracked-BUGS fallback unions tracked rows into the
 	// scope) still owes a HISTORY entry, so only non-record files are judged.
