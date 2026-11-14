@@ -47,3 +47,18 @@ test("[consumer] every tier:floor rule has a mapped scenario", async () => {
 		`floor rules with no L-surface: ${triggerless.join(", ")}`,
 	);
 });
+
+// SPEC §5.6 and §5.7 name L1/L4 and L4 as the layers of these rows, and
+// §4.14.3 lists the shell form of a hook bypass; each probe sits there.
+const SPEC_PROBES: ReadonlyArray<readonly [string, string]> = [
+	["core/no-guard-removal", "verify-tdd-range"],
+	["core/arch-profile-declared", "verify-tdd-range"],
+	["core/no-bypass", "shell-bypass"],
+];
+
+test("[consumer] remapped rows probe at the SPEC layer", () => {
+	for (const [rule, probe] of SPEC_PROBES) {
+		const row = MATRIX.find(([id]) => id === rule);
+		assert.equal(row?.[1], probe, `${rule} probe`);
+	}
+});

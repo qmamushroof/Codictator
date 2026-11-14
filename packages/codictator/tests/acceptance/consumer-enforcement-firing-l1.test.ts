@@ -52,12 +52,7 @@ const HOOK_CASES: Record<string, (dir: string) => Record<string, unknown>> = {
 	"shell-danger": (dir) =>
 		toolPayload(dir, "Bash", { command: "rm -rf /tmp/mx-probe" }, "toolu-2"),
 	"read-secret": (dir) =>
-		toolPayload(
-			dir,
-			"Read",
-			{ file_path: `${dir}/src/mx-readable.ts` },
-			"toolu-3",
-		),
+		toolPayload(dir, "Read", { file_path: `${dir}/.env` }, "toolu-3"),
 	"read-twice": (dir) =>
 		toolPayload(
 			dir,
@@ -116,12 +111,8 @@ const HOOK_CASES: Record<string, (dir: string) => Record<string, unknown>> = {
 		writePayload(dir, "py/mx_evil.py", "code = input()\nev" + "al(code)\n"),
 	"write-badname": (dir) =>
 		writePayload(dir, "src/Bad Name.TS", "export const b = 1;\n"),
-	"write-bypass": (dir) =>
-		writePayload(
-			dir,
-			"src/mx-bypass.ts",
-			"// codictator: disable\n\nexport const b = 1;\n",
-		),
+	"shell-bypass": (dir) =>
+		toolPayload(dir, "Bash", { command: "git commit -n -m probe" }, "toolu-6"),
 	"write-narrow": (dir) =>
 		writePayload(dir, "src/mx-c.ts", "export const c = 1;\n"),
 	"write-fix-nodiag": (dir) =>
@@ -185,7 +176,7 @@ test("[consumer] every L1-mapped floor rule fires on its hook probe", async () =
 			"write-py-phantom",
 			"write-py-eval",
 			"write-badname",
-			"write-bypass",
+			"shell-bypass",
 		]) {
 			await hookProbe(probe);
 		}
