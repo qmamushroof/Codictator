@@ -1,0 +1,66 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.4.1 pack case data names loaded packs only",
+    "BUG-0102 filed open"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "files": {
+    "allow": [
+      "docs/SPEC/04-04-PACKS.md",
+      "docs/BUGS/2026.md",
+      "docs/HISTORY/**"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0054",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T07:51:10.578Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T07:51:18.267Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:51:30.980Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:51:34.916Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T07:52:13.743Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T07:52:01.907Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0054-r1",
+      "round": 1,
+      "tree": "6528aaff6fe4c703f8f327baa573a267b3a1290c"
+    }
+  ],
+  "spec": [
+    "§4.4.1",
+    "§7.2",
+    "§4.4.3"
+  ],
+  "title": "docs(packs): confine pack case data to loaded packs and file BUG-0102",
+  "type": "docs",
+  "version": 1
+}
+
