@@ -2,7 +2,8 @@
 	"rule": "core/workflow-gates",
 	"section": "§5.9",
 	"expectation": "violating",
-	"trigger": "phase skipped out of order",
+	"trigger": "startup",
+	"description": "phase skipped out of order",
 	"expectRules": ["core/workflow-gates"],
 	"files": {
 		"sample.txt": "phases: 1,2,4\nskipped: validate\n"

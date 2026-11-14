@@ -2,7 +2,8 @@
 	"rule": "python/typecheck",
 	"section": "§6.3",
 	"expectation": "violating",
-	"trigger": "int annotation holding a string literal",
+	"trigger": "review",
+	"description": "int annotation holding a string literal",
 	"expectRules": ["python/typecheck"],
 	"files": {
 		"sample.py": "width: int = \"wide\"\n"

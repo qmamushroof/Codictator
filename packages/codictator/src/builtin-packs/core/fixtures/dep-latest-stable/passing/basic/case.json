@@ -2,7 +2,8 @@
 	"rule": "core/dep-latest-stable",
 	"section": "§5.3",
 	"expectation": "passing",
-	"trigger": "dependency lagging stable by 400 days",
+	"trigger": "review",
+	"description": "dependency lagging stable by 400 days",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "dep: axios@1.6.0\nlag-days: 5\n"

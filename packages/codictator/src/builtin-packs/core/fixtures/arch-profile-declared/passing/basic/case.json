@@ -2,7 +2,8 @@
 	"rule": "core/arch-profile-declared",
 	"section": "§5.7",
 	"expectation": "passing",
-	"trigger": "no architecture profile declared",
+	"trigger": "review",
+	"description": "no architecture profile declared",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "profile: cli-service\n"

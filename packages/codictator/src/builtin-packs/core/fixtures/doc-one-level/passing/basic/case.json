@@ -2,7 +2,8 @@
 	"rule": "core/doc-one-level",
 	"section": "§5.10",
 	"expectation": "passing",
-	"trigger": "docs nested three levels deep",
+	"trigger": "pre-tool",
+	"description": "docs nested three levels deep",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "path: docs/guide.md\n"

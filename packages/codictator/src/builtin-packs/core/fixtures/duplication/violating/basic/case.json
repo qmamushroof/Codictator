@@ -2,7 +2,8 @@
 	"rule": "core/duplication",
 	"section": "§5.6",
 	"expectation": "violating",
-	"trigger": "duplicated token run of 80 over a 50 limit",
+	"trigger": "review",
+	"description": "duplicated token run of 80 over a 50 limit",
 	"expectRules": ["core/duplication"],
 	"files": {
 		"sample.txt": "duplicated-tokens: 80\nlimit: 50\n"

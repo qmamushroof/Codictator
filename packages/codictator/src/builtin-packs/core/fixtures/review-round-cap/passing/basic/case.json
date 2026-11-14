@@ -2,7 +2,8 @@
 	"rule": "core/review-round-cap",
 	"section": "§5.9",
 	"expectation": "passing",
-	"trigger": "review running 5 rounds over a 3 cap",
+	"trigger": "review",
+	"description": "review running 5 rounds over a 3 cap",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "rounds: 2\ncap: 3\n"

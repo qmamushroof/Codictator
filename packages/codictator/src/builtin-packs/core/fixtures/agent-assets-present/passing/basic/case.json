@@ -2,7 +2,8 @@
 	"rule": "core/agent-assets-present",
 	"section": "§5.12",
 	"expectation": "passing",
-	"trigger": "required knowledge-graph helper missing",
+	"trigger": "startup",
+	"description": "required knowledge-graph helper missing",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "helpers: knowledge-graph, token-saver\n"

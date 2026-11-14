@@ -2,7 +2,8 @@
 	"rule": "core/coverage-floor",
 	"section": "§5.4",
 	"expectation": "passing",
-	"trigger": "coverage below the lines and branches floor",
+	"trigger": "review",
+	"description": "coverage below the lines and branches floor",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "lines: 93%\nbranches: 84%\n"

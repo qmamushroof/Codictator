@@ -2,7 +2,8 @@
 	"rule": "core/conventional-commit",
 	"section": "§5.11",
 	"expectation": "violating",
-	"trigger": "commit subject with no type prefix",
+	"trigger": "pre-tool",
+	"description": "commit subject with no type prefix",
 	"expectRules": ["core/conventional-commit"],
 	"files": {
 		"sample.txt": "subject: fixed stuff\n"

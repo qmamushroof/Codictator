@@ -2,7 +2,8 @@
 	"rule": "core/arch-module-size",
 	"section": "§5.7",
 	"expectation": "passing",
-	"trigger": "module with 90 files and 9000 lines",
+	"trigger": "review",
+	"description": "module with 90 files and 9000 lines",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "files: 40\nlines: 4000\n"

@@ -2,7 +2,8 @@
 	"rule": "python/lint",
 	"section": "§6.3",
 	"expectation": "violating",
-	"trigger": "unused import failing the linter",
+	"trigger": "post-tool",
+	"description": "unused import failing the linter",
 	"expectRules": ["python/lint"],
 	"files": {
 		"sample.py": "import os\n\nprint(\"hi\")\n"

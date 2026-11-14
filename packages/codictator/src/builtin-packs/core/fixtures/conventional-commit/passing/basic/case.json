@@ -2,7 +2,8 @@
 	"rule": "core/conventional-commit",
 	"section": "§5.11",
 	"expectation": "passing",
-	"trigger": "commit subject with no type prefix",
+	"trigger": "pre-tool",
+	"description": "commit subject with no type prefix",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "subject: fix(core): drop dead export\n"

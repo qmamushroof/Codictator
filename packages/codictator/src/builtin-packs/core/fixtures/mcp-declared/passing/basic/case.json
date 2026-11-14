@@ -2,7 +2,8 @@
 	"rule": "core/mcp-declared",
 	"section": "§5.1",
 	"expectation": "passing",
-	"trigger": "tool call to an undeclared MCP server",
+	"trigger": "startup",
+	"description": "tool call to an undeclared MCP server",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "tool: \"repo-server\"\ndeclared: true\n"

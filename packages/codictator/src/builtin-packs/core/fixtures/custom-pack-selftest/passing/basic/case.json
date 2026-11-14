@@ -2,7 +2,8 @@
 	"rule": "core/custom-pack-selftest",
 	"section": "§5.12",
 	"expectation": "passing",
-	"trigger": "custom pack changed with no self-test",
+	"trigger": "review",
+	"description": "custom pack changed with no self-test",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "changed: yes\nself-test: passed\n"

@@ -2,7 +2,8 @@
 	"rule": "core/repo-hygiene",
 	"section": "§5.11",
 	"expectation": "passing",
-	"trigger": "committed build output directory",
+	"trigger": "review",
+	"description": "committed build output directory",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "committed: src/\n"

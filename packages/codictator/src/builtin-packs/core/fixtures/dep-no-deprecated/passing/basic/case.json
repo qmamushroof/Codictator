@@ -2,7 +2,8 @@
 	"rule": "core/dep-no-deprecated",
 	"section": "§5.3",
 	"expectation": "passing",
-	"trigger": "dependency marked deprecated upstream",
+	"trigger": "pre-tool",
+	"description": "dependency marked deprecated upstream",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "dep: got@12.6.1\nstatus: supported\n"

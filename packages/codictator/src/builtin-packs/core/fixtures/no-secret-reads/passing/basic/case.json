@@ -2,7 +2,8 @@
 	"rule": "core/no-secret-reads",
 	"section": "§5.2",
 	"expectation": "passing",
-	"trigger": "agent tool reading .env directly",
+	"trigger": "pre-tool",
+	"description": "agent tool reading .env directly",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "read: .env.example\nby: agent-tool\n"

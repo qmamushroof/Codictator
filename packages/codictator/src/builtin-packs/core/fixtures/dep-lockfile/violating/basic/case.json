@@ -2,7 +2,8 @@
 	"rule": "core/dep-lockfile",
 	"section": "§5.3",
 	"expectation": "violating",
-	"trigger": "no lockfile committed",
+	"trigger": "review",
+	"description": "no lockfile committed",
 	"expectRules": ["core/dep-lockfile"],
 	"files": {
 		"sample.txt": "lockfile: missing\nmanifest: package.json\n"

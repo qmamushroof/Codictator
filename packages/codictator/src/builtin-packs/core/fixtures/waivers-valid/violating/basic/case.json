@@ -2,7 +2,8 @@
 	"rule": "core/waivers-valid",
 	"section": "§5.12",
 	"expectation": "violating",
-	"trigger": "waiver expired at 120 days",
+	"trigger": "review",
+	"description": "waiver expired at 120 days",
 	"expectRules": ["core/waivers-valid"],
 	"files": {
 		"sample.txt": "waiver-days: 120\nmax: 90\n"

@@ -2,7 +2,8 @@
 	"rule": "core/ratchet-touched-improves",
 	"section": "§5.6",
 	"expectation": "violating",
-	"trigger": "touched files add 2 violations",
+	"trigger": "review",
+	"description": "touched files add 2 violations",
 	"expectRules": ["core/ratchet-touched-improves"],
 	"files": {
 		"sample.txt": "touched-delta: +2\n"

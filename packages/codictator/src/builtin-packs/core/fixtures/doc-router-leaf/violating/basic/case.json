@@ -2,7 +2,8 @@
 	"rule": "core/doc-router-leaf",
 	"section": "§5.10",
 	"expectation": "violating",
-	"trigger": "folder without its router leaf",
+	"trigger": "pre-tool",
+	"description": "folder without its router leaf",
 	"expectRules": ["core/doc-router-leaf"],
 	"files": {
 		"sample.txt": "folder: GUIDE/\nrouter: missing\n"

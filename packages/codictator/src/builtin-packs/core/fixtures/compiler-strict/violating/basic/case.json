@@ -2,7 +2,8 @@
 	"rule": "core/compiler-strict",
 	"section": "§5.7",
 	"expectation": "violating",
-	"trigger": "tsconfig with strict off",
+	"trigger": "review",
+	"description": "tsconfig with strict off",
 	"expectRules": ["core/compiler-strict"],
 	"files": {
 		"tsconfig.json": "{\n  \"compilerOptions\": {\n    \"strict\": false\n  }\n}\n"
