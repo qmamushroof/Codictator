@@ -1,0 +1,72 @@
+{
+  "acceptanceCriteria": [
+    "SPEC §7.3 defines the seven trigger values and the §4.3.2 triggers each covers",
+    "SPEC §4.4.1 Case file cites §7.3 for the trigger value",
+    "BUG-0103 is filed in docs/BUGS/2026.md"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "files": {
+    "allow": [
+      "docs/SPEC/**",
+      "docs/BUGS/2026.md",
+      "docs/HISTORY/*.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0056",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T08:12:14.690Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T08:12:25.051Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T08:12:28.103Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T08:12:49.547Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T08:13:26.959Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T08:13:52.883Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T08:13:19.424Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0056-r1",
+      "round": 1,
+      "tree": "3fd42052962071ac209e81a9a4031498e442c805"
+    }
+  ],
+  "spec": [
+    "§4.3.2",
+    "§4.4.1",
+    "§7.3"
+  ],
+  "title": "docs(spec): define pack and case trigger values",
+  "type": "docs",
+  "version": 1
+}
+

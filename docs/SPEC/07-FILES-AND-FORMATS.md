@@ -63,6 +63,20 @@ The adoption path guarantees the manifest-owned `.gitignore` entries (`.codictat
 | `assets[]` | `{ id, kind: "skill" \| "subagent" \| "command", template }` (§4.6.6) |
 | `maxWaiverDays` | Integer; core: 90 |
 
+**Trigger values.** `rules[].triggers[]` and `case.json` `trigger` (§4.4.1) take one of seven values, each covering the §4.3.2 triggers listed:
+
+| Value | Covers (§4.3.2) |
+|---|---|
+| `startup` | `session.start`, `subagent.start` (L0) |
+| `prompt` | `prompt.submit` (L0, advisory) |
+| `compact` | `compact.post` (L0) |
+| `pre-tool` | `tool.pre.write`, `tool.pre.shell`, `tool.pre.read`, `tool.pre.search`, `tool.pre.other` (L1) |
+| `post-tool` | `tool.post.write`, `stop` (L1, feedback only) |
+| `review` | The second pass of the L3 and L4 gates, after their `pre-tool` pass: `git.pre-commit`, `git.commit-msg`, `git.pre-push`, `ci.verify` |
+| `scheduled` | `schedule.sweep` (L5) |
+
+`editor.save` (L2) has no value. A harness event maps to one value through its adapter table (§4.5.3).
+
 ## 7.4–7.6 Pack acceptance, waivers and baseline
 
 ### 7.4 `accepted.json` (custom packs)
