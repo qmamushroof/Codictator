@@ -1,0 +1,89 @@
+{
+  "acceptanceCriteria": [
+    "write-confinement passing case judges an in-repo target that exists in case files and evaluates clean under the real case.json evaluation of SPEC 4.4.4",
+    "BUG-0095 stays open: selftest still empty-scope"
+  ],
+  "branch": "work/serial-queue",
+  "diagnosis": "BUG-0095: selftest never evaluates case.json. A SPEC 4.4.4 evaluation harness (in-memory case files, case trigger, expectRules) run over all 187 built-in cases finds one fixture defect: core/write-confinement/passing/basic names write target ./src/out.txt that is absent from files, so the disk-scope guard fails closed as unresolvable (SPEC 4.7.3), and its description is copied from the violating case.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/builtin-packs/**/fixtures/**",
+      "docs/HISTORY/*.md",
+      "packages/codictator/tests/unit/packs/pack-case-evaluation.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T08:25:44.362Z",
+    "tree": "8d695a6a16a1ec16f915cd0f64d3a9d7d7a44856"
+  },
+  "historyStaged": true,
+  "id": "T-0057",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T08:17:11.812Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T08:17:56.948Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T08:25:43.657Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T08:25:55.720Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T08:26:34.617Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T08:26:43.591Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T08:17:53.644Z",
+    "commit": "c46ce5246b10b06618c376514c4e2f3c45e157ce",
+    "failing": [
+      "[§4.4.4] every core pack case.json evaluates to its expectation"
+    ],
+    "tree": "8d695a6a16a1ec16f915cd0f64d3a9d7d7a44856"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T08:26:27.036Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0057-r1",
+      "round": 1,
+      "tree": "94cd297a994c7e6724c1f31a5248b8d77b74e895"
+    }
+  ],
+  "spec": [
+    "§4.4.1",
+    "§4.4.4"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-case-evaluation.test.ts",
+      "title": "[§4.4.4] every core pack case.json evaluates to its expectation"
+    }
+  ],
+  "title": "test(packs): correct builtin pack fixture cases, batch 1",
+  "type": "chore",
+  "version": 1
+}
+

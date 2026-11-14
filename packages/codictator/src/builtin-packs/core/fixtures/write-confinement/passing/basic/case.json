@@ -3,9 +3,10 @@
 	"section": "§5.2",
 	"expectation": "passing",
 	"trigger": "pre-tool",
-	"description": "write outside the repo root",
+	"description": "write to an existing path inside the repo root",
 	"expectRules": [],
 	"files": {
-		"sample.txt": "write: ./src/out.txt\n"
+		"sample.txt": "write: ./src/out.txt\n",
+		"src/out.txt": "existing in-repo target\n"
 	}
 }
