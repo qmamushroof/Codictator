@@ -31,6 +31,12 @@ The analyser tokenises a command without executing anything: splits on `;`, `&&`
 | History destruction | `git push --force`/`-f`/`--force-with-lease` to protected branches, `git filter-branch`, `git filter-repo`, `git update-ref -d`, `git reflog expire`, `gh repo delete`, `gh release delete` |
 | Bypass | Owned by §4.14.3 |
 
+Compound commands are parsed, not skipped. The keywords `if`, `elif`, `then`, `else`, `fi`, `while`, `until`, `do`, `done` and `!` introduce a command: the keyword is dropped and the words after it, with their quoting intact, are judged as one simple command, so a dangerous command inside an `if` body is flagged. `for`, `select`, `case` and `in` take data words, not a command. Array assignments (`name=(…)`, `name+=(…)`) are judged like a group: every element is judged as a command, conservatively. A process substitution `<(…)` or `>(…)` is descended whether it stands alone or is a redirection target (`done < <(…)`).
+
+A heredoc or here-string body is data for the command that receives it, and is not judged. When that command is a shell (`sh`, `bash`, `dash`, `zsh`, `ksh`, `pwsh`, `powershell`, with or without `sudo`/`env` prefixes), the body is a script: it is judged like a `-c` string and an unparseable body is `CDX-E306`.
+
+A download (a download tool with a URL) piped into any interpreter is blocked, inline program or not, because the inline program can evaluate its input. Any other pipe into an interpreter (`sh`, `bash`, `python`, `node` and the other shell-like names) executes its input and is blocked ("pipe into a shell executes its input"), unless the interpreter is given an inline program (`node -e`/`--eval`/`-p`/`--print`, `python -c`, `perl`/`ruby -e`, `php -r`, `sh -c`): the input is then only data, and an inline shell program is judged as an embedded script. This exemption applies only to that generic case; `node`, `node -` and `sh` with no inline program stay blocked.
+
 Unparseable input (unbalanced quotes, heredoc without terminator) → block with `CDX-E306` (fail closed). The analyser is conservative by design: a false positive is remediated in the rule with a passing fixture, never waived (PRD §11.3).
 
 ## 4.7.3 Write confinement (`core/write-confinement`)
