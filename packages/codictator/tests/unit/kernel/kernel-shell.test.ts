@@ -103,11 +103,8 @@ test("[§4.7] shell commands strip prefixes and keep scripts", () => {
 	assert.equal(pipeline[0]?.name, "rm");
 	assert.equal(pipeline[0]?.elevated, true);
 	const keywordPipe: Array<SimpleCommand> = [];
-	const descended: Array<string> = [];
-	buildShellCommand(keywordPipe, ["if", "true"], "raw", false, [], (inner) =>
-		descended.push(inner),
-	);
-	assert.deepEqual(descended, ["true"]);
+	buildShellCommand(keywordPipe, ["if", "true"], "raw", false, [], () => {});
+	assert.equal(keywordPipe[0]?.name, "true");
 	const xargsPipe: Array<SimpleCommand> = [];
 	buildShellCommand(
 		xargsPipe,

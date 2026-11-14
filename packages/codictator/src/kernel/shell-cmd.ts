@@ -43,23 +43,30 @@ export const SCRIPT_NAMES = new Set([
 
 const STRIP_NAMES = new Set(["env", "command", "nohup", "time"]);
 
-const KEYWORDS = new Set([
+// SPEC §4.7.2: these keywords introduce a command; the keyword is dropped
+// and the words after it are judged with their quoting intact.
+const COMMAND_KEYWORDS = new Set([
 	"if",
 	"then",
 	"elif",
 	"else",
-	"fi",
-	"for",
 	"while",
 	"until",
 	"do",
+	"!",
+	"coproc",
+]);
+
+// These take data words or close a block, never a command of their own.
+const DATA_KEYWORDS = new Set([
+	"fi",
+	"for",
 	"done",
 	"case",
 	"esac",
 	"select",
 	"in",
 	"function",
-	"coproc",
 	"time",
 ]);
 
@@ -145,7 +152,7 @@ function stripPrefixes(words: ReadonlyArray<string>): Stripped {
 		if (head === undefined) {
 			break;
 		}
-		if (ASSIGNMENT_PATTERN.test(head)) {
+		if (ASSIGNMENT_PATTERN.test(head) || COMMAND_KEYWORDS.has(head)) {
 			rest = rest.slice(1);
 			continue;
 		}
@@ -190,6 +197,7 @@ function buildStripped(
 	raised: boolean,
 	scripts: ReadonlyArray<string>,
 	descend: (inner: string) => void,
+	stdin: ReadonlyArray<string>,
 ): void {
 	if (rest.length === 0) {
 		return;
@@ -199,10 +207,7 @@ function buildStripped(
 		return;
 	}
 	const lowered = baseName(name).toLowerCase();
-	if (KEYWORDS.has(lowered)) {
-		if (rest.length > 1) {
-			descend(rest.slice(1).join(" "));
-		}
+	if (DATA_KEYWORDS.has(name)) {
 		return;
 	}
 	if (lowered === "xargs") {
@@ -211,7 +216,7 @@ function buildStripped(
 			new Set(["-i", "-n", "-p", "-s", "-l", "-a"]),
 		);
 		if (target.length > 0) {
-			buildShellCommand(pipeline, target, raw, raised, scripts, descend);
+			buildShellCommand(pipeline, target, raw, raised, scripts, descend, stdin);
 		}
 		return;
 	}
@@ -220,6 +225,8 @@ function buildStripped(
 	const at = scriptFlagIndex(rest, lowered);
 	const single = rest[at + 1];
 	const joined = rest.slice(at + 1).join(" ");
+	// A heredoc or here-string body is data, unless a shell receives it.
+	const fed = SCRIPT_NAMES.has(lowered) ? stdin : [];
 	const embedded =
 		at >= 0
 			? [
@@ -229,8 +236,9 @@ function buildStripped(
 							? []
 							: [single]
 						: [joined]),
+					...fed,
 				]
-			: [...scripts, ...extra];
+			: [...scripts, ...extra, ...fed];
 	pipeline.push({
 		name,
 		argv: rest.slice(1),
@@ -249,6 +257,7 @@ export function buildShellCommand(
 	raised: boolean,
 	scripts: ReadonlyArray<string>,
 	descend: (inner: string) => void,
+	stdin: ReadonlyArray<string> = [],
 ): void {
 	if (words.every((word) => FUNCTION_HEAD_PATTERN.test(word))) {
 		return;
@@ -262,7 +271,7 @@ export function buildShellCommand(
 			argv: [],
 			raw,
 			elevated: totalRaised,
-			embedded: totalScripts,
+			embedded: [...totalScripts, ...stdin],
 		});
 		return;
 	}
@@ -273,5 +282,6 @@ export function buildShellCommand(
 		totalRaised,
 		totalScripts,
 		descend,
+		stdin,
 	);
 }

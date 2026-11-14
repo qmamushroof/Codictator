@@ -15,6 +15,7 @@ import {
 } from "./shell-deny-destroy.ts";
 import { checkChmod, checkGh, checkGit } from "./shell-deny-escalate.ts";
 import { classifyTarget, flag, type TargetKind } from "./shell-deny-target.ts";
+import { analyseShell } from "./shell-scan.ts";
 
 export {
 	checkChmod,
@@ -58,4 +59,62 @@ export function dispatchToolCheck(
 	} else if (name === "format") {
 		checkFormat(command, out);
 	}
+}
+
+const INLINE_FLAGS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+	["node", new Set(["-e", "--eval", "-p", "--print"])],
+	["python", new Set(["-c"])],
+	["python3", new Set(["-c"])],
+	["perl", new Set(["-e", "-E"])],
+	["ruby", new Set(["-e"])],
+	["php", new Set(["-r"])],
+	["sh", new Set(["-c"])],
+	["bash", new Set(["-c"])],
+	["dash", new Set(["-c"])],
+	["zsh", new Set(["-c"])],
+	["ksh", new Set(["-c"])],
+	["pwsh", new Set(["-c", "-command"])],
+	["powershell", new Set(["-c", "-command"])],
+]);
+
+const SHELL_PROGRAMS: ReadonlySet<string> = new Set([
+	"sh",
+	"bash",
+	"dash",
+	"zsh",
+	"ksh",
+	"pwsh",
+	"powershell",
+]);
+
+// An inline shell program that itself runs a bare interpreter hands the
+// piped data to it, so the data still executes. Unparseable fails closed.
+function programReadsStdin(program: string): boolean {
+	const parsed = analyseShell(program);
+	if (!parsed.ok) {
+		return true;
+	}
+	return parsed.value.pipelines.some((pipeline) =>
+		pipeline.commands.some(
+			(inner) =>
+				INLINE_FLAGS.has(commandName(inner)) && !hasInlineProgram(inner),
+		),
+	);
+}
+
+// SPEC §4.7.2: an interpreter given an inline program runs that program;
+// what is piped into it is data (an inline shell program is judged as an
+// embedded script, and must not itself read stdin as a program).
+export function hasInlineProgram(command: SimpleCommand): boolean {
+	const name = commandName(command);
+	const flags = INLINE_FLAGS.get(name);
+	if (flags === undefined) {
+		return false;
+	}
+	const at = command.argv.findIndex((word) => flags.has(word.toLowerCase()));
+	const program = command.argv[at + 1];
+	if (at < 0 || program === undefined || program === "-") {
+		return false;
+	}
+	return !SHELL_PROGRAMS.has(name) || !programReadsStdin(program);
 }

@@ -1,0 +1,149 @@
+{
+  "acceptanceCriteria": [
+    "Heredocs, array assignments, multi-line if blocks and process substitution targets parse and the commands inside are still judged",
+    "A heredoc body is data unless a shell receives it, then it is judged or fails closed",
+    "A pipe into an interpreter with an inline program is allowed; without one it stays blocked; a download piped into any interpreter stays blocked",
+    "This repo's own .github/workflows/*.yml give 0 findings"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced by running extractShellSources and analyseShell over .github/workflows/*.yml: codictator.yml and release.yml report CDX-E306, test-heavy.yml reports a pipe into a shell, and the node heredoc in codictator.yml reports an unparseable embedded shell. Heredocs, arrays and plain if blocks parse on their own; four defects cause the failures. (1) shell-cmd.ts buildStripped handles a leading keyword (if/then/else/while/do) by joining the already-decoded words with spaces and re-parsing them, which loses quoting, so an if test holding a quoted GitHub expression with double braces re-parses as a brace group and fails; the rejoin also re-splits a quoted bash -c script, a fail-open risk. (2) shell-scan.ts handleRedirection reads the target of a less-than redirection as a plain word, so done with a redirect from a process substitution has an empty target and throws. (3) ShellParser.endCommand passes every heredoc body as an embedded script of the command, so the body of a node heredoc is judged as shell; a here-string body is never judged, so a shell fed by one is fail-open. (4) shell-deny.ts pipeStep flags every pipe into node, python and the other interpreters, with no allowance for an inline program (node -e), and the download check only fires when the download is adjacent to the interpreter. SPEC §4.7.2 was silent on all four and was fixed first in T-0045.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/shell-*.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-14.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0046.json",
+      ".codictator/reviews/T-0046-r*.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T06:47:41.853Z",
+    "tree": "7c2976f4f7425b9f189dba67e91fbb1f765b6926"
+  },
+  "historyStaged": true,
+  "id": "T-0046",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T06:36:04.325Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T06:36:15.931Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T06:38:18.388Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T06:42:09.061Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T06:48:23.512Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T06:47:36.783Z",
+    "commit": "8426be903f9d335017d10c1c2e0a3dc15ccfed98",
+    "failing": [
+      "[§4.7.2] shell analyser parses an if block with a quoted expression (BUG-0099)",
+      "[§4.7.2] shell analyser flags a dangerous command inside if and while bodies (BUG-0099)",
+      "[§4.7.2] shell analyser parses array assignments and judges their elements (BUG-0099)",
+      "[§4.7.2] shell analyser descends a process substitution used as a redirection target (BUG-0099)",
+      "[§4.7.2] shell analyser treats a heredoc body as data unless a shell receives it (BUG-0099)",
+      "[§4.7.2] shell analyser allows a pipe into an interpreter with an inline program and blocks one without (BUG-0099)",
+      "[§4.7.2] shell analyser blocks a download piped into an interpreter even with an inline program (BUG-0099)",
+      "[§4.7.2] the analyser gives no finding over this repo's own workflows (BUG-0099)",
+      "[§4.7.2] verify accepts a run block with a heredoc, an array and an if block and still blocks a bad command inside (BUG-0099)",
+      "[§4.7.2] shell analyser blocks a pipe into a shell whose inline program reads stdin (BUG-0099)"
+    ],
+    "tree": "7c2976f4f7425b9f189dba67e91fbb1f765b6926"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T06:48:00.657Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0046-r1",
+      "round": 1,
+      "tree": "32aba05bcf091044de5de0f0b194f3733c164a73"
+    }
+  ],
+  "spec": [
+    "SPEC §4.7.2",
+    "SPEC §4.7.2 EC-10"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser parses an if block with a quoted expression (BUG-0099)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser flags a dangerous command inside if and while bodies (BUG-0099)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser parses array assignments and judges their elements (BUG-0099)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser descends a process substitution used as a redirection target (BUG-0099)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser treats a heredoc body as data unless a shell receives it (BUG-0099)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser fails closed on an unparseable heredoc body fed to a shell (BUG-0099)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser allows a pipe into an interpreter with an inline program and blocks one without (BUG-0099)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser blocks a download piped into an interpreter even with an inline program (BUG-0099)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/shell-real-workflows.test.ts",
+      "title": "[§4.7.2] the analyser gives no finding over this repo's own workflows (BUG-0099)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/workflow-shell-constructs.test.ts",
+      "title": "[§4.7.2] verify accepts a run block with a heredoc, an array and an if block and still blocks a bad command inside (BUG-0099)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-compound.test.ts",
+      "title": "[§4.7.2] shell analyser blocks a pipe into a shell whose inline program reads stdin (BUG-0099)"
+    }
+  ],
+  "title": "fix(kernel): parse compound commands, process substitution and heredocs in the shell analyser",
+  "type": "fix",
+  "version": 1
+}
+

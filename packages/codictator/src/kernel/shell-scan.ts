@@ -192,6 +192,9 @@ class ShellParser {
 			throw new ParseFailure();
 		}
 		const char = this.text[this.index];
+		if (this.parseProcessTarget(char)) {
+			return;
+		}
 		let target: string;
 		if (char === "'" || char === '"') {
 			const read = readShellQuoted(this.text, this.index, (inner) =>
@@ -220,9 +223,22 @@ class ShellParser {
 			this.index = body.next;
 		} else if (operator === "<") {
 			this.collect.inputs.push(target);
-		} else if (operator !== "<<<") {
+		} else if (operator === "<<<") {
+			this.heredocBodies.push(target);
+		} else {
 			this.collect.writeTargets.push(target);
 		}
+	}
+
+	// SPEC §4.7.2: a process substitution target (done < <(cmd)) is descended.
+	private parseProcessTarget(char: string | undefined): boolean {
+		if ((char !== "<" && char !== ">") || this.text[this.index + 1] !== "(") {
+			return false;
+		}
+		const inner = readShellBalanced(this.text, this.index + 2, ")");
+		ShellParser.descendText(inner.value, this.collect);
+		this.index = inner.next;
+		return true;
 	}
 
 	private endCommand(): void {
@@ -235,8 +251,14 @@ class ShellParser {
 		}
 		const raw = this.text.slice(this.commandStart, this.index).trim();
 		this.commandStart = this.index;
-		buildShellCommand(this.pipeline, words, raw, false, bodies, (inner) =>
-			ShellParser.descendText(inner, this.collect),
+		buildShellCommand(
+			this.pipeline,
+			words,
+			raw,
+			false,
+			[],
+			(inner) => ShellParser.descendText(inner, this.collect),
+			bodies,
 		);
 	}
 
