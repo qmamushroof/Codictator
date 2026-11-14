@@ -8,7 +8,12 @@
 import { isSecretReadPath } from "./secret-paths.ts";
 import type { ShellAnalysis, ShellPipeline, SimpleCommand } from "./shell.ts";
 import { commandName } from "./shell-cmd.ts";
-import { dispatchToolCheck, flag, readsSecret } from "./shell-deny-cmd.ts";
+import {
+	dispatchToolCheck,
+	flag,
+	hasInlineProgram,
+	readsSecret,
+} from "./shell-deny-cmd.ts";
 import { analyseShell } from "./shell-scan.ts";
 
 export type ShellViolationClass =
@@ -170,13 +175,8 @@ function pipeStep(
 	next: SimpleCommand,
 	found: Array<ShellViolation>,
 ): void {
-	const currentName = commandName(current);
 	const nextName = commandName(next);
-	if (
-		DOWNLOADS.has(currentName) &&
-		hasUrl(current) &&
-		SHELL_NAMES.has(nextName)
-	) {
+	if (pipedDownload(pipeline, index) && SHELL_NAMES.has(nextName)) {
 		flag(
 			found,
 			"remote-code",
@@ -184,7 +184,11 @@ function pipeStep(
 			"download piped into a shell",
 		);
 	}
-	if (SHELL_NAMES.has(nextName) && !pipedDownload(pipeline, index)) {
+	if (
+		SHELL_NAMES.has(nextName) &&
+		!pipedDownload(pipeline, index) &&
+		!hasInlineProgram(next)
+	) {
 		flag(
 			found,
 			"remote-code",
