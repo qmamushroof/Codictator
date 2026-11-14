@@ -56,6 +56,7 @@ export { buildProcEnv, NodeProc, PROC_ENV_ALLOWLIST } from "./proc.ts";
 export type { LossyText } from "./read-cache.ts";
 export { cachedLossyText } from "./read-cache.ts";
 export { redactSecrets } from "./redact.ts";
+export { regexLiteralEnd } from "./regex-literal.ts";
 export { pathExists, resolveRepoRoot } from "./repo-root.ts";
 export type { Result } from "./result.ts";
 export { err, ok } from "./result.ts";

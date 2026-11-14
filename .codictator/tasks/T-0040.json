@@ -1,0 +1,144 @@
+{
+  "acceptanceCriteria": [
+    "A quote inside a regex literal never opens a string state in blankCode",
+    "A slash after a value stays division",
+    "ts/lint counts a binding used after a regex literal holding a quote"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: ts/lint reports a binding unused when a regex literal holding a quote precedes its only use, e.g. assert.match(x, /a\"/, 'msg'). Root cause: blankCode has no regex-literal mode, so the quote inside the regex opens a string state that blanks real code until a matching quote; unusedBindingFindings counts uses over that blanked text. Fix: blankCode skips regex literals (a slash after an operator, opener or keyword, closed on the same line, character classes honoured), blanking the body; anything ambiguous stays division.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/health-lex.ts",
+      "packages/codictator/src/features/packs/enforcers/health-lex-regex.ts",
+      "packages/codictator/src/features/packs/enforcers/ts-checks.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-14.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0040.json",
+      ".codictator/reviews/T-0040-r*.json",
+      "packages/codictator/src/kernel/regex-literal.ts",
+      "packages/codictator/src/kernel/index.ts",
+      "packages/codictator/src/builtin-packs/typescript/lex.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T03:07:19.164Z",
+    "tree": "48a37c6e9dbe3470f36718a6a4fe4e3d106fd1ac"
+  },
+  "historyStaged": true,
+  "id": "T-0040",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T02:53:30.136Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T02:53:31.246Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:59:00.729Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:59:09.007Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T03:08:50.394Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T03:08:51.589Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T03:02:20.712Z",
+    "commit": "7800f134721963b9f76fc15de75f441a74c1db0e",
+    "failing": [
+      "[§6.1] blankCode keeps code after a regex literal that holds a quote (BUG-0091)",
+      "[§6.1] blankCode skips a quote inside a regex character class",
+      "[§6.1] blankCode skips a regex literal after an arrow (BUG-0091)",
+      "[§6.1] ts/lint counts a binding used after a regex literal that holds a quote (BUG-0091)",
+      "[§6.1] typescript pack blankCode skips a regex literal that holds a quote (BUG-0091)",
+      "[§6.1] ci layer ts/lint flags only the genuinely unused binding beside a regex literal (BUG-0091)"
+    ],
+    "tree": "48a37c6e9dbe3470f36718a6a4fe4e3d106fd1ac"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T03:08:43.980Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "independent-review-T-0040-r1",
+      "round": 1,
+      "tree": "d543c4d6a2a07f1abea2324d297f5198b66323c8"
+    }
+  ],
+  "spec": [
+    "SPEC §6.1",
+    "SPEC §5.6"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] blankCode keeps code after a regex literal that holds a quote (BUG-0091)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] blankCode treats a slash after a value as division, not a regex"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] blankCode skips a quote inside a regex character class"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] ts/lint counts a binding used after a regex literal that holds a quote (BUG-0091)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] ci layer ts/lint flags only the genuinely unused binding beside a regex literal (BUG-0091)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] blankCode keeps a JSX closing tag as code, never a regex (BUG-0091)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] blankCode skips a regex literal after an arrow (BUG-0091)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] typescript pack blankCode skips a regex literal that holds a quote (BUG-0091)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/ts-lint-regex-literal.test.ts",
+      "title": "[§6.1] typescript pack blankCode treats a slash after a value as division"
+    }
+  ],
+  "title": "fix(packs): skip regex literals when blanking code",
+  "type": "fix",
+  "version": 1
+}
+

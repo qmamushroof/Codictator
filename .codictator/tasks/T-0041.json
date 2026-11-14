@@ -1,0 +1,69 @@
+{
+  "acceptanceCriteria": [
+    "SPEC §4.1.2 lists regexLiteralEnd with where a regex literal may start and that all other slashes stay division"
+  ],
+  "branch": "work/serial-queue",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-01-KERNEL.md",
+      "docs/HISTORY/2026-11-14.md",
+      ".codictator/tasks/T-0041.json",
+      ".codictator/reviews/T-0041-r*.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0041",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T03:09:13.490Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T03:09:14.062Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T03:09:14.658Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T03:09:22.062Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T03:10:07.371Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T03:10:08.805Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T03:10:00.133Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "independent-review-T-0041-r1",
+      "round": 1,
+      "tree": "9523c1b7469654714b4f598fff27de8979b79410"
+    }
+  ],
+  "spec": [
+    "SPEC §4.1.2",
+    "SPEC §6.1"
+  ],
+  "title": "docs: spec the kernel regexLiteralEnd utility",
+  "type": "docs",
+  "version": 1
+}
+
