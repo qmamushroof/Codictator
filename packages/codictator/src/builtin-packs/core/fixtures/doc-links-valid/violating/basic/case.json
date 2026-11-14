@@ -2,7 +2,8 @@
 	"rule": "core/doc-links-valid",
 	"section": "§5.10",
 	"expectation": "violating",
-	"trigger": "link to a missing doc",
+	"trigger": "pre-tool",
+	"description": "link to a missing doc",
 	"expectRules": ["core/doc-links-valid"],
 	"files": {
 		"sample.txt": "link: docs/MISSING.md\nstatus: 404\n"

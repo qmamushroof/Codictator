@@ -2,7 +2,8 @@
 	"rule": "core/no-speculative-abstraction",
 	"section": "§5.6",
 	"expectation": "passing",
-	"trigger": "interface with a single implementation",
+	"trigger": "review",
+	"description": "interface with a single implementation",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "interface: Store\nimplementations: 3\n"

@@ -2,7 +2,8 @@
 	"rule": "core/hooks-active",
 	"section": "§5.12",
 	"expectation": "passing",
-	"trigger": "hooks not installed",
+	"trigger": "startup",
+	"description": "hooks not installed",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "hooks: installed\n"

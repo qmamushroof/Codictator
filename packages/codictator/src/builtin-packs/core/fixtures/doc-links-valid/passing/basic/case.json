@@ -2,7 +2,8 @@
 	"rule": "core/doc-links-valid",
 	"section": "§5.10",
 	"expectation": "passing",
-	"trigger": "link to a missing doc",
+	"trigger": "pre-tool",
+	"description": "link to a missing doc",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "link: docs/PRD.md\nstatus: 200\n"

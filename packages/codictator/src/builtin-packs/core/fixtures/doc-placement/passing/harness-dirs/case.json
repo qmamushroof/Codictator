@@ -2,7 +2,8 @@
 	"rule": "core/doc-placement",
 	"section": "§5.10",
 	"expectation": "passing",
-	"trigger": "harness and agent dirs are placed locations",
+	"trigger": "pre-tool",
+	"description": "harness and agent dirs are placed locations",
 	"expectRules": [],
 	"files": {
 		".agents/NOTES.md": "# Notes\n\nAgent notes live here.\n",

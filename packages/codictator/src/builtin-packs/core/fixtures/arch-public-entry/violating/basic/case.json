@@ -2,7 +2,8 @@
 	"rule": "core/arch-public-entry",
 	"section": "§5.7",
 	"expectation": "violating",
-	"trigger": "deep import past the public entry",
+	"trigger": "pre-tool",
+	"description": "deep import past the public entry",
 	"expectRules": ["core/arch-public-entry"],
 	"files": {
 		"sample.txt": "import: engine/internals.js\n"

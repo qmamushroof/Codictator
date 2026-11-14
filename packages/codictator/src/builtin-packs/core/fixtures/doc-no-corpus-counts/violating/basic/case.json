@@ -2,7 +2,8 @@
 	"rule": "core/doc-no-corpus-counts",
 	"section": "§5.10",
 	"expectation": "violating",
-	"trigger": "hardcoded corpus count in a doc",
+	"trigger": "pre-tool",
+	"description": "hardcoded corpus count in a doc",
 	"expectRules": ["core/doc-no-corpus-counts"],
 	"files": {
 		"sample.txt": "text: The repository has 1,234 rules.\n"

@@ -2,7 +2,8 @@
 	"rule": "core/doc-breadth",
 	"section": "§5.10",
 	"expectation": "violating",
-	"trigger": "doc with 30 headings over a 15 limit",
+	"trigger": "pre-tool",
+	"description": "doc with 30 headings over a 15 limit",
 	"expectRules": ["core/doc-breadth"],
 	"files": {
 		"sample.txt": "h2: 30\nfiles-in-folder: 55\n"

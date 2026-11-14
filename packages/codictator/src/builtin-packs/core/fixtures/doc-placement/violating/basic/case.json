@@ -2,7 +2,8 @@
 	"rule": "core/doc-placement",
 	"section": "§5.10",
 	"expectation": "violating",
-	"trigger": "doc at the repo root outside the allowlist",
+	"trigger": "pre-tool",
+	"description": "doc at the repo root outside the allowlist",
 	"expectRules": ["core/doc-placement"],
 	"files": {
 		"NOTES.md": "# Notes\n\nProject notes live here.\n"

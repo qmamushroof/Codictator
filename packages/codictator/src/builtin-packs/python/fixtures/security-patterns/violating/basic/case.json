@@ -2,7 +2,8 @@
 	"rule": "python/security-patterns",
 	"section": "§6.3",
 	"expectation": "violating",
-	"trigger": "eval on user input",
+	"trigger": "pre-tool",
+	"description": "eval on user input",
 	"expectRules": ["python/security-patterns"],
 	"files": {
 		"sample.py": "eval(user_input)\n"

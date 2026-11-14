@@ -2,7 +2,8 @@
 	"rule": "core/ci-present",
 	"section": "§5.12",
 	"expectation": "passing",
-	"trigger": "no CI workflow committed",
+	"trigger": "review",
+	"description": "no CI workflow committed",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "workflow: ci.yml\n"

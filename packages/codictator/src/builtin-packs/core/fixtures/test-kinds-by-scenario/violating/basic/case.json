@@ -2,7 +2,8 @@
 	"rule": "core/test-kinds-by-scenario",
 	"section": "§5.4",
 	"expectation": "violating",
-	"trigger": "hot-path change covered by unit test only",
+	"trigger": "review",
+	"description": "hot-path change covered by unit test only",
 	"expectRules": ["core/test-kinds-by-scenario"],
 	"files": {
 		"sample.txt": "scenario: hot-path\ntests: unit only\n"

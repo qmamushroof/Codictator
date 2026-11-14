@@ -1,0 +1,82 @@
+{
+  "acceptanceCriteria": [
+    "every built-in case.json trigger is a Trigger value, prose moved to description"
+  ],
+  "branch": "work/serial-queue",
+  "files": {
+    "allow": [
+      "packages/codictator/src/builtin-packs/*/fixtures/**/case.json",
+      "packages/codictator/tests/unit/packs/pack-case-triggers.test.ts",
+      "docs/HISTORY/*.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T07:24:23.913Z",
+    "tree": "0d087484430790c12c4e965207488272c41695f7"
+  },
+  "historyStaged": true,
+  "id": "T-0051",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T07:22:36.521Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T07:22:45.444Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:24:24.393Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T07:24:29.315Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T07:25:59.782Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T07:22:40.880Z",
+    "commit": "aede384741786d28553fea50af309321c3d88154",
+    "failing": [
+      "[§4.4.1] every built-in case.json trigger is a Trigger value"
+    ],
+    "tree": "0d087484430790c12c4e965207488272c41695f7"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T07:25:59.287Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0051-r1",
+      "round": 1,
+      "tree": "f20fde032f422d32c861d5c08bffd07522b9796f"
+    }
+  ],
+  "spec": [
+    "SPEC §4.4.1",
+    "SPEC §4.3.2"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-case-triggers.test.ts",
+      "title": "[§4.4.1] every built-in case.json trigger is a Trigger value"
+    }
+  ],
+  "title": "migrate built-in case.json trigger to a Trigger value",
+  "type": "chore",
+  "version": 1
+}
+

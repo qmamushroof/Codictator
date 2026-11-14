@@ -2,7 +2,8 @@
 	"rule": "core/arch-boundaries",
 	"section": "§5.7",
 	"expectation": "passing",
-	"trigger": "import along a forbidden edge",
+	"trigger": "pre-tool",
+	"description": "import along a forbidden edge",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "import: cli -> engine\nallowed: true\n"

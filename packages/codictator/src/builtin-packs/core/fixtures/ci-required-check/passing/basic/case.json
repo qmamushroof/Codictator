@@ -2,7 +2,8 @@
 	"rule": "core/ci-required-check",
 	"section": "§5.12",
 	"expectation": "passing",
-	"trigger": "verify check required on the default branch",
+	"trigger": "review",
+	"description": "verify check required on the default branch",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "required: verify\n"

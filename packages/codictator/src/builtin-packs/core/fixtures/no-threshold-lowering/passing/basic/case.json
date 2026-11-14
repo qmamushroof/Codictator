@@ -2,7 +2,8 @@
 	"rule": "core/no-threshold-lowering",
 	"section": "§5.5",
 	"expectation": "passing",
-	"trigger": "coverage floor lowered 90 to 80",
+	"trigger": "pre-tool",
+	"description": "coverage floor lowered 90 to 80",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "floor-lines: 90 -> 92\n"

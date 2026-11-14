@@ -2,7 +2,8 @@
 	"rule": "core/no-fixture-shrink",
 	"section": "§5.5",
 	"expectation": "violating",
-	"trigger": "fixture rows cut 40 to 21",
+	"trigger": "pre-tool",
+	"description": "fixture rows cut 40 to 21",
 	"expectRules": ["core/no-fixture-shrink"],
 	"files": {
 		"sample.txt": "fixture-rows: 40 -> 21\n"

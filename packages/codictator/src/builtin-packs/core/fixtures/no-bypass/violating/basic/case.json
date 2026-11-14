@@ -2,7 +2,8 @@
 	"rule": "core/no-bypass",
 	"section": "§5.11",
 	"expectation": "violating",
-	"trigger": "hook skipped with --no-verify",
+	"trigger": "pre-tool",
+	"description": "hook skipped with --no-verify",
 	"expectRules": ["core/no-bypass"],
 	"files": {
 		"sample.txt": "commit: --no-verify\n"

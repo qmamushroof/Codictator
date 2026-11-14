@@ -2,7 +2,8 @@
 	"rule": "core/branch-protection",
 	"section": "§5.11",
 	"expectation": "passing",
-	"trigger": "direct push to main with no PR",
+	"trigger": "review",
+	"description": "direct push to main with no PR",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "push: main\nvia: PR with checks\n"

@@ -2,7 +2,8 @@
 	"rule": "core/perf-budgets",
 	"section": "§5.12",
 	"expectation": "passing",
-	"trigger": "hook p95 of 900ms over a 500ms budget",
+	"trigger": "review",
+	"description": "hook p95 of 900ms over a 500ms budget",
 	"expectRules": [],
 	"files": {
 		"sample.txt": "hook-p95-ms: 120\nbudget-ms: 500\n"
