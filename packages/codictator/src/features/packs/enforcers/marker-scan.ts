@@ -20,6 +20,11 @@ import {
 	loadScopeText,
 	parseMarkers,
 } from "./health-measures.ts";
+import {
+	type EffectiveFile,
+	effectiveFiles,
+	forEachEffectiveText,
+} from "./pre-tool-files.ts";
 
 export async function forEachMarkerText(
 	ports: Ports,
@@ -40,6 +45,85 @@ export async function forEachMarkerText(
 	}
 }
 
+// The resolver skeleton for a rule whose body only appends findings: bind
+// the rule, run the body, return what it collected.
+export function scanEnforcer(
+	decl: EnforcerDecl,
+	rule: PackRule,
+	body: (
+		ctx: CheckContext,
+		binding: RuleBinding,
+		findings: Array<Finding>,
+	) => Promise<void>,
+): Result<Enforcer> {
+	const binding = bindRule(rule);
+	return ok(
+		baseEnforcer(rule, binding, decl, async (ctx) => {
+			const findings: Array<Finding> = [];
+			await body(ctx, binding, findings);
+			return findings;
+		}),
+	);
+}
+
+// One resolver for a whole-document rule over the effective files: the judge
+// sees each file's complete text and pushes its findings.
+export function documentRule(
+	decl: EnforcerDecl,
+	rule: PackRule,
+	ports: Ports,
+	judge: (
+		binding: RuleBinding,
+		file: string,
+		text: string,
+		findings: Array<Finding>,
+	) => void,
+): Result<Enforcer> {
+	return scanEnforcer(decl, rule, (ctx, binding, findings) =>
+		forEachEffectiveText(
+			ctx,
+			ports,
+			binding,
+			findings,
+			"document",
+			(entry, text) => judge(binding, entry.path, text, findings),
+		),
+	);
+}
+
+// One resolver for a fixture-marker-only rule: each marker file's parsed
+// markers yield at most one finding from the rule's judge.
+export function markerFindingRule(
+	decl: EnforcerDecl,
+	rule: PackRule,
+	ports: Ports,
+	judge: (
+		binding: RuleBinding,
+		file: string,
+		markers: Map<string, string>,
+	) => Finding | undefined,
+): Result<Enforcer> {
+	const binding = bindRule(rule);
+	return ok(
+		baseEnforcer(rule, binding, decl, async (ctx) => {
+			const findings: Array<Finding> = [];
+			await forEachMarkerText(
+				ports,
+				binding,
+				selectFiles(ctx.scope.files, binding.scopeGlobs),
+				findings,
+				(file, text) => {
+					const found = judge(binding, file, parseMarkers(text));
+					if (found !== undefined) {
+						findings.push(found);
+					}
+				},
+			);
+			return findings;
+		}),
+	);
+}
+
 // Shared real-scope predicate: at least one non-marker file claims real
 // judging. One predicate for the split guard files, not one copy each.
 export function hasRealScope(files: ReadonlyArray<string>): boolean {
@@ -51,6 +135,10 @@ export interface MarkerRealArgs {
 	readonly binding: RuleBinding;
 	readonly files: ReadonlyArray<string>;
 	readonly findings: Array<Finding>;
+	// The pre-tool file adapter's view of the scope: disk files for L3/L4,
+	// proposed targets with their call text for a live L1 write, none for a
+	// read-only call.
+	readonly effective: ReadonlyArray<EffectiveFile>;
 	// A live L1 tool call carries its targets in the scope; diagnostic and
 	// gate-leg scopes (verify, pre-commit, pre-push) carry files only. Only
 	// a live write can owe the EC-1 no-task block.
@@ -98,6 +186,7 @@ export function markerRealGuard(
 				binding,
 				files,
 				findings,
+				effective: effectiveFiles(ctx, binding.scopeGlobs),
 				hasToolTargets,
 				readOnlyTool,
 			};
@@ -186,6 +275,7 @@ export function markerGuard(
 				binding,
 				files,
 				findings,
+				effective: [],
 				hasToolTargets: false,
 				readOnlyTool: false,
 			});

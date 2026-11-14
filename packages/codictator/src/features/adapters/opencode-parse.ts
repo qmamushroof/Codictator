@@ -8,56 +8,19 @@ import {
 	mapOpenCodeEvent,
 	normalizeOpenCodeToolName,
 } from "./opencode-tables.ts";
+import {
+	collectPaths,
+	isRecord,
+	readCallFields,
+	readFirstRecord,
+	readString,
+} from "./tool-fields.ts";
 
 interface OpenCodeRecord {
 	readonly [key: string]: unknown;
 	readonly contextDelivered?: unknown;
 	readonly spawnError?: unknown;
 	readonly timedOut?: unknown;
-}
-
-function isRecord(value: unknown): value is OpenCodeRecord {
-	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function readString(
-	record: OpenCodeRecord,
-	keys: ReadonlyArray<string>,
-): string | undefined {
-	for (const key of keys) {
-		const value: unknown = record[key];
-		if (typeof value === "string" && value.length > 0) {
-			return value;
-		}
-	}
-	return undefined;
-}
-
-function readArgs(raw: OpenCodeRecord): OpenCodeRecord {
-	for (const key of ["args", "tool_input", "toolInput", "input"]) {
-		const value: unknown = raw[key];
-		if (isRecord(value)) {
-			return value;
-		}
-	}
-	return {};
-}
-
-function collectOpenCodePaths(args: OpenCodeRecord): Array<string> {
-	const found = new Set<string>();
-	for (const key of ["filePath", "file_path", "path", "file", "filename"]) {
-		const value: unknown = args[key];
-		if (typeof value === "string" && value.length > 0) {
-			found.add(value);
-		} else if (Array.isArray(value)) {
-			for (const entry of value) {
-				if (typeof entry === "string" && entry.length > 0) {
-					found.add(entry);
-				}
-			}
-		}
-	}
-	return [...found].sort();
 }
 
 function blockError(detail: string): CdxError {
@@ -73,25 +36,23 @@ function readOpenCodeTool(raw: OpenCodeRecord): Result<HookToolCall> {
 	if (toolName === undefined) {
 		return err(blockError("missing tool"));
 	}
-	const args = readArgs(raw);
-	const command = readString(args, ["command"]);
-	const proposedContent = readString(args, [
-		"content",
-		"new_content",
-		"newContent",
-		"new_string",
-		"newString",
-		"text",
-		"proposedContent",
+	const args = readFirstRecord(raw, [
+		"args",
+		"tool_input",
+		"toolInput",
+		"input",
 	]);
-	const query = readString(args, ["query", "pattern", "prompt"]);
 	return ok({
 		kind: normalizeOpenCodeToolName(toolName),
 		name: toolName,
-		paths: collectOpenCodePaths(args),
-		...(command === undefined ? {} : { command }),
-		...(proposedContent === undefined ? {} : { proposedContent }),
-		...(query === undefined ? {} : { query }),
+		paths: collectPaths(args, [
+			"filePath",
+			"file_path",
+			"path",
+			"file",
+			"filename",
+		]),
+		...readCallFields(args),
 	});
 }
 
@@ -106,7 +67,8 @@ export function parseOpenCodeEvent(
 	if (!isRecord(raw)) {
 		return err(blockError("expected a JSON object"));
 	}
-	const spawnError: unknown = raw.spawnError;
+	const bridge: OpenCodeRecord = raw;
+	const spawnError: unknown = bridge.spawnError;
 	if (typeof spawnError === "string" && spawnError.length > 0) {
 		return err(
 			makeError(
@@ -131,7 +93,7 @@ export function parseOpenCodeEvent(
 	if (trigger === "pre-tool" || trigger === "post-tool") {
 		const tool = readOpenCodeTool(raw);
 		if (!tool.ok) {
-			if (trigger === "pre-tool" && raw.timedOut === true) {
+			if (trigger === "pre-tool" && bridge.timedOut === true) {
 				return ok({
 					harness: "opencode",
 					event: nativeName ?? event,
@@ -145,7 +107,7 @@ export function parseOpenCodeEvent(
 			// bridge forwards contextDelivered: false; the launcher records
 			// the gap marker here and the bridge falls back to a synthetic
 			// chat.message part from the next prompt. Never a block by itself.
-			if (trigger === "pre-tool" && raw.contextDelivered === false) {
+			if (trigger === "pre-tool" && bridge.contextDelivered === false) {
 				return ok({
 					harness: "opencode",
 					event: nativeName ?? event,

@@ -21,6 +21,7 @@ import {
 	markerRealGuard,
 	markerRegexJudge,
 } from "./marker-scan.ts";
+import { type EffectiveFile, loadEffectiveText } from "./pre-tool-files.ts";
 
 export function isHistoryFile(path: string): boolean {
 	return path.startsWith("docs/HISTORY/");
@@ -63,11 +64,12 @@ export async function historyEntryReal(
 export async function historyAppendOnlyReal(
 	ports: Ports,
 	binding: RuleBinding,
-	files: ReadonlyArray<string>,
+	files: ReadonlyArray<EffectiveFile>,
 	findings: Array<Finding>,
 ): Promise<Array<Finding>> {
 	const out: Array<Finding> = [];
-	for (const file of files) {
+	for (const entry of files) {
+		const file = entry.path;
 		if (!isHistoryFile(file) || isMarkerFile(file)) {
 			continue;
 		}
@@ -78,7 +80,17 @@ export async function historyAppendOnlyReal(
 		if (!base.ok) {
 			continue;
 		}
-		const text = await loadScopeText(ports, binding, file, findings);
+		// SPEC §4.3.2: at L1 the call's whole-file text is the head; an edit
+		// fragment cannot be compared and is skipped, a textless target is
+		// judged as it stands on disk.
+		const text = await loadEffectiveText(
+			ports,
+			binding,
+			entry,
+			findings,
+			"document",
+			true,
+		);
 		if (text === undefined) {
 			continue;
 		}
@@ -186,7 +198,7 @@ export function resolveHistoryAppendOnly(
 				...(await historyAppendOnlyReal(
 					args.ports,
 					args.binding,
-					args.files,
+					args.effective,
 					args.findings,
 				)),
 			);

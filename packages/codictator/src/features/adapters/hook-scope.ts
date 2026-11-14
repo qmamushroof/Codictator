@@ -79,6 +79,9 @@ export function hookScope(
 		...(tool?.proposedContent === undefined
 			? {}
 			: { proposedContent: tool.proposedContent }),
+		...(tool?.proposedContentWhole === true
+			? { proposedContentWhole: true }
+			: {}),
 		...(command === undefined ? {} : { shellCommand: command }),
 		...(targets.size === 0 ? {} : { proposedPaths: [...targets].sort() }),
 		...(tool === undefined ? {} : { toolAccess: toolAccessOf(tool.kind) }),
