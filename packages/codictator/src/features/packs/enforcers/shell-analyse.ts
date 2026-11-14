@@ -19,79 +19,10 @@ import {
 	readLossyText,
 	selectFiles,
 } from "./binding.ts";
-import { isTsFile } from "./health-measures.ts";
 import { plainEnforcer } from "./plain-enforcer.ts";
-import { isPythonFile } from "./py-lex.ts";
+import { extractShellSources } from "./shell-sources.ts";
 
-const SCRIPT_EXTENSIONS: ReadonlyArray<string> = [
-	".sh",
-	".bash",
-	".zsh",
-	".ksh",
-	".ps1",
-	".cmd",
-	".bat",
-];
-
-function isScriptFile(path: string): boolean {
-	const lowered = path.toLowerCase();
-	return SCRIPT_EXTENSIONS.some((extension) => lowered.endsWith(extension));
-}
-
-// SPEC §4.7.2 + §4.7.3: in a programming-language source file the text after
-// a marker word can be object syntax, not a shell command or a write target.
-// Only the three shapes that triggered BUG-0094 are skipped, and only in a
-// TypeScript, JavaScript or Python file: a bare opener before a multi-line
-// arrow, an arrow-function head (a parameter list or one identifier, then `=>`), and a member call written with no space before its
-// paren. Anything else, and every other file (workflow YAML, scripts,
-// markdown, extension-less), stays judged, so the rules fail closed
-// (SPEC §4.7.2: an unparseable or ambiguous input blocks).
-const CODE_OPENER = /^[([{]$/;
-// A parameter list (identifier characters, commas, spaces and `= . : ? [ ]`
-// only) or one identifier (optionally async) before the arrow.
-const CODE_ARROW =
-	/^(?:async\s+)?(?:[A-Za-z_$][\w$]*|\([\w, =.:?[\]]*\))\s*=>$/;
-const CODE_CALL = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\([^|&><`{]*$/;
-const SHELL_SUBST = "$(";
-
-function isSourceFile(path: string): boolean {
-	return isTsFile(path) || isPythonFile(path);
-}
-
-export function isCodeShape(text: string, file: string): boolean {
-	if (!isSourceFile(file)) {
-		return false;
-	}
-	return (
-		CODE_OPENER.test(text) ||
-		CODE_ARROW.test(text) ||
-		(CODE_CALL.test(text) &&
-			!text.includes(SHELL_SUBST) &&
-			!text.slice(0, -1).includes(";"))
-	);
-}
-
-// SPEC §4.7.2: one shell source per `run:` line, or the whole file for a
-// shell script. Other files carry no shell text, so they yield nothing.
-export function extractShellSources(
-	content: string,
-	path: string,
-): Array<string> {
-	if (isScriptFile(path)) {
-		return content.length === 0 ? [] : [content];
-	}
-	const sources: Array<string> = [];
-	for (const line of content.split("\n")) {
-		const trimmed = line.trimStart();
-		if (trimmed.toLowerCase().startsWith("run:")) {
-			const command = trimmed.slice("run:".length).trim();
-			if (command !== "" && !isCodeShape(command, path)) {
-				sources.push(command);
-			}
-		}
-	}
-	return sources;
-}
+export { extractShellSources, isCodeShape } from "./shell-sources.ts";
 
 // SPEC §4.7.2: the L1 hook scope carries the shell command text itself.
 // An unparseable command blocks CDX-E306 fail-closed; every deny-class
