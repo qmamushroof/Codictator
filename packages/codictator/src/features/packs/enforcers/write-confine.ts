@@ -20,7 +20,9 @@ import {
 	readLossyText,
 	selectFiles,
 } from "./binding.ts";
+import { isTsFile } from "./health-measures.ts";
 import { plainEnforcer } from "./plain-enforcer.ts";
+import { isPythonFile } from "./py-lex.ts";
 import { extractShellSources, isCodeShape } from "./shell-analyse.ts";
 
 function writeLineTarget(line: string, file: string): string | undefined {
@@ -45,18 +47,21 @@ function escapeFinding(
 	});
 }
 
-// SPEC §4.7.3: a `write:` line inside code is object syntax
-// (`write: "write",` caught via quotes, `(chunk) => ...` caught via `=>`),
-// not a tool target. Hyphens, parens, braces, brackets, semicolons, commas,
-// and backslash are legal in Windows+POSIX paths (`SN-LP-64`,
-// `Program Files (x86)`, `[draft]`, `C:\` absolutes), so treating them as
-// code markers misclassifies a real path and fails OPEN by skipping the
-// escape check; only characters that real targets rarely carry mark a target
-// as code here (the backslash drop un-breaks `C:\` absolutes).
-const CODE_CHARS = /[\x22\x27=><|&$\x60]/;
+// SPEC §4.7.3: a target is judged as a path whatever characters it holds.
+// "Two targets have no value on disk at scan time and are judged lexically
+// instead of resolved": one holding a shell expansion (`$GITHUB_OUTPUT`, a
+// backtick) and a `write:` line in a source file holding a quote, `=`, `<`,
+// `>`, `|`, `&`, `$` or a backtick (almost always object syntax such as
+// `write: "write",`). The lexical check still blocks a `../` escape and a
+// `.git/` path.
+const SOURCE_CODE_CHARS = /["'=><|&$`]/;
+const EXPANSION = /[$`]/;
 
-function isPathLike(target: string): boolean {
-	return !CODE_CHARS.test(target);
+function lexicalOnly(target: string, file: string): boolean {
+	return (
+		EXPANSION.test(target) ||
+		((isTsFile(file) || isPythonFile(file)) && SOURCE_CODE_CHARS.test(target))
+	);
 }
 
 async function checkTarget(
@@ -66,7 +71,8 @@ async function checkTarget(
 	target: string,
 	findings: Array<Finding>,
 ): Promise<void> {
-	if (!isPathLike(target)) {
+	if (lexicalOnly(target, file)) {
+		checkProposedTarget(binding, target, findings, file);
 		return;
 	}
 	const rel = toRepoPath(target);
@@ -105,21 +111,19 @@ function checkProposedTarget(
 	binding: RuleBinding,
 	target: string,
 	findings: Array<Finding>,
+	where = "tool input",
 ): void {
-	if (!isPathLike(target)) {
-		return;
-	}
 	const rel = toRepoPath(target);
 	if (!rel.ok) {
-		findings.push(escapeFinding(binding, "tool input", target));
+		findings.push(escapeFinding(binding, where, target));
 		return;
 	}
 	if (isGitDirPath(rel.value)) {
 		findings.push(
 			findingFor(binding, {
-				path: "tool input",
+				path: where,
 				message: `write target inside .git/ is only allowed through git: ${target}`,
-				vars: { path: "tool input" },
+				vars: { path: where },
 			}),
 		);
 	}
@@ -146,6 +150,16 @@ async function judgeFile(
 	for (const source of extractShellSources(loaded.value.text, file)) {
 		const parsed = analyseShell(source);
 		if (!parsed.ok) {
+			// SPEC §4.7.3: an unparseable source has unknown targets, so it
+			// blocks like core/dangerous-shell does, never a skip.
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					code: parsed.error.code,
+					message: `shell command in ${file} is unparseable; its write targets are unknown`,
+					vars: { path: file },
+				}),
+			);
 			continue;
 		}
 		for (const target of parsed.value.writeTargets) {
