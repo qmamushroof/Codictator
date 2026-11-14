@@ -10,7 +10,10 @@ import {
 	checkBugRegistry,
 	checkDiagnoseBeforeFix,
 } from "../../records/bug-registry.ts";
-import { parseHistoryEntries } from "../../records/history-parse.ts";
+import {
+	type HistoryEntry,
+	parseHistoryEntries,
+} from "../../records/history-parse.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import { bindRule, findingFor } from "./binding.ts";
@@ -46,36 +49,53 @@ async function bugRegistryReal(
 	if (tasks.length === 0) {
 		return [];
 	}
-	const newest = newestBugField(texts);
 	const bugFiles = files.filter((file) => file.startsWith("docs/BUGS/"));
 	const rows = collectBugRows(bugFiles, texts);
 	const regressionExists = await existingRegressionTests(ports, rows);
 	const findings: Array<Finding> = [];
 	for (const task of tasks) {
+		const own = ownHistoryEntry(texts, task.id);
+		const bug = own?.entry.fields.get("Bug") ?? "";
 		findings.push(
 			...checkBugRegistry(
-				{ type: task.type, bug: newest, diagnosis: task.diagnosis },
+				{
+					type: task.type,
+					bug: bug === "" ? undefined : bug,
+					diagnosis: task.diagnosis,
+				},
 				rows,
 				regressionExists,
-				historyFallback(texts, task.id),
+				own?.file ?? `(task ${task.id})`,
 			),
 		);
 	}
 	return findings;
 }
 
-function newestBugField(
+interface OwnEntry {
+	readonly file: string;
+	readonly entry: HistoryEntry;
+}
+
+// SPEC §4.9.4 + §7.7: a fix task is judged by the history entry that names it
+// (its Task field), searching the history files newest first and each file's
+// entries in file order. A range may also hold other tasks' entries, so the
+// newest entry stands in only when no entry names the task.
+function ownHistoryEntry(
 	texts: ReadonlyMap<string, string>,
-): string | undefined {
-	const historyFile = [...texts.keys()]
+	taskId: string,
+): OwnEntry | undefined {
+	const files = [...texts.keys()]
 		.filter((file) => isHistoryFile(file))
-		.sort()[0];
-	const newest =
-		historyFile === undefined
-			? undefined
-			: parseHistoryEntries(texts.get(historyFile) ?? "").entries[0];
-	const raw = newest?.fields.get("Bug") ?? "";
-	return raw === "" ? undefined : raw;
+		.sort()
+		.reverse();
+	const all: Array<OwnEntry> = files.flatMap((file) =>
+		parseHistoryEntries(texts.get(file) ?? "").entries.map((entry) => ({
+			file,
+			entry,
+		})),
+	);
+	return all.find((item) => item.entry.task === taskId) ?? all[0];
 }
 
 function collectBugRows(
@@ -108,16 +128,6 @@ async function existingRegressionTests(
 		}
 	}
 	return (path: string): boolean => existing.has(path);
-}
-
-function historyFallback(
-	texts: ReadonlyMap<string, string>,
-	taskId: string,
-): string {
-	const historyFile = [...texts.keys()]
-		.filter((file) => isHistoryFile(file))
-		.sort()[0];
-	return historyFile ?? `(task ${taskId})`;
 }
 
 async function diagnoseBeforeFixReal(

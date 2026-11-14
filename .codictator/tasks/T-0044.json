@@ -1,0 +1,116 @@
+{
+  "acceptanceCriteria": [
+    "A fix task is judged by its own history entry whatever newer entries the range holds",
+    "A fix task whose own entry lacks a Bug row still fails closed"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduced: ci verify on a two-commit range (a fix whose entry carries Bug, then a docs change whose entry is newest in the same file) reports core/bug-registry 'fix task names no bug row'. Root cause: bugRegistryReal judges every fix task against newestBugField, which reads entries[0] of the first history file in ascending path order, so it reads the newest entry of the OLDEST file and ignores which task the entry belongs to; historyFallback has the same oldest-file pick. Same union-scope class as BUG-0083. Fix: match each fix task to the entry whose Task field equals the task id, searching history files newest first, and fall back to the newest entry only when none names the task.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/records-guards.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-14.md",
+      "docs/BUGS/2026.md",
+      ".codictator/tasks/T-0044.json",
+      ".codictator/reviews/T-0044-r*.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T06:27:27.881Z",
+    "tree": "304eac74abc6cde5ea1cbbc7eab7356bdb1060b4"
+  },
+  "historyStaged": true,
+  "id": "T-0044",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T06:22:04.254Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T06:22:10.115Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T06:27:38.151Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T06:28:06.840Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T06:28:53.590Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T06:22:09.671Z",
+    "commit": "eb6bb0c37373a6bc11fe052e469dad4dab448321",
+    "failing": [
+      "[§4.9.4] bug-registry does not borrow another task's Bug row for a fix task",
+      "[§4.9.4] bug-registry judges a fix task by its own entry when a newer docs entry has no Bug row (BUG-0098)",
+      "[§4.9.4] bug-registry reads the newest history file first when a range spans two (BUG-0098)",
+      "[§4.9.4] ci verify judges a fix by its own history entry when a newer docs entry has no Bug row (BUG-0098)"
+    ],
+    "tree": "304eac74abc6cde5ea1cbbc7eab7356bdb1060b4"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T06:28:39.954Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0044-r1",
+      "round": 1,
+      "tree": "d32432c8b3f3b4fff6bb30d2d32c04140b4192e4"
+    }
+  ],
+  "spec": [
+    "SPEC §4.9.4",
+    "SPEC §4.9.3"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/bug-registry-range.test.ts",
+      "title": "[§4.9.4] bug-registry judges a fix task by its own entry when a newer docs entry has no Bug row (BUG-0098)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/bug-registry-range.test.ts",
+      "title": "[§4.9.4] bug-registry reads the newest history file first when a range spans two (BUG-0098)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/bug-registry-range.test.ts",
+      "title": "[§4.9.4] bug-registry still fails closed when the fix task's own entry has no Bug row"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/bug-registry-range.test.ts",
+      "title": "[§4.9.4] bug-registry does not borrow another task's Bug row for a fix task"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/bug-registry-range.test.ts",
+      "title": "[§4.9.4] bug-registry falls back to the newest entry when no entry names the task"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/ci-bug-registry-range.test.ts",
+      "title": "[§4.9.4] ci verify judges a fix by its own history entry when a newer docs entry has no Bug row (BUG-0098)"
+    }
+  ],
+  "title": "fix(packs): judge each fix task by its own history entry",
+  "type": "fix",
+  "version": 1
+}
+
