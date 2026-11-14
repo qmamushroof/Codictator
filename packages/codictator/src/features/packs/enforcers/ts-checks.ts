@@ -18,8 +18,8 @@ import {
 import { blankCode } from "./health-lex.ts";
 import { baseEnforcer, isTsFile } from "./health-measures.ts";
 
-// No raw quotes inside the pattern: blankCode has no regex-literal
-// mode, so a quote would flip its scan state for the rest of the file.
+// Quotes stay escapes inside the pattern so it also reads cleanly to text
+// scans that do not lex regex literals.
 const TYPE_LITERAL_MISMATCH =
 	/:\s*(number|string|boolean)\s*=\s*(\x22[^\x22\n]*\x22|\x27[^\x27\n]*\x27|\x60[^\x60\n]*\x60|-?\b\d+(\.\d+)?\b|\btrue\b|\bfalse\b)/;
 

@@ -4,6 +4,8 @@
 // never count, and every index still maps to the original line.
 // Template scanning lives in health-lex-template.ts; blanking here stays
 // in one pass over the shared scan state.
+
+import { stepCodeRegex } from "./health-lex-regex.ts";
 import {
 	type LexScan,
 	type LexState,
@@ -157,6 +159,9 @@ function runBlank(text: string, blankStrings: boolean): string {
 				continue;
 			}
 			if (stepCodeQuote(text, out, scan, blankStrings)) {
+				continue;
+			}
+			if (stepCodeRegex(text, out, scan, blankStrings)) {
 				continue;
 			}
 			stepCodeBrace(text, scan);

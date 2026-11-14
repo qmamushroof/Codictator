@@ -2,6 +2,7 @@
 // Comment and string blanking keeps every offset and newline stable, so the
 // measures map findings back to source lines without a compiler API (the
 // zero-deps rule for packages/codictator forbids the TypeScript compiler).
+import { regexLiteralEnd } from "../../kernel/index.ts";
 
 // SPEC §6.1 file naming: the extensions the TypeScript pack judges.
 export const TYPESCRIPT_SOURCE_EXTENSIONS: ReadonlyArray<string> = [
@@ -158,6 +159,17 @@ function stepCode(state: BlankState, text: string): void {
 		state.state = "block";
 		state.out.push(" ", " ");
 		state.index += 2;
+		return;
+	}
+	const regexEnd = regexLiteralEnd(text, state.index);
+	if (regexEnd !== undefined) {
+		// A regex literal blanks like a string body; the slashes stay.
+		state.out.push(
+			"/",
+			...new Array<string>(regexEnd - state.index - 1).fill(" "),
+			"/",
+		);
+		state.index = regexEnd + 1;
 		return;
 	}
 	if (char === "'" || char === '"' || char === "`") {
