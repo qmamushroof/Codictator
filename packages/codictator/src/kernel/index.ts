@@ -181,6 +181,8 @@ export interface Env {
 
 export interface Ports {
 	readonly fs: Fs;
+	// SPEC §4.4.1: repo-relative roots of the loaded packs; absent means none.
+	readonly packRoots?: ReadonlyArray<string>;
 	readonly proc: Proc;
 	readonly net: Net;
 	readonly clock: Clock;

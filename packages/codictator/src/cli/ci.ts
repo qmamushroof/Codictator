@@ -10,6 +10,7 @@ import {
 } from "../features/ci/index.ts";
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import { checkCommitTrailers } from "../features/integrity/index.ts";
+import { loadedPackRoots } from "../features/packs/index.ts";
 import { checkRedProofReRun } from "../features/testing/proofs.ts";
 import type { Finding, Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
@@ -54,6 +55,7 @@ async function ciVerify(
 	packEntries: ReadonlyArray<{
 		readonly id: string;
 		readonly version?: string;
+		readonly path?: string;
 	}>,
 ): Promise<Result<number>> {
 	const flags = parseCiVerifyFlags(req.args.slice(1));
@@ -62,15 +64,20 @@ async function ciVerify(
 			"usage: codictator ci verify [--base <sha> --head <sha>]",
 		);
 	}
-	const ports = await portsFor(root);
-	if (!ports.ok) {
+	const made = await portsFor(root);
+	if (!made.ok) {
 		return fail(
 			"CDX-E903",
-			ports.error.message,
-			ports.error.remediation,
+			made.error.message,
+			made.error.remediation,
 			req.json,
 		);
 	}
+	// SPEC §4.4.1: the pack roots come from the loaded config, once per run.
+	const ports = {
+		...made,
+		value: { ...made.value, packRoots: loadedPackRoots(root, packEntries) },
+	};
 	const repoName = root.replaceAll("\\", "/").split("/").pop() ?? "repo";
 	const workflow = renderWorkflow(repoName);
 	const shallow = await ports.value.fs.exists(".git/shallow");

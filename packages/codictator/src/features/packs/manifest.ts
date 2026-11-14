@@ -14,7 +14,7 @@ import {
 export { type EnforcerDecl, field, isRecord, narrowEnforcerDecl };
 
 // SPEC §4.4.2: built-in pack ids; a custom pack must not equal one (§4.4.3).
-const BUILTIN_IDS: ReadonlyArray<string> = [
+export const BUILTIN_PACK_IDS: ReadonlyArray<string> = [
 	"core",
 	"typescript",
 	"dotnet",
@@ -22,7 +22,7 @@ const BUILTIN_IDS: ReadonlyArray<string> = [
 ];
 
 export function isBuiltinPackId(id: string): boolean {
-	return BUILTIN_IDS.includes(id);
+	return BUILTIN_PACK_IDS.includes(id);
 }
 
 // SPEC §4.4.3 step 4: declaration narrowing lives in manifest-decl.ts.
@@ -89,7 +89,7 @@ export function checkPack(
 		seen.add(rule.id);
 	}
 	if (!builtin) {
-		if (BUILTIN_IDS.includes(manifest.id)) {
+		if (BUILTIN_PACK_IDS.includes(manifest.id)) {
 			return err(
 				makeError(
 					"CDX-E204",

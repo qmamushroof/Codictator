@@ -10,6 +10,7 @@ import {
 	loadConfig as loadConfigImpl,
 	requireHuman,
 } from "../features/config/index.ts";
+import { loadedPackRoots } from "../features/packs/index.ts";
 import type { CdxError, Env, Ports, Result } from "../kernel/index.ts";
 import {
 	err,
@@ -254,7 +255,9 @@ export async function loadRepoConfig(
 	}
 	try {
 		const effective = await loadConfigImpl(".", ports.value, arbitrated.value);
-		return ok({ ports: ports.value, effective });
+		// SPEC §4.4.1: pack case roots derive from the loaded config, once.
+		const packRoots = loadedPackRoots(root, effective.config.packs);
+		return ok({ ports: { ...ports.value, packRoots }, effective });
 	} catch (error) {
 		if (
 			typeof error === "object" &&

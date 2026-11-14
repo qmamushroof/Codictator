@@ -7,8 +7,14 @@
 // `review` command over the tree; every other rule is sound on a diff.
 // The phase-5 finer trigger is this rule subset, not a new trigger name.
 
-import type { Finding, Result } from "../kernel/index.ts";
-import { err, ok, stableStringify, withoutPackCases } from "../kernel/index.ts";
+import type { Finding, Ports, Result } from "../kernel/index.ts";
+import {
+	err,
+	isPackCasePath,
+	ok,
+	stableStringify,
+	withoutPackCases,
+} from "../kernel/index.ts";
 import { evaluateScope } from "./evaluate.ts";
 import type { CommandPorts } from "./shared.ts";
 import type { VerdictEmit } from "./verdict-emit.ts";
@@ -90,19 +96,13 @@ export function addedLines(diff: string): string {
 // BUG-0101 + SPEC §4.4.1: the gate diff drops the file sections of pack case
 // paths, so their added lines never ride as proposed content. A section runs
 // from its `diff --git a/<old> b/<new>` header to the next one.
-export async function diffWithoutPackCases(
-	diff: string,
-	ports: CommandPorts,
-): Promise<string> {
+export function diffWithoutPackCases(diff: string, ports: Ports): string {
 	const sections = diff.split(/^(?=diff --git )/m);
 	const kept: Array<string> = [];
 	for (const section of sections) {
 		const header = /^diff --git a\/.* b\/(.+)$/m.exec(section);
 		const path = header?.[1];
-		if (
-			path !== undefined &&
-			(await withoutPackCases([path], ports.fs)).length === 0
-		) {
+		if (path !== undefined && isPackCasePath(path, ports.packRoots ?? [])) {
 			continue;
 		}
 		kept.push(section);
@@ -131,7 +131,7 @@ export async function evaluateGateScope(
 		readonly excludeReviewRuleIds?: ReadonlySet<string>;
 	} = {},
 ): Promise<Result<Array<Finding>>> {
-	const files = await withoutPackCases(scope.files, ports.fs);
+	const files = withoutPackCases(scope.files, ports.packRoots ?? []);
 	const input =
 		scope.proposedContent === undefined || scope.proposedContent === ""
 			? {}

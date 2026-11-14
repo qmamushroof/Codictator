@@ -1,0 +1,114 @@
+{
+  "acceptanceCriteria": [
+    "BUG-0102: a pack.json no loaded pack resolves to exempts nothing; its fixtures/<slug>/(violating|passing)/<case>/ files stay judged by every rule at verify, serve, the L3 hooks and size rules",
+    "Pack case data under a built-in pack root of this workspace or a config.packs path root is still exempt",
+    "Pack roots are computed once per command from the loaded config; a config that fails to load exempts nothing"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "BUG-0102. Reproduced by reading kernel/pack-case.ts: isPackCasePath probes fs.exists('<pack>/pack.json') for any <pack>/fixtures/<slug>/(violating|passing)/<case>/ path, so an agent-written pack.json plus fixtures files escape verify, serve, L3 hooks and size rules. Root cause: the predicate treats presence of pack.json on disk as proof of a loaded pack, but SPEC 4.4.1 confines it to the root of a pack Codictator loads (built-in pack directory or config.packs path). Fix: the predicate takes the loaded pack roots computed once from the loaded config.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/**",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/*.md",
+      "docs/BUGS/2026.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T08:09:15.804Z",
+    "tree": "ee74ea890095a9c40a5e3ae1448d42e46870ff5c"
+  },
+  "historyStaged": true,
+  "id": "T-0055",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T07:54:29.368Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T07:56:58.826Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T08:09:16.283Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T08:09:20.488Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T08:10:14.911Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T08:10:31.292Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T07:56:58.315Z",
+    "commit": "0410eee9273fd4751c010973d3c0a7c3e4cd98f9",
+    "failing": [
+      "[§4.4.1] a stray pack.json beside fixtures case files is not a pack case (BUG-0102)",
+      "[§4.4.1] loaded pack roots are the workspace built-in dirs plus config.packs paths (BUG-0102)",
+      "[§4.4.1] verify scope keeps a stray pack.json fixtures path judged (BUG-0102)",
+      "[§4.4.1] pre-commit blocks a dangerous script beside a stray pack.json but passes a configured pack case (BUG-0102)"
+    ],
+    "tree": "ee74ea890095a9c40a5e3ae1448d42e46870ff5c"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T08:10:06.821Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0055-r1",
+      "round": 1,
+      "tree": "a52be437b35f318915e2fb451b6fdd121b746256"
+    }
+  ],
+  "spec": [
+    "SPEC §4.4.1",
+    "SPEC §4.4.3",
+    "SPEC §4.4.4",
+    "SPEC §7.2",
+    "SPEC §3.6",
+    "SPEC §4.7.1"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/pack-case.test.ts",
+      "title": "[§4.4.1] a stray pack.json beside fixtures case files is not a pack case (BUG-0102)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/pack-case.test.ts",
+      "title": "[§4.4.1] loaded pack roots are the workspace built-in dirs plus config.packs paths (BUG-0102)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/cli-pack-case-scope.test.ts",
+      "title": "[§4.4.1] verify scope keeps a stray pack.json fixtures path judged (BUG-0102)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/pack-case-data-l3.test.ts",
+      "title": "[§4.4.1] pre-commit blocks a dangerous script beside a stray pack.json but passes a configured pack case (BUG-0102)"
+    }
+  ],
+  "title": "fix(packs): exempt pack case data only under loaded pack roots",
+  "type": "fix",
+  "version": 1
+}
+
