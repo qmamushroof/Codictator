@@ -29,6 +29,7 @@ The only module that touches the operating system, the network or the clock (§3
 | `globMatch(pattern, path)` | `*`, `**`, `?`, `{a,b}`, `[...]`; case-sensitive except on Windows and macOS default volumes, where the repo's case is canonical |
 | `readTomlKeys`, `readYamlKeys` | Read only flat or one-level keys Codictator owns (Codex `[features]`, Dependabot `updates`, `pyproject` `[project]` dependencies); anything unparseable for those keys returns an error, never a guess |
 | `readTestReport(xml)` | Minimal reader for JUnit XML and TRX: per test case id, title, outcome (`passed`, `failed`, `skipped`), so red and green proofs need no runner-specific parsing (§4.10.2) |
+| `regexLiteralEnd(text, index)` | Returns the index of the closing slash of the regex literal starting at `index`, else `undefined`. A literal starts only where a value is expected (the start of the text, after `( , = : [ ! & \| ? { ; ~ ^`, after `=>`, or after a value keyword such as `return`), closes on its own line, and honours escapes and character classes; any other slash is division, so a JSX closing tag or a generic never opens one. Every code blanker (§6.1) steps over the literal, so a quote inside it never opens a string |
 | `stableStringify(value)` | Sorted keys, 2-space indent, trailing newline; every generated JSON file uses it so regeneration is byte-identical |
 
 ## 4.1.3 Edge cases
