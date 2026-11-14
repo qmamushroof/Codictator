@@ -1,0 +1,117 @@
+{
+  "acceptanceCriteria": [
+    "After a rebase onto the default branch, pre-push judges only the branch's own new commits",
+    "Without a readable origin/HEAD, or with a merge in range, pre-push falls back to @{push}..HEAD"
+  ],
+  "branch": "fix/bug-0092-prepush-range",
+  "bugRowUpdated": true,
+  "diagnosis": "runPrePush diffs @{push} against HEAD, so after a rebase and force-push the diff holds every commit already merged into the default branch. Root cause: the base ignores the default branch's remote ref (SPEC §4.3.2). Fix: base is the first parent of the oldest commit in HEAD --not @{push} origin/<default>, with fail-closed fallback to @{push}.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/cli/git-hook.ts",
+      "packages/codictator/src/cli/git-history.ts",
+      "packages/codictator/tests/unit/cli/cli-pre-push.test.ts",
+      "packages/codictator/tests/acceptance/prepush-own-commits.test.ts",
+      "packages/codictator/tests/support/prepush-scenario.ts",
+      "docs/BUGS/2026.md",
+      "docs/HISTORY/2026-11-14.md",
+      ".codictator/tasks/T-0035.json",
+      ".codictator/reviews/T-0035-r*.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T02:06:02.493Z",
+    "tree": "01715ac989355d44e3cb19243ce246ea80de0712"
+  },
+  "historyStaged": true,
+  "id": "T-0035",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T01:55:32.560Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T01:55:33.604Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:04:13.037Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T02:04:13.707Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T02:06:32.453Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-14T02:06:33.608Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T01:55:33.109Z",
+    "commit": "cab9b0a45c1f8cdb7b46341c601fdca6a11c26fa",
+    "failing": [
+      "[§4.3.2] pre-push ignores commits already on the default branch after a rebase (BUG-0092)",
+      "[§4.3.2] the pre-push hook judges only the rebased branch's own commit (BUG-0092)"
+    ],
+    "tree": "01715ac989355d44e3cb19243ce246ea80de0712"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T02:06:24.677Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0035-r1",
+      "round": 1,
+      "tree": "b00700f077239cc1a5cfe03fb944a0cc52f1b185"
+    }
+  ],
+  "spec": [
+    "SPEC §4.3.2",
+    "SPEC §4.15.7 EC-3"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-pre-push.test.ts",
+      "title": "[§4.3.2] pre-push ignores commits already on the default branch after a rebase (BUG-0092)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/cli-pre-push.test.ts",
+      "title": "[§4.3.2] pre-push ignores commits already on the default branch after a rebase (BUG-0092)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/prepush-own-commits.test.ts",
+      "title": "[§4.3.2] the pre-push hook judges only the rebased branch's own commit (BUG-0092)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-pre-push.test.ts",
+      "title": "[§4.3.2] pre-push fails closed to @{push}..HEAD when a merge sits in the range (BUG-0092)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-pre-push.test.ts",
+      "title": "[§4.3.2] pre-push fails closed to @{push}..HEAD when the oldest own commit is a root (BUG-0092)"
+    }
+  ],
+  "title": "fix(cli): judge only the branch's own commits at pre-push",
+  "type": "fix",
+  "version": 1
+}
+
