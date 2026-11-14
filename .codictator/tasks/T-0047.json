@@ -1,0 +1,65 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.7.3 states that a write target outside source files is judged as a path or fails closed as unresolvable, never dropped for code characters, and that an unparseable shell source blocks with CDX-E306"
+  ],
+  "branch": "work/serial-queue",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-07-SECURITY-GUARDS.md",
+      "docs/HISTORY/2026-11-14.md",
+      ".codictator/tasks/T-0047.json",
+      ".codictator/reviews/T-0047-r*.json",
+      "docs/BUGS/2026.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0047",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T06:50:18.093Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T06:50:20.601Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T06:50:47.498Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T06:51:02.390Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-14T06:51:46.474Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-14T06:51:38.664Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0047-r1",
+      "round": 1,
+      "tree": "e29889cd06fce53a32e4cdcde57f969f4c4f74d9"
+    }
+  ],
+  "spec": [
+    "SPEC §4.7.3",
+    "SPEC §4.7.2"
+  ],
+  "title": "docs(spec): specify write confinement of code-shaped targets and unparseable shell sources",
+  "type": "docs",
+  "version": 1
+}
+
