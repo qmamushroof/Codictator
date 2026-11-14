@@ -12,10 +12,10 @@ import {
 	EXPECTED_HOOKS_PATH,
 	HOOK_NAMES,
 	hookInstallPlan,
-	renderHookScript,
 } from "../features/integrity/index.ts";
 import type { Result } from "../kernel/index.ts";
-import { err, ok, resolveRepoRoot } from "../kernel/index.ts";
+import { ok, resolveRepoRoot } from "../kernel/index.ts";
+import { writeHookFiles } from "./hook-files.ts";
 import { detectWorkflowOptions, initPreamble } from "./init-plan.ts";
 import { loadFloorRules } from "./packs.ts";
 import { guardrailPlan, writePlan } from "./plan.ts";
@@ -158,35 +158,6 @@ export async function handleRegen(
 		}
 	}
 	return ok(0);
-}
-
-function encode(text: string): Uint8Array {
-	return new TextEncoder().encode(text);
-}
-
-export async function writeHookFiles(root: string): Promise<Result<true>> {
-	const ports = await portsFor(root);
-	if (!ports.ok) {
-		return err(ports.error);
-	}
-	for (const hook of HOOK_NAMES) {
-		const done = await ports.value.fs.write(
-			`${EXPECTED_HOOKS_PATH}/${hook}`,
-			encode(renderHookScript(hook)),
-		);
-		if (!done.ok) {
-			return err(done.error);
-		}
-	}
-	const plan = hookInstallPlan({});
-	const attrs = await ports.value.fs.write(
-		`${EXPECTED_HOOKS_PATH}/.gitattributes`,
-		encode(plan.gitattributes),
-	);
-	if (!attrs.ok) {
-		return err(attrs.error);
-	}
-	return ok(true);
 }
 
 export async function configureHooksPath(

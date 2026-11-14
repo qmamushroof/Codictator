@@ -76,8 +76,8 @@ export function sharedReads(inner: Fs): Fs {
 	return {
 		read: sharedRead(inner, reads),
 		readText: sharedReadText(inner, texts),
-		write: (path: string, content: Uint8Array): Promise<Result<void>> =>
-			invalidate(inner.write(path, content), path),
+		write: (path, content, mode) =>
+			invalidate(inner.write(path, content, mode), path),
 		append: (path: string, content: Uint8Array): Promise<Result<void>> =>
 			invalidate(inner.append(path, content), path),
 		remove: (path: string): Promise<Result<void>> =>
