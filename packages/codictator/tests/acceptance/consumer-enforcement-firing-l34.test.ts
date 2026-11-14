@@ -3,6 +3,7 @@
 // installed launcher and CLI. Red today (G5–G6); slices 3–4 green these rows.
 import { strict as assert } from "node:assert";
 import test from "node:test";
+import { MX } from "../support/consumer-fixtures.ts";
 import {
 	installConsumer,
 	runLauncher,
@@ -22,18 +23,19 @@ const STAGED: ReadonlyArray<{
 	{
 		probe: "stage-planning",
 		writes: [["src/g.ts", "export const g = 1;\n"]],
-		rules: ["core/arch-profile-declared", "core/repo-hygiene"],
+		rules: ["core/repo-hygiene"],
 	},
 	{
 		probe: "stage-docs",
 		writes: [
 			[
 				"docs/guide.md",
-				"# Guide\n\nSee [missing](./missing.md).\n\nUpdated on 2026-01-01: added things.\n\nThe docs contain 5 guides.\n\nThe shared consumer sentence carries twelve words for the test.\n",
+				// "contains" matches the SPEC 04-09 corpus-count regex on purpose.
+				"# Guide\n\nSee [missing](./missing.md).\n\nUpdated on 2026-01-01: added things.\n\nThe docs contains 5 guides.\n\nThe shared consumer sentence carries more than twelve words so the owner check sees it twice.\n",
 			],
 			[
 				"docs/other.md",
-				"# Other\n\nThe shared consumer sentence carries twelve words for the test.\n",
+				"# Other\n\nThe shared consumer sentence carries more than twelve words so the owner check sees it twice.\n",
 			],
 			["docs/SPEC/sub/deep.md", "# Deep\n"],
 		],
@@ -70,11 +72,6 @@ const STAGED: ReadonlyArray<{
 			],
 		],
 		rules: ["core/history-entry-complete"],
-	},
-	{
-		probe: "stage-unguarded",
-		writes: [["AGENTS.md", "# consumer\n"]],
-		rules: ["core/no-guard-removal"],
 	},
 ];
 
@@ -118,12 +115,16 @@ async function tddRange(
 		"tests/mx.test.ts",
 		'import test from "node:test";\n\ntest("ok", () => {});\n',
 	);
-	writeTreeFile(repo, "src/mx.ts", "export const m = 1;\n");
+	writeTreeFile(repo, "src/mx.ts", MX.guardBase);
 	writeTreeFile(repo, "py/mx_ok.py", "print(1)\n");
 	writeTreeFile(
 		repo,
 		"package.json",
-		JSON.stringify({ name: "mx", version: "0.0.0" }),
+		JSON.stringify({
+			name: "mx",
+			version: "0.0.0",
+			scripts: { test: "node --test" },
+		}),
 	);
 	repo.git(["add", "-A"]);
 	repo.git(["commit", "--no-verify", "-m", "seed tdd baseline"]);
@@ -133,16 +134,17 @@ async function tddRange(
 		"tests/mx.test.ts",
 		'import test from "node:test";\n\ntest("empty", () => {});\n\ntest.skip("skipped", () => {});\n\n// eslint-disable-next-line no-console\nconsole.log("x");\n',
 	);
-	writeTreeFile(repo, "src/mx.ts", "export const m = 2;\n");
+	writeTreeFile(repo, "src/mx.ts", MX.guardHead);
 	writeTreeFile(
 		repo,
 		"package.json",
 		JSON.stringify({
 			name: "mx",
-			test: "node --test --force",
+			scripts: { test: "node --test || true" },
 			dependencies: { "left-pad": "latest" },
 		}),
 	);
+	writeTreeFile(repo, "src/mx-abstraction.ts", MX.abstraction);
 	// Split literal keeps the runtime violation intact without tripping the
 	// repo's own text-scan gates (same idiom as the l34 secret vector).
 	writeTreeFile(
@@ -159,7 +161,8 @@ async function tddRange(
 	writeTreeFile(
 		repo,
 		"docs/guide.md",
-		"# Guide\n\nSee [missing](./missing.md).\n\nUpdated on 2026-01-01: added things.\n\nThe docs contain 5 guides.\n",
+		// "contains" matches the SPEC 04-09 corpus-count regex on purpose.
+		"# Guide\n\nSee [missing](./missing.md).\n\nUpdated on 2026-01-01: added things.\n\nThe docs contains 5 guides.\n",
 	);
 	writeTreeFile(
 		repo,

@@ -1,0 +1,88 @@
+{
+	"acceptanceCriteria": [
+		"Probe fixtures match SPEC wording so no-secret-reads, no-bypass, doc-no-corpus-counts and doc-single-owner inputs are SPEC-valid",
+		"no-guard-removal and arch-profile-declared are probed at their SPEC layer (L4 verify range)"
+	],
+	"branch": "test/firing-fixtures",
+	"files": {
+		"allow": [
+			"packages/codictator/tests/**",
+			"docs/HISTORY/2026-11-13.md",
+			".codictator/tasks/T-0031.json",
+			".codictator/reviews/T-0031-r*.json"
+		]
+	},
+	"greenProof": {
+		"at": "2026-11-14T01:52:28.577Z",
+		"tree": "e4d04511eb39eb02b6ba3dd2987480d6f099e1de"
+	},
+	"historyStaged": true,
+	"id": "T-0031",
+	"phase": "integrate",
+	"phases": [
+		{
+			"enteredAt": "2026-11-13T14:08:36.293Z",
+			"evidence": "codictator task phase next",
+			"name": "planning"
+		},
+		{
+			"enteredAt": "2026-11-13T14:20:25.236Z",
+			"evidence": "codictator task phase next",
+			"name": "implementation"
+		},
+		{
+			"enteredAt": "2026-11-13T14:20:30.874Z",
+			"evidence": "codictator task phase next",
+			"name": "validation"
+		},
+		{
+			"enteredAt": "2026-11-13T14:35:09.542Z",
+			"evidence": "codictator task phase next",
+			"name": "review"
+		},
+		{
+			"enteredAt": "2026-11-14T01:52:52.905Z",
+			"evidence": "codictator task phase next",
+			"name": "record"
+		},
+		{
+			"enteredAt": "2026-11-14T01:52:54.122Z",
+			"evidence": "codictator task phase next",
+			"name": "integrate"
+		}
+	],
+	"redProof": {
+		"at": "2026-11-13T14:20:20.381Z",
+		"commit": "e198ba9e6ce23df8e55e464248e40a8f6a46bf9c",
+		"failing": ["[consumer] remapped rows probe at the SPEC layer"],
+		"tree": "b054d60dd1ec05d6d473954e5f945ca7461f2157"
+	},
+	"reviews": [
+		{
+			"acknowledgedExceptions": [],
+			"at": "2026-11-14T01:52:47.825Z",
+			"identity": "observed",
+			"openBlockers": 0,
+			"openMajors": 0,
+			"reviewerSession": "fresh-subagent-review-T-0031-r1",
+			"round": 1,
+			"tree": "eaec0e09a64a9bc9bcda800376741dd4e55292c2"
+		}
+	],
+	"spec": [
+		"docs/SPEC/04-14-INTEGRITY.md",
+		"docs/SPEC/05-CORE-RULES.md",
+		"docs/SPEC/04-09-RECORDS.md",
+		"docs/SPEC/04-11-ARCHITECTURE-GUARDS.md"
+	],
+	"tests": [
+		{
+			"kind": "acceptance",
+			"path": "packages/codictator/tests/acceptance/consumer-enforcement-matrix.test.ts",
+			"title": "[consumer] remapped rows probe at the SPEC layer"
+		}
+	],
+	"title": "Fix consumer firing fixtures",
+	"type": "chore",
+	"version": 1
+}
