@@ -9,6 +9,7 @@ import { field, isBuiltinPackId, isRecord } from "../manifest.ts";
 import { readSetup } from "./arch-live.ts";
 import { findingFor } from "./binding.ts";
 import { COMMAND_WEAKENERS } from "./integrity-guards.ts";
+import { judgeMcpDeclared } from "./mcp-live.ts";
 import {
 	baseText,
 	flagRange,
@@ -231,4 +232,5 @@ export const RANGE_JUDGES: Readonly<Record<string, RangeJudge>> = {
 	"core/ci-present": judgeWorkflow,
 	"core/no-threshold-lowering": judgeThresholds,
 	"core/custom-pack-selftest": judgeCustomPacks,
+	"core/mcp-declared": judgeMcpDeclared,
 };

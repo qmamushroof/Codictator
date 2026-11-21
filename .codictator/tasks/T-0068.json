@@ -1,0 +1,135 @@
+{
+  "acceptanceCriteria": [
+    "core/mcp-declared flags a server in a project harness MCP config (SPEC 4.6.5 table) absent from config.steering.mcpAllowed at L0 session start and at L4",
+    "the L1 umbrella reports no silent row and its red-ledger entry is delisted"
+  ],
+  "branch": "work/mcp-declared",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: the L1 firing umbrella lists core/mcp-declared silent on the session probe. Root cause: resolveMcpDeclared in packs/enforcers/steering-guards.ts only judges fixture marker reports (scopeMarkerRule), and findUndeclaredServers in steering/mcp.ts is never called, so no live project MCP config is read at L0 (session start) or L4 (RANGE_JUDGES has no entry). It waited on SPEC, which PR 66 settled with the harness MCP config file table in SPEC 4.6.5. packs may not import steering (SPEC 3.3), so the pure comparison moves to the kernel.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/**"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T10:07:18.736Z",
+    "tree": "abf2c0a3d86c8f10f1b444f559eb4c0f5aab2ac3"
+  },
+  "historyStaged": true,
+  "id": "T-0068",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T09:48:57.053Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T09:49:20.538Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T09:51:10.978Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T10:07:22.007Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T10:11:08.455Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T10:11:09.438Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T09:49:17.074Z",
+    "commit": "c9a1d3fc064b1578d0380771a4063bfbd61d35d4",
+    "failing": [
+      "[§4.6.5] mcpServersIn reads the servers key of each harness MCP config file",
+      "[§4.6.5] mcpServersIn reads opencode.jsonc with comments and trailing commas",
+      "[§4.6.5] mcpServersIn reads the mcp_servers tables of .codex/config.toml",
+      "[§4.6.5] findUndeclaredServers lists configured servers missing from mcpAllowed, sorted once",
+      "[§4.6.5] L0 core/mcp-declared names a server in a project MCP config that mcpAllowed lacks",
+      "[§4.6.5] L0 core/mcp-declared stays quiet when every server is listed or no MCP config exists",
+      "[§4.6.5] L4 core/mcp-declared judges the head MCP configs only over a range base",
+      "[consumer] core/mcp-declared fires at session start on an undeclared project MCP server",
+      "[consumer] every L1-mapped floor rule fires on its hook probe"
+    ],
+    "tree": "abf2c0a3d86c8f10f1b444f559eb4c0f5aab2ac3"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T10:11:07.939Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0068-r1",
+      "round": 1,
+      "tree": "67a8d79ba29b20e6e185c58550b641588fc49b69"
+    }
+  ],
+  "spec": [
+    "SPEC §4.6.5"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/mcp-servers.test.ts",
+      "title": "[§4.6.5] mcpServersIn reads the servers key of each harness MCP config file"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/mcp-servers.test.ts",
+      "title": "[§4.6.5] mcpServersIn reads opencode.jsonc with comments and trailing commas"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/mcp-servers.test.ts",
+      "title": "[§4.6.5] mcpServersIn reads the mcp_servers tables of .codex/config.toml"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/mcp-servers.test.ts",
+      "title": "[§4.6.5] findUndeclaredServers lists configured servers missing from mcpAllowed, sorted once"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-mcp-declared-live.test.ts",
+      "title": "[§4.6.5] L0 core/mcp-declared names a server in a project MCP config that mcpAllowed lacks"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-mcp-declared-live.test.ts",
+      "title": "[§4.6.5] L0 core/mcp-declared stays quiet when every server is listed or no MCP config exists"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-mcp-declared-live.test.ts",
+      "title": "[§4.6.5] L4 core/mcp-declared judges the head MCP configs only over a range base"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-firing-l1-session.test.ts",
+      "title": "[consumer] core/mcp-declared fires at session start on an undeclared project MCP server"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/acceptance/consumer-enforcement-firing-l1.test.ts",
+      "title": "[consumer] every L1-mapped floor rule fires on its hook probe"
+    }
+  ],
+  "title": "judge MCP servers at session start and L4",
+  "type": "fix",
+  "version": 1
+}
+

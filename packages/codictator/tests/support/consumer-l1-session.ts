@@ -1,6 +1,7 @@
 // The session-start leg of the L1 firing probe: a consumer whose guardrails
 // were generated and then broken three ways, so the L0 integrity checks of
-// SPEC §4.14.2 each have something to report at session start.
+// SPEC §4.14.2 each have something to report at session start, plus a project
+// MCP config naming a server config.steering.mcpAllowed does not list.
 import { strict as assert } from "node:assert";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -10,6 +11,12 @@ import type { TempRepo } from "./temp-repo.ts";
 export async function breakGuardrails(repo: TempRepo): Promise<void> {
 	const regen = await srcMain(["regen"], repo.dir);
 	assert.equal(regen.code, 0, `regen failed: ${regen.stdout}${regen.stderr}`);
+	// core/mcp-declared (SPEC §4.6.5): an undeclared server at session start.
+	writeTreeFile(
+		repo,
+		".mcp.json",
+		`${JSON.stringify({ mcpServers: { "rogue-server": { command: "rogue" } } })}\n`,
+	);
 	// core/guardrail-manifest: a generated artifact edited after regen.
 	const hook = path.join(repo.dir, ".githooks", "pre-commit");
 	writeTreeFile(

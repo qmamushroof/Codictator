@@ -16,6 +16,7 @@ import {
 	loadScopeText,
 	parseMarkerInt,
 } from "./health-measures.ts";
+import { withLiveMcp } from "./mcp-live.ts";
 import { scopeMarkerRule } from "./scope-text-rule.ts";
 
 function parsePercent(
@@ -217,11 +218,8 @@ export function resolveMcpDeclared(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	return scopeMarkerRule(
-		decl,
-		rule,
-		ports,
-		(binding, file, markers, findings) => {
+	return withLiveMcp(
+		scopeMarkerRule(decl, rule, ports, (binding, file, markers, findings) => {
 			if ((markers.get("declared") ?? "false") !== "true") {
 				const tool = markers.get("tool") ?? "unknown server";
 				findings.push(
@@ -232,6 +230,8 @@ export function resolveMcpDeclared(
 					}),
 				);
 			}
-		},
+		}),
+		rule,
+		ports,
 	);
 }
