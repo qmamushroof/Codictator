@@ -87,7 +87,7 @@ async function readJson(
 	}
 }
 
-async function readSetup(ports: Ports): Promise<ArchSetup | undefined> {
+export async function readSetup(ports: Ports): Promise<ArchSetup | undefined> {
 	const parsed = await readJson(ports, CONFIG_PATH);
 	const root = parsed?.ok === true ? parsed.value : undefined;
 	const architecture = isRecord(root) ? field(root, "architecture") : undefined;

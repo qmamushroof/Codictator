@@ -1,0 +1,171 @@
+{
+  "acceptanceCriteria": [
+    "ci verify threads the range base so the test-integrity rules compare base and head of each changed file",
+    "the config, baseline, waiver, perf and workflow rules judge the head state a range touches at L4",
+    "the range probe breaks every verify-tdd-range rule it can and the umbrella silent list drops eighteen rules"
+  ],
+  "branch": "work/firing-l4-range",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: node --test consumer-enforcement-firing-l34.test.ts reports twenty verify-tdd-range rules silent. Root cause: the test-integrity, baseline, arch-profile, waiver, perf and ci-present enforcers judge fixture marker reports only (SPEC 4.4.1 sample.txt), and ci verify never threads the range base the integrity checks compare against (SPEC 4.10.4, 4.15.1). Probe defects: the head config dropped the language packs (packs []), the fix task never left discovery, the base test held no assertions, the fixture was one line, and no tsconfig, baseline, waiver, budget or workflow was in range.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/**",
+      "packages/codictator/tests/**",
+      "docs/BUGS/2026-5.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T07:50:14.778Z",
+    "tree": "1d09c5cd82499fa0137b16794e6a05f90038b6f3"
+  },
+  "historyStaged": true,
+  "id": "T-0063",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T05:04:25.708Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T05:04:35.580Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T07:50:00.989Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T07:50:20.681Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T08:13:59.324Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T08:14:01.021Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T05:04:31.951Z",
+    "commit": "882233082ac0326dd89edbb7270d0e08d6735871",
+    "failing": [
+      "[consumer] the verify-range L4 floor rules fire on their gate probe"
+    ],
+    "tree": "1d09c5cd82499fa0137b16794e6a05f90038b6f3"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T08:13:55.538Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0063-r1",
+      "round": 1,
+      "tree": "5c25b63f2e8a159ab9a771d8f2c538f74a5367a2"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-10-TESTING.md",
+    "docs/SPEC/04-15-CI.md",
+    "docs/SPEC/04-11-ARCHITECTURE-GUARDS.md",
+    "docs/SPEC/04-03-ENGINE.md",
+    "docs/SPEC/05-CORE-RULES.md",
+    "docs/SPEC/06-LANGUAGE-PACKS.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-tests.test.ts",
+      "title": "[§4.10.4] L4 no-assertion-loss flags a test file whose assertion count falls and stays quiet without a range base"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-tests.test.ts",
+      "title": "[§4.10.4 EC-4] L4 no-assertion-loss keeps the count of an assertion moved into a helper in the same file"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-tests.test.ts",
+      "title": "[§4.10.4 EC-8] L4 no-new-suppressions flags an added suppression comment and ignores one inside a string"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-tests.test.ts",
+      "title": "[§6.3] L4 no-new-suppressions reads Python comments, not strings"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-tests.test.ts",
+      "title": "[§4.10.4 EC-9] L4 no-fixture-shrink flags a fixture that loses more lines than it gains"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-tests.test.ts",
+      "title": "[§4.10.4] L4 no-fixture-shrink accepts a grown fixture and a shrunk file outside fixtures"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-tests.test.ts",
+      "title": "[§5] L4 no-guard-removal flags a throw line deleted from a function that remains"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-tests.test.ts",
+      "title": "[§5] L4 no-guard-removal leaves a guard deleted with its function alone"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-config.test.ts",
+      "title": "[§4.10.4] L4 test-command-intact flags a test script that gains || true"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-config.test.ts",
+      "title": "[§4.10.4] L4 test-command-intact accepts a weakener the base command already carried"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-config.test.ts",
+      "title": "[§4.3.5] L4 no-baseline-raise flags a raised key and accepts a lowered one"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-config.test.ts",
+      "title": "[§4.11.4] L4 arch-profile-declared flags a changed config with no profile and a module kind the profile forbids"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-config.test.ts",
+      "title": "[§4.3.4] L4 waivers-valid flags an expired waiver and accepts a live one"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-config.test.ts",
+      "title": "[§4.15.2] L4 perf-budgets flags a test budget comment with no perf command and accepts one with it"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-config.test.ts",
+      "title": "[§4.15.2] L4 ci-present flags a changed generated workflow with no verify job"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-firing-l4-range.test.ts",
+      "title": "[consumer] the verify-range L4 floor rules fire on their gate probe"
+    }
+  ],
+  "title": "L4 range firing for the twenty silent verify-tdd-range rules",
+  "type": "fix",
+  "version": 1
+}
+

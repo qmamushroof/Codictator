@@ -170,16 +170,14 @@ async function ciVerify(
 			const judged = await evaluateGateScope(
 				ports.value,
 				await ciPackIds(root, engineVersion),
-				commitText === ""
-					? {
-							files: [...scopedFiles],
-							note: scoped.value.note,
-						}
-					: {
-							files: [...scopedFiles],
-							note: scoped.value.note,
-							proposedContent: commitText,
-						},
+				// SPEC §4.10.4: the range base rides the scope, so the
+				// integrity checks compare base and head of each file.
+				{
+					files: [...scopedFiles],
+					note: scoped.value.note,
+					base: ranged.value.base,
+					...(commitText === "" ? {} : { proposedContent: commitText }),
+				},
 				now,
 				configHash,
 				{ emit },

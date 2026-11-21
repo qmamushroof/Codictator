@@ -38,6 +38,10 @@ export interface Scope {
 	readonly proposedContent?: string;
 	readonly shellCommand?: string;
 	readonly proposedPaths?: ReadonlyArray<string>;
+	// SPEC §4.10.4 + §4.15.1: the L4 range base commit. Integrity checks
+	// compare base and head of the changed files; only ci verify sets it,
+	// so the range judges stay out of the L1–L3 legs.
+	readonly base?: string;
 	// True when proposedContent is the complete file after the tool call
 	// (a whole-file write), unset for an edit fragment or a non-L1 scope.
 	// Whole-document rules judge it only when true.
