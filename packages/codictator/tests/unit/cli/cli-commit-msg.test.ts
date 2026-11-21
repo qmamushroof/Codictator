@@ -54,7 +54,7 @@ test("[§4.14.4] commit-msg appends the trailer to an absolute message path", as
 	try {
 		seedConfig(repo);
 		const msgFile = path.join(repo.dir, "COMMIT_EDITMSG");
-		writeFileSync(msgFile, "subject line\n", "utf8");
+		writeFileSync(msgFile, "chore: subject line\n", "utf8");
 		const ran = await handleGitHook(req(["commit-msg", msgFile], repo.dir));
 		assert.equal(ran.ok, true);
 		assert.match(readFileSync(msgFile, "utf8"), /^Codictator-L3: /m);
@@ -72,7 +72,7 @@ test("[§4.14.4] commit-msg appends the trailer outside the repo root", async ()
 	try {
 		seedConfig(repo);
 		const msgFile = path.join(outside, "COMMIT_EDITMSG");
-		writeFileSync(msgFile, "linked worktree subject\n", "utf8");
+		writeFileSync(msgFile, "chore: linked worktree subject\n", "utf8");
 		const ran = await handleGitHook(req(["commit-msg", msgFile], repo.dir));
 		assert.equal(ran.ok, true);
 		assert.match(readFileSync(msgFile, "utf8"), /^Codictator-L3: /m);
@@ -109,7 +109,7 @@ test("[§4.14.4] commit-msg with an unwritable message file blocks", async () =>
 	const msgFile = path.join(outside, "COMMIT_EDITMSG");
 	try {
 		seedConfig(repo);
-		writeFileSync(msgFile, "subject\n", "utf8");
+		writeFileSync(msgFile, "chore: subject\n", "utf8");
 		chmodSync(msgFile, 0o444);
 		const ran = await handleGitHook(req(["commit-msg", msgFile], repo.dir));
 		assert.equal(ran.ok, false);
@@ -137,7 +137,7 @@ test("[§4.14.4] commit-msg resolves a relative message path against cwd", async
 		mkdirSync(path.join(repo.dir, ".git"), { recursive: true });
 		writeFileSync(
 			path.join(repo.dir, ".git", "COMMIT_EDITMSG"),
-			"subject line\n",
+			"chore: subject line\n",
 			"utf8",
 		);
 		const ran = await handleGitHook(

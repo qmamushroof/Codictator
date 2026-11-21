@@ -11,18 +11,18 @@
 import type { Ports } from "../../../kernel/index.ts";
 import { ok, type Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
+import { SUBJECT_PATTERN } from "../../records/commit-subject.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
-import { bindRule, findingFor, selectFiles } from "./binding.ts";
+import { bindRule, findingFor } from "./binding.ts";
 import {
 	baseEnforcer,
 	isMarkerFile,
-	loadScopeText,
 	parseMarkers,
 	scopeMarkerTexts,
 } from "./health-measures.ts";
-import { forEachEffectiveText } from "./pre-tool-files.ts";
-import { scopeMarkerRule } from "./scope-text-rule.ts";
+import { effectiveTextRule } from "./marker-scan.ts";
+import { scopeMarkerRule, scopeTextRule } from "./scope-text-rule.ts";
 
 // SPEC §4.15.2 core/ci-present: no committed workflow flags; a named one
 // stays quiet.
@@ -87,33 +87,25 @@ export function resolveCiActionsPinned(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			await forEachEffectiveText(
-				ctx,
-				ports,
-				binding,
-				findings,
-				"lines",
-				(entry, text) => {
-					if (!isMarkerFile(entry.path) && !isWorkflowFile(entry.path)) {
-						return;
-					}
-					for (const uses of unpinnedUses(text)) {
-						findings.push(
-							findingFor(binding, {
-								path: entry.path,
-								message: `${uses} pins no full commit SHA`,
-								vars: { path: entry.path, value: uses },
-							}),
-						);
-					}
-				},
-			);
-			return findings;
-		}),
+	return effectiveTextRule(
+		decl,
+		rule,
+		ports,
+		"lines",
+		(binding, file, text, findings) => {
+			if (!isMarkerFile(file) && !isWorkflowFile(file)) {
+				return;
+			}
+			for (const uses of unpinnedUses(text)) {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `${uses} pins no full commit SHA`,
+						vars: { path: file, value: uses },
+					}),
+				);
+			}
+		},
 	);
 }
 
@@ -190,42 +182,32 @@ export function resolveCiRequiredCheck(
 }
 
 // SPEC §5.11 core/conventional-commit: the subject matches the
-// type(scope)!: detail form. A subject with no type prefix flags. Body and
-// module-name scope reads stay in the owning commit path; the marker
-// mirror judges the subject shape from the case report.
-const SUBJECT_PATTERN =
-	/^(feat|fix|docs|refactor|test|chore|perf|ci|build|revert)(\([a-z0-9-]+\))?!?: \S.{0,71}$/;
-
+// type(scope)!: detail form. A subject with no type prefix flags. The
+// commit-msg hook judges the real message through checkCommitMessage
+// (records/commit-subject.ts); this marker mirror judges the subject shape
+// from the case report.
 export function resolveConventionalCommit(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				// Commit subjects arrive as marker reports (SPEC §4.4.1
-				// sample.txt fixtures); source files carry `subject:` lines
-				// of their own (parameters, YAML keys), which are not commits.
-				if (text === undefined || !isMarkerFile(file)) {
-					continue;
-				}
-				const subject = parseMarkers(text).get("subject") ?? "";
-				if (subject === "" || SUBJECT_PATTERN.test(subject)) {
-					continue;
-				}
-				findings.push(
-					findingFor(binding, {
-						path: file,
-						message: "commit subject does not match the conventional form",
-						vars: { path: file, detail: subject },
-					}),
-				);
-			}
-			return findings;
-		}),
-	);
+	return scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
+		// Commit subjects arrive as marker reports (SPEC §4.4.1
+		// sample.txt fixtures); source files carry `subject:` lines
+		// of their own (parameters, YAML keys), which are not commits.
+		if (!isMarkerFile(file)) {
+			return;
+		}
+		const subject = parseMarkers(text).get("subject") ?? "";
+		if (subject === "" || SUBJECT_PATTERN.test(subject)) {
+			return;
+		}
+		findings.push(
+			findingFor(binding, {
+				path: file,
+				message: "commit subject does not match the conventional form",
+				vars: { path: file, detail: subject },
+			}),
+		);
+	});
 }

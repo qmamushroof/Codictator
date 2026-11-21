@@ -20,13 +20,14 @@ import {
 	selectFiles,
 	tunableStringList,
 } from "./binding.ts";
+import { docRule, liveRouters, liveSingleOwner } from "./docs-live.ts";
 import {
 	baseEnforcer,
 	isMarkerFile,
-	loadScopeText,
 	parseMarkerInt,
 	parseMarkers,
 } from "./health-measures.ts";
+import { scopeTextRule } from "./scope-text-rule.ts";
 
 const ROOT_DOCS: ReadonlySet<string> = new Set([
 	"README.md",
@@ -128,66 +129,51 @@ export function resolveDocOneLevel(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (!isDocScopeFile(file)) {
-					continue;
-				}
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				const declared = parseMarkers(text).get("path") ?? file;
-				const match = /^docs\/([^/]+)\/([^/]+)\//.exec(declared);
-				const folder = match?.[1] ?? "";
-				if (match !== null && folder !== "HISTORY" && folder !== "BUGS") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `doc nested below docs/${folder}/: ${declared}`,
-							vars: { path: file },
-						}),
-					);
-				}
+	return scopeTextRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, text, findings) => {
+			const declared = parseMarkers(text).get("path") ?? file;
+			const match = /^docs\/([^/]+)\/([^/]+)\//.exec(declared);
+			const folder = match?.[1] ?? "";
+			if (match !== null && folder !== "HISTORY" && folder !== "BUGS") {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `doc nested below docs/${folder}/: ${declared}`,
+						vars: { path: file },
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
+		isDocScopeFile,
 	);
 }
 
-// SPEC §5.10 core/doc-router-leaf: a folder with no router leaf flags.
+// SPEC §5.10 core/doc-router-leaf: a folder with no router leaf flags in a
+// fixture report; the real staged router tree is judged by liveRouters.
 export function resolveDocRouterLeaf(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (!isDocScopeFile(file)) {
-					continue;
-				}
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				if ((parseMarkers(text).get("router") ?? "") === "missing") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `doc folder with no router leaf in ${file}`,
-							vars: { path: file },
-						}),
-					);
-				}
+	return docRule(
+		decl,
+		rule,
+		ports,
+		(args, file, text) => {
+			if ((parseMarkers(text).get("router") ?? "") === "missing") {
+				args.findings.push(
+					findingFor(args.binding, {
+						path: file,
+						message: `doc folder with no router leaf in ${file}`,
+						vars: { path: file },
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
+		liveRouters,
 	);
 }
 
@@ -205,25 +191,20 @@ export function resolveDocNoCorpusCounts(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (!isDocScopeFile(file)) {
-					continue;
-				}
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || /no counts/i.test(text)) {
-					continue;
-				}
-				const found = corpusFinding(binding, file, text);
-				if (found !== undefined) {
-					findings.push(found);
-				}
+	return scopeTextRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, text, findings) => {
+			if (/no counts/i.test(text)) {
+				return;
 			}
-			return findings;
-		}),
+			const found = corpusFinding(binding, file, text);
+			if (found !== undefined) {
+				findings.push(found);
+			}
+		},
+		isDocScopeFile,
 	);
 }
 
@@ -242,36 +223,29 @@ function corpusFinding(
 	});
 }
 
-// SPEC §5.10 core/doc-single-owner: a fact with two owners flags.
+// SPEC §5.10 core/doc-single-owner: a fact with two owners flags in a
+// fixture report; a sentence owned by two real docs is judged live.
 export function resolveDocSingleOwner(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (!isDocScopeFile(file)) {
-					continue;
-				}
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined) {
-					continue;
-				}
-				const owners = parseMarkerInt(parseMarkers(text), "owners");
-				if (owners !== undefined && owners > 1) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `fact with two owners in ${file}`,
-							vars: { path: file, value: String(owners) },
-						}),
-					);
-				}
+	return docRule(
+		decl,
+		rule,
+		ports,
+		(args, file, text) => {
+			const owners = parseMarkerInt(parseMarkers(text), "owners");
+			if (owners !== undefined && owners > 1) {
+				args.findings.push(
+					findingFor(args.binding, {
+						path: file,
+						message: `fact with two owners in ${file}`,
+						vars: { path: file, value: String(owners) },
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
+		liveSingleOwner,
 	);
 }

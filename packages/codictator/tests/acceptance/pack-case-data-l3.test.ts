@@ -75,6 +75,7 @@ function seedTask(repo: TempRepo): void {
 // The engine shim re-exports src/cli/main, so the real launcher resolves
 // exactly like production without a build (hook-path acceptance pattern).
 function installLauncher(repo: TempRepo): void {
+	repo.writeFile(".gitignore", "node_modules/\n");
 	repo.writeFile(".codictator/bin/run.mjs", launcherSource());
 	const shimDir = path.join(
 		repo.dir,

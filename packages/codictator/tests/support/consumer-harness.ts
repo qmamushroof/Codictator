@@ -75,6 +75,9 @@ export async function installConsumer(repo: TempRepo): Promise<void> {
 		`export { main } from ${JSON.stringify(target)};\n`,
 		"utf8",
 	);
+	// A consumer ignores its installed dependencies; the engine shim below
+	// lives under node_modules and is never a committed file (SPEC §5.11).
+	repo.writeFile(".gitignore", "node_modules/\n");
 	repo.writeFile("AGENTS.md", await consumerAgentsBlock(repo.dir));
 	for (const hook of HOOK_NAMES) {
 		repo.writeFile(`.githooks/${hook}`, renderHookScript(hook));

@@ -3,6 +3,7 @@
 // Codictator-L3 trailer append — while git-hook.ts keeps hook dispatch and
 // the pre-commit/pre-push legs.
 import path from "node:path";
+import { checkCommitMessage } from "../features/records/commit-subject.ts";
 import { checkAddedHistoryEntryCount } from "../features/records/history-checks.ts";
 import type { Result } from "../kernel/index.ts";
 import { ok, readHostText, writeHostText } from "../kernel/index.ts";
@@ -55,6 +56,9 @@ export async function runCommitMsg(
 		"--verify",
 		"MERGE_HEAD",
 	]);
+	// SPEC §5.11 core/conventional-commit: the subject judges first, beside
+	// the history checks, so one verdict names every reason the commit blocks.
+	const subjectFindings = merging.ok ? [] : checkCommitMessage(read.value);
 	const names = merging.ok
 		? undefined
 		: await runGitText(ports, ["git", "diff", "--cached", "--name-only", "--"]);
@@ -72,7 +76,10 @@ export async function runCommitMsg(
 			// the trailer-only flow, so no entry is owed yet.
 			const missing = checkMissingHistoryEntry(stagedFiles);
 			if (missing.length > 0) {
-				return emitGitVerdict(req, "commit-msg", missing);
+				return emitGitVerdict(req, "commit-msg", [
+					...subjectFindings,
+					...missing,
+				]);
 			}
 		} else {
 			const staged = await runGitText(ports, [
@@ -100,10 +107,16 @@ export async function runCommitMsg(
 					subject === undefined || subject === "" ? undefined : subject,
 				);
 				if (entryFindings.length > 0) {
-					return emitGitVerdict(req, "commit-msg", entryFindings);
+					return emitGitVerdict(req, "commit-msg", [
+						...subjectFindings,
+						...entryFindings,
+					]);
 				}
 			}
 		}
+	}
+	if (subjectFindings.length > 0) {
+		return emitGitVerdict(req, "commit-msg", subjectFindings);
 	}
 	const base = read.value.endsWith("\n") ? read.value : `${read.value}\n`;
 	const wrote = await writeHostText(file, `${base}\n${trailer}\n`);

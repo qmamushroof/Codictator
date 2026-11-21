@@ -66,8 +66,27 @@ export function scanEnforcer(
 	);
 }
 
-// One resolver for a whole-document rule over the effective files: the judge
-// sees each file's complete text and pushes its findings.
+// One resolver for a rule over the effective files: the judge sees each
+// file's text (whole document or lines, per `need`) and pushes its findings.
+export function effectiveTextRule(
+	decl: EnforcerDecl,
+	rule: PackRule,
+	ports: Ports,
+	need: "document" | "lines",
+	judge: (
+		binding: RuleBinding,
+		file: string,
+		text: string,
+		findings: Array<Finding>,
+	) => void,
+): Result<Enforcer> {
+	return scanEnforcer(decl, rule, (ctx, binding, findings) =>
+		forEachEffectiveText(ctx, ports, binding, findings, need, (entry, text) =>
+			judge(binding, entry.path, text, findings),
+		),
+	);
+}
+
 export function documentRule(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -79,16 +98,7 @@ export function documentRule(
 		findings: Array<Finding>,
 	) => void,
 ): Result<Enforcer> {
-	return scanEnforcer(decl, rule, (ctx, binding, findings) =>
-		forEachEffectiveText(
-			ctx,
-			ports,
-			binding,
-			findings,
-			"document",
-			(entry, text) => judge(binding, entry.path, text, findings),
-		),
-	);
+	return effectiveTextRule(decl, rule, ports, "document", judge);
 }
 
 // One resolver for a fixture-marker-only rule: each marker file's parsed
