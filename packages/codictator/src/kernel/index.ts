@@ -41,6 +41,11 @@ export { globMatch } from "./glob.ts";
 export { normalizeText, sha256Hex, sha256Text } from "./hash.ts";
 export { readHostText, writeHostText } from "./host.ts";
 export { parseJson, stableLineStringify, stableStringify } from "./json.ts";
+export {
+	findUndeclaredServers,
+	MCP_CONFIG_FILES,
+	mcpServersIn,
+} from "./mcp-servers.ts";
 export type { NodeNetOptions } from "./net.ts";
 export {
 	NET_ALLOWLIST,
