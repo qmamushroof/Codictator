@@ -219,16 +219,18 @@ export function readShellOperator(
 	lastWord: string | undefined,
 ): OperatorRead | undefined {
 	const rest = text.slice(index);
+	// SPEC §4.7.3: `N>&M` duplicates a descriptor, so its leading `N` is
+	// the fd, never an argument.
+	const fdWord = lastWord !== undefined && /^\d+$/.test(lastWord);
 	for (const operator of REDIRECT_WORDS) {
 		if (rest.startsWith(operator)) {
-			return { operator, next: index + operator.length, dropFd: false };
+			const dropFd = operator === ">&" && fdWord;
+			return { operator, next: index + operator.length, dropFd };
 		}
 	}
 	const char = text[index];
 	if (char === ">" || char === "<") {
-		const dropFd =
-			char === ">" && lastWord !== undefined && /^\d+$/.test(lastWord);
-		return { operator: char, next: index + 1, dropFd };
+		return { operator: char, next: index + 1, dropFd: char === ">" && fdWord };
 	}
 	return undefined;
 }
@@ -259,4 +261,15 @@ export function readShellHeredoc(
 		at = end + 1;
 	}
 	throw new ParseFailure();
+}
+
+// SPEC §4.7.3: `>&2`, `>&-` and `2>&1` duplicate or close a descriptor, and
+// /dev/null or NUL discards output; none of them writes a file.
+const NULL_DEVICES = new Set(["/dev/null", "nul"]);
+
+export function isNonFileTarget(operator: string, target: string): boolean {
+	if (operator === ">&" && /^(?:\d+-?|-)$/.test(target)) {
+		return true;
+	}
+	return NULL_DEVICES.has(target.toLowerCase());
 }

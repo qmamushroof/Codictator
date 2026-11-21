@@ -74,13 +74,14 @@ interface RunKey {
 }
 
 // The `run` key of a line, past any list dashes (spaces or tabs), with its
-// column. A flow mapping holding a run key is flagged, not parsed.
-function runKey(line: string): RunKey | undefined {
+// column. A flow mapping holding a run key is flagged, not parsed, in a
+// YAML file; in a source file `{ …, run: … }` is an object literal (code).
+function runKey(line: string, path: string): RunKey | undefined {
 	const lead = indentOf(line);
 	const text = line.trimStart();
 	const dashes = LIST_DASHES.exec(text)?.[0] ?? "";
 	const body = text.slice(dashes.length);
-	if (FLOW_RUN.test(body)) {
+	if (!isSourceFile(path) && FLOW_RUN.test(body)) {
 		return { column: lead, rest: "", flow: true };
 	}
 	const key = RUN_KEY.exec(body);
@@ -217,7 +218,7 @@ export function extractShellSources(
 	const sources: Array<string> = [];
 	const lines = content.split(NEWLINE);
 	for (let index = 0; index < lines.length; index += 1) {
-		const key = runKey(lines[index] ?? "");
+		const key = runKey(lines[index] ?? "", path);
 		if (key === undefined) {
 			continue;
 		}

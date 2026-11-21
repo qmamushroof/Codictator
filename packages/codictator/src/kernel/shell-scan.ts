@@ -13,6 +13,7 @@ import {
 } from "./shell.ts";
 import { buildShellCommand } from "./shell-cmd.ts";
 import {
+	isNonFileTarget,
 	readShellBalanced,
 	readShellHeredoc,
 	readShellOperator,
@@ -225,7 +226,7 @@ class ShellParser {
 			this.collect.inputs.push(target);
 		} else if (operator === "<<<") {
 			this.heredocBodies.push(target);
-		} else {
+		} else if (!isNonFileTarget(operator, target)) {
 			this.collect.writeTargets.push(target);
 		}
 	}

@@ -1,0 +1,144 @@
+{
+  "acceptanceCriteria": [
+    "a run: object literal in a .ts/.js/.py file is not judged as a YAML flow mapping; a workflow flow mapping run: still fails closed",
+    "2>&1, >&2 and >&- are not write targets and N>&M drops the fd word",
+    "a redirect to /dev/null or NUL is not a write target; ../ escapes, .git/ writes and real file redirects still block",
+    "BUG-0112 row fixed and one HISTORY entry at the top of docs/HISTORY/2026-11-21.md"
+  ],
+  "branch": "fix/shell-nonfile-targets",
+  "bugRowUpdated": true,
+  "diagnosis": "shell-sources.ts runKey FLOW_RUN matches a TS object literal holding run: in any file, so it fails closed; shell-word.ts readShellOperator keeps >& with dropFd false and shell-scan.ts handleRedirection pushes any non-input target (fd digit, dash, /dev/null, NUL) as a write target, which toRepoPath rejects or realpath cannot resolve",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/shell-word.ts",
+      "packages/codictator/src/kernel/shell-scan.ts",
+      "packages/codictator/src/features/packs/enforcers/shell-sources.ts",
+      "packages/codictator/tests/unit/kernel/shell-nonfile-targets.test.ts",
+      "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-21.md",
+      "packages/codictator/tests/acceptance/consumer-shell-nonfile-targets.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T14:28:15.908Z",
+    "tree": "730c29f12e6217d7c8a99b604b8f55a6db5f3736"
+  },
+  "historyStaged": true,
+  "id": "T-0071",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T14:13:20.186Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T14:13:44.916Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T14:14:03.955Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T14:26:37.146Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T14:27:05.676Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T14:27:06.943Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T14:28:15.297Z",
+    "commit": "08b74bb54687d72579b5ff88e04e68bccd69ace2",
+    "failing": [
+      "[§4.7.3] a file-descriptor duplication redirect is not a write target (BUG-0112)",
+      "[§4.7.3] a duplication redirect drops its fd word from the argv (BUG-0112)",
+      "[§4.7.3] a redirect to a file stays a write target beside a duplication (BUG-0112)",
+      "[§4.7.3] a redirect to /dev/null or NUL is not a write target (BUG-0112)",
+      "[§4.7.2] dangerous-shell ignores a run: object literal in a source file (BUG-0112)",
+      "[§4.7.3] write-confinement ignores a run: object literal in a source file (BUG-0112)",
+      "[§4.7.3] write-confinement judges fd duplications and null devices as no target (BUG-0112)",
+      "[consumer] [§4.7.3] fd duplications, null devices and a source run: object draw no shell finding (BUG-0112)"
+    ],
+    "tree": "730c29f12e6217d7c8a99b604b8f55a6db5f3736"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T14:27:04.961Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0071-r1",
+      "round": 1,
+      "tree": "b7d124e38ae070a631b13779fd98ccd633a46c0f"
+    }
+  ],
+  "spec": [
+    "§4.7.2",
+    "§4.7.3"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-nonfile-targets.test.ts",
+      "title": "[§4.7.3] a file-descriptor duplication redirect is not a write target (BUG-0112)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-nonfile-targets.test.ts",
+      "title": "[§4.7.3] a duplication redirect drops its fd word from the argv (BUG-0112)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-nonfile-targets.test.ts",
+      "title": "[§4.7.3] a redirect to a file stays a write target beside a duplication (BUG-0112)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/shell-nonfile-targets.test.ts",
+      "title": "[§4.7.3] a redirect to /dev/null or NUL is not a write target (BUG-0112)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.2] dangerous-shell ignores a run: object literal in a source file (BUG-0112)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] write-confinement ignores a run: object literal in a source file (BUG-0112)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] write-confinement judges fd duplications and null devices as no target (BUG-0112)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/acceptance/consumer-shell-nonfile-targets.test.ts",
+      "title": "[consumer] [§4.7.3] fd duplications, null devices and a source run: object draw no shell finding (BUG-0112)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-shell-nonfile-targets.test.ts",
+      "title": "[consumer] [§4.7.3] a ../ escape and a workflow flow-mapping run: still draw a shell finding (BUG-0112)"
+    }
+  ],
+  "title": "fix(kernel): stop judging fd duplications, null devices and source-file run objects as write targets",
+  "type": "fix",
+  "version": 1
+}
+
