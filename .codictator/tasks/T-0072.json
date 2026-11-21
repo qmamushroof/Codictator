@@ -1,0 +1,113 @@
+{
+  "acceptanceCriteria": [
+    "writes-within-plan judges nothing when the scope is the tracked tree (verify --all and bare verify)",
+    "writes-within-plan still fires under --staged and a --base/--head range",
+    "core/workflow-gates behaviour under --all is unchanged",
+    "BUG-0113 row fixed and one HISTORY entry at the top of docs/HISTORY/2026-11-21.md"
+  ],
+  "branch": "fix/verify-all-write-plan",
+  "bugRowUpdated": true,
+  "diagnosis": "resolveVerifyScope returns every tracked file for --all; readJudgedTasks/touchedTasks then count every committed .codictator/tasks record as touched and writesWithinPlanReal judges the whole tree against each record's phase (602 findings). The tree scope has no diff, so the false assumption is that the scope files are a change.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/contracts.ts",
+      "packages/codictator/src/cli/evaluate.ts",
+      "packages/codictator/src/features/packs/enforcers/marker-scan.ts",
+      "packages/codictator/src/features/packs/enforcers/workflow-guards.ts",
+      "packages/codictator/src/features/packs/enforcers/workflow-real.ts",
+      "packages/codictator/tests/unit/coverage/workflow-real.test.ts",
+      "packages/codictator/tests/acceptance/consumer-verify-all-write-plan.test.ts",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T14:40:03.072Z",
+    "tree": "e3dd900f874cd6f8ab18ed887ad573517787b015"
+  },
+  "historyStaged": true,
+  "id": "T-0072",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T14:38:42.521Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T14:39:09.633Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T14:40:02.556Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T14:44:13.179Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T14:44:33.133Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T14:44:34.292Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T14:39:07.242Z",
+    "commit": "ebcb70e9e43f604e6383a0fca468a293329e3e97",
+    "failing": [
+      "[§4.12.3] writes-within-plan judges nothing for a whole-tree scope (BUG-0113)",
+      "[consumer] [§4.12.3] verify --all judges no write plan over committed task records (BUG-0113)"
+    ],
+    "tree": "e3dd900f874cd6f8ab18ed887ad573517787b015"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T14:44:32.534Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0072-r1",
+      "round": 1,
+      "tree": "2385e8d6d673a4ffed1084bdfdccee728c5af175"
+    }
+  ],
+  "spec": [
+    "§4.12.3"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/coverage/workflow-real.test.ts",
+      "title": "[§4.12.3] writes-within-plan judges nothing for a whole-tree scope (BUG-0113)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/coverage/workflow-real.test.ts",
+      "title": "[§4.12.3] writes-within-plan still judges a diff scope beside a tree scope (BUG-0113)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/acceptance/consumer-verify-all-write-plan.test.ts",
+      "title": "[consumer] [§4.12.3] verify --all judges no write plan over committed task records (BUG-0113)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-verify-all-write-plan.test.ts",
+      "title": "[consumer] [§4.12.3] writes-within-plan still fires under --staged and a range (BUG-0113)"
+    }
+  ],
+  "title": "fix(workflow): judge no write plan under verify --all",
+  "type": "fix",
+  "version": 1
+}
+

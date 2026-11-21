@@ -41,6 +41,8 @@ export interface VerifyScope {
 	readonly proposedContent?: string;
 	// SPEC §4.10.4: the L4 range base the integrity checks compare against.
 	readonly base?: string;
+	// SPEC §4.12.3: the scope is the tracked tree, which has no diff.
+	readonly wholeTree?: boolean;
 }
 
 // SPEC §4.3.2: the layer flag selects the trigger family. L1 and L2 are
@@ -148,6 +150,7 @@ export async function resolveVerifyScope(
 			),
 		),
 		note: "tracked tree",
+		wholeTree: true,
 	});
 }
 
@@ -236,8 +239,14 @@ export async function loadEvalEnforcers(
 export function optionalScope(scope: {
 	readonly proposedContent?: string;
 	readonly base?: string;
-}): { readonly proposedContent?: string; readonly base?: string } {
+	readonly wholeTree?: boolean;
+}): {
+	readonly proposedContent?: string;
+	readonly base?: string;
+	readonly wholeTree?: boolean;
+} {
 	return {
+		...(scope.wholeTree === true ? { wholeTree: true } : {}),
 		...(scope.proposedContent === undefined || scope.proposedContent === ""
 			? {}
 			: { proposedContent: scope.proposedContent }),

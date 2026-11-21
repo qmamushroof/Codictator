@@ -118,6 +118,7 @@ export function resolveWritesWithinPlan(
 					args.ports,
 					args.files,
 					args.hasToolTargets,
+					args.wholeTree,
 				)),
 			);
 		},
