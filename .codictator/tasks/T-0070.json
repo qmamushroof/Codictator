@@ -1,0 +1,77 @@
+{
+  "acceptanceCriteria": [
+    "SPEC §4.12.3 states verify --all judges no per-task write-plan rule that needs a diff",
+    "SPEC §4.7.3 states /dev/null and NUL are not write targets and fd-duplication redirects are not file writes",
+    "SPEC §4.7.3 states a run: object literal in a source file is code, not a YAML flow mapping",
+    "BUG-0112 and BUG-0113 filed open in docs/BUGS/2026-7.md",
+    "one HISTORY entry at the top of docs/HISTORY/2026-11-21.md"
+  ],
+  "branch": "docs/14-spec-verify-all",
+  "bugRowUpdated": true,
+  "files": {
+    "allow": [
+      "docs/SPEC/04-07-SECURITY-GUARDS.md",
+      "docs/SPEC/04-12-WORKFLOW.md",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/**"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0070",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T14:02:59.508Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T14:03:02.975Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T14:03:03.564Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T14:03:30.611Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T14:04:05.367Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T14:04:06.534Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T14:04:01.269Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0070-r1",
+      "round": 1,
+      "tree": "ca08d909a3e572824234be915e8e15f154252559"
+    }
+  ],
+  "spec": [
+    "§4.7.2",
+    "§4.7.3",
+    "§4.12.3",
+    "§4.9.3",
+    "§7.7"
+  ],
+  "title": "docs(spec): settle verify --all write-plan scope and non-file shell targets",
+  "type": "docs",
+  "version": 1
+}
+
