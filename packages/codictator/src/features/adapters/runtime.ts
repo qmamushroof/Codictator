@@ -3,8 +3,7 @@
 // adapters may import kernel, config, engine, steering); cli/ composes it
 // with the audit append and the process sinks. Only the reply-capable
 // harnesses dispatch here; universal parses fail-closed (no hook traffic)
-// and every other unknown id stays CDX-E301. The loop breaker (§4.12.5)
-// runs at step 5 once its phase lands; until then the verdict decides.
+// and every other unknown id stays CDX-E301.
 // The steering injection (§4.6.3) renders at step 5 for L0 triggers and
 // rides the reply as additionalContext. Split with hook-dispatch.ts (routing),
 // hook-static.ts (pre-engine deny), hook-load.ts (root and config) and
@@ -40,6 +39,7 @@ import {
 	loadEffective,
 	resolveRoots,
 } from "./hook-load.ts";
+import { recordAllowedReads, scopeWithReads } from "./hook-reads.ts";
 import { injectionForReply, replyForVerdict } from "./hook-reply.ts";
 import { hookScope } from "./hook-scope.ts";
 
@@ -212,18 +212,21 @@ async function runHookInner(
 					: { sessionId: event.sessionId }),
 			}),
 	});
-	const scope = hookScope(
+	const scope = await scopeWithReads(
+		ports,
 		event,
-		root,
-		roots.raw,
-		event.cwd === "" ? request.cwd : event.cwd,
+		hookScope(
+			event,
+			root,
+			roots.raw,
+			event.cwd === "" ? request.cwd : event.cwd,
+		),
 	);
-	// SPEC §4.6.3 + §4.18.3: the L0 triggers render the scoped injection
-	// and land the auditable event before evaluation, so the status row
-	// reads live evidence even when the verdict blocks. An unwritable log
-	// blocks CDX-E801, like the verdict path. The reply digest compares
-	// against the pre-append log: the reply renders first, then the event
-	// appends, so prompt.submit sees the prior injection and not its own.
+	// SPEC §4.6.3 + §4.18.3: L0 triggers render the scoped injection and
+	// land the auditable event before evaluation, so status reads live
+	// evidence even when the verdict blocks; an unwritable log blocks
+	// CDX-E801. The reply renders before the event appends, so prompt.submit
+	// compares against the prior injection, not its own.
 	const injectedReply = await injectionForReply({
 		event,
 		scope,
@@ -251,10 +254,8 @@ async function runHookInner(
 		return blockReply(adapter, injected.error.code, injected.error.message);
 	}
 	// SPEC §4.6.3: L0 triggers return the rendered injection as
-	// additionalContext, shaped per harness by the adapter contract
-	// (Claude hookSpecificOutput, OpenCode wire field). Prompt.submit
-	// resends only when its hash differs from the last injection in the
-	// session, so an unchanged state costs nothing.
+	// additionalContext, shaped per harness by the adapter contract;
+	// prompt.submit resends it only when its hash differs.
 	const additionalContext = injectedReply.value;
 	const budgetMs = hookBudgetMs(request.harness, request.budgetMs);
 	const timeoutSignal = Symbol("hook-timeout");
@@ -273,6 +274,9 @@ async function runHookInner(
 				}, budgetMs);
 			}),
 		]);
+		if (verdict.decision === "allow" || verdict.decision === "advise") {
+			await recordAllowedReads(ports, event, scope);
+		}
 		return replyForVerdict(adapter, verdict, additionalContext);
 	} catch (error) {
 		if (error === timeoutSignal) {

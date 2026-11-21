@@ -71,14 +71,30 @@ export function withInjection(
 		: { ...decision, additionalContext };
 }
 
+// SPEC §4.14.2: an L0 advise (session start never blocks, §4.3.3) leads its
+// additionalContext with the findings, then the scoped injection.
+function leadWithFindings(
+	verdict: Verdict,
+	additionalContext: string | undefined,
+): string | undefined {
+	return verdict.decision === "advise" &&
+		verdict.message !== "" &&
+		additionalContext !== undefined
+		? `${verdict.message}
+
+${additionalContext}`
+		: additionalContext;
+}
+
 // The verdict reply with the L0 injection attached. Block and escalate
 // share the deny form; advise rides only on OpenCode, collapsing to allow
-// elsewhere.
+// elsewhere, except that an L0 advise's findings lead the injection.
 export function replyForVerdict(
 	adapter: Adapter,
 	verdict: Verdict,
-	additionalContext: string | undefined,
+	injection: string | undefined,
 ): HookReply {
+	const additionalContext = leadWithFindings(verdict, injection);
 	if (verdict.decision === "block" || verdict.decision === "escalate") {
 		return adapter.reply(
 			withInjection(

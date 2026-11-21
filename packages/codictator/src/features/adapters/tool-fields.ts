@@ -63,18 +63,37 @@ export function readCallFields(
 	input: FieldRecord,
 ): Pick<
 	HookToolCallFields,
-	"command" | "proposedContent" | "proposedContentWhole" | "query"
+	"command" | "proposedContent" | "proposedContentWhole" | "query" | "range"
 > {
 	const command = readString(input, ["command"]);
 	const wholeContent = readString(input, WHOLE_CONTENT_KEYS);
 	const proposedContent =
 		wholeContent ?? readString(input, FRAGMENT_CONTENT_KEYS);
 	const query = readString(input, ["query", "pattern", "prompt"]);
+	const range = readRange(input);
 	return {
 		...(command === undefined ? {} : { command }),
 		...(proposedContent === undefined ? {} : { proposedContent }),
 		...(wholeContent === undefined ? {} : { proposedContentWhole: true }),
 		...(query === undefined ? {} : { query }),
+		...(range === undefined ? {} : { range }),
+	};
+}
+
+// SPEC §7.8 tool.range: the line window of a partial read. A call that
+// names only an offset reads to the end of the file.
+function readRange(
+	input: FieldRecord,
+): { readonly offset: number; readonly limit: number } | undefined {
+	const { offset, limit } = input;
+	const seenOffset = typeof offset === "number" && Number.isFinite(offset);
+	const seenLimit = typeof limit === "number" && Number.isFinite(limit);
+	if (!seenOffset && !seenLimit) {
+		return undefined;
+	}
+	return {
+		offset: seenOffset ? offset : 0,
+		limit: seenLimit ? limit : Number.MAX_SAFE_INTEGER,
 	};
 }
 
@@ -83,4 +102,5 @@ interface HookToolCallFields {
 	readonly proposedContent?: string;
 	readonly proposedContentWhole?: true;
 	readonly query?: string;
+	readonly range?: { readonly offset: number; readonly limit: number };
 }

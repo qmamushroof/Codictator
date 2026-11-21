@@ -14,6 +14,7 @@ import {
 	selectFiles,
 } from "./binding.ts";
 import { checkEnforcer, loadScopeText } from "./health-measures.ts";
+import { withLiveStart } from "./l0-integrity.ts";
 
 async function checkEngineVersionFile(
 	ports: Ports,
@@ -73,7 +74,11 @@ export function resolveEngineVersionMatch(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	return checkEnforcer(decl, rule, (binding, ctx) =>
-		checkEngineVersionFiles(ports, binding, ctx),
+	return withLiveStart(
+		checkEnforcer(decl, rule, (binding, ctx) =>
+			checkEngineVersionFiles(ports, binding, ctx),
+		),
+		rule,
+		ports,
 	);
 }

@@ -43,10 +43,10 @@ const TRIGGER_LAYERS: Record<Trigger, string> = {
 	scheduled: "L5",
 };
 
-// SPEC §4.3.3: findings only from advisory triggers advise; everything
-// else with findings blocks. L2 (editor.save, never a gate per §4.3.8) has
-// no trigger in this union yet; prompt carries the injection path.
-const ADVISORY_TRIGGERS: ReadonlyArray<Trigger> = ["prompt"];
+// SPEC §4.3.3: rule findings only from advisory triggers (session.start,
+// prompt.submit, L2) advise; everything else with findings blocks. L2
+// (editor.save, never a gate per §4.3.8) has no trigger in this union yet.
+const ADVISORY_TRIGGERS: ReadonlyArray<Trigger> = ["startup", "prompt"];
 
 export interface EngineOptions {
 	readonly waiverStore?: WaiverStore;
@@ -110,7 +110,15 @@ function decideDecision(
 	if (kept.length === 0) {
 		return "allow";
 	}
-	return ADVISORY_TRIGGERS.includes(trigger) ? "advise" : "block";
+	return ADVISORY_TRIGGERS.includes(trigger) && !kept.some(failsClosed)
+		? "advise"
+		: "block";
+}
+
+// SPEC §4.3.4 + §4.3.9: a waiver refusal (CDX-E1xx) or an enforcer failure
+// (CDX-E9xx) fails closed at every trigger; only rule findings advise.
+function failsClosed(finding: Finding): boolean {
+	return /^CDX-E[19][0-9][0-9]$/.test(finding.code ?? "");
 }
 
 // SPEC §4.3.8 + §4.3.9 EC-19: zero effective enforcers block, except the

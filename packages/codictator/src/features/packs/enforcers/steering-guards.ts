@@ -15,8 +15,8 @@ import {
 	isMarkerFile,
 	loadScopeText,
 	parseMarkerInt,
-	scopeMarkerTexts,
 } from "./health-measures.ts";
+import { scopeMarkerRule } from "./scope-text-rule.ts";
 
 function parsePercent(
 	markers: Map<string, string>,
@@ -45,36 +45,26 @@ export function resolveContextSoftBand(
 ): Result<Enforcer> {
 	const binding = bindRule(rule);
 	const soft = tunableNumber(binding, "softPercent") ?? 60;
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const percent = parsePercent(markers, "context-used");
-				if (
-					percent !== undefined &&
-					percent >= soft &&
-					!checkpointed(markers)
-				) {
-					findings.push(
-						findingFor(binding, {
+	return scopeMarkerRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, markers, findings) => {
+			const percent = parsePercent(markers, "context-used");
+			if (percent !== undefined && percent >= soft && !checkpointed(markers)) {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `context at ${String(percent)}% is past the ${String(soft)}% soft band with no checkpoint`,
+						vars: {
 							path: file,
-							message: `context at ${String(percent)}% is past the ${String(soft)}% soft band with no checkpoint`,
-							vars: {
-								path: file,
-								detail: `${String(percent)}% with no checkpoint`,
-								limit: String(soft),
-							},
-						}),
-					);
-				}
+							detail: `${String(percent)}% with no checkpoint`,
+							limit: String(soft),
+						},
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
 	);
 }
 
@@ -87,36 +77,26 @@ export function resolveContextHardBand(
 ): Result<Enforcer> {
 	const binding = bindRule(rule);
 	const hard = tunableNumber(binding, "hardPercent") ?? 75;
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const percent = parsePercent(markers, "context-used");
-				if (
-					percent !== undefined &&
-					percent >= hard &&
-					!checkpointed(markers)
-				) {
-					findings.push(
-						findingFor(binding, {
+	return scopeMarkerRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, markers, findings) => {
+			const percent = parsePercent(markers, "context-used");
+			if (percent !== undefined && percent >= hard && !checkpointed(markers)) {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `context at ${String(percent)}% is past the ${String(hard)}% hard band with no forced checkpoint`,
+						vars: {
 							path: file,
-							message: `context at ${String(percent)}% is past the ${String(hard)}% hard band with no forced checkpoint`,
-							vars: {
-								path: file,
-								detail: `${String(percent)}% with no checkpoint`,
-								limit: String(hard),
-							},
-						}),
-					);
-				}
+							detail: `${String(percent)}% with no checkpoint`,
+							limit: String(hard),
+						},
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
 	);
 }
 
@@ -128,34 +108,30 @@ export function resolveSessionToolCallLimit(
 ): Result<Enforcer> {
 	const binding = bindRule(rule);
 	const cap = tunableNumber(binding, "maxToolCalls") ?? 300;
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const calls = parseMarkerInt(markers, "tool-calls");
-				const limit = parseMarkerInt(markers, "limit") ?? cap;
-				if (calls !== undefined && calls > limit) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `session made ${String(calls)} tool calls past the ${String(limit)} call limit`,
-							vars: { path: file, limit: String(limit) },
-						}),
-					);
-				}
+	return scopeMarkerRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, markers, findings) => {
+			const calls = parseMarkerInt(markers, "tool-calls");
+			const limit = parseMarkerInt(markers, "limit") ?? cap;
+			if (calls !== undefined && calls > limit) {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `session made ${String(calls)} tool calls past the ${String(limit)} call limit`,
+						vars: { path: file, limit: String(limit) },
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
 	);
 }
 
 // SPEC §4.6.5 EC-10 core/read-dedupe: the same file twice flags; a first
-// read, or reads of different files, stays quiet.
+// read, or reads of different files, stays quiet. A live L1 read is judged
+// on the hook entry's evidence (SPEC §7.8 sessionState): the scope names each
+// target the session's read cache already holds unchanged.
 export function resolveReadDedupe(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -192,6 +168,15 @@ export function resolveReadDedupe(
 					seen.add(read);
 				}
 			}
+			for (const { path, call } of ctx.scope.repeatReads ?? []) {
+				findings.push(
+					findingFor(binding, {
+						path,
+						message: `${path} is already in context since call ${String(call)}, unchanged`,
+						vars: { path },
+					}),
+				);
+			}
 			return findings;
 		}),
 	);
@@ -205,30 +190,23 @@ export function resolveGraphBeforeScan(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const scan = markers.get("scan") ?? "";
-				const graph = markers.get("knowledge-graph") ?? "";
-				if (scan.includes("full-repo") && graph !== "present") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: "full-repo scan with no knowledge graph on disk",
-							vars: { path: file },
-						}),
-					);
-				}
+	return scopeMarkerRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, markers, findings) => {
+			const scan = markers.get("scan") ?? "";
+			const graph = markers.get("knowledge-graph") ?? "";
+			if (scan.includes("full-repo") && graph !== "present") {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: "full-repo scan with no knowledge graph on disk",
+						vars: { path: file },
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
 	);
 }
 
@@ -239,28 +217,21 @@ export function resolveMcpDeclared(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				if ((markers.get("declared") ?? "false") !== "true") {
-					const tool = markers.get("tool") ?? "unknown server";
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `tool call to undeclared MCP server ${tool}`,
-							vars: { path: file, detail: tool },
-						}),
-					);
-				}
+	return scopeMarkerRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, markers, findings) => {
+			if ((markers.get("declared") ?? "false") !== "true") {
+				const tool = markers.get("tool") ?? "unknown server";
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `tool call to undeclared MCP server ${tool}`,
+						vars: { path: file, detail: tool },
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
 	);
 }
