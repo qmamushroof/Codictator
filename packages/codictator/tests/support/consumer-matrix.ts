@@ -79,6 +79,13 @@ export const MATRIX: ReadonlyArray<readonly [string, string, string]> = [
 	["core/dead-code", "bydesign", "BYDESIGN"],
 ];
 
+// Rules SPEC §4.6.5 keeps inactive (core/graph-before-scan until PRD §13 Q2
+// is answered, as §5.1 allows with no helper output): their probe is expected
+// to stay quiet, so the firing umbrella excludes them.
+export const INACTIVE_RULES: ReadonlySet<string> = new Set([
+	"core/graph-before-scan",
+]);
+
 // Finding ids from a `--json` CLI reply; empty when the reply is not JSON.
 export function findingIds(stdout: string): Array<string> {
 	const start = stdout.indexOf("{");

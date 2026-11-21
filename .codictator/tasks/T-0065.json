@@ -1,0 +1,91 @@
+{
+  "acceptanceCriteria": [
+    "the umbrella excludes inactive rules",
+    "a test asserts core/graph-before-scan stays quiet on its probe"
+  ],
+  "branch": "work/l1-leftovers-2",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: the L1 firing umbrella lists core/graph-before-scan (glob-broad) as silent. Root cause: the MATRIX probe expects a rule to fire that SPEC 4.6.5 keeps inactive until PRD 13 Q2 names the helper output location and lookup instruction (SPEC 5.1 allows no helper output to mean inactive); the probe is the defect, not the rule.",
+  "files": {
+    "allow": [
+      "packages/codictator/tests/**",
+      "docs/BUGS/2026-6.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T08:53:20.109Z",
+    "tree": "ee942f15c6c0c12a1496214183764443c20480b9"
+  },
+  "historyStaged": true,
+  "id": "T-0065",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T08:37:58.058Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T08:38:04.206Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T08:38:16.308Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T08:53:20.841Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T08:54:08.691Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T08:54:10.024Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T08:37:59.807Z",
+    "commit": "4b27b170612712be27c2b79879c2c071add33ab2",
+    "failing": [
+      "[consumer] core/graph-before-scan stays inactive per SPEC §4.6.5 and the umbrella excludes it"
+    ],
+    "tree": "ee942f15c6c0c12a1496214183764443c20480b9"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T08:54:08.008Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0065-r1",
+      "round": 1,
+      "tree": "907b191548a579ecd3fc4aa4c1663f7c20909afa"
+    }
+  ],
+  "spec": [
+    "SPEC §4.6.5",
+    "SPEC §5.1",
+    "PRD §13 Q2"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/acceptance/consumer-firing-l1-inactive.test.ts",
+      "title": "[consumer] core/graph-before-scan stays inactive per SPEC §4.6.5 and the umbrella excludes it"
+    }
+  ],
+  "title": "fix(tests): keep inactive graph-before-scan out of the L1 umbrella",
+  "type": "fix",
+  "version": 1
+}
+
