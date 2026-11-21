@@ -1,0 +1,66 @@
+{
+  "acceptanceCriteria": [
+    "BUG-0111 filed open"
+  ],
+  "branch": "docs/file-bug-0111",
+  "bugRowUpdated": true,
+  "files": {
+    "allow": [
+      "docs/BUGS/2026-7.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0069",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T10:09:36.123Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T10:10:04.373Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T10:10:04.898Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T10:10:05.410Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T10:10:12.973Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T10:10:13.973Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T10:10:09.374Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0069-r1",
+      "round": 1,
+      "tree": "a51014d3390709410b3166f0dde17ac60f3d521c"
+    }
+  ],
+  "spec": [
+    "§4.6.5"
+  ],
+  "title": "docs(bugs): file BUG-0111 for the silent core/mcp-declared rule",
+  "type": "docs",
+  "version": 1
+}
+
