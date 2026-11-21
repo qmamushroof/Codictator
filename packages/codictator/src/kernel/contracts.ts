@@ -46,6 +46,14 @@ export interface Scope {
 	// so live-write gates skip read-only calls while read guards (secret
 	// reads) still judge their targets. Unset outside the L1 hook scope.
 	readonly toolAccess?: "read" | "write";
+	// SPEC §4.6.5 + §7.8: the targets of this read call that the session's
+	// read cache already holds unchanged, each with the call number of the
+	// earlier read. The hook entry loads the cache and judges the repeat;
+	// absent without a session id or on any non-read call.
+	readonly repeatReads?: ReadonlyArray<{
+		readonly path: string;
+		readonly call: number;
+	}>;
 }
 
 export interface Finding {

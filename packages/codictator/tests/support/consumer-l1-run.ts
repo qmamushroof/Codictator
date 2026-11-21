@@ -15,6 +15,7 @@ import {
 	writeTreeFile,
 } from "./consumer-harness.ts";
 import { HOOK_CASES } from "./consumer-l1-cases.ts";
+import { breakGuardrails } from "./consumer-l1-session.ts";
 import { MATRIX } from "./consumer-matrix.ts";
 import type { TempRepo } from "./temp-repo.ts";
 
@@ -93,6 +94,7 @@ export async function runL1Probes(
 		"shell-danger",
 		"read-secret",
 		"read-twice",
+		"read-twice",
 		"glob-broad",
 		"write-ts-phantom",
 		"write-ts-eval",
@@ -135,6 +137,7 @@ export async function runL1Probes(
 	);
 	assert.equal(fixOut.code, 0, `fix task failed: ${fixOut.stderr}`);
 	await hookProbe("write-fix-nodiag");
+	await breakGuardrails(repo);
 	const session = await runLauncher(
 		repo.dir,
 		["hook", "muse-code", "SessionStart"],

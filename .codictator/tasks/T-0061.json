@@ -1,0 +1,147 @@
+{
+  "acceptanceCriteria": [
+    "a read of a file the session already read unchanged is blocked by core/read-dedupe with the earlier call number",
+    "session start reports core/guardrail-manifest, core/hooks-active and core/engine-version-match findings as advise, leading the injection",
+    "the L1 firing umbrella silent list falls from six to the two rules SPEC leaves unspecified"
+  ],
+  "branch": "work/firing-l1-session",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: node --test consumer-enforcement-firing-l1.test.ts reports 6 silent L1 rules. Root causes: (1) core/read-dedupe judged fixture markers only; the hook entry never loaded reads.jsonl (SPEC 4.6.5, 7.8) nor recorded allowed reads, and no adapter parsed tool.range. (2) core/guardrail-manifest, core/hooks-active and core/engine-version-match judged fixture markers only; no live L0 check ran at session start (SPEC 4.14.2). (3) the engine blocked every startup finding although SPEC 4.3.3 makes session.* advisory, and an advise reply on a non-OpenCode harness dropped its message, so the findings never reached the agent (SPEC 4.14.2 L0 reply). (4) Probe defects: read-twice ran once, and the session probe never generated or broke guardrails. Not fixed, SPEC silent: core/mcp-declared (4.6.5 names no harness config file or key) and core/graph-before-scan (4.6.5 keeps it inactive until PRD 13 Q2 gives the helper output location).",
+  "files": {
+    "allow": [
+      "packages/codictator/src/**",
+      "packages/codictator/tests/**",
+      "docs/BUGS/2026-2.md",
+      "docs/HISTORY/2026-11-21.md",
+      "docs/BUGS/2026-3.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T03:47:43.231Z",
+    "tree": "8c094acf4e35d4a8a9ba7ecbd040d867e316d266"
+  },
+  "historyStaged": true,
+  "id": "T-0061",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T03:45:48.338Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T03:46:52.119Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T03:51:36.450Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T03:52:13.517Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T03:52:45.765Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T03:52:51.915Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T03:46:47.324Z",
+    "commit": "799f8c60215c88f4b126d2fce596a1fc9571533b",
+    "failing": [
+      "[consumer] the session-evidence L1 floor rules fire on their probes",
+      "[§4.6.5] the second read of an unchanged file in a session reaches the engine as a repeat",
+      "[§4.6.7 EC-10] a read of another range is a repeat only when an earlier range contains it",
+      "[§4.3.3] a session.start rule finding advises and never blocks",
+      "[§4.14.2] L0 core/guardrail-manifest names a generated artifact edited after regen",
+      "[§4.14.2 EC-9] L0 core/hooks-active names a core.hooksPath reset to the default",
+      "[§4.14.2] L0 core/engine-version-match names a manifest recorded by another engine",
+      "[§4.6.5] L1 read-dedupe blocks a read the session already holds unchanged"
+    ],
+    "tree": "8c094acf4e35d4a8a9ba7ecbd040d867e316d266"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T03:52:45.166Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0061-r1",
+      "round": 1,
+      "tree": "c757591f8ce462da2326f31e2596dc8f21081fb9"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T03:55:15.529Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0061-r2",
+      "round": 2,
+      "tree": "19006ae4b0f72293aff75a604d03dfe4da410b31"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-06-STEERING.md",
+    "docs/SPEC/04-14-INTEGRITY.md",
+    "docs/SPEC/04-03-ENGINE.md",
+    "docs/SPEC/07-FILES-AND-FORMATS.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-read-dedupe.test.ts",
+      "title": "[§4.6.5] L1 read-dedupe blocks a read the session already holds unchanged"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/adapters/hook-reads-runtime.test.ts",
+      "title": "[§4.6.5] the second read of an unchanged file in a session reaches the engine as a repeat"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/adapters/hook-reads-runtime.test.ts",
+      "title": "[§4.6.7 EC-10] a read of another range is a repeat only when an earlier range contains it"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l0-integrity.test.ts",
+      "title": "[§4.14.2] L0 core/guardrail-manifest names a generated artifact edited after regen"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l0-integrity.test.ts",
+      "title": "[§4.14.2 EC-9] L0 core/hooks-active names a core.hooksPath reset to the default"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l0-integrity.test.ts",
+      "title": "[§4.14.2] L0 core/engine-version-match names a manifest recorded by another engine"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/engine/engine-session-advisory.test.ts",
+      "title": "[§4.3.3] a session.start rule finding advises and never blocks"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-firing-l1-session.test.ts",
+      "title": "[consumer] the session-evidence L1 floor rules fire on their probes"
+    }
+  ],
+  "title": "L1 session-start and read-dedupe firing",
+  "type": "fix",
+  "version": 1
+}
+
