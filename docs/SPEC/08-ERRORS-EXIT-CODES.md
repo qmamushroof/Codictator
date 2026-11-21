@@ -28,7 +28,7 @@ Every error is a `CdxError { code, message, detail?, remediation }` (§4.1.2). C
 | **E2xx** | **Packs, schemas, external tools** | |
 | `CDX-E201` | Schema uses an unsupported keyword | 7 |
 | `CDX-E202` | Duplicate rule id | 3 |
-| `CDX-E203` | Configured pack missing or failing self-test | 3 |
+| `CDX-E203` | Configured pack missing, or a built-in pack failing self-test | 3 |
 | `CDX-E204` | Custom pack id or rule id collides with or impersonates a built-in | 3 |
 | `CDX-E205` | Rule names an unknown enforcer | 3 |
 | `CDX-E206` | Tool without an exact version pin | 3 |

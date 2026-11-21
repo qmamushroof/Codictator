@@ -52,6 +52,15 @@ All checks compare base and head of the changed files; existing instances in a b
 | `core/test-command-intact` | The test command changes to include `\|\| true`, `; exit 0`, `--passWithNoTests`, `continue-on-error`, or drops test globs | None |
 | `core/coverage-floor` | L4 coverage below the line or branch threshold | Waiver within bound (tunable) |
 
+**Coverage-threshold keys** (`core/no-threshold-lowering`). The rule watches these keys, per pack, and a lower number anywhere in the range base..HEAD is the violation:
+
+| Pack | Config file | Key |
+|---|---|---|
+| `ts` (vitest) | `vitest.config.*` | `coverage.thresholds` |
+| `ts` (jest) | `jest.config.*`, or `package.json` `"jest"` | `coverageThreshold` |
+| `python` | `pyproject.toml` | `[tool.coverage.report] fail_under` |
+| `python` | `.coveragerc` | `fail_under` under `[report]` |
+
 **Integrity exception.** An entry in the task record's `integrityExceptions` (`{ id, rule, path, reason ≥ 20 chars }`) lifts the block only if the final review round lists its id in `acknowledgedExceptions` (§4.12.4); the CI summary prints every exception. An agent cannot self-certify one, because the reviewer is a different, fresh session.
 
 ## 4.10.5 Edge cases

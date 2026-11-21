@@ -8,7 +8,7 @@ Loads `.codictator/config.json` (schema §7.2), validates it against the loaded 
 
 1. Read and schema-validate `config.json`; any error → `CDX-E101`, every surface blocks (fail closed, PRD §12 #12).
 2. Check `config.codictator` equals the installed engine version → else `CDX-E102`.
-3. Load each pack listed in `config.packs` at its pinned version (§4.4); a missing or self-test-failing pack → `CDX-E203`.
+3. Load each pack listed in `config.packs` at its pinned version (§4.4); a missing pack or a failing built-in pack self-test → `CDX-E203`. A custom pack whose self-test fails loads inert (its rules do not run) and `core/custom-pack-selftest` blocks at L4 (§4.4.1, §4.4.5 EC-4).
 4. Compute each rule's effective parameters: pack default → `config.tunables` (tightening only) → active waivers (loosening within bound, §4.3.4).
 5. Freeze the result as `EffectiveConfig` and hash it (`configHash`, recorded in every event, §7.10).
 

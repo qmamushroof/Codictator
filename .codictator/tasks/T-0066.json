@@ -1,0 +1,72 @@
+{
+  "acceptanceCriteria": [
+    "custom-pack self-test failure is inert plus L4 block everywhere",
+    "threshold keys owned once in SPEC 4.10.4",
+    "MCP config table cites vendor docs"
+  ],
+  "branch": "work/spec-rule-gaps",
+  "files": {
+    "allow": [
+      "docs/SPEC/**",
+      "docs/HISTORY/**"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0066",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T09:07:57.706Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T09:08:02.213Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T09:08:02.889Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T09:08:28.170Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T09:09:10.755Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T09:09:11.805Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T09:09:10.222Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0066-r1",
+      "round": 1,
+      "tree": "c28c2c13f4cb8a1cd5180007123aa3b51346f170"
+    }
+  ],
+  "spec": [
+    "§4.2.1",
+    "§4.4.1",
+    "§4.6.5",
+    "§4.10.4",
+    "§8"
+  ],
+  "title": "Settle SPEC gaps: custom-pack-selftest, threshold keys, MCP paths",
+  "type": "docs",
+  "version": 1
+}
+

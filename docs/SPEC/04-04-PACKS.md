@@ -53,7 +53,7 @@ For every rule in a pack:
 | Every fixture run finishes inside the enforcer's `budgetMs` × 2 | `CDX-E215` |
 | Every tunable param has `default` within `bound` and a `stricter` direction | `CDX-E216` |
 
-Built-in packs self-test in Codictator's CI (§10). Custom packs self-test on `codictator pack test`, before acceptance, and on every L4 run (`core/custom-pack-selftest`). L1–L3 load a custom pack only when its content hash equals `accepted.json.packHash`, so an unaccepted edit is inert locally and red in CI.
+Built-in packs self-test in Codictator's CI (§10). Custom packs self-test on `codictator pack test`, before acceptance, and on every L4 run (`core/custom-pack-selftest`). L1–L3 load a custom pack only when its content hash equals `accepted.json.packHash`, so an unaccepted edit is inert locally and red in CI. A custom pack whose self-test fails (`CDX-E211`–`CDX-E216`) loads inert, so its rules do not run, and `core/custom-pack-selftest` blocks at L4 (EC-2, EC-3, EC-4); only a missing pack is `CDX-E203`.
 
 ## 4.4.5 External tools
 

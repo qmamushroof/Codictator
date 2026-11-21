@@ -10,6 +10,7 @@ Each pack supplies the language knowledge that core rules need (drivers, extract
 |---|---|
 | Driver `npm` | Manifests `package.json` (`dependencies`, `devDependencies`, `optionalDependencies`, `overrides`; `peerDependencies` and `engines` are compatibility, §4.8 EC-6). Exact pin = full `x.y.z[-pre]`; allowed non-registry forms: `workspace:` siblings, `file:`/`link:` inside the repo, `npm:` aliases with exact versions. Lockfile `package-lock.json` (v3); `pnpm-lock.yaml` and `yarn.lock` checked with their own frozen-lockfile commands. Owned `.npmrc` entry `save-exact=true`. Toolchain: `.nvmrc` exact, `packageManager` exact |
 | Commands (detected, overridable in `config.commands`) | build `npm run build` if defined · typecheck: the repo's `tsc --noEmit -p <tsconfig>` · test: `npm test` · coverage: runner's own (`node --test --experimental-test-coverage`, `vitest --coverage`, `jest --coverage`) · smoke: `npm run smoke` if defined |
+| Coverage thresholds (`core/no-threshold-lowering`) | Keys in §4.10.4 |
 | Strict settings (`core/compiler-strict`) | Every `tsconfig*.json` used by a build or test: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noUnusedLocals`, `noUnusedParameters`, `useUnknownInCatchVariables`, `forceConsistentCasingInFileNames`; JavaScript projects: `allowJs` + `checkJs` with the same flags |
 | File naming (`core/file-naming`) | `kebab-case` for `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`; tests `*.test.<ext>`; framework-reserved names (`[id].tsx`, `+page.svelte`, `_app.tsx`) allowed |
 | Import extractor | ES `import`/`export … from`, `import()`, `require()`, `import x = require()`; resolution via nearest tsconfig `paths`/`baseUrl`, `package.json` `exports`/`imports`, workspaces |
@@ -67,6 +68,7 @@ Pack rules: `dotnet/build` (floor; build with warnings as errors), `dotnet/forma
 |---|---|
 | Driver `pypi` | `pyproject.toml` `[project] dependencies` and dependency groups as `name==x.y.z`; lock `uv.lock` or fully pinned `requirements*.txt` (every line `==`, with `--hash`); toolchain `.python-version` exact; source: python.org release listing |
 | Commands | typecheck `mypy` or `pyright` · lint `ruff check` · format `ruff format --check` · test `pytest` · coverage `pytest --cov --cov-report=json` |
+| Coverage thresholds (`core/no-threshold-lowering`) | Keys in §4.10.4 |
 | Strict settings (`core/compiler-strict`) | mypy `strict = true` or pyright `typeCheckingMode = "strict"`; ruff `select` includes `E`, `F`, `B`, `S`, `UP`, `I` |
 | File naming | `snake_case.py`; tests `test_*.py` |
 | Import extractor | `import a.b`, `from a import b`, relative levels; `src/` layout and namespace packages |
