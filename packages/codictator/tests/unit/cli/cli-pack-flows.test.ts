@@ -142,32 +142,31 @@ test("[§4.4] pack test without an id is a usage error", async () => {
 	}
 });
 
-test("[§4.4] pack list fails closed on the missing builtin pack", async () => {
-	// SPEC §4.4.1: pack loading fails closed with the pack's own code;
-	// the dotnet builtin has no pack.json yet, so list reports CDX-E203
-	// instead of a partial list.
+test("[§4.4] pack list loads every builtin pack including dotnet", async () => {
+	// SPEC §4.4.1 (BUG-0104): the dotnet builtin ships its pack.json, so list
+	// succeeds instead of failing CDX-E203.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		seedConfig(repo);
 		const ran = await handlePack(req(["list"], repo.dir));
-		assert.equal(ran.ok, false);
-		if (!ran.ok) {
-			assert.equal(ran.error.code, "CDX-E203");
+		assert.equal(ran.ok, true);
+		if (ran.ok) {
+			assert.equal(ran.value, 0);
 		}
 	} finally {
 		repo.cleanup();
 	}
 });
 
-test("[§4.4] pack list fails closed as data with --json", async () => {
-	// SPEC §4.19.2: the CDX-E203 failure ships the loader's remediation.
+test("[§4.4] pack list succeeds as data with --json", async () => {
+	// SPEC §4.19.2: the json form lists the same packs.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		seedConfig(repo);
 		const ran = await handlePack(req(["list"], repo.dir, true));
-		assert.equal(ran.ok, false);
-		if (!ran.ok) {
-			assert.equal(ran.error.code, "CDX-E203");
+		assert.equal(ran.ok, true);
+		if (ran.ok) {
+			assert.equal(ran.value, 0);
 		}
 	} finally {
 		repo.cleanup();

@@ -1,0 +1,44 @@
+{
+	"id": "dotnet",
+	"version": "0.0.0",
+	"description": "Codictator .NET built-in pack (SPEC §6.2).",
+	"rules": [],
+	"enforcers": [],
+	"drivers": [],
+	"extractors": [],
+	"measures": [],
+	"capabilities": [
+		{
+			"name": "JSON",
+			"packages": ["Newtonsoft.Json"],
+			"platform": ["System.Text.Json"]
+		},
+		{
+			"name": "HTTP client",
+			"packages": ["RestSharp", "Flurl.Http"],
+			"platform": ["HttpClient"]
+		},
+		{
+			"name": "Mapping",
+			"packages": ["AutoMapper", "Mapster"]
+		},
+		{
+			"name": "Mocking",
+			"packages": ["Moq", "NSubstitute", "FakeItEasy"]
+		},
+		{
+			"name": "Test framework",
+			"packages": ["xunit", "NUnit", "MSTest"]
+		},
+		{
+			"name": "Assertions",
+			"packages": ["FluentAssertions", "Shouldly"]
+		},
+		{
+			"name": "Logging",
+			"packages": ["Serilog", "NLog", "log4net"]
+		}
+	],
+	"assets": [],
+	"maxWaiverDays": 90
+}

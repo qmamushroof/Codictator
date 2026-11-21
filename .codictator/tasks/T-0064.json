@@ -1,0 +1,106 @@
+{
+  "acceptanceCriteria": [
+    "dotnet pack loads from pack.json",
+    "dotnet and mixed fixture repo goldens pass and leave the red ledger"
+  ],
+  "branch": "work/dotnet-pack-2",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduction: a config listing the dotnet pack (dotnet and mixed fixture repos) fails to load with CDX-E203, so verify errors. Root cause: loadBuiltinPack reads builtin-packs/dotnet/pack.json (SPEC §4.4.2) but the dotnet directory held only index.ts; its comment deferred the manifest. Fix: ship pack.json with the SPEC §6.2 capabilities and no rules until the enforcers land.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/builtin-packs/dotnet/**",
+      "packages/codictator/tests/**",
+      "docs/BUGS/**",
+      "docs/HISTORY/**"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T08:22:23.146Z",
+    "tree": "5d65c0f63df8ff74650b995543c54e7971e5f2d7"
+  },
+  "historyStaged": true,
+  "id": "T-0064",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T08:21:57.026Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T08:22:02.327Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T08:22:23.893Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T08:29:43.170Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T08:30:08.771Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T08:30:10.383Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T08:21:58.105Z",
+    "commit": "75b367173344135cdfdef8c1a79d86879e769072",
+    "failing": [
+      "[§4.4.1] the dotnet built-in pack loads from its pack.json with the §6.2 capabilities"
+    ],
+    "tree": "5d65c0f63df8ff74650b995543c54e7971e5f2d7"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T08:30:07.926Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0064-r1",
+      "round": 1,
+      "tree": "4289a5d41c7b55dc87d424c752a9f52e88e729de"
+    }
+  ],
+  "spec": [
+    "§4.4.1",
+    "§6.2"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/dotnet-pack-manifest.test.ts",
+      "title": "[§4.4.1] the dotnet built-in pack loads from its pack.json with the §6.2 capabilities"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/dotnet-pack-manifest.test.ts",
+      "title": "[§4.4.1] the dotnet built-in pack loads from its pack.json with the §6.2 capabilities"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/repos-goldens.test.ts",
+      "title": "[§10.2] fixture repo dotnet builds into temp git repo"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/repos-goldens.test.ts",
+      "title": "[§10.2] fixture repo mixed builds into temp git repo"
+    }
+  ],
+  "title": "ship the dotnet pack manifest",
+  "type": "fix",
+  "version": 1
+}
+

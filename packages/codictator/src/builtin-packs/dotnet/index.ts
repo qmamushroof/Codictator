@@ -21,10 +21,12 @@ export {
 	parseGlobalJson,
 } from "../../features/deps/nuget.ts";
 
-// SPEC §6: dotnet pack manifest with its driver and extractors. The
-// pack value here carries the identity the language-pack contract asserts
-// while the enforcers that consume these supplies land; its pack.json
-// lands with them, so `pack list` keeps failing closed until then.
+// SPEC §6: dotnet pack manifest with its driver and extractors. pack.json
+// (SPEC §4.4.2) carries the §6.2 capabilities and no rules yet: the
+// dotnet/build, dotnet/format and dotnet/no-phantom-reference enforcers land
+// later, and a rule with a deferred enforcer would fail closed (CDX-E901) on
+// every dotnet repo. The pack value here carries the identity the
+// language-pack contract asserts.
 export function dotnetPack(): Pack {
 	return {
 		manifest: {

@@ -8,7 +8,7 @@ import {
 	selfTest,
 } from "../../../src/features/packs/index.ts";
 
-for (const id of ["core", "typescript", "python"]) {
+for (const id of ["core", "typescript", "dotnet", "python"]) {
 	test(`[§4.4.4] the ${id} built-in pack passes self-test over its case files`, async () => {
 		const loaded = await loadBuiltinPack(id);
 		assert.ok(loaded.ok);
