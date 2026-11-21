@@ -1,0 +1,121 @@
+{
+  "acceptanceCriteria": [
+    "each fixture repo holds a .codictator/config.json as init writes it, packs listing exactly its language packs",
+    "the five fixture-repo goldens whose pack loads pass and are delisted from red-ledger.json; dotnet-dependent ones stay listed with BUG-0104 filed"
+  ],
+  "branch": "work/close-out",
+  "bugRowUpdated": true,
+  "diagnosis": "Fixture repos carry no .codictator/config.json, so verify fails CDX-E101; SPEC §10.2 requires each test repo configured as init would (packs list exactly its languages).",
+  "files": {
+    "allow": [
+      "packages/codictator/fixtures/repos/**",
+      "packages/codictator/tests/red-ledger.json",
+      "docs/HISTORY/*.md",
+      "docs/BUGS/2026.md",
+      "docs/ROADMAP/14-CLOSE-OUT.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T02:48:13.594Z",
+    "tree": "18ca6ad21f8ba7fa9fcc7d0e3f206a452555f455"
+  },
+  "historyStaged": true,
+  "id": "T-0059",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T02:42:40.993Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T02:42:46.826Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T02:43:10.115Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T02:48:23.415Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T02:49:07.836Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T02:49:08.920Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T02:42:41.543Z",
+    "commit": "f5726f9804e4f127e9f046786c97eb90cbb75f80",
+    "failing": [
+      "[§10.2] fixture repo ts-clean builds into temp git repo",
+      "[§10.2] fixture repo ts-brownfield builds into temp git repo",
+      "[§10.2] fixture repo python builds into temp git repo"
+    ],
+    "tree": "18ca6ad21f8ba7fa9fcc7d0e3f206a452555f455"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T02:49:07.321Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0059-r1",
+      "round": 1,
+      "tree": "e9eb22ea4860e8081da02a7b81e31b3a85bd7ac1"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T02:50:13.854Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0059-r2",
+      "round": 2,
+      "tree": "ce143ce3cd0bd687e1f977828dfc8662ee801757"
+    }
+  ],
+  "spec": [
+    "§10.2",
+    "§4.13.1",
+    "§10.7",
+    "§6.4"
+  ],
+  "tests": [
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/repos-goldens.test.ts",
+      "title": "[§10.2] fixture repo ts-clean builds into temp git repo"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/repos-goldens.test.ts",
+      "title": "[§10.2] fixture repo ts-brownfield builds into temp git repo"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/repos-goldens.test.ts",
+      "title": "[§10.2] fixture repo python builds into temp git repo"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/config/fixture-repo-configs.test.ts",
+      "title": "[§10.2] each fixture repo config lists exactly its language packs and validates against the §7.2 config schema"
+    }
+  ],
+  "title": "turn green fixture repo goldens",
+  "type": "feature",
+  "version": 1
+}
+

@@ -1,0 +1,13 @@
+{
+	"codictator": "unknown",
+	"harnesses": ["claude-code"],
+	"packs": [
+		{
+			"id": "typescript",
+			"version": "unknown"
+		}
+	],
+	"tools": [],
+	"tunables": {},
+	"version": 1
+}

@@ -13,15 +13,15 @@
 
 Run the steps in number order. Each one is its own task and branch.
 
-- [ ] **14.1** Fix BUG-0080 first: it turns `npm run lint` red after every task write, which taxes every later step.
+- [x] **14.1** Fix BUG-0080 first: it turns `npm run lint` red after every task write, which taxes every later step.
   - **Task:** `fix`, branch `fix/14-task-record-format`.
   - **Do:** follow DEBUGGING.md. Write the regression test red, then make CLI-written task and review records pass the formatter unedited. SPEC §4.1 owns the record format; if the fix changes that format, change SPEC first.
   - **Verify:** create a task on a scratch branch with `npx codictator task new`, then `npm run lint` exits 0 with no hand edit.
-- [ ] **14.2** Fix BUG-0079: `commit-msg` must honour the merge-commit exemption of SPEC §4.9.3.
+- [x] **14.2** Fix BUG-0079: `commit-msg` must honour the merge-commit exemption of SPEC §4.9.3.
   - **Task:** `fix`, branch `fix/14-merge-commit-exempt`.
   - **Do:** regression test first: a merge commit whose second parent carries its own history entry passes, and a normal commit without an entry still blocks.
   - **Verify:** the regression test is green; a local `git merge --no-ff` of a recorded branch commits.
-- [ ] **14.3** Fix BUG-0083: L4 `core/history-entry` must count one entry per non-merge commit in the range.
+- [x] **14.3** Fix BUG-0083: L4 `core/history-entry` must count one entry per non-merge commit in the range.
   - **Task:** `fix`, branch `fix/14-history-per-commit`.
   - **Do:** regression test first, on a three-commit range where one commit has no entry of its own. Expect one finding naming that commit.
   - **Verify:** the regression test is green and `npx codictator ci verify` stays green on `main`.
@@ -38,7 +38,7 @@ Run the steps in number order. Each one is its own task and branch.
   - **Task:** `feature`, branch `feature/14-fixture-goldens`.
   - **Do:** run `node --test packages/codictator/tests/acceptance/repos-goldens.test.ts`. The names are `ts-clean`, `ts-brownfield`, `python`, `dotnet` and `mixed`. A missing fixture is built per SPEC §10.2. A product defect gets a `docs/BUGS/` row and its own `fix` task before this step continues.
   - **Verify:** `npm run ledger -- --covers "§10.2"` exits 0.
-- [ ] **14.7** Fix BUG-0087: a `docs` task that touches code files must be reclassified as code.
+- [x] **14.7** Fix BUG-0087: a `docs` task that touches code files must be reclassified as code.
   - **Task:** `fix`, branch `fix/14-docs-reclassify`.
   - **Do:** follow DEBUGGING.md. Write the regression test red: a `docs` task that writes a code file still owes the red and green proofs (SPEC §4.12.2). Then make the phase gate judge the touched files, not only the declared type.
   - **Verify:** the regression test is green and a `docs` task that writes only docs still advances without proofs.

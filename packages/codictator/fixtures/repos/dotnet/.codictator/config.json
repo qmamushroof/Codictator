@@ -1,0 +1,13 @@
+{
+	"codictator": "unknown",
+	"harnesses": ["claude-code"],
+	"packs": [
+		{
+			"id": "dotnet",
+			"version": "unknown"
+		}
+	],
+	"tools": [],
+	"tunables": {},
+	"version": 1
+}
