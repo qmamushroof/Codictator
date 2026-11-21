@@ -10,6 +10,7 @@ import {
 	type ScenarioChange,
 } from "../../testing/scenarios.ts";
 import type { TaskRecord } from "../../workflow/index.ts";
+import { classifyChange, isTestPath } from "../../workflow/writes.ts";
 import {
 	collectTaskFindings,
 	implementationBegan,
@@ -56,16 +57,22 @@ function declaredTestsOf(task: TaskRecord): Array<{
 	}));
 }
 
+// SPEC §4.12.3 evidence, not phase: a live L1 write of a non-test, non-doc
+// source file is judged whatever phase the task claims; the gate legs keep
+// the implementation-began judgement.
+export function liveSourceWrite(files: ReadonlyArray<string>): boolean {
+	const sources = files.filter((file) => !isTestPath(file));
+	return sources.length > 0 && classifyChange(sources) === "code";
+}
+
 export async function redBeforeGreenReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
+	live = false,
 ): Promise<Array<Finding>> {
 	return collectTaskFindings(ports, files, (task, findings) => {
-		if (
-			!isCodeTask(task) ||
-			!implementationBegan(task) ||
-			task.redProof !== undefined
-		) {
+		const owed = live ? liveSourceWrite(files) : implementationBegan(task);
+		if (!isCodeTask(task) || !owed || task.redProof !== undefined) {
 			return;
 		}
 		const declared = declaredTestsOf(task);

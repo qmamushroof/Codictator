@@ -18,6 +18,7 @@ import {
 	CODICTATOR_PROFILE,
 } from "./codictator-modules.ts";
 import {
+	assignModule,
 	buildGraph as buildGraphImpl,
 	EMPTY_GRAPH_CACHE,
 	type GraphCacheEntry,
@@ -32,7 +33,11 @@ import {
 } from "./graph.ts";
 import { layerMayImport, resolveLayer } from "./layer-rules.ts";
 import { validateModuleMap } from "./module-map-validation.ts";
-import { deriveModules, isPublicEntryTarget } from "./module-mapping.ts";
+import {
+	deriveModules,
+	isPublicEntryTarget,
+	mappedFinding,
+} from "./module-mapping.ts";
 
 export interface ImportRef {
 	readonly from: string;
@@ -66,6 +71,7 @@ export type {
 };
 export {
 	ARCH_PROFILES,
+	assignModule,
 	CODICTATOR_MODULES,
 	CODICTATOR_PROFILE,
 	checkArchProfile,
@@ -76,6 +82,7 @@ export {
 	isArchProfile,
 	isPublicEntryTarget,
 	layerMayImport,
+	mappedFinding,
 	normalizeSeparators,
 	parseGraphCache,
 	resolveImportTarget,

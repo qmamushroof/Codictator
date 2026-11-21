@@ -1,37 +1,38 @@
-// SPEC §5.8 F15 defect plus §5.11 F12 file-naming enforcers (decl module
-// records): marker-first fixtures flag here and real scopes judge task
-// records with bug rows. History resolvers stay split in
-// records-history-guards.ts, re-exported so rule ids keep working.
-import type { Ports } from "../../../kernel/index.ts";
-import { ok, type Result } from "../../../kernel/index.ts";
+// SPEC §5.8 F15 defect enforcers (decl module records): marker-first
+// fixtures flag here and real scopes judge task records with bug rows.
+// History resolvers stay split in records-history-guards.ts and file-naming
+// in file-naming-guard.ts, re-exported so rule ids keep working.
+import type { Ports, Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import { type BugRow, parseBugFile } from "../../records/bug-grammar.ts";
 import {
 	checkBugRegistry,
 	checkDiagnoseBeforeFix,
 } from "../../records/bug-registry.ts";
+import { checkBugRowsImmutable } from "../../records/bug-rows-immutable.ts";
 import {
 	type HistoryEntry,
 	parseHistoryEntries,
 } from "../../records/history-parse.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
-import { bindRule, findingFor } from "./binding.ts";
-import { baseEnforcer, scopeMarkerTexts } from "./health-measures.ts";
+import { isMarkerFile } from "./health-measures.ts";
 import {
 	type MarkerRealArgs,
-	markerGuard,
 	markerKeyJudge,
 	markerRealGuard,
 	markerRegexJudge,
 } from "./marker-scan.ts";
+import { loadEffectiveText } from "./pre-tool-files.ts";
 import { isHistoryFile, realTexts } from "./records-history-guards.ts";
 import {
 	collectTaskFindings,
 	implementationBegan,
 	readJudgedTasks,
 } from "./scope-tasks.ts";
+import { liveSourceWrite } from "./testing-real.ts";
 
+export { resolveFileNaming } from "./file-naming-guard.ts";
 export {
 	resolveHistoryAppendOnly,
 	resolveHistoryEntry,
@@ -133,9 +134,11 @@ async function existingRegressionTests(
 async function diagnoseBeforeFixReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
+	live: boolean,
 ): Promise<Array<Finding>> {
 	return collectTaskFindings(ports, files, (task, findings) => {
-		if (task.type !== "fix" || !implementationBegan(task)) {
+		const owed = live ? liveSourceWrite(files) : implementationBegan(task);
+		if (task.type !== "fix" || !owed) {
 			return;
 		}
 		findings.push(
@@ -189,12 +192,52 @@ export function resolveBugRegistry(
 	);
 }
 
+// SPEC §4.9.4 + §4.3.2: a real registry write is judged as the file it would
+// leave against HEAD; a fragment cannot be compared and a target new since
+// HEAD has nothing earlier to edit. A head that no longer parses reads as no
+// rows, so every earlier row disappears and blocks.
+async function bugRowsImmutableReal(args: MarkerRealArgs): Promise<void> {
+	for (const entry of args.effective) {
+		const file = entry.path;
+		if (
+			!file.startsWith("docs/BUGS/") ||
+			!file.endsWith(".md") ||
+			isMarkerFile(file)
+		) {
+			continue;
+		}
+		const base = await args.ports.git.show("HEAD", file);
+		if (!base.ok) {
+			continue;
+		}
+		const text = await loadEffectiveText(
+			args.ports,
+			args.binding,
+			entry,
+			args.findings,
+			"document",
+			true,
+		);
+		const before = parseBugFile(base.value).file;
+		if (text === undefined || before === undefined) {
+			continue;
+		}
+		args.findings.push(
+			...checkBugRowsImmutable(
+				before.rows,
+				parseBugFile(text).file?.rows ?? [],
+				file,
+			),
+		);
+	}
+}
+
 export function resolveBugRowsImmutable(
 	decl: EnforcerDecl,
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	return markerGuard(
+	return markerRealGuard(
 		decl,
 		rule,
 		ports,
@@ -202,6 +245,7 @@ export function resolveBugRowsImmutable(
 			/^[ \t]*edited:/m,
 			(file) => `closed bug row edited in ${file}`,
 		),
+		bugRowsImmutableReal,
 	);
 }
 
@@ -218,65 +262,12 @@ export function resolveDiagnoseBeforeFix(
 		(file) => `fix with no diagnosis in ${file}`,
 		async (args) => {
 			args.findings.push(
-				...(await diagnoseBeforeFixReal(args.ports, args.files)),
+				...(await diagnoseBeforeFixReal(
+					args.ports,
+					args.files,
+					args.hasToolTargets,
+				)),
 			);
 		},
-	);
-}
-
-function isKebabStem(stem: string): boolean {
-	return /^[a-z0-9]+(-[a-z0-9]+)*$/.test(stem);
-}
-
-function judgedStem(base: string): string {
-	const testAt = base.toLowerCase().indexOf(".test.");
-	if (testAt >= 0) {
-		return base.slice(0, testAt);
-	}
-	const dot = base.lastIndexOf(".");
-	return dot < 0 ? base : base.slice(0, dot);
-}
-
-function frameworkReserved(base: string): boolean {
-	return base.startsWith("[") || base.startsWith("+") || base.startsWith("_");
-}
-
-export function resolveFileNaming(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const name = markers.get("file") ?? "";
-				if (name === "") {
-					continue;
-				}
-				const base = name.split("/").pop() ?? name;
-				if (frameworkReserved(base)) {
-					continue;
-				}
-				const stem = judgedStem(base);
-				if (isKebabStem(stem)) {
-					continue;
-				}
-				findings.push(
-					findingFor(binding, {
-						path: file,
-						message: `file stem "${stem}" is not kebab-case`,
-						vars: { path: file },
-					}),
-				);
-			}
-			return findings;
-		}),
 	);
 }

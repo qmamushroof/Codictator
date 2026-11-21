@@ -95,7 +95,13 @@ export function resolveRedBeforeGreen(
 				(file) => `fix with no red proof in ${file}`,
 			),
 		async (args) => {
-			args.findings.push(...(await redBeforeGreenReal(args.ports, args.files)));
+			args.findings.push(
+				...(await redBeforeGreenReal(
+					args.ports,
+					args.files,
+					args.hasToolTargets,
+				)),
+			);
 		},
 	);
 }
