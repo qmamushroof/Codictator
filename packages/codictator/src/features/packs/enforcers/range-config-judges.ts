@@ -1,11 +1,13 @@
 // SPEC §4.15.1 L4 range judges over the repo state a range change touches:
 // the test command, the baseline, the architecture profile, the waivers,
-// the perf command and the generated workflow. Plus the rule-id table the
-// code resolvers wrap with withRangeJudge.
+// the perf command, the generated workflow and the custom packs. Plus the
+// rule-id table the code resolvers wrap with withRangeJudge.
 import { checkArchProfile } from "../../arch/index.ts";
 import { MAX_WAIVER_DAYS, readWaiverFile } from "../../engine/index.ts";
-import { field, isRecord } from "../manifest.ts";
+import { customPackState } from "../custom-state.ts";
+import { field, isBuiltinPackId, isRecord } from "../manifest.ts";
 import { readSetup } from "./arch-live.ts";
+import { findingFor } from "./binding.ts";
 import { COMMAND_WEAKENERS } from "./integrity-guards.ts";
 import {
 	baseText,
@@ -23,6 +25,7 @@ import {
 	judgeGuardRemoval,
 	judgeNewSuppressions,
 } from "./range-test-judges.ts";
+import { judgeThresholds } from "./range-thresholds.ts";
 
 const CONFIG_FILE = ".codictator/config.json";
 
@@ -183,6 +186,38 @@ async function judgeWorkflow(args: RangeArgs): Promise<void> {
 	}
 }
 
+// SPEC §4.4.4 + §4.4.8 EC-2..EC-4 core/custom-pack-selftest: on every L4
+// run each custom pack config.packs names self-tests and matches its
+// acceptance; one that does not is inert and blocks here.
+async function judgeCustomPacks(args: RangeArgs): Promise<void> {
+	const packs = stringAt(await headJson(args, CONFIG_FILE), "packs");
+	for (const entry of Array.isArray(packs) ? packs : []) {
+		const id = stringAt(entry, "id");
+		if (typeof id !== "string" || isBuiltinPackId(id)) {
+			continue;
+		}
+		const state = await customPackState(args.ports, id, true);
+		const error = !state.ok
+			? state.error
+			: state.value.kind === "inert"
+				? state.value.error
+				: undefined;
+		if (error !== undefined) {
+			const path =
+				state.ok && state.value.kind === "inert"
+					? state.value.dir
+					: CONFIG_FILE;
+			args.findings.push(
+				findingFor(args.binding, {
+					path,
+					message: `custom pack "${id}" is inert: ${error.code} ${error.message}`,
+					vars: { path, detail: `pack "${id}" (${error.code})` },
+				}),
+			);
+		}
+	}
+}
+
 export const RANGE_JUDGES: Readonly<Record<string, RangeJudge>> = {
 	"core/no-assertion-loss": judgeAssertionLoss,
 	"core/no-new-suppressions": judgeNewSuppressions,
@@ -194,4 +229,6 @@ export const RANGE_JUDGES: Readonly<Record<string, RangeJudge>> = {
 	"core/waivers-valid": judgeWaivers,
 	"core/perf-budgets": judgePerfBudgets,
 	"core/ci-present": judgeWorkflow,
+	"core/no-threshold-lowering": judgeThresholds,
+	"core/custom-pack-selftest": judgeCustomPacks,
 };

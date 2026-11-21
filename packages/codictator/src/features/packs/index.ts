@@ -22,6 +22,11 @@ export interface PackAccepted {
 export type { AcceptPackOptions } from "./accept.ts";
 export { acceptPack } from "./accept.ts";
 export type { CaseSource } from "./case-file.ts";
+export {
+	activeCustomManifests,
+	type CustomPackState,
+	customPackState,
+} from "./custom-state.ts";
 export { resolveCodeEnforcer } from "./enforcers/code.ts";
 export {
 	type ExternalArgs,
