@@ -1,0 +1,119 @@
+{
+  "acceptanceCriteria": [
+    "a source-file run: type annotation is code; a workflow run: line is still a shell source"
+  ],
+  "branch": "fix/run-type-annotation-code",
+  "bugRowUpdated": true,
+  "diagnosis": "shell-sources.ts isCodeShape accepts only an opener, an arrow head and a member call, so a source-file run: type annotation such as Record<string, unknown>, is read as shell and its > is taken as a redirect to the target comma (CDX-E903).",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/shell-sources.ts",
+      "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "packages/codictator/tests/acceptance/consumer-run-type-annotation.test.ts",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T16:00:09.258Z",
+    "tree": "99731ec57af40a87b7c209c1403e93b4d77d2829"
+  },
+  "historyStaged": true,
+  "id": "T-0076",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T15:53:58.196Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T15:54:32.306Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T16:00:09.954Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T16:00:28.725Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T16:15:52.137Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T16:15:53.326Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T15:54:31.785Z",
+    "commit": "25c6dee69ca2656902a540d88207de130bfacd3c",
+    "failing": [
+      "[consumer] [§4.7.3] a source run: type annotation draws no write-confinement finding (BUG-0115)",
+      "[§4.7.3] isCodeShape accepts a type annotation in a source file only (BUG-0115 unit)",
+      "[§4.7.3] write-confinement and dangerous-shell ignore a source-file run: type annotation (BUG-0115 unit)",
+      "[§4.7.3] a source-file run: type annotation is not a write-confinement finding (BUG-0115 regression)"
+    ],
+    "tree": "99731ec57af40a87b7c209c1403e93b4d77d2829"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T16:15:48.477Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0076-r1",
+      "round": 1,
+      "tree": "8f28510002a9a0bfc3b62a330c5b6505b43af4a2"
+    }
+  ],
+  "spec": [
+    "§4.7.3",
+    "§4.7.2"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] isCodeShape accepts a type annotation in a source file only (BUG-0115 unit)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] write-confinement and dangerous-shell ignore a source-file run: type annotation (BUG-0115 unit)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] a workflow run: line with a redirect to a comma target is still judged (BUG-0115 negative)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/code-line-targets.test.ts",
+      "title": "[§4.7.3] a source-file run: type annotation is not a write-confinement finding (BUG-0115 regression)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-run-type-annotation.test.ts",
+      "title": "[consumer] [§4.7.3] a source run: type annotation draws no write-confinement finding (BUG-0115)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-run-type-annotation.test.ts",
+      "title": "[consumer] [§4.7.3] a workflow run: redirect to a comma target still draws a finding (BUG-0115)"
+    }
+  ],
+  "title": "fix(packs): treat a source-file run: type annotation as code",
+  "type": "fix",
+  "version": 1
+}
+

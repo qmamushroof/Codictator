@@ -8,7 +8,10 @@ import type {
 	CheckContext,
 	Finding,
 } from "../../../src/features/engine/index.ts";
-import { resolveDangerousShell } from "../../../src/features/packs/enforcers/shell-analyse.ts";
+import {
+	isCodeShape,
+	resolveDangerousShell,
+} from "../../../src/features/packs/enforcers/shell-analyse.ts";
 import { resolveWriteConfinement } from "../../../src/features/packs/enforcers/write-confine.ts";
 import type { PackRule } from "../../../src/features/packs/index.ts";
 import { err, makeError, type Result } from "../../../src/kernel/index.ts";
@@ -211,4 +214,70 @@ test("[§4.7.3] write-confinement still blocks escapes and .git writes beside nu
 		"ci.yml",
 	);
 	assert.ok(git.some((message) => message.includes(".git/")));
+});
+
+// BUG-0115: a TypeScript parameter annotated `run: Record<string, unknown>,`
+// is a type annotation, which is code; in a workflow file the same text is a
+// shell source whose `>` still redirects.
+const RUN_ANNOTATIONS: ReadonlyArray<string> = [
+	"\trun: Record<string, unknown>,",
+	"\trun: unknown,",
+	"\trun: Map<string, Array<number>>",
+	"\trun: ReadonlyArray<string>,",
+];
+
+test("[§4.7.3] isCodeShape accepts a type annotation in a source file only (BUG-0115 unit)", () => {
+	for (const value of [
+		"Record<string, unknown>,",
+		"unknown,",
+		"ReadonlyArray<string>",
+	]) {
+		for (const file of ["a.ts", "a.js", "a.py"]) {
+			assert.equal(isCodeShape(value, file), true, `${value} in ${file}`);
+		}
+		assert.equal(isCodeShape(value, "ci.yml"), false, `${value} in ci.yml`);
+		assert.equal(isCodeShape(value, "Makefile"), false, `${value} in Makefile`);
+	}
+	for (const value of [
+		"echo hi > ,x",
+		"cat <a >b,",
+		"Record<string, unknown> > out,",
+		"make >,",
+		"reboot",
+		"string",
+	]) {
+		assert.equal(isCodeShape(value, "a.ts"), false, `${value} is shell`);
+	}
+});
+
+test("[§4.7.3] write-confinement and dangerous-shell ignore a source-file run: type annotation (BUG-0115 unit)", async () => {
+	for (const line of RUN_ANNOTATIONS) {
+		for (const which of ["write", "shell"] as const) {
+			assert.deepEqual(
+				await judge(which, `${line}${NL}`),
+				[],
+				`${which} ${line}`,
+			);
+		}
+	}
+});
+
+test("[§4.7.3] a workflow run: line with a redirect to a comma target is still judged (BUG-0115 negative)", async () => {
+	const found = await judge(
+		"write",
+		`steps:${NL}  - run: echo hi > ,x${NL}`,
+		"ci.yml",
+	);
+	assert.ok(found.length > 0);
+	const typed = await judge(
+		"write",
+		`steps:${NL}  - run: Record<string, unknown>,${NL}`,
+		"ci.yml",
+	);
+	assert.ok(typed.length > 0, "a workflow run: type-shaped line stays shell");
+});
+
+test("[§4.7.3] a source-file run: type annotation is not a write-confinement finding (BUG-0115 regression)", async () => {
+	const text = `export function f(${NL}\trun: Record<string, unknown>,${NL}\tother: number,${NL}) {}${NL}`;
+	assert.deepEqual(await judge("write", text), []);
 });
