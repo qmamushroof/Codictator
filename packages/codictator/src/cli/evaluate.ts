@@ -37,6 +37,8 @@ export interface VerifyScope {
 	// disk — the staged diff, the pushed diff, the commit messages in range.
 	// It rides the same redactSecrets scan as files via the tool-input path.
 	readonly proposedContent?: string;
+	// SPEC §4.10.4: the L4 range base the integrity checks compare against.
+	readonly base?: string;
 }
 
 // SPEC §4.3.2: the layer flag selects the trigger family. L1 and L2 are
@@ -216,6 +218,20 @@ export async function loadEvalEnforcers(
 	});
 }
 
+// SPEC §4.7.1 + §4.10.4: the optional gate inputs a scope threads to the
+// engine: the proposed content when non-empty and the L4 range base.
+export function optionalScope(scope: {
+	readonly proposedContent?: string;
+	readonly base?: string;
+}): { readonly proposedContent?: string; readonly base?: string } {
+	return {
+		...(scope.proposedContent === undefined || scope.proposedContent === ""
+			? {}
+			: { proposedContent: scope.proposedContent }),
+		...(scope.base === undefined ? {} : { base: scope.base }),
+	};
+}
+
 export async function evaluateScope(
 	ports: CommandPorts,
 	packIds: ReadonlyArray<string>,
@@ -241,9 +257,7 @@ export async function evaluateScope(
 		scope.trigger,
 		{
 			files: [...scope.files],
-			...(scope.proposedContent === undefined || scope.proposedContent === ""
-				? {}
-				: { proposedContent: scope.proposedContent }),
+			...optionalScope(scope),
 		},
 		now,
 	);

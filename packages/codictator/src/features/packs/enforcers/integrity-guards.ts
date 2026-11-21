@@ -202,7 +202,7 @@ export function resolveNoThresholdLowering(
 	});
 }
 
-const COMMAND_WEAKENERS = [
+export const COMMAND_WEAKENERS = [
 	"|| true",
 	"; exit 0",
 	"--passWithNoTests",

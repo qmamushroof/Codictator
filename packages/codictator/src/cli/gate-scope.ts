@@ -15,7 +15,7 @@ import {
 	stableStringify,
 	withoutPackCases,
 } from "../kernel/index.ts";
-import { evaluateScope } from "./evaluate.ts";
+import { evaluateScope, optionalScope } from "./evaluate.ts";
 import type { CommandPorts } from "./shared.ts";
 import type { VerdictEmit } from "./verdict-emit.ts";
 
@@ -38,6 +38,8 @@ export interface GateScope {
 	// SPEC §4.7.1: hook and CI scopes judge content that is not (only) on
 	// disk — the staged diff, the pushed diff, the commit messages in range.
 	readonly proposedContent?: string;
+	// SPEC §4.10.4: the L4 range base, unset on the hook legs.
+	readonly base?: string;
 }
 
 // BUG-0014: canonical-key order, deterministic across OSes (§4.3.6 EC-12).
@@ -132,10 +134,7 @@ export async function evaluateGateScope(
 	} = {},
 ): Promise<Result<Array<Finding>>> {
 	const files = withoutPackCases(scope.files, ports.packRoots ?? []);
-	const input =
-		scope.proposedContent === undefined || scope.proposedContent === ""
-			? {}
-			: { proposedContent: scope.proposedContent };
+	const input = optionalScope(scope);
 	const local = await evaluateScope(
 		ports,
 		packIds,

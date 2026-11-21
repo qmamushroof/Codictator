@@ -80,6 +80,8 @@ import { resolveNoBypass } from "./integrity-guards-repo.ts";
 import { resolvePythonLint, resolvePythonTypecheck } from "./py-checks.ts";
 import { resolvePythonNoPhantomImport } from "./py-phantom.ts";
 import { resolvePythonSecurityPatterns } from "./py-security-patterns.ts";
+import { withRangeJudge } from "./range-base.ts";
+import { RANGE_JUDGES } from "./range-config-judges.ts";
 import {
 	resolveBugRegistry,
 	resolveBugRowsImmutable,
@@ -229,5 +231,11 @@ export function resolveCodeEnforcer(
 	if (resolver === undefined) {
 		return ok(undefined);
 	}
-	return resolver(decl, rule, ports);
+	// SPEC §4.10.4 + §4.15.1: a rule with an L4 range judge adds it after
+	// its own verdict whenever ci verify threads the range base.
+	const range = RANGE_JUDGES[rule.id];
+	const resolved = resolver(decl, rule, ports);
+	return range === undefined
+		? resolved
+		: withRangeJudge(resolved, rule, ports, range);
 }
