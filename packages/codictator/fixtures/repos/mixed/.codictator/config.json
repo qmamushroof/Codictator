@@ -1,0 +1,21 @@
+{
+	"codictator": "unknown",
+	"harnesses": ["claude-code"],
+	"packs": [
+		{
+			"id": "typescript",
+			"version": "unknown"
+		},
+		{
+			"id": "python",
+			"version": "unknown"
+		},
+		{
+			"id": "dotnet",
+			"version": "unknown"
+		}
+	],
+	"tools": [],
+	"tunables": {},
+	"version": 1
+}
