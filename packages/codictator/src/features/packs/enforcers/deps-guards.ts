@@ -171,23 +171,6 @@ export function resolveDepExactPin(
 	});
 }
 
-// SPEC §5.3 core/dep-lockfile: a missing lockfile blocks.
-export function resolveDepLockfile(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	return markerFindingRule(decl, rule, ports, (binding, file, markers) =>
-		(markers.get("lockfile") ?? "missing") === "missing"
-			? findingFor(binding, {
-					path: file,
-					message: `no lockfile committed for ${file}`,
-					vars: { path: file },
-				})
-			: undefined,
-	);
-}
-
 // SPEC §5.3 core/dep-latest-stable: lag past lagDays blocks.
 export function resolveDepLatestStable(
 	decl: EnforcerDecl,
@@ -205,25 +188,6 @@ export function resolveDepLatestStable(
 			path: file,
 			message: `${dep} in ${file} lags latest stable by ${String(lag)} days`,
 			vars: { path: file, value: dep, limit: String(lagDays) },
-		});
-	});
-}
-
-// SPEC §5.3 core/dep-new-needs-reason: an unexplained addition blocks.
-export function resolveDepNewNeedsReason(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	return markerFindingRule(decl, rule, ports, (binding, file, markers) => {
-		const added = markers.get("added") ?? "";
-		if (added === "" || (markers.get("reason") ?? "none") !== "none") {
-			return undefined;
-		}
-		return findingFor(binding, {
-			path: file,
-			message: `${added} in ${file} has no recorded reason`,
-			vars: { path: file, value: added },
 		});
 	});
 }

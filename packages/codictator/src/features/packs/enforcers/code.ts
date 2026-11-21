@@ -31,16 +31,15 @@ import {
 	resolveNoGuardRemoval,
 	resolveRatchetTouchedImproves,
 } from "./code-health.ts";
+import { resolveDepExactPin, resolveDepLatestStable } from "./deps-guards.ts";
 import {
-	resolveDepExactPin,
-	resolveDepLatestStable,
 	resolveDepLockfile,
 	resolveDepNewNeedsReason,
-} from "./deps-guards.ts";
-import {
-	resolveDepLicense,
 	resolveDepNoDeprecated,
 	resolveDepNoVulnerable,
+} from "./deps-live-guards.ts";
+import {
+	resolveDepLicense,
 	resolveDepOnePerCapability,
 } from "./deps-policy-guards.ts";
 import {
@@ -77,10 +76,7 @@ import {
 	resolveNoThresholdLowering,
 	resolveTestCommandIntact,
 } from "./integrity-guards.ts";
-import {
-	resolveNoBypass,
-	resolveRepoHygiene,
-} from "./integrity-guards-repo.ts";
+import { resolveNoBypass } from "./integrity-guards-repo.ts";
 import { resolvePythonLint, resolvePythonTypecheck } from "./py-checks.ts";
 import { resolvePythonNoPhantomImport } from "./py-phantom.ts";
 import { resolvePythonSecurityPatterns } from "./py-security-patterns.ts";
@@ -94,6 +90,7 @@ import {
 	resolveHistoryEntryComplete,
 } from "./records-guards.ts";
 import { resolveRemediationStepSize } from "./remediation-guards.ts";
+import { resolveRepoHygiene } from "./repo-hygiene.ts";
 import { resolveNoSecretReads, resolveNoSecrets } from "./secret-scan.ts";
 import { resolveDangerousShell } from "./shell-analyse.ts";
 import {

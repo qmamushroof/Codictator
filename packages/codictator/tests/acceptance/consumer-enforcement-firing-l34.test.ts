@@ -6,74 +6,12 @@ import test from "node:test";
 import { MX } from "../support/consumer-fixtures.ts";
 import {
 	installConsumer,
-	runLauncher,
 	srcMain,
-	taskId,
-	toPlanning,
 	writeTreeFile,
 } from "../support/consumer-harness.ts";
+import { runStageProbes } from "../support/consumer-l3-stage.ts";
 import { findingIds, MATRIX } from "../support/consumer-matrix.ts";
 import { createTempRepo, type TempRepo } from "../support/temp-repo.ts";
-
-const STAGED: ReadonlyArray<{
-	readonly probe: string;
-	readonly writes: ReadonlyArray<readonly [string, string]>;
-	readonly rules: ReadonlyArray<string>;
-}> = [
-	{
-		probe: "stage-planning",
-		writes: [["src/g.ts", "export const g = 1;\n"]],
-		rules: ["core/repo-hygiene"],
-	},
-	{
-		probe: "stage-docs",
-		writes: [
-			[
-				"docs/guide.md",
-				// "contains" matches the SPEC 04-09 corpus-count regex on purpose.
-				"# Guide\n\nSee [missing](./missing.md).\n\nUpdated on 2026-01-01: added things.\n\nThe docs contains 5 guides.\n\nThe shared consumer sentence carries more than twelve words so the owner check sees it twice.\n",
-			],
-			[
-				"docs/other.md",
-				"# Other\n\nThe shared consumer sentence carries more than twelve words so the owner check sees it twice.\n",
-			],
-			["docs/SPEC/sub/deep.md", "# Deep\n"],
-		],
-		rules: [
-			"core/doc-one-level",
-			"core/doc-router-leaf",
-			"core/doc-links-valid",
-			"core/doc-no-inline-changelog",
-			"core/doc-no-corpus-counts",
-			"core/doc-single-owner",
-		],
-	},
-	{
-		probe: "stage-deps",
-		writes: [
-			[
-				"package.json",
-				'{"name":"mx","version":"0.0.0","dependencies":{"left-pad":"latest"}}\n',
-			],
-		],
-		rules: [
-			"core/dep-no-vulnerable",
-			"core/dep-no-deprecated",
-			"core/dep-new-needs-reason",
-			"core/dep-lockfile",
-		],
-	},
-	{
-		probe: "stage-history",
-		writes: [
-			[
-				"docs/HISTORY/2026-11-08.md",
-				"# History — 2026-11-08\n\n## 2026-11-08 · feat: thing\n\n- **Kind:** code\n- **Task:** T-0000\n- **Why:** reason\n- **What went wrong:** none\n- **Trade-offs:** none\n",
-			],
-		],
-		rules: ["core/history-entry-complete"],
-	},
-];
 
 async function tddRange(
 	repo: TempRepo,
@@ -207,42 +145,7 @@ test("[consumer] every L3/L4-mapped floor rule fires on its gate probe", async (
 		for (const repo of [gitRepo, rangeRepo, tddRepo]) {
 			await installConsumer(repo);
 		}
-		const gid = await taskId(gitRepo, "matrix git");
-		await toPlanning(gitRepo, gid);
-		for (const entry of STAGED) {
-			for (const [file, content] of entry.writes) {
-				writeTreeFile(gitRepo, file, content);
-			}
-			gitRepo.git(["reset"]);
-			gitRepo.git(["add", ...entry.writes.map(([file]) => file)]);
-			const result = await runLauncher(gitRepo.dir, ["git", "pre-commit"]);
-			const text = `${result.stdout}${result.stderr}`;
-			for (const rule of entry.rules) {
-				hits.set(`${entry.probe}::${rule}`, {
-					fired: result.code !== 0 && text.includes(rule),
-					detail: text.slice(0, 300),
-				});
-			}
-		}
-		writeTreeFile(gitRepo, "src/msg.ts", "export const m = 1;\n");
-		writeTreeFile(
-			gitRepo,
-			"docs/HISTORY/2026-11-08.md",
-			"# History — 2026-11-08\n\n## 2026-11-08 · feat: complete\n\n- **Kind:** code\n- **Task:** T-0000\n- **Why:** reason\n- **What went wrong:** none\n- **Trade-offs:** none\n- **Lessons:** none\n",
-		);
-		gitRepo.git(["reset"]);
-		gitRepo.git(["add", "src/msg.ts", "docs/HISTORY/2026-11-08.md"]);
-		writeTreeFile(gitRepo, "COMMIT_MSG", "wip stuff\n");
-		const msgBad = await runLauncher(gitRepo.dir, [
-			"git",
-			"commit-msg",
-			`${gitRepo.dir}/COMMIT_MSG`,
-		]);
-		hits.set("msg-badsubject::core/conventional-commit", {
-			fired:
-				msgBad.code !== 0 && msgBad.stdout.includes("core/conventional-commit"),
-			detail: `${msgBad.stdout}${msgBad.stderr}`.slice(0, 300),
-		});
+		await runStageProbes(gitRepo, hits);
 		rangeRepo.writeFile(
 			"docs/BUGS/2026.md",
 			"# Bugs — 2026\n\n| Id | Status | Title | Found | Fix | Regression test |\n|---|---|---|---|---|---|\n",

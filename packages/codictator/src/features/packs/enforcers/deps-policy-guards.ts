@@ -5,8 +5,7 @@
 // violating fixtures flag and passing fixtures stay clean (SPEC §4.4.4).
 // The §6.1 mirrors arrive from deps-guards.ts (§3.3 forbids importing the
 // pack supplies).
-import type { Ports } from "../../../kernel/index.ts";
-import { ok, type Result } from "../../../kernel/index.ts";
+import type { Ports, Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
@@ -14,7 +13,6 @@ import {
 	bindRule,
 	findingFor,
 	type RuleBinding,
-	selectFiles,
 	tunableStringList,
 } from "./binding.ts";
 import {
@@ -22,52 +20,9 @@ import {
 	collectPinRanges,
 	LICENSE_ALLOW,
 } from "./deps-guards.ts";
-import {
-	baseEnforcer,
-	isMarkerFile,
-	loadScopeText,
-	parseMarkers,
-} from "./health-measures.ts";
-import { documentRule, markerFindingRule } from "./marker-scan.ts";
-
-// SPEC §5.3 core/dep-no-vulnerable: a pinned advisory blocks.
-export function resolveDepNoVulnerable(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	return markerFindingRule(decl, rule, ports, (binding, file, markers) => {
-		const advisory = markers.get("advisory") ?? "";
-		if (advisory === "" || advisory === "none") {
-			return undefined;
-		}
-		const dep = markers.get("dep") ?? "the dependency";
-		return findingFor(binding, {
-			path: file,
-			message: `${dep} in ${file} has known advisory ${advisory}`,
-			vars: { path: file, value: dep, detail: advisory },
-		});
-	});
-}
-
-// SPEC §5.3 core/dep-no-deprecated: a deprecated package blocks.
-export function resolveDepNoDeprecated(
-	decl: EnforcerDecl,
-	rule: PackRule,
-	ports: Ports,
-): Result<Enforcer> {
-	return markerFindingRule(decl, rule, ports, (binding, file, markers) => {
-		if ((markers.get("status") ?? "") !== "deprecated") {
-			return undefined;
-		}
-		const dep = markers.get("dep") ?? "the dependency";
-		return findingFor(binding, {
-			path: file,
-			message: `${dep} in ${file} is deprecated`,
-			vars: { path: file, value: dep },
-		});
-	});
-}
+import { isMarkerFile, parseMarkers } from "./health-measures.ts";
+import { documentRule } from "./marker-scan.ts";
+import { scopeTextRule } from "./scope-text-rule.ts";
 
 // SPEC §6.4 EC-1: Biome and Prettier together block on the shared "format"
 // capability. The manifest scan stays in a helper so the check closure
@@ -140,28 +95,22 @@ export function resolveDepLicense(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	const allow = tunableStringList(binding, "allow") ?? [...LICENSE_ALLOW];
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !isMarkerFile(file)) {
-					continue;
-				}
-				const license = parseMarkers(text).get("license") ?? "";
-				if (license !== "" && !allow.includes(license)) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: `${file} has license ${license} outside the allow policy`,
-							vars: { path: file, value: license },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	const allow = tunableStringList(bindRule(rule), "allow") ?? [
+		...LICENSE_ALLOW,
+	];
+	return scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
+		if (!isMarkerFile(file)) {
+			return;
+		}
+		const license = parseMarkers(text).get("license") ?? "";
+		if (license !== "" && !allow.includes(license)) {
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					message: `${file} has license ${license} outside the allow policy`,
+					vars: { path: file, value: license },
+				}),
+			);
+		}
+	});
 }

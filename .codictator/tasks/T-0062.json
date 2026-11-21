@@ -1,0 +1,245 @@
+{
+  "acceptanceCriteria": [
+    "the staged real docs are judged by doc-router-leaf, doc-links-valid, doc-no-inline-changelog and doc-single-owner",
+    "the staged manifest is judged by dep-lockfile, dep-no-vulnerable, dep-no-deprecated and dep-new-needs-reason",
+    "repo-hygiene judges staged build output and commit-msg judges the subject",
+    "the L3 firing umbrella silent list drops these ten rules"
+  ],
+  "branch": "work/firing-l3-stage",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: node --test consumer-enforcement-firing-l34.test.ts reports ten stage-probe rules silent. Root cause: the doc, dep, repo-hygiene and conventional-commit enforcers judge fixture marker reports only (SPEC 4.4.1 sample.txt), never the staged real files (SPEC 4.9.2, 4.8.5, 5.11), and commit-msg never judges the message subject (SPEC 4.14.4, 5.11). Probe defects: stage-planning staged no build output, stage-docs had no router, stage-deps pinned latest and supplied no registry snapshot (SPEC 4.8.4).",
+  "files": {
+    "allow": [
+      "packages/codictator/src/**",
+      "packages/codictator/tests/**",
+      "docs/BUGS/2026-4.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T04:19:12.885Z",
+    "tree": "b94eb8f2cebee6ec8311f1e9cd329e76b3d755a3"
+  },
+  "historyStaged": true,
+  "id": "T-0062",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T04:02:44.385Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T04:03:02.736Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T04:19:13.601Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T04:20:19.548Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T04:32:22.737Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T04:32:26.769Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T04:02:54.052Z",
+    "commit": "e6a8639fad4840aa23c50d17843280fba052be53",
+    "failing": [
+      "[consumer] the stage-probe L3 floor rules fire on their gate probes"
+    ],
+    "tree": "b94eb8f2cebee6ec8311f1e9cd329e76b3d755a3"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T04:32:19.592Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0062-r1",
+      "round": 1,
+      "tree": "1e7588d9ef54fc4d3d4746d4222a74126a26094e"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T04:36:36.998Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0062-r2",
+      "round": 2,
+      "tree": "db329414cebbdd80bde1ffd2ec2406d7c4a8d28f"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T04:48:29.968Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0062-r3",
+      "round": 3,
+      "tree": "1aac1935cd87886749c980e3a0b38d2f12864401"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-09-RECORDS.md",
+    "docs/SPEC/04-08-DEPENDENCIES.md",
+    "docs/SPEC/05-CORE-RULES.md",
+    "docs/SPEC/04-14-INTEGRITY.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-links-valid flags a relative link whose target is missing"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-links-valid flags an anchor no heading slug matches and passes a good link"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-links-valid leaves a record doc and an external link alone"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-no-inline-changelog flags a dated change line and a changelog heading"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-no-inline-changelog exempts the root CHANGELOG.md and record docs"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2 EC-1] L3 doc-router-leaf flags a router that holds a paragraph"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-router-leaf judges the router when only a leaf is staged and skips a folder with no router"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-single-owner flags a sentence of twelve words in two docs"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-single-owner compares a staged doc with an unstaged doc on disk"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.2] L3 doc-single-owner ignores a repeat between two unstaged docs"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.5] L3 dep-lockfile flags a manifest with dependencies and no lockfile"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.5] L3 dep-lockfile accepts a root lockfile that matches the pins and a manifest with no dependencies"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.5] L3 dep-lockfile flags a lockfile that pins another version than the manifest"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.4] L3 dep-no-vulnerable flags a pinned version the snapshot lists an advisory for"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.4] L3 dep-no-deprecated flags a pinned version the snapshot marks deprecated"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.4] L3 dependency verdicts stay quiet with no snapshot on disk"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.5] L3 dep-new-needs-reason flags an added dependency with no Deps reason line"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.5] L3 dep-new-needs-reason accepts a staged history Deps line with reason and rung"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-dep-live.test.ts",
+      "title": "[§4.8.5] L3 dep-new-needs-reason ignores a dependency HEAD already carries"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-repo-live.test.ts",
+      "title": "[§5.11] L3 repo-hygiene flags a staged path inside a build output directory"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-repo-live.test.ts",
+      "title": "[§5.11] L3 repo-hygiene matches whole segments and leaves test trees and guardrail files alone"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-repo-live.test.ts",
+      "title": "[§5.11] L3 repo-hygiene flags a staged .gitattributes that does not set text=auto eol=lf"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-repo-live.test.ts",
+      "title": "[§5.11] commit-msg conventional-commit flags a subject with no type prefix"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-repo-live.test.ts",
+      "title": "[§5.11] commit-msg conventional-commit accepts a typed subject with a scope and a body after a blank line"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-repo-live.test.ts",
+      "title": "[§5.11] commit-msg conventional-commit flags a body with no blank line after the subject and an over-long subject"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-firing-l3-stage.test.ts",
+      "title": "[consumer] the stage-probe L3 floor rules fire on their gate probes"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l3-doc-live.test.ts",
+      "title": "[§4.9.1] L3 doc-single-owner never treats the managed AGENTS.md as an owner"
+    }
+  ],
+  "title": "L3 stage-probe firing for doc, dep, hygiene and commit rules",
+  "type": "fix",
+  "version": 1
+}
+
