@@ -64,6 +64,18 @@ Where `usageData` is `none`, the budget reads `<harness> does not report token u
 | Graph before scan | `core/graph-before-scan` | When a `knowledge-graph` helper (§4.4.5) has output on disk, the first repo-wide search of a session is blocked with the helper's lookup instruction; a second identical search passes |
 | MCP on demand | `core/mcp-declared` | Every MCP server in a project-level harness config must be listed in `config.steering.mcpAllowed` |
 
+**MCP config files** (`core/mcp-declared`). The rule reads these project-level files, each documented by its vendor:
+
+| Harness | Project-level file | Servers key | Format | Vendor documentation |
+|---|---|---|---|---|
+| Claude Code | `.mcp.json` | `mcpServers` | JSON | https://code.claude.com/docs/en/mcp |
+| Cursor | `.cursor/mcp.json` | `mcpServers` | JSON | https://cursor.com/docs/context/mcp |
+| VS Code, GitHub Copilot | `.mcp.json` | `mcpServers` | JSON | https://code.visualstudio.com/docs/agents/reference/mcp-configuration |
+| VS Code, GitHub Copilot (deprecated) | `.vscode/mcp.json` | `servers` | JSON | https://code.visualstudio.com/docs/agents/reference/mcp-configuration |
+| OpenCode | `opencode.json`, `opencode.jsonc`, or the same names under `.opencode/` | `mcp` (servers under `mcp.servers`) | JSON or JSONC | https://opencode.ai/docs/mcp-servers/ |
+| Gemini CLI | `.gemini/settings.json` | `mcpServers` | JSON | https://geminicli.com/docs/tools/mcp-server/ |
+| Codex | `.codex/config.toml` (trusted projects only) | `mcp_servers` | TOML | https://learn.chatgpt.com/docs/extend/mcp |
+
 **Session state.** The read cache lives in `.codictator/state/sessions/<sessionId>/reads.jsonl` (git-ignored, §7.1), one line per allowed read: path, content hash, range and call number. Each line is one `appendFile` call, so concurrent hook processes never interleave (§4.18.1); two reads racing at the same instant may both pass, which is not a re-read. `compact.post` deletes the file and a new session id starts without one. The hook entry loads it as hook input (§4.3.6, §7.8). With no session id, `core/read-dedupe` is not evaluated, as the budget is not (§4.6.4).
 
 Open: the on-disk location of a `knowledge-graph` helper's output and its lookup instruction are not specified (PRD §13 Q2). Until answered, `core/graph-before-scan` stays inactive, as §5.1 allows when no helper output exists.
