@@ -29,7 +29,7 @@ A task is `.codictator/tasks/<id>.json` (schema §7.11), committed, created by `
 | `docs` | Skips the red and green proofs |
 | `refactor` (behaviour-preserving) | Coverage gate instead of the red proof: touched files at or above `core/coverage-floor`, full suite green before and after. Owes no new acceptance test; may add tests but not modify existing ones, and modifying one reclassifies it as `feature` |
 | `deps` (manifests and lockfiles only) | Skips discovery, planning, proofs and review |
-| `chore` limited to manifest-owned files | Runs as `guardrail`, record phase only |
+| `chore` limited to manifest-owned files (§4.14.1) | Runs as `guardrail`, record phase only |
 
 **Customisation** (`config.workflow.phases`): users insert phases (e.g. `security-review`, `qa`) at any position after discovery, each with an exit gate built from gate primitives (`command-passes`, `file-exists`, `review-round`, `human-ack`). The seven mandatory phases keep their relative order; removing or reordering one is `CDX-E105` (PRD §6.1).
 
