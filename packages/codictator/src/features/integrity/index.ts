@@ -19,6 +19,7 @@ import {
 } from "./hooks.ts";
 import type { GuardrailManifest, ManifestArtifact } from "./manifest.ts";
 import { buildManifest, manifestHash, verifyManifest } from "./manifest.ts";
+import { manifestPathsOf, readManifestPaths } from "./manifest-owned.ts";
 import {
 	type CommitInRange,
 	checkCommitTrailers,
@@ -46,6 +47,8 @@ export {
 	hookInstallPlan,
 	isProtectedPath,
 	manifestHash,
+	manifestPathsOf,
+	readManifestPaths,
 	renderHookScript,
 	renderHuskyBlock,
 	verifyManifest,

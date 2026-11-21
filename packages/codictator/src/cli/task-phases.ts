@@ -1,6 +1,7 @@
 // SPEC §4.12.2: task phase advancement. The next-phase gate check and the
 // phase entry write live here; dispatch stays in task-advance.ts.
 import { parseArgs } from "node:util";
+import { readManifestPaths } from "../features/integrity/index.ts";
 import {
 	checkPhaseGate,
 	MANDATORY_PHASES,
@@ -13,12 +14,16 @@ import { fail, portsFor, printHuman, printJson, usageError } from "./shared.ts";
 import { readTask, writeTask } from "./tasks.ts";
 
 async function gateForNextPhase(
+	root: string,
 	task: TaskRecord,
 	next: string,
 ): Promise<
 	ReadonlyArray<{ ruleId: string; message: string; remediation: string }>
 > {
-	const gate = await checkPhaseGate(task, next, {});
+	// SPEC §4.14.1: a path the manifest lists is manifest-owned.
+	const ports = await portsFor(root);
+	const manifestPaths = ports.ok ? await readManifestPaths(ports.value) : [];
+	const gate = await checkPhaseGate(task, next, { manifestPaths });
 	return gate.map((finding) => ({
 		ruleId: finding.ruleId,
 		message: finding.message,
@@ -80,7 +85,7 @@ export async function taskPhaseNext(
 			req.json,
 		);
 	}
-	const blocked = await gateForNextPhase(task, next);
+	const blocked = await gateForNextPhase(root, task, next);
 	if (blocked.length > 0) {
 		if (req.json) {
 			printJson({ id, phase: task.phase, blocked });

@@ -3,6 +3,7 @@
 // marker fixtures; this module never touches them.
 import type { Ports } from "../../../kernel/index.ts";
 import type { Finding } from "../../engine/index.ts";
+import { readManifestPaths } from "../../integrity/index.ts";
 import { checkPhaseGate, MANDATORY_PHASES } from "../../workflow/phases.ts";
 import {
 	checkWriteWithinPlan,
@@ -25,6 +26,7 @@ export async function workflowGatesReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
 ): Promise<Array<Finding>> {
+	const manifestPaths = await readManifestPaths(ports);
 	return collectTaskFindings(ports, files, async (task, findings) => {
 		const next = nextPhaseOf(task.phase);
 		if (next === undefined) {
@@ -42,7 +44,7 @@ export async function workflowGatesReal(
 		) {
 			return;
 		}
-		for (const finding of await checkPhaseGate(task, next)) {
+		for (const finding of await checkPhaseGate(task, next, { manifestPaths })) {
 			if (finding.ruleId === "core/workflow-gates") {
 				findings.push(finding);
 			}
@@ -61,7 +63,8 @@ export async function writesWithinPlanReal(
 	if (wholeTree) {
 		return [];
 	}
-	const changeClass = classifyChange(files);
+	const manifestPaths = await readManifestPaths(ports);
+	const changeClass = classifyChange(files, manifestPaths);
 	const tasks = await readJudgedTasks(ports, files);
 	// SPEC §4.12.7 EC-1: a live L1 tool write with no active task for the
 	// branch blocks with the task-new command instead of passing silent.
