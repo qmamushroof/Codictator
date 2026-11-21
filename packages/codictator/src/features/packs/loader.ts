@@ -11,19 +11,18 @@ import {
 	NodeFs,
 	ok,
 	parseJson,
-	stableStringify,
 	validateSchema,
 } from "../../kernel/index.ts";
+import type { CaseSource } from "./case-file.ts";
 import type { ExternalOptions, ToolDecl } from "./enforcers/external.ts";
 import { narrowToolDecl } from "./enforcers/external-bind.ts";
 import { verifyAcceptance } from "./hashes.ts";
 import type { Pack, PackManifest } from "./index.ts";
+import { readSchemaText, toPosix } from "./loader-schema.ts";
 import {
 	checkPack,
 	type EnforcerDecl,
-	field,
 	isBuiltinPackId,
-	isRecord,
 	narrowEnforcerDecl,
 	narrowManifest,
 } from "./manifest.ts";
@@ -50,15 +49,6 @@ function builtinPackDir(id: string): string {
 	return path.resolve(here, "..", "..", "builtin-packs", id);
 }
 
-function packageSchemaDir(): string {
-	const here = path.dirname(fileURLToPath(import.meta.url));
-	return path.resolve(here, "..", "..", "..", "schema");
-}
-
-function toPosix(value: string): string {
-	return value.split(path.sep).join("/");
-}
-
 function deepFreeze(value: unknown): void {
 	if (typeof value !== "object" || value === null || Object.isFrozen(value)) {
 		return;
@@ -67,47 +57,6 @@ function deepFreeze(value: unknown): void {
 		deepFreeze(entry);
 	}
 	Object.freeze(value);
-}
-
-// The shipped schemas carry `$schema` and `title`, which are metadata
-// with no validation semantics in the kernel subset (§4.1.2). Stripping
-// them keeps schema/ as the single owner of the format without touching
-// the kernel for pack loading.
-function stripSchemaMetadata(value: unknown): unknown {
-	if (Array.isArray(value)) {
-		return value.map((entry) => stripSchemaMetadata(entry));
-	}
-	if (isRecord(value)) {
-		const kept: Record<string, unknown> = {};
-		for (const key of Object.keys(value)) {
-			if (key === "$schema" || key === "title") {
-				continue;
-			}
-			kept[key] = stripSchemaMetadata(field(value, key));
-		}
-		return kept;
-	}
-	return value;
-}
-
-async function readSchemaText(name: string): Promise<Result<string>> {
-	const absolute = path.join(packageSchemaDir(), name);
-	const root = path.parse(absolute).root;
-	const made = await NodeFs.create({ root });
-	if (!made.ok) {
-		return err(made.error);
-	}
-	const text = await made.value.readText(
-		toPosix(path.relative(root, absolute)),
-	);
-	if (!text.ok) {
-		return err(text.error);
-	}
-	const parsed = parseJson(text.value);
-	if (!parsed.ok) {
-		return err(parsed.error);
-	}
-	return ok(stableStringify(stripSchemaMetadata(parsed.value)));
 }
 
 // SPEC §4.4.3: load one pack directory (pack.json plus accepted.json).
@@ -260,6 +209,21 @@ export function loadBuiltinPack(
 		);
 	}
 	return loadPack(builtinPackDir(id), { ...options, builtin: true });
+}
+
+// SPEC §4.4.1: where a built-in pack's fixtures/ tree is read from, for the
+// self-test (§4.4.4): the pack directory through a drive-rooted Fs, as the
+// loader reads it.
+export async function builtinCaseSource(
+	id: string,
+): Promise<Result<CaseSource>> {
+	const dir = builtinPackDir(id);
+	const root = path.parse(dir).root;
+	const made = await NodeFs.create({ root });
+	if (!made.ok) {
+		return err(made.error);
+	}
+	return ok({ fs: made.value, dir: toPosix(path.relative(root, dir)) });
 }
 
 // SPEC §4.4.3 steps 1–2 and 5: packs arrive in load order (core, language

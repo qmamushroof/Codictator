@@ -7,6 +7,7 @@
 import { ENGINE_VERSION } from "../features/config/index.ts";
 import {
 	acceptPack,
+	builtinCaseSource,
 	loadBuiltinPack,
 	loadPack,
 	selfTest,
@@ -161,12 +162,11 @@ async function packTest(
 			req.json,
 		);
 	}
-	const loaded = BUILTIN_IDS.includes(id)
+	const builtin = BUILTIN_IDS.includes(id);
+	const dir = `.codictator/packs/${id}`;
+	const loaded = builtin
 		? await loadBuiltinPack(id)
-		: await loadPack(`.codictator/packs/${id}`, {
-				ports: ports.value,
-				skipAcceptance: true,
-			});
+		: await loadPack(dir, { ports: ports.value, skipAcceptance: true });
 	if (!loaded.ok) {
 		return fail(
 			loaded.error.code,
@@ -175,7 +175,18 @@ async function packTest(
 			req.json,
 		);
 	}
-	const tested = await selfTest(loaded.value);
+	const source = builtin
+		? await builtinCaseSource(id)
+		: ok({ fs: ports.value.fs, dir });
+	if (!source.ok) {
+		return fail(
+			source.error.code,
+			source.error.message,
+			source.error.remediation,
+			req.json,
+		);
+	}
+	const tested = await selfTest(loaded.value, source.value);
 	if (!tested.ok) {
 		return fail(
 			tested.error.code,

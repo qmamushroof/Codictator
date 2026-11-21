@@ -176,6 +176,24 @@ test("[§8.2] exit 7 on an internal error", async () => {
 			],
 			maxWaiverDays: 90,
 		}),
+		".codictator/packs/mypack/fixtures/deferred-rule/violating/basic/case.json":
+			JSON.stringify({
+				rule: "mypack/deferred-rule",
+				section: "§4.4.3",
+				expectation: "violating",
+				trigger: "pre-tool",
+				expectRules: ["mypack/deferred-rule"],
+				files: { "src/a.ts": "export const a = 1;\n" },
+			}),
+		".codictator/packs/mypack/fixtures/deferred-rule/passing/basic/case.json":
+			JSON.stringify({
+				rule: "mypack/deferred-rule",
+				section: "§4.4.3",
+				expectation: "passing",
+				trigger: "pre-tool",
+				expectRules: [],
+				files: { "src/a.ts": "export const a = 1;\n" },
+			}),
 	});
 	try {
 		const result = await runCommand({

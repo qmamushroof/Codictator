@@ -64,7 +64,10 @@ export async function acceptPack(
 	if (!loaded.ok) {
 		return err(loaded.error);
 	}
-	const tested = await selfTest(loaded.value);
+	const tested = await selfTest(loaded.value, {
+		fs: ports.fs,
+		dir: dirForm,
+	});
 	if (!tested.ok) {
 		return err(tested.error);
 	}

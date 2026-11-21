@@ -5,44 +5,13 @@
 // inert, like the engine treats them (SPEC §4.3.8).
 import type { Result } from "../../kernel/index.ts";
 import { err, makeError, ok } from "../../kernel/index.ts";
-import {
-	type CheckContext,
-	type Enforcer,
-	type Finding,
-	TRIGGERS,
-	type Trigger,
-} from "../engine/index.ts";
+import type { CheckContext, Enforcer, Finding } from "../engine/index.ts";
+import type { CaseKind, CaseSource } from "./case-file.ts";
 import type { Pack, PackRule } from "./index.ts";
 import { checkParam } from "./params.ts";
-
-const SELF_TEST_CONFIG_HASH = "self-test";
-
-// No clock port reaches the self-test signature, so the context carries a
-// synthetic instant. Enforcers under test decide on fixture content, never
-// on wall time; real fixture runs take a real clock in a later phase.
-const SELF_TEST_NOW = "self-test";
+import { mismatch, prepareCase } from "./selftest-case.ts";
 
 const TIMED_OUT = { timedOut: true };
-
-function toTrigger(value: unknown): Trigger {
-	if (typeof value === "string") {
-		for (const trigger of TRIGGERS) {
-			if (trigger === value) {
-				return trigger;
-			}
-		}
-	}
-	return "startup";
-}
-
-function testContext(rule: PackRule): CheckContext {
-	return {
-		trigger: toTrigger(rule.triggers[0]),
-		scope: { files: [] },
-		now: SELF_TEST_NOW,
-		configHash: SELF_TEST_CONFIG_HASH,
-	};
-}
 
 function thrownError(ruleId: string, enforcerId: string): Result<never> {
 	return err(
@@ -77,10 +46,11 @@ async function runCase(
 	enforcer: Enforcer,
 	rule: PackRule,
 	name: string,
+	context: CheckContext,
 ): Promise<Result<Array<Finding>>> {
 	let pending: Promise<Array<Finding>>;
 	try {
-		pending = enforcer.check(testContext(rule), {});
+		pending = enforcer.check(context, {});
 	} catch {
 		return thrownError(rule.id, enforcer.id);
 	}
@@ -98,22 +68,6 @@ async function runCase(
 		}
 		return thrownError(rule.id, enforcer.id);
 	}
-}
-
-// SPEC §4.4.4: the enforcer for a self-test is found by the name the rule
-// declares, falling back to the rule id so hand-built packs keep working.
-function resolveEnforcer(pack: Pack, rule: PackRule): Enforcer | undefined {
-	for (const enforcer of pack.enforcers) {
-		if (enforcer.id === rule.enforcer) {
-			return enforcer;
-		}
-	}
-	for (const enforcer of pack.enforcers) {
-		if (enforcer.id === rule.id) {
-			return enforcer;
-		}
-	}
-	return undefined;
 }
 
 function checkRuleMetadata(rule: PackRule): Result<void> {
@@ -144,80 +98,68 @@ function checkRuleMetadata(rule: PackRule): Result<void> {
 	return ok(undefined);
 }
 
-async function checkViolatingFixtures(
-	enforcer: Enforcer,
+async function checkFixtures(
+	pack: Pack,
 	rule: PackRule,
+	kind: CaseKind,
+	source: CaseSource | undefined,
 ): Promise<Result<void>> {
-	for (const name of rule.fixtures.violating) {
-		const ran = await runCase(enforcer, rule, name);
+	for (const name of rule.fixtures[kind]) {
+		const prepared = await prepareCase(pack, rule, kind, name, source);
+		if (!prepared.ok) {
+			return err(prepared.error);
+		}
+		const ran = await runCase(
+			prepared.value.enforcer,
+			rule,
+			name,
+			prepared.value.context,
+		);
 		if (!ran.ok) {
 			return err(ran.error);
 		}
-		if (!ran.value.some((finding) => finding.ruleId === rule.id)) {
-			return err(
-				makeError(
-					"CDX-E212",
-					`rule "${rule.id}" violating fixture "${name}" yielded no finding with this rule id`,
-					"Strengthen the enforcer so the violating case blocks, then re-run the self-test.",
-				),
-			);
+		const judged = mismatch(
+			rule,
+			kind,
+			name,
+			prepared.value,
+			ran.value.map((finding) => finding.ruleId),
+		);
+		if (!judged.ok) {
+			return err(judged.error);
 		}
 	}
 	return ok(undefined);
 }
 
-async function checkPassingFixtures(
-	enforcer: Enforcer,
+async function selfTestRule(
+	pack: Pack,
 	rule: PackRule,
+	source: CaseSource | undefined,
 ): Promise<Result<void>> {
-	for (const name of rule.fixtures.passing) {
-		const ran = await runCase(enforcer, rule, name);
-		if (!ran.ok) {
-			return err(ran.error);
-		}
-		if (ran.value.some((finding) => finding.ruleId === rule.id)) {
-			return err(
-				makeError(
-					"CDX-E213",
-					`rule "${rule.id}" passing fixture "${name}" yielded a finding with this rule id`,
-					"Narrow the enforcer so the passing case stays clean, then re-run the self-test.",
-				),
-			);
-		}
-	}
-	return ok(undefined);
-}
-
-async function selfTestRule(pack: Pack, rule: PackRule): Promise<Result<void>> {
 	const metadata = checkRuleMetadata(rule);
 	if (!metadata.ok) {
 		return err(metadata.error);
 	}
-	const enforcer = resolveEnforcer(pack, rule);
-	if (enforcer === undefined) {
-		return err(
-			makeError(
-				"CDX-E205",
-				`rule "${rule.id}" names unknown enforcer "${rule.enforcer}"`,
-				"Declare the enforcer in the pack or use a built-in parametric enforcer (§4.4.6), then re-run the self-test.",
-			),
-		);
-	}
-	const violating = await checkViolatingFixtures(enforcer, rule);
+	const violating = await checkFixtures(pack, rule, "violating", source);
 	if (!violating.ok) {
 		return err(violating.error);
 	}
-	return checkPassingFixtures(enforcer, rule);
+	return checkFixtures(pack, rule, "passing", source);
 }
 
 // SPEC §4.4.4: self-test every rule against its fixtures before use. Rules
-// run in id order so the first failure is deterministic.
-export async function selfTest(pack: Pack): Promise<Result<void>> {
+// run in id order so the first failure is deterministic. `source` names the
+// pack directory whose fixtures/ tree holds the case files (§4.4.1).
+export async function selfTest(
+	pack: Pack,
+	source?: CaseSource,
+): Promise<Result<void>> {
 	const rules = [...pack.manifest.rules].sort((a, b) =>
 		a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
 	);
 	for (const rule of rules) {
-		const tested = await selfTestRule(pack, rule);
+		const tested = await selfTestRule(pack, rule, source);
 		if (!tested.ok) {
 			return err(tested.error);
 		}
