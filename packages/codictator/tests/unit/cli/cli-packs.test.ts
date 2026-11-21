@@ -153,15 +153,14 @@ test("[§4.16] generate without an LLM fails CDX-E851", async () => {
 	}
 });
 
-test("[§4.4] pack list fails closed on a missing builtin pack", async () => {
-	// SPEC §4.4.1: pack loading fails closed with the pack's own code;
-	// the dotnet builtin has no pack.json yet, so list reports CDX-E203
-	// (exit 3) instead of a partial list.
+test("[§4.4] pack list loads every builtin pack including dotnet", async () => {
+	// SPEC §4.4.1 (BUG-0104): the dotnet builtin ships its pack.json, so list
+	// exits 0 instead of failing CDX-E203.
 	const repo = createTempRepo();
 	try {
 		const ran = await cli(["pack", "list"], repo.dir);
-		assert.equal(ran.code, 3);
-		assert.ok(ran.stderr.includes("CDX-E203"));
+		assert.equal(ran.code, 0);
+		assert.ok(ran.stdout.includes("dotnet"));
 	} finally {
 		repo.cleanup();
 	}
