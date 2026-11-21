@@ -2,8 +2,9 @@
 // scope from the verify flags, loads the always-on core pack plus the
 // builtin language packs config packs name, and runs the engine over the
 // scope. Findings merge with the drift findings in inspect.ts; pack load
-// failures fail closed with their own code. Custom packs stay out until
-// their acceptance flow lands (core/custom-pack-selftest is red).
+// failures fail closed with their own code. Custom packs load after them
+// through custom-state (SPEC §4.2.1 step 3): missing is CDX-E203, failing
+// is inert, and core/custom-pack-selftest blocks at L4.
 
 import {
 	createEngine,
@@ -12,6 +13,7 @@ import {
 	type WaiverStore,
 } from "../features/engine/index.ts";
 import {
+	activeCustomManifests,
 	isBuiltinPackId,
 	loadBuiltinPack,
 	resolveManifestEnforcers,
@@ -157,10 +159,12 @@ export async function resolveVerifyScope(
 // Every pack resolves against the caller's ports; the verify caller shares
 // one read cache across them, so scope files read repo-relatively (§4.1.1)
 // exactly once per run.
+// `l4` runs each custom pack's self-test before its rules join (§4.4.4).
 export async function loadEvalEnforcers(
 	ports: Ports,
 	packIds: ReadonlyArray<string>,
 	excludeRuleIds: ReadonlySet<string> = new Set(),
+	l4 = false,
 ): Promise<
 	Result<{
 		readonly enforcers: Array<Enforcer>;
@@ -182,6 +186,15 @@ export async function loadEvalEnforcers(
 		}
 		manifests.push(loaded.value.manifest);
 	}
+	const custom = await activeCustomManifests(
+		ports,
+		packIds.filter((id) => !isBuiltinPackId(id)),
+		l4,
+	);
+	if (!custom.ok) {
+		return err(custom.error);
+	}
+	manifests.push(...custom.value);
 	// SPEC §4.2.1 step 4 + §4.3.3 step 3: the file waivers loosen the
 	// resolved params and ride the engines for suppression. Tiers come
 	// from the evaluated manifests, so an unknown tier fails closed.
@@ -244,7 +257,12 @@ export async function evaluateScope(
 ): Promise<Result<Array<Finding>>> {
 	const cached: CommandPorts = { ...ports, fs: sharedReads(ports.fs) };
 	const excluded: ReadonlySet<string> = options.excludeRuleIds ?? new Set();
-	const loaded = await loadEvalEnforcers(cached, packIds, excluded);
+	const loaded = await loadEvalEnforcers(
+		cached,
+		packIds,
+		excluded,
+		scope.base !== undefined,
+	);
 	if (!loaded.ok) {
 		return err(loaded.error);
 	}

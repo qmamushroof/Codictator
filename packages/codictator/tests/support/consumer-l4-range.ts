@@ -8,6 +8,7 @@ import { MX } from "./consumer-fixtures.ts";
 import { srcMain, writeTreeFile } from "./consumer-harness.ts";
 import type { ProbeHit } from "./consumer-l1-run.ts";
 import { findingIds, MATRIX } from "./consumer-matrix.ts";
+import { customPackFiles } from "./custom-pack-fixture.ts";
 import type { TempRepo } from "./temp-repo.ts";
 
 type Tree = ReadonlyArray<readonly [string, string]>;
@@ -16,6 +17,8 @@ const PACKAGE_BASE = JSON.stringify({
 	name: "mx",
 	version: "0.0.0",
 	scripts: { test: "node --test" },
+	// SPEC §4.10.4: a jest coverage threshold the head lowers.
+	jest: { coverageThreshold: { global: { lines: 90 } } },
 });
 
 // SPEC §6.1: two assertion tokens the head drops (core/no-assertion-loss).
@@ -80,6 +83,7 @@ function headTree(branch: string): Tree {
 				name: "mx",
 				scripts: { test: "node --test || true" },
 				dependencies: { "left-pad": "latest" },
+				jest: { coverageThreshold: { global: { lines: 80 } } },
 			}),
 		],
 		["src/mx-abstraction.ts", MX.abstraction],
@@ -126,14 +130,22 @@ function headTree(branch: string): Tree {
 				],
 			}),
 		],
+		// SPEC §4.4.4: a custom pack whose violating case does not violate,
+		// so its self-test fails CDX-E212 (core/custom-pack-selftest).
+		...Object.entries(customPackFiles(5)),
 		// SPEC §4.11.4: the changed config declares no architecture profile
-		// (core/arch-profile-declared); the language packs stay loaded.
+		// (core/arch-profile-declared); the language packs and the custom
+		// pack stay loaded.
 		[
 			".codictator/config.json",
 			JSON.stringify({
 				version: 1,
 				codictator: "unknown",
-				packs: [{ id: "typescript" }, { id: "python" }],
+				packs: [
+					{ id: "typescript" },
+					{ id: "python" },
+					{ id: "mypack", path: ".codictator/packs/mypack" },
+				],
 				harnesses: ["muse-code"],
 			}),
 		],

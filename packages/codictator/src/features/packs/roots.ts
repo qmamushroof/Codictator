@@ -36,7 +36,7 @@ export function builtinPackRoots(repoRoot: string): Array<string> {
 	return roots;
 }
 
-function customRoot(entryPath: unknown): string | undefined {
+export function customRoot(entryPath: unknown): string | undefined {
 	if (typeof entryPath !== "string" || entryPath === "") {
 		return undefined;
 	}

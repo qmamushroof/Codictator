@@ -57,17 +57,16 @@ test("[consumer] every L3/L4-mapped floor rule fires on its gate probe", async (
 			rangeRows.every(([rule, probe]) => hits.has(`${probe}::${rule}`)),
 			"the range probe records a hit for every verify-tdd-range row",
 		);
-		// The two rows SPEC leaves undecided (BUG-0108): no pack names its
-		// coverage-threshold keys (§4.10.4 vs §6.1/§6.3), and §4.2.1 step 3
-		// contradicts §4.4.5 EC-4 for a failing custom pack. Every other
-		// range row fires; a new silent row fails here first.
+		// SPEC §4.10.4 + §4.4.4 (BUG-0110): every range row fires, the
+		// coverage-threshold and failing-custom-pack rows included; a new
+		// silent row fails here first.
 		assert.deepEqual(
 			rangeRows
 				.filter(
 					([rule, probe]) => hits.get(`${probe}::${rule}`)?.fired !== true,
 				)
 				.map(([rule]) => rule),
-			["core/no-threshold-lowering", "core/custom-pack-selftest"],
+			[],
 		);
 		const gateText = [...hits.values()].map((hit) => hit.detail).join("\n");
 		for (const rule of ["core/spec-trace", "core/dead-code"]) {

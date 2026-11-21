@@ -1,9 +1,8 @@
 // Roadmap 14.5, range family: the L4 verify-tdd-range rules that stayed
 // silent because each judged fixture marker reports only, or because the
-// probe never broke them. The umbrella title in
-// consumer-enforcement-firing-l34.test.ts stays ledger-listed while
-// core/no-threshold-lowering and core/custom-pack-selftest wait on SPEC;
-// this per-family guard asserts exactly these rows.
+// probe never broke them; this per-family guard asserts exactly these rows.
+// BUG-0110: core/no-threshold-lowering and core/custom-pack-selftest joined
+// once SPEC §4.10.4 and §4.4.4 settled them.
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import { installConsumer } from "../support/consumer-harness.ts";
@@ -27,6 +26,8 @@ const RANGE_FAMILY: ReadonlySet<string> = new Set([
 	"core/perf-budgets",
 	"core/ci-present",
 	"core/waivers-valid",
+	"core/no-threshold-lowering",
+	"core/custom-pack-selftest",
 	"ts/lint",
 	"ts/typecheck",
 	"python/lint",

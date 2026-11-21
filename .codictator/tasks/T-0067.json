@@ -1,0 +1,149 @@
+{
+  "acceptanceCriteria": [
+    "core/no-threshold-lowering flags a lowered SPEC 4.10.4 coverage-threshold key across the L4 range",
+    "a missing custom pack fails the load CDX-E203; a failing custom pack loads inert and core/custom-pack-selftest blocks at L4",
+    "the l34 umbrella reports no silent verify-tdd-range row"
+  ],
+  "branch": "work/l4-gap-rules",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: the l34 firing umbrella lists core/no-threshold-lowering and core/custom-pack-selftest as silent on the ci verify range probe. Root cause: RANGE_JUDGES in packs/enforcers/range-config-judges.ts has no entry for either rule, so at L4 each judges fixture marker reports only; and cli/evaluate.ts loadEvalEnforcers skips every non-builtin pack id, so a configured custom pack is never loaded, self-tested or judged (a missing one is not CDX-E203 either). Both waited on SPEC, which PR #233 settled in SPEC 4.10.4 (threshold keys) and 4.2.1 step 3 / 4.4.4 / 4.4.8 EC-4 (failing custom pack inert, L4 blocks).",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/**",
+      "packages/codictator/src/cli/evaluate.ts",
+      "packages/codictator/tests/**",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T09:34:16.733Z",
+    "tree": "8329982a5021939e735a89caea0847a678c776ed"
+  },
+  "historyStaged": true,
+  "id": "T-0067",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T09:23:18.097Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T09:25:59.585Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T09:28:40.142Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T09:34:23.771Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T09:35:17.291Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T09:35:18.361Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T09:25:56.583Z",
+    "commit": "c89cf31e5a1bef1205537d5c30a6ccfe6540ad41",
+    "failing": [
+      "[consumer] every L3/L4-mapped floor rule fires on its gate probe",
+      "[§4.2.1] a configured custom pack that is missing fails the load CDX-E203",
+      "[§4.2.1] a custom pack whose self-test fails loads inert at L4 and its rules do not run",
+      "[§4.4.4] a custom pack that passes its self-test loads its rules",
+      "[§4.10.4] L4 no-threshold-lowering flags a lowered package.json jest coverageThreshold and stays quiet without a range base",
+      "[§4.10.4] L4 no-threshold-lowering reads vitest and jest config files, pyproject.toml and .coveragerc",
+      "[§4.10.4] L4 no-threshold-lowering stays quiet when a threshold is raised or unchanged, and flags a removed one",
+      "[§4.4.8 EC-2] L4 custom-pack-selftest flags a configured custom pack whose self-test fails",
+      "[§4.4.8 EC-4] L4 custom-pack-selftest flags a custom pack edited after acceptance and stays quiet for a healthy one"
+    ],
+    "tree": "8329982a5021939e735a89caea0847a678c776ed"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T09:35:14.275Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0067-r1",
+      "round": 1,
+      "tree": "2d336b0a0328f6e9776bbfe099de2f7bea236847"
+    }
+  ],
+  "spec": [
+    "SPEC §4.10.4",
+    "SPEC §4.2.1",
+    "SPEC §4.4.4",
+    "SPEC §4.4.8",
+    "SPEC §4.15.1"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/acceptance/consumer-enforcement-firing-l34.test.ts",
+      "title": "[consumer] every L3/L4-mapped floor rule fires on its gate probe"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-custom-state.test.ts",
+      "title": "[§4.2.1] a configured custom pack that is missing fails the load CDX-E203"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-custom-state.test.ts",
+      "title": "[§4.2.1] a custom pack whose self-test fails loads inert at L4 and its rules do not run"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-custom-state.test.ts",
+      "title": "[§4.4.4] a custom pack that passes its self-test loads its rules"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-gaps.test.ts",
+      "title": "[§4.10.4] L4 no-threshold-lowering flags a lowered package.json jest coverageThreshold and stays quiet without a range base"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-gaps.test.ts",
+      "title": "[§4.10.4] L4 no-threshold-lowering reads vitest and jest config files, pyproject.toml and .coveragerc"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-gaps.test.ts",
+      "title": "[§4.10.4] L4 no-threshold-lowering stays quiet when a threshold is raised or unchanged, and flags a removed one"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-gaps.test.ts",
+      "title": "[§4.4.8 EC-2] L4 custom-pack-selftest flags a configured custom pack whose self-test fails"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l4-range-gaps.test.ts",
+      "title": "[§4.4.8 EC-4] L4 custom-pack-selftest flags a custom pack edited after acceptance and stays quiet for a healthy one"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-enforcement-firing-l34.test.ts",
+      "title": "[consumer] every L3/L4-mapped floor rule fires on its gate probe"
+    }
+  ],
+  "title": "Judge threshold lowering and failing custom packs at L4",
+  "type": "fix",
+  "version": 1
+}
+

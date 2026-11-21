@@ -4,9 +4,8 @@
 import { strict as assert } from "node:assert";
 import test from "node:test";
 import { runNodeScript } from "../support/cli-runner.ts";
+import { customPackFiles } from "../support/custom-pack-fixture.ts";
 import { createTempRepo, type TempRepo } from "../support/temp-repo.ts";
-
-const RULE = "mypack/file-size";
 
 function seedConfig(repo: TempRepo): void {
 	repo.writeFile(
@@ -20,72 +19,10 @@ function seedConfig(repo: TempRepo): void {
 	);
 }
 
-function rows(count: number): string {
-	const lines: Array<string> = [];
-	for (let n = 1; n <= count; n += 1) {
-		lines.push(`export const row${n} = 1;`);
-	}
-	return `${lines.join("\n")}\n`;
-}
-
-function caseJson(
-	expectation: "violating" | "passing",
-	lines: number,
-	expectRules: ReadonlyArray<string>,
-): string {
-	return JSON.stringify({
-		rule: RULE,
-		section: "§5.6",
-		expectation,
-		trigger: "pre-tool",
-		expectRules,
-		files: { "src/a.ts": rows(lines) },
-	});
-}
-
 function seedPack(repo: TempRepo, violatingLines: number): void {
-	repo.writeFile(
-		".codictator/packs/mypack/pack.json",
-		JSON.stringify({
-			id: "mypack",
-			version: "0.0.0",
-			description: "fixture pack with a file-size rule",
-			rules: [
-				{
-					id: RULE,
-					family: "F6",
-					tier: "tunable",
-					statement: "Files stay under maxLines lines.",
-					reason: "Oversize files resist review.",
-					remediation: "Split {path} below {limit} lines.",
-					enforcer: RULE,
-					triggers: ["pre-tool"],
-					scope: [],
-					params: {
-						maxLines: {
-							type: "integer",
-							default: 300,
-							bound: 500,
-							stricter: "lower",
-						},
-					},
-					ratchet: false,
-					measureVersion: 1,
-					fixtures: { violating: ["basic"], passing: ["basic"] },
-				},
-			],
-			enforcers: [{ id: RULE, kind: "file-size", budgetMs: 1000, args: {} }],
-			maxWaiverDays: 90,
-		}),
-	);
-	repo.writeFile(
-		".codictator/packs/mypack/fixtures/file-size/violating/basic/case.json",
-		caseJson("violating", violatingLines, [RULE]),
-	);
-	repo.writeFile(
-		".codictator/packs/mypack/fixtures/file-size/passing/basic/case.json",
-		caseJson("passing", 5, []),
-	);
+	for (const [name, text] of Object.entries(customPackFiles(violatingLines))) {
+		repo.writeFile(name, text);
+	}
 }
 
 async function packTest(repo: TempRepo, id: string) {
