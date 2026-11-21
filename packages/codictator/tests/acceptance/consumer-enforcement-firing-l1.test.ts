@@ -5,6 +5,7 @@ import { strict as assert } from "node:assert";
 import test from "node:test";
 import { HOOK_CASES } from "../support/consumer-l1-cases.ts";
 import { runL1Probes, silentRules } from "../support/consumer-l1-run.ts";
+import { INACTIVE_RULES } from "../support/consumer-matrix.ts";
 import { createTempRepo } from "../support/temp-repo.ts";
 
 test("[consumer] every L1-mapped floor rule fires on its hook probe", async () => {
@@ -13,7 +14,10 @@ test("[consumer] every L1-mapped floor rule fires on its hook probe", async () =
 	const repo = createTempRepo();
 	try {
 		const hits = await runL1Probes(repo);
-		const misses = silentRules(hits, (_rule, probe) => owned(probe));
+		const misses = silentRules(
+			hits,
+			(rule, probe) => owned(probe) && !INACTIVE_RULES.has(rule),
+		);
 		assert.deepEqual(
 			misses,
 			[],
