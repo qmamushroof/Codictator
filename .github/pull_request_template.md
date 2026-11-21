@@ -16,6 +16,6 @@
 - [ ] `npx codictator verify --staged`
 - [ ] Conditional rows from docs/VALIDATION.md (list or `none`):
 
-## History
+## History entry
 
 - [ ] Entry prepended in `docs/HISTORY/<YYYY-MM-DD>.md` with subject matching the commit

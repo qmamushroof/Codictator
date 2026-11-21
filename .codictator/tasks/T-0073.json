@@ -1,0 +1,66 @@
+{
+  "acceptanceCriteria": [
+    "verify --all reports no core/doc-no-inline-changelog finding"
+  ],
+  "branch": "chore/verify-all-cleanup-2",
+  "bugRowUpdated": true,
+  "files": {
+    "allow": [
+      ".github/pull_request_template.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0073",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T14:56:09.815Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T14:57:38.000Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T14:57:38.605Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T14:57:39.221Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T14:57:46.022Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T14:57:47.281Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T14:57:45.385Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0073-r1",
+      "round": 1,
+      "tree": "101ac3d7cfdb3d815fd8eba39ea7cf168e3436f1"
+    }
+  ],
+  "spec": [
+    "§4.9.2"
+  ],
+  "title": "docs(bugs): file chore short path and run type annotation defects",
+  "type": "docs",
+  "version": 1
+}
+
