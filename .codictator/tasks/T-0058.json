@@ -1,0 +1,157 @@
+{
+  "acceptanceCriteria": [
+    "selfTest(pack, source) loads each case.json into an in-memory Fs, scopes its sorted file keys, runs the rule's enforcer bound by rule id with the case trigger",
+    "violating needs non-empty expectRules all found; passing yields no finding with the rule id; missing or malformed case.json fails CDX-E212/E213; all builtin packs pass",
+    "BUG-0095 row marked fixed"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "BUG-0095: selfTest runs each enforcer with an empty scope and never reads case.json, so no fixture proves a rule (SPEC 4.4.1 case file, 4.4.4). Enforcers also bind to loader ports, so a case needs enforcers re-resolved against an in-memory Fs holding only the case files.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/**",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/*.md",
+      "docs/BUGS/2026.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-14T08:32:51.630Z",
+    "tree": "ef19c1e4bb61d77e803187b4a8b62bab400423b6"
+  },
+  "historyStaged": true,
+  "id": "T-0058",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-14T08:29:34.036Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-14T08:29:58.145Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-14T08:37:22.658Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-14T08:41:23.013Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T02:19:03.721Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T02:19:11.910Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-14T08:29:49.232Z",
+    "commit": "a89a9742036c01210daac680f5439d9300cde595",
+    "failing": [
+      "[§4.4.4] self-test runs each case over its own files and passes when the rule fires only on the violating case",
+      "[§4.4.4] self-test fails CDX-E213 when a passing case's files violate",
+      "[§4.4.1] a missing or malformed case.json fails CDX-E212 under violating and CDX-E213 under passing",
+      "[§4.4.4] the core built-in pack passes self-test over its case files"
+    ],
+    "tree": "ef19c1e4bb61d77e803187b4a8b62bab400423b6"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T02:18:56.221Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0058-r1",
+      "round": 1,
+      "tree": "5ea09ae282b819ecd0208717de1ed8e67d1b6019"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T02:25:34.942Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0058-r2",
+      "round": 2,
+      "tree": "42865e286cbb62d90ccdc54bf5d8bbd8e938fe90"
+    }
+  ],
+  "spec": [
+    "§4.4.1",
+    "§4.4.4",
+    "§4.4.3",
+    "§4.1.1"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-cases.test.ts",
+      "title": "[§4.4.4] self-test runs each case over its own files and passes when the rule fires only on the violating case"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-cases.test.ts",
+      "title": "[§4.4.4] self-test fails CDX-E212 when a violating case's files do not violate"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-cases.test.ts",
+      "title": "[§4.4.4] self-test fails CDX-E213 when a passing case's files violate"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-cases.test.ts",
+      "title": "[§4.4.4] a violating case needs non-empty expectRules, all present in the findings"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-cases.test.ts",
+      "title": "[§4.4.1] a missing or malformed case.json fails CDX-E212 under violating and CDX-E213 under passing"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-builtin.test.ts",
+      "title": "[§4.4.4] the core built-in pack passes self-test over its case files"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-builtin.test.ts",
+      "title": "[§4.4.4] the typescript built-in pack passes self-test over its case files"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-builtin.test.ts",
+      "title": "[§4.4.4] the python built-in pack passes self-test over its case files"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/pack-self-test-cases.test.ts",
+      "title": "[§4.4.4] regression BUG-0095: a violating case is judged on its own case files, not an empty scope"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/pack-self-test-cases.test.ts",
+      "title": "[§4.4.4] pack test core runs the real CLI over every case file and passes"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/pack-self-test-cases.test.ts",
+      "title": "[§4.4.4] pack test of a custom pack with a broken violating case fails CDX-E212"
+    }
+  ],
+  "title": "fix(packs): run pack self-test over each case file",
+  "type": "fix",
+  "version": 1
+}
+

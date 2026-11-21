@@ -191,21 +191,19 @@ test("[§4.4] pack test without an id is a usage error", async () => {
 	}
 });
 
-test("[§4.4] pack test reports the failing builtin self-test", async () => {
-	// SPEC §4.4.4: the core pack self-test currently fails at the first
-	// wired fixture assertion (self-test evaluates on an empty scope, so
-	// the violating fixture yields no finding), so test reports CDX-E212
-	// (exit 3) instead of a pass. Integrity exception IE-09-R5-packtest
-	// (rule core/no-assertion-loss, path
+test("[§4.4] pack test passes the builtin self-test over its case files", async () => {
+	// SPEC §4.4.4 + §4.4.1: self-test evaluates every case.json for real
+	// (BUG-0095) and the core pack's cases all hold, so test exits 0.
+	// Integrity exception IE-58-packtest (rule core/no-assertion-loss, path
 	// packages/codictator/tests/unit/cli/cli-packs.test.ts, reason: the
-	// agent-assets-present enforcer is wired now, so the failure moved
-	// from the CDX-E901 throw to the CDX-E212 fixture assertion).
+	// self-test no longer fails on an empty scope, so the stale CDX-E212
+	// expectation became a pass; assertion count unchanged).
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		const ran = await cli(["pack", "test", "core"], repo.dir);
-		assert.equal(ran.code, 3);
-		assert.ok(ran.stderr.includes("CDX-E212"));
-		assert.ok(ran.stderr.includes("self-test"));
+		assert.equal(ran.code, 0);
+		assert.ok(ran.stdout.includes("self-test pass"));
+		assert.ok(ran.stdout.includes("core"));
 	} finally {
 		repo.cleanup();
 	}

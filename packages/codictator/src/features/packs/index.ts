@@ -21,6 +21,7 @@ export interface PackAccepted {
 
 export type { AcceptPackOptions } from "./accept.ts";
 export { acceptPack } from "./accept.ts";
+export type { CaseSource } from "./case-file.ts";
 export { resolveCodeEnforcer } from "./enforcers/code.ts";
 export {
 	type ExternalArgs,
@@ -40,7 +41,12 @@ export { digestArgv, planRuns, safePath } from "./enforcers/external-runs.ts";
 export { isParametricKind, resolveParametric } from "./enforcers/parametric.ts";
 export { packHashFor, selfTestHashFor } from "./hashes.ts";
 export type { LoadPackOptions } from "./loader.ts";
-export { composePacks, loadBuiltinPack, loadPack } from "./loader.ts";
+export {
+	builtinCaseSource,
+	composePacks,
+	loadBuiltinPack,
+	loadPack,
+} from "./loader.ts";
 export { isBuiltinPackId } from "./manifest.ts";
 export { resolveManifestEnforcers, resolvePackEnforcers } from "./registry.ts";
 export { loadedPackRoots } from "./roots.ts";
