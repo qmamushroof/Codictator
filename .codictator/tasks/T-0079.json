@@ -1,0 +1,68 @@
+{
+  "acceptanceCriteria": [
+    "BUG-0116 is filed open before its fix"
+  ],
+  "branch": "fix/manifest-owned-classifier",
+  "diagnosis": "Docs-only: file BUG-0116 open ahead of the fix, as T-0073 did for BUG-0114 and BUG-0115.",
+  "files": {
+    "allow": [
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0079",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T16:56:41.941Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T16:56:47.412Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T16:56:47.753Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T16:56:48.088Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T16:56:57.373Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T16:56:58.021Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T16:56:54.850Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0079-r1",
+      "round": 1,
+      "tree": "e89ec6e7ef7a305f3428a3811b5e51be08fd1ffd"
+    }
+  ],
+  "spec": [
+    "§4.9.2",
+    "§4.14.1"
+  ],
+  "title": "docs(bugs): file manifest-listed chore classification defect",
+  "type": "docs",
+  "version": 1
+}
+
