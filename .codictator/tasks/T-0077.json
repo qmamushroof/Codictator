@@ -1,0 +1,68 @@
+{
+  "acceptanceCriteria": [
+    "SPEC §4.14.1 defines manifest-owned once; §4.12.2 cites it"
+  ],
+  "branch": "docs/manifest-owned",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-12-WORKFLOW.md",
+      "docs/SPEC/04-14-INTEGRITY.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0077",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T16:28:48.265Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T16:28:51.244Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T16:28:51.608Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T16:29:20.126Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T16:29:48.170Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T16:29:48.947Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T16:29:47.782Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0077-r1",
+      "round": 1,
+      "tree": "23293a0da3886b8cce6b595a181667e6fb92f62b"
+    }
+  ],
+  "spec": [
+    "SPEC §4.12.2",
+    "SPEC §4.14.1"
+  ],
+  "title": "define manifest-owned in SPEC 4.14.1",
+  "type": "docs",
+  "version": 1
+}
+

@@ -8,6 +8,8 @@ The guardrail lockfile, drift and tamper detection, self-protection and git-hook
 
 `.codictator/manifest.json` (schema §7.14) lists every generated artifact with its `path`, `owner` (adapter, pack or module id), `mode` and `hash`. `mode` is `file` (whole file), `block` (managed Markdown block) or `entries` (owned entries in a shared JSON/TOML/YAML file). `hash` is the `sha256` of `normalizeText` of the file, the block, or the canonical projection of owned entries. Generation is deterministic (`stableStringify`, no timestamps), so `regen` on unchanged config reproduces the manifest byte for byte.
 
+**Manifest-owned**: a file is manifest-owned when its path is listed in the manifest (every generated artifact) or is a package manifest or lockfile (`package.json`, `package-lock.json`), `.nvmrc`, or under `.codictator/`, `.githooks/` or `.husky/`.
+
 ## 4.14.2 Checks
 
 | Rule | Detects | Layers |
