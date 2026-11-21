@@ -54,7 +54,13 @@ export async function writesWithinPlanReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
 	liveWrite: boolean,
+	wholeTree = false,
 ): Promise<Array<Finding>> {
+	// SPEC §4.12.3: verify --all judges the tree, not a change. It has no
+	// diff, so every per-task write-plan judgement judges nothing.
+	if (wholeTree) {
+		return [];
+	}
 	const changeClass = classifyChange(files);
 	const tasks = await readJudgedTasks(ports, files);
 	// SPEC §4.12.7 EC-1: a live L1 tool write with no active task for the

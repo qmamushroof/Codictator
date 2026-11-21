@@ -151,3 +151,24 @@ test("[§5.9] real scope stays quiet within the round cap", async () => {
 	);
 	assert.deepEqual(findings, []);
 });
+
+test("[§4.12.3] writes-within-plan judges nothing for a whole-tree scope (BUG-0113)", async () => {
+	const findings = await writesWithinPlanReal(
+		portsWith(taskJson({ files: { allow: ["src/kept.ts"] } })),
+		["src/kept.ts", "src/other.ts"],
+		false,
+		true,
+	);
+	assert.deepEqual(findings, []);
+});
+
+test("[§4.12.3] writes-within-plan still judges a diff scope beside a tree scope (BUG-0113)", async () => {
+	const findings = await writesWithinPlanReal(
+		portsWith(taskJson({ files: { allow: ["src/kept.ts"] } })),
+		["src/kept.ts", "src/other.ts"],
+		false,
+		false,
+	);
+	assert.equal(findings.length, 1);
+	assert.equal(findings[0]?.path, "src/other.ts");
+});

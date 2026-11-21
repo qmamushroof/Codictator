@@ -42,6 +42,11 @@ export interface Scope {
 	// compare base and head of the changed files; only ci verify sets it,
 	// so the range judges stay out of the L1–L3 legs.
 	readonly base?: string;
+	// SPEC §4.12.3: the scope is the whole tracked tree (verify --all, the
+	// bare verify), not a change. It has no diff, so per-task write-plan
+	// judgement has nothing to judge; staged, range and hook scopes leave
+	// it unset.
+	readonly wholeTree?: boolean;
 	// True when proposedContent is the complete file after the tool call
 	// (a whole-file write), unset for an edit fragment or a non-L1 scope.
 	// Whole-document rules judge it only when true.

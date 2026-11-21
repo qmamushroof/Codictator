@@ -156,6 +156,9 @@ export interface MarkerRealArgs {
 	// SPEC §4.12.3 L1 blocks a write, not a read: a read-only tool call
 	// (scope toolAccess "read") owes no live-write workflow judging.
 	readonly readOnlyTool: boolean;
+	// SPEC §4.12.3: the scope is the tracked tree (verify --all), with no
+	// diff for a per-task write-plan judgement to read.
+	readonly wholeTree: boolean;
 }
 
 // SPEC §4.3.2 + §4.7: at the pre-tool trigger the L1 scope carries no disk
@@ -199,6 +202,7 @@ export function markerRealGuard(
 				effective: effectiveFiles(ctx, binding.scopeGlobs),
 				hasToolTargets,
 				readOnlyTool,
+				wholeTree: ctx.scope.wholeTree === true,
 			};
 			await judgeMarkers(args);
 			if (hasRealScope(files)) {
@@ -288,6 +292,7 @@ export function markerGuard(
 				effective: [],
 				hasToolTargets: false,
 				readOnlyTool: false,
+				wholeTree: false,
 			});
 			return findings;
 		}),
