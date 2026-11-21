@@ -1,0 +1,66 @@
+{
+  "acceptanceCriteria": [
+    "SPEC §4.7.3 states a source-file run: type annotation is code"
+  ],
+  "branch": "docs/spec-run-type-annotation",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-07-SECURITY-GUARDS.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0075",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T15:42:13.080Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T15:42:24.848Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T15:42:25.326Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T15:42:40.459Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T15:43:19.275Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T15:43:20.255Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T15:43:16.207Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0075-r1",
+      "round": 1,
+      "tree": "de84b176066e147ceda8ab1eceec0d1f782bcb51"
+    }
+  ],
+  "spec": [
+    "§4.7.3"
+  ],
+  "title": "docs(spec): treat a source-file run: type annotation as code",
+  "type": "docs",
+  "version": 1
+}
+
