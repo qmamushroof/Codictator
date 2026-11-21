@@ -164,3 +164,51 @@ test("[§4.7.2] dangerous-shell judges a source-file run: shell command that end
 	assert.deepEqual(await judge("shell", `run: async (a, b) =>${NL}`), []);
 	assert.deepEqual(await judge("shell", `run: x =>${NL}`), []);
 });
+
+// BUG-0112: an object literal holding a run: key in a source file is code,
+// not a YAML flow mapping; in a workflow file a flow mapping still fails
+// closed. fd duplications and null devices are not write targets.
+const RUN_OBJECT =
+	"\t\t{ isTty: () => true, run: fakeRun(okProc(), recorded) },";
+
+test("[§4.7.2] dangerous-shell ignores a run: object literal in a source file (BUG-0112)", async () => {
+	for (const file of ["a.ts", "a.js", "a.py", "a.mjs"]) {
+		assert.deepEqual(await judge("shell", `${RUN_OBJECT}${NL}`, file), []);
+	}
+});
+
+test("[§4.7.3] write-confinement ignores a run: object literal in a source file (BUG-0112)", async () => {
+	for (const file of ["a.ts", "a.js", "a.py"]) {
+		assert.deepEqual(await judge("write", `${RUN_OBJECT}${NL}`, file), []);
+	}
+});
+
+test("[§4.7.2] dangerous-shell still fails closed on a workflow flow mapping run: (BUG-0112)", async () => {
+	for (const file of ["ci.yml", "ci.yaml", ".github/workflows/ci.yml"]) {
+		const text = `steps:${NL}  - { name: x, run: echo hi }${NL}`;
+		const shell = await judge("shell", text, file);
+		assert.ok(shell.length > 0, `${file} shell was not judged`);
+		const write = await judge("write", text, file);
+		assert.ok(write.length > 0, `${file} write was not judged`);
+	}
+});
+
+test("[§4.7.3] write-confinement judges fd duplications and null devices as no target (BUG-0112)", async () => {
+	const text = `steps:${NL}  - run: make 2>&1 >/dev/null; echo hi >&2; make 2> NUL${NL}`;
+	assert.deepEqual(await judge("write", text, "ci.yml"), []);
+});
+
+test("[§4.7.3] write-confinement still blocks escapes and .git writes beside null devices (BUG-0112)", async () => {
+	const outside = await judge(
+		"write",
+		`steps:${NL}  - run: make >/dev/null 2>&1 > ../../etc/x${NL}`,
+		"ci.yml",
+	);
+	assert.ok(outside.some((message) => message.includes("escapes")));
+	const git = await judge(
+		"write",
+		`steps:${NL}  - run: make 2>&1 >> .git/hooks/pre-commit${NL}`,
+		"ci.yml",
+	);
+	assert.ok(git.some((message) => message.includes(".git/")));
+});
