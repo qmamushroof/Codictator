@@ -94,10 +94,23 @@ function missingDiscoveryEvidence(task: TaskRecord): Array<string> {
 	return missing;
 }
 
+// SPEC §4.12.2: a chore whose every planned file is manifest-owned runs as
+// guardrail, record phase only; one other path reclassifies it as code.
+function isManifestChore(task: TaskRecord): boolean {
+	return (
+		task.type === "chore" &&
+		task.files.allow.length > 0 &&
+		classifyChange(task.files.allow) === "chore"
+	);
+}
+
 // SPEC §4.12.2: a docs task keeps the docs class only while every planned
 // file is a docs path; one code path reclassifies it as code. The task's
 // own record and review globs under .codictator/ never count.
 function skipsProofs(task: TaskRecord): boolean {
+	if (isManifestChore(task)) {
+		return true;
+	}
 	const planned = task.files.allow.filter(
 		(glob) => !glob.startsWith(".codictator/"),
 	);
@@ -140,6 +153,9 @@ function missingRecordEvidence(task: TaskRecord): Array<string> {
 }
 
 function missingExitEvidence(task: TaskRecord, phase: string): Array<string> {
+	if (isManifestChore(task) && phase !== "record") {
+		return [];
+	}
 	switch (phase) {
 		case "discovery":
 			return missingDiscoveryEvidence(task);

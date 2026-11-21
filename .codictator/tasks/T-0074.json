@@ -1,0 +1,105 @@
+{
+  "acceptanceCriteria": [
+    "a chore limited to manifest-owned files advances to record with no tests or proofs",
+    "a chore that plans a code file still owes every gate"
+  ],
+  "branch": "fix/chore-short-path",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: create a chore task with files.allow only package.json, advance phase next; planning blocks with CDX-E604 declared tests, red proof. Root cause: phases.ts skipsProofs and missingPlanningEvidence give the short path only to type docs, while SPEC 4.12.2 runs a chore limited to manifest-owned files record phase only.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/workflow/**",
+      "packages/codictator/tests/**",
+      "docs/**"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T15:15:22.930Z",
+    "tree": "6f6485f4eaa5fd0d463c3a4dbce663d75d235df3"
+  },
+  "historyStaged": true,
+  "id": "T-0074",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T15:14:01.310Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T15:14:12.102Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T15:15:18.281Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T15:19:06.331Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T15:24:24.300Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T15:24:25.754Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T15:14:08.948Z",
+    "commit": "36e3a3956631c60601c8647b27cfbaa29c1a81ca",
+    "failing": [
+      "[§4.12.2] a chore limited to manifest-owned files owes nothing before the record phase (BUG-0114)",
+      "[consumer] [§4.12.2] a manifest-only chore walks to record with no tests or proofs (BUG-0114)"
+    ],
+    "tree": "6f6485f4eaa5fd0d463c3a4dbce663d75d235df3"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T15:24:20.681Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0074-r1",
+      "round": 1,
+      "tree": "495415201afb29b338abcf89fd252acd973a1897"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-12-WORKFLOW.md"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/workflow/workflow-gates-chore-class-s412.test.ts",
+      "title": "[§4.12.2] a chore limited to manifest-owned files owes nothing before the record phase (BUG-0114)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-chore-short-path.test.ts",
+      "title": "[consumer] [§4.12.2] a manifest-only chore walks to record with no tests or proofs (BUG-0114)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/workflow/workflow-gates-chore-class-s412.test.ts",
+      "title": "[§4.12.2] a chore whose files.allow touches code files owes every gate (BUG-0114)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/workflow/workflow-gates-chore-class-s412.test.ts",
+      "title": "[§4.12.2] a chore limited to manifest-owned files owes nothing before the record phase (BUG-0114)"
+    }
+  ],
+  "title": "fix(workflow): give a manifest-only chore the record-only short path",
+  "type": "fix",
+  "version": 1
+}
+
