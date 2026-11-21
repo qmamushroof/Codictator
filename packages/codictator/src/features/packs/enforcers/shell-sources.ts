@@ -34,6 +34,14 @@ const CODE_OPENER = /^[([{]$/;
 const CODE_ARROW =
 	/^(?:async\s+)?(?:[A-Za-z_$][\w$]*|\([\w, =.:?[\]]*\))\s*=>$/;
 const CODE_CALL = /^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\([^|&><`{]*$/;
+// A type annotation (BUG-0115): a type name, optionally generic over type
+// names, commas, spaces and brackets (one nested level), optionally an
+// array, then an optional trailing comma. It must end in `>`, `]` or `,`,
+// so a bare word such as `reboot` stays shell. A redirect needs a space or
+// an operator outside the brackets, so `Record<string, unknown>,` is a type
+// and `cat <a >b,` is not.
+const CODE_TYPE =
+	/^(?=.*[>\],]$)[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*(?:<(?:[\w$., [\]]|<[\w$., [\]]*>)*>)?(?:\[\])*,?$/;
 const SHELL_SUBST = "$(";
 
 function isSourceFile(path: string): boolean {
@@ -47,6 +55,7 @@ export function isCodeShape(text: string, file: string): boolean {
 	return (
 		CODE_OPENER.test(text) ||
 		CODE_ARROW.test(text) ||
+		CODE_TYPE.test(text) ||
 		(CODE_CALL.test(text) &&
 			!text.includes(SHELL_SUBST) &&
 			!text.slice(0, -1).includes(";"))
