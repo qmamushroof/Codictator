@@ -42,7 +42,7 @@ A task is `.codictator/tasks/<id>.json` (schema §7.11), committed, created by `
 | L3 | `pre-commit`: active task in phase ≥ record; `commit-msg`: history entry (§4.9) |
 | L4 | Every task touched in the PR has evidence for every gate of its class; red proofs re-run (§4.10.2) |
 
-**Judged tasks.** Every hook judges the branch's active task (§4.12.1) plus each task whose record the judged scope adds or changes. A `files.allow` claim is permission, not ownership, so a task that merely claims a path is never judged for it.
+**Judged tasks.** Every hook judges the branch's active task (§4.12.1) plus each task whose record the judged scope adds or changes. A `files.allow` claim is permission, not ownership, so a task that merely claims a path is never judged for it. `verify --all` judges the tree, not a change: it has no diff, so `core/writes-within-plan` and every other per-task write-plan judgement that needs a diff judge nothing under `--all`.
 
 **Evidence, not phase.** The TDD rules judge the record's evidence, never the phase it claims:
 
