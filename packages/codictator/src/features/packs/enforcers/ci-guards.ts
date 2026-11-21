@@ -21,6 +21,8 @@ import {
 	parseMarkers,
 	scopeMarkerTexts,
 } from "./health-measures.ts";
+import { forEachEffectiveText } from "./pre-tool-files.ts";
+import { scopeMarkerRule } from "./scope-text-rule.ts";
 
 // SPEC §4.15.2 core/ci-present: no committed workflow flags; a named one
 // stays quiet.
@@ -29,35 +31,57 @@ export function resolveCiPresent(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const workflow = markers.get("workflow") ?? "";
-				if (workflow === "" || workflow === "missing") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: "no CI workflow committed",
-							vars: { path: file, detail: "the CI workflow" },
-						}),
-					);
-				}
+	return scopeMarkerRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, markers, findings) => {
+			const workflow = markers.get("workflow") ?? "";
+			if (workflow === "" || workflow === "missing") {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: "no CI workflow committed",
+						vars: { path: file, detail: "the CI workflow" },
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
 	);
 }
 
 // SPEC §4.15.2 core/ci-actions-pinned: every uses: in every workflow is a
 // 40-hex SHA (EC-5). A ref without @, or with anything but a full SHA,
-// flags; containers and images stay with the ci module's read.
+// flags; local `./` actions, `docker://` images and containers stay with the
+// ci module's read. A fixture marker report and a real workflow file
+// (`.github/workflows/*.yml|yaml`) are judged alike, at L1 on the text the
+// call carries.
+const USES_LINE = /^[ \t]*(?:-[ \t]+)?uses[ \t]*:[ \t]*["']?([^\s"'#]+)/i;
+
+function isWorkflowFile(file: string): boolean {
+	return /^\.github\/workflows\/[^/]+\.ya?ml$/.test(file);
+}
+
+function unpinnedUses(text: string): Array<string> {
+	const found: Array<string> = [];
+	for (const line of text.split("\n")) {
+		const uses = USES_LINE.exec(line)?.[1];
+		if (
+			uses === undefined ||
+			uses.startsWith("./") ||
+			uses.startsWith("docker://")
+		) {
+			continue;
+		}
+		const at = uses.indexOf("@");
+		const ref = at >= 0 ? uses.slice(at + 1) : "";
+		if (!/^[0-9a-f]{40}$/.test(ref)) {
+			found.push(uses);
+		}
+	}
+	return found;
+}
+
 export function resolveCiActionsPinned(
 	decl: EnforcerDecl,
 	rule: PackRule,
@@ -67,33 +91,27 @@ export function resolveCiActionsPinned(
 	return ok(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				const text = await loadScopeText(ports, binding, file, findings);
-				if (text === undefined || !isMarkerFile(file)) {
-					continue;
-				}
-				for (const line of text.split("\n")) {
-					const colon = line.indexOf(":");
-					if (colon < 0) {
-						continue;
+			await forEachEffectiveText(
+				ctx,
+				ports,
+				binding,
+				findings,
+				"lines",
+				(entry, text) => {
+					if (!isMarkerFile(entry.path) && !isWorkflowFile(entry.path)) {
+						return;
 					}
-					if (line.slice(0, colon).trim().toLowerCase() !== "uses") {
-						continue;
-					}
-					const uses = line.slice(colon + 1).trim();
-					const at = uses.indexOf("@");
-					const ref = at >= 0 ? uses.slice(at + 1) : "";
-					if (/^[0-9a-f]{40}$/.test(ref) !== true) {
+					for (const uses of unpinnedUses(text)) {
 						findings.push(
 							findingFor(binding, {
-								path: file,
+								path: entry.path,
 								message: `${uses} pins no full commit SHA`,
-								vars: { path: file, value: uses },
+								vars: { path: entry.path, value: uses },
 							}),
 						);
 					}
-				}
-			}
+				},
+			);
 			return findings;
 		}),
 	);

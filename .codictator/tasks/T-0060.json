@@ -1,0 +1,170 @@
+{
+  "acceptanceCriteria": [
+    "red-before-green and diagnose-before-fix block a live L1 source write while the active task holds no proof or diagnosis, in any phase",
+    "ci-actions-pinned, file-naming and bug-rows-immutable judge real L1 writes",
+    "the firing test silent list shrinks by the landed write-probe rules"
+  ],
+  "branch": "work/firing-l1-write",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: node --test consumer-enforcement-firing-l1.test.ts reports 17 silent L1 rules; 11 are write probes whose blocking reply lists workflow-gates and writes-within-plan but not the target (the engine reports every finding, so the target never evaluated to a finding). Root causes: (1) core/red-before-green and core/diagnose-before-fix real judging gates on implementationBegan(task), but SPEC 4.12.3 says a live L1 source write is judged on evidence in any phase. (2) core/ci-actions-pinned judges only marker files, never a real workflow. (3) core/file-naming reads only sample.txt markers, never a real path. (4) core/bug-rows-immutable is marker-only though checkBugRowsImmutable exists. (5) core/arch-module-mapped, arch-boundaries, arch-public-entry, arch-no-cycles are marker-only and the shared probe write-preproof has no import, so no real judging exists at L1. (6) Probe defects: write-ts-phantom imports a relative path (never phantom), write-package carries no two packages of one capability.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/**",
+      "packages/codictator/tests/**",
+      "docs/BUGS/2026.md",
+      "docs/HISTORY/2026-11-21.md",
+      "docs/BUGS/2026-2.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T03:09:06.845Z",
+    "tree": "bd4a921957c4f29d7f565db78f3786f8cef6dc63"
+  },
+  "historyStaged": true,
+  "id": "T-0060",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T02:59:33.981Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T03:04:17.794Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T03:09:07.346Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T03:17:21.343Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T03:21:07.801Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T03:21:09.085Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T03:04:17.220Z",
+    "commit": "80e94c8a4d9b87a9eb0caad819d4bd95217e2abc",
+    "failing": [
+      "[consumer] the write-probe L1 floor rules fire on their hook probes",
+      "[§4.12.3] L1 red-before-green blocks a planning source write while no red proof is held",
+      "[§4.12.3] L1 diagnose-before-fix blocks a fix-task source write while no diagnosis is held",
+      "[§4.15.2] L1 ci-actions-pinned judges a real workflow write",
+      "[§5.11] L1 file-naming judges the real path of a write",
+      "[§4.9.4] L1 bug-rows-immutable judges the proposed registry against HEAD",
+      "[§4.11.5 EC-8] L1 arch-module-mapped blocks a write outside every module",
+      "[§4.11.5 EC-2] L1 arch-boundaries blocks an import along an undeclared edge",
+      "[§4.11.5 EC-1] L1 arch-public-entry blocks a deep import past the module entry",
+      "[§4.11.5 EC-3] L1 arch-no-cycles blocks an edge that closes a module cycle"
+    ],
+    "tree": "bd4a921957c4f29d7f565db78f3786f8cef6dc63"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T03:21:07.203Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0060-r1",
+      "round": 1,
+      "tree": "3d5f17aed457879d5581ef7c5180416f4ce488ec"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T03:23:55.299Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0060-r2",
+      "round": 2,
+      "tree": "acf740c13da4d46026a67449a82124f4e7c92929"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T03:26:54.478Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0060-r3",
+      "round": 3,
+      "tree": "4723df29ca6a5088317964c87e4089a67776bfd1"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-12-WORKFLOW.md",
+    "docs/SPEC/04-09-RECORDS.md",
+    "docs/SPEC/04-15-CI.md",
+    "docs/SPEC/04-11-ARCHITECTURE-GUARDS.md",
+    "docs/SPEC/05-CORE-RULES.md"
+  ],
+  "tests": [
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-firing-l1-write.test.ts",
+      "title": "[consumer] the write-probe L1 floor rules fire on their hook probes"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-write-evidence.test.ts",
+      "title": "[§4.12.3] L1 red-before-green blocks a planning source write while no red proof is held"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-write-evidence.test.ts",
+      "title": "[§4.12.3] L1 diagnose-before-fix blocks a fix-task source write while no diagnosis is held"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-write-evidence.test.ts",
+      "title": "[§4.15.2] L1 ci-actions-pinned judges a real workflow write"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-write-evidence.test.ts",
+      "title": "[§5.11] L1 file-naming judges the real path of a write"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-write-evidence.test.ts",
+      "title": "[§4.9.4] L1 bug-rows-immutable judges the proposed registry against HEAD"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-arch-live.test.ts",
+      "title": "[§4.11.5 EC-8] L1 arch-module-mapped blocks a write outside every module"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-arch-live.test.ts",
+      "title": "[§4.11.5 EC-2] L1 arch-boundaries blocks an import along an undeclared edge"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-arch-live.test.ts",
+      "title": "[§4.11.5 EC-1] L1 arch-public-entry blocks a deep import past the module entry"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/packs-l1-arch-live.test.ts",
+      "title": "[§4.11.5 EC-3] L1 arch-no-cycles blocks an edge that closes a module cycle"
+    }
+  ],
+  "title": "fix(packs): judge L1 writes for the write-probe floor rules",
+  "type": "fix",
+  "version": 1
+}
+
