@@ -1,0 +1,144 @@
+{
+  "acceptanceCriteria": [
+    "a chore planning only manifest-listed files advances with no tests or proofs",
+    "a chore planning a file the manifest does not list still owes every gate",
+    "a missing or tampered manifest falls back to the fixed manifest-owned set"
+  ],
+  "branch": "fix/manifest-owned-classifier",
+  "bugRowUpdated": true,
+  "diagnosis": "Reproduce: a chore task with files.allow AGENTS.md and .claude/** (both listed in .codictator/manifest.json) at planning; task phase next fails CDX-E604 declared tests, red proof. Root cause: classifyChange in features/workflow/writes.ts hard-codes package.json, package-lock.json, .nvmrc and .codictator/.githooks/.husky prefixes and assumes that set is all of SPEC 4.14.1 manifest-owned; the manifest-listed paths are never consulted, so isManifestChore in phases.ts is false for regen output. SPEC matches intent; code is narrower.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/cli/task-phases.ts",
+      "packages/codictator/src/features/integrity/index.ts",
+      "packages/codictator/src/features/integrity/manifest-owned.ts",
+      "packages/codictator/src/features/packs/enforcers/workflow-real.ts",
+      "packages/codictator/src/features/workflow/phases.ts",
+      "packages/codictator/src/features/workflow/writes.ts",
+      "packages/codictator/tests/acceptance/consumer-manifest-owned-chore.test.ts",
+      "packages/codictator/tests/unit/integrity/manifest-owned-s414.test.ts",
+      "packages/codictator/tests/unit/workflow/workflow-manifest-owned-s414.test.ts",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-21.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T16:58:46.720Z",
+    "tree": "727241e46253773764a89ac7876b993b64c9dd90"
+  },
+  "historyStaged": true,
+  "id": "T-0080",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T16:58:21.503Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T16:58:37.335Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T17:08:33.761Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T17:08:36.309Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T17:08:43.013Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T17:08:43.679Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T16:58:33.841Z",
+    "commit": "ef2fa6fd6725a712625df1a29b6f94fd0077c493",
+    "failing": [
+      "[consumer] [§4.14.1] a chore staging manifest-listed files walks to record with no tests or proofs (BUG-0116)",
+      "[§4.14.1] a path the manifest lists is manifest-owned, an unlisted one is not (BUG-0116)",
+      "[§4.14.1] a plan glob counts only with a literal prefix over a listed path (BUG-0116)",
+      "[§4.12.2] a chore planning only manifest-listed files owes nothing before record (BUG-0116)",
+      "[§4.14.1] manifestPathsOf lists the artifact paths sorted and unique (BUG-0116)",
+      "[§4.14.1] an unparseable or tampered manifest lists nothing (BUG-0116)"
+    ],
+    "tree": "727241e46253773764a89ac7876b993b64c9dd90"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T17:08:40.018Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0080-r1",
+      "round": 1,
+      "tree": "1be25f87e238c10ed1d91e867543c8de696d95ae"
+    }
+  ],
+  "spec": [
+    "docs/SPEC/04-14-INTEGRITY.md",
+    "docs/SPEC/04-12-WORKFLOW.md"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/workflow/workflow-manifest-owned-s414.test.ts",
+      "title": "[§4.14.1] a path the manifest lists is manifest-owned, an unlisted one is not (BUG-0116)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/workflow/workflow-manifest-owned-s414.test.ts",
+      "title": "[§4.12.2] a chore planning only manifest-listed files owes nothing before record (BUG-0116)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/workflow/workflow-manifest-owned-s414.test.ts",
+      "title": "[§4.14.1] a plan glob counts only with a literal prefix over a listed path (BUG-0116)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/workflow/workflow-manifest-owned-s414.test.ts",
+      "title": "[§4.14.1] with no manifest paths only the fixed manifest-owned set counts (BUG-0116)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/workflow/workflow-manifest-owned-s414.test.ts",
+      "title": "[§4.12.2] a chore planning a file the manifest does not list still owes every gate (BUG-0116)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/integrity/manifest-owned-s414.test.ts",
+      "title": "[§4.14.1] manifestPathsOf lists the artifact paths sorted and unique (BUG-0116)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/integrity/manifest-owned-s414.test.ts",
+      "title": "[§4.14.1] an unparseable or tampered manifest lists nothing (BUG-0116)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-manifest-owned-chore.test.ts",
+      "title": "[consumer] [§4.14.1] a chore staging manifest-listed files walks to record with no tests or proofs (BUG-0116)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-manifest-owned-chore.test.ts",
+      "title": "[consumer] [§4.14.1] a chore also planning a file the manifest does not list still owes the planning evidence (BUG-0116)"
+    }
+  ],
+  "title": "classify manifest-listed files as manifest-owned",
+  "type": "fix",
+  "version": 1
+}
+

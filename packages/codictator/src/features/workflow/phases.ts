@@ -46,6 +46,8 @@ export function validatePhaseOrder(order: ReadonlyArray<string>): boolean {
 export interface PhaseGateDetail {
 	readonly openTasks?: ReadonlyArray<string>;
 	readonly phaseOrder?: ReadonlyArray<string>;
+	// SPEC §4.14.1: paths the guardrail manifest lists, read by the caller.
+	readonly manifestPaths?: ReadonlyArray<string>;
 }
 
 function e105UnknownPhase(phase: string): Finding {
@@ -96,19 +98,25 @@ function missingDiscoveryEvidence(task: TaskRecord): Array<string> {
 
 // SPEC §4.12.2: a chore whose every planned file is manifest-owned runs as
 // guardrail, record phase only; one other path reclassifies it as code.
-function isManifestChore(task: TaskRecord): boolean {
+function isManifestChore(
+	task: TaskRecord,
+	manifestPaths: ReadonlyArray<string>,
+): boolean {
 	return (
 		task.type === "chore" &&
 		task.files.allow.length > 0 &&
-		classifyChange(task.files.allow) === "chore"
+		classifyChange(task.files.allow, manifestPaths) === "chore"
 	);
 }
 
 // SPEC §4.12.2: a docs task keeps the docs class only while every planned
 // file is a docs path; one code path reclassifies it as code. The task's
 // own record and review globs under .codictator/ never count.
-function skipsProofs(task: TaskRecord): boolean {
-	if (isManifestChore(task)) {
+function skipsProofs(
+	task: TaskRecord,
+	manifestPaths: ReadonlyArray<string>,
+): boolean {
+	if (isManifestChore(task, manifestPaths)) {
 		return true;
 	}
 	const planned = task.files.allow.filter(
@@ -120,7 +128,10 @@ function skipsProofs(task: TaskRecord): boolean {
 	);
 }
 
-function missingPlanningEvidence(task: TaskRecord): Array<string> {
+function missingPlanningEvidence(
+	task: TaskRecord,
+	manifestPaths: ReadonlyArray<string>,
+): Array<string> {
 	const missing: Array<string> = [];
 	if (task.files.allow.length === 0) {
 		missing.push("files.allow globs");
@@ -129,7 +140,7 @@ function missingPlanningEvidence(task: TaskRecord): Array<string> {
 		missing.push("acceptance criteria");
 	}
 	// SPEC §4.12.2 change classes: docs skips the red and green proofs.
-	if (skipsProofs(task)) {
+	if (skipsProofs(task, manifestPaths)) {
 		return missing;
 	}
 	if ((task.tests ?? []).length === 0) {
@@ -152,17 +163,21 @@ function missingRecordEvidence(task: TaskRecord): Array<string> {
 	return missing;
 }
 
-function missingExitEvidence(task: TaskRecord, phase: string): Array<string> {
-	if (isManifestChore(task) && phase !== "record") {
+function missingExitEvidence(
+	task: TaskRecord,
+	phase: string,
+	manifestPaths: ReadonlyArray<string>,
+): Array<string> {
+	if (isManifestChore(task, manifestPaths) && phase !== "record") {
 		return [];
 	}
 	switch (phase) {
 		case "discovery":
 			return missingDiscoveryEvidence(task);
 		case "planning":
-			return missingPlanningEvidence(task);
+			return missingPlanningEvidence(task, manifestPaths);
 		case "validation":
-			return !skipsProofs(task) && task.greenProof === undefined
+			return !skipsProofs(task, manifestPaths) && task.greenProof === undefined
 				? ["green proof"]
 				: [];
 		case "review":
@@ -236,7 +251,11 @@ export async function checkPhaseGate(
 		return [e606TwoTasks([], task)];
 	}
 	if (phase !== task.phase) {
-		const missing = missingExitEvidence(task, task.phase);
+		const missing = missingExitEvidence(
+			task,
+			task.phase,
+			detail.manifestPaths ?? [],
+		);
 		if (missing.length > 0) {
 			return [e604MissingGate(task, missing)];
 		}

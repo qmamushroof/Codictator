@@ -33,20 +33,41 @@ function inAllow(path: string, allow: ReadonlyArray<string>): boolean {
 	return allow.some((glob) => globMatch(glob, path));
 }
 
+const FIXED_OWNED = new Set(["package.json", "package-lock.json", ".nvmrc"]);
+const OWNED_DIRS = [".codictator/", ".githooks/", ".husky/"];
+
+// The literal part of a plan entry before its first wildcard.
+function literalPrefix(path: string): string {
+	const at = path.search(/[*?[{]/);
+	return at < 0 ? path : path.slice(0, at);
+}
+
+// SPEC §4.14.1 manifest-owned: the fixed set, or a path (or a plan glob with
+// a literal prefix) that matches a path the manifest lists. A bare wildcard
+// has no prefix and never counts, so `**` or `*.json` stay code.
+function isManifestOwned(
+	path: string,
+	manifestPaths: ReadonlyArray<string>,
+): boolean {
+	if (FIXED_OWNED.has(path) || OWNED_DIRS.some((dir) => path.startsWith(dir))) {
+		return true;
+	}
+	return (
+		literalPrefix(path) !== "" &&
+		manifestPaths.some((listed) => globMatch(path, listed))
+	);
+}
+
 // SPEC §4.12.2 change classes: manifests and lockfiles alone are deps and
 // need no task file; manifest-owned files alone run as guardrail.
-export function classifyChange(files: ReadonlyArray<string>): ChangeClass {
+export function classifyChange(
+	files: ReadonlyArray<string>,
+	manifestPaths: ReadonlyArray<string> = [],
+): ChangeClass {
 	if (files.length === 0) {
 		return "code";
 	}
-	const manifestOwned = (path: string): boolean =>
-		path === "package.json" ||
-		path === "package-lock.json" ||
-		path === ".nvmrc" ||
-		path.startsWith(".codictator/") ||
-		path.startsWith(".githooks/") ||
-		path.startsWith(".husky/");
-	if (files.every((path) => manifestOwned(path))) {
+	if (files.every((path) => isManifestOwned(path, manifestPaths))) {
 		return "chore";
 	}
 	if (files.every((path) => isDocPath(path))) {
