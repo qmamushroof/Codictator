@@ -1,0 +1,104 @@
+{
+  "acceptanceCriteria": [
+    "a merge commit (MERGE_HEAD present) skips the commit-msg history judgement and gets the trailer",
+    "a normal commit without a staged history entry still blocks",
+    "BUG-0079 row marked fixed"
+  ],
+  "branch": "work/serial-queue",
+  "bugRowUpdated": true,
+  "diagnosis": "BUG-0079: runCommitMsg judges the added history entries as staged minus HEAD without detecting a merge in progress, so the merged branch's own entry counts as added and the SPEC 4.9.3 merge-commit exemption is not honoured.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/**",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/*.md",
+      "docs/BUGS/2026.md",
+      "docs/ROADMAP/14-CLOSE-OUT.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-21T02:32:32.588Z",
+    "tree": "569f3ea696bde6ad051593f95891500891c14e72"
+  },
+  "historyStaged": true,
+  "id": "T-0059",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-21T02:31:36.973Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-21T02:32:33.124Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-21T02:38:04.066Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-21T02:38:14.283Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-21T02:38:40.632Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-21T02:38:41.715Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-21T02:32:14.977Z",
+    "commit": "4afd2f0f2f0bcf4ade51c42b5bee0ad295844b2c",
+    "failing": [
+      "[§4.9.3] commit-msg passes a merge commit whose second parent carries its own history entry (BUG-0079)",
+      "[§4.9.3] a git merge --no-ff of a recorded branch commits through the installed commit-msg hook"
+    ],
+    "tree": "569f3ea696bde6ad051593f95891500891c14e72"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-21T02:38:40.101Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0059-r1",
+      "round": 1,
+      "tree": "75098498d79c1f9bb930e7f1f04c9dde45e27391"
+    }
+  ],
+  "spec": [
+    "§4.9.3",
+    "§4.14.4"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/cli/cli-commit-msg-merge.test.ts",
+      "title": "[§4.9.3] commit-msg passes a merge commit whose second parent carries its own history entry (BUG-0079)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-commit-msg-merge.test.ts",
+      "title": "[§4.9.3] commit-msg still blocks a normal commit without a history entry"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/commit-msg-merge-exempt.test.ts",
+      "title": "[§4.9.3] a git merge --no-ff of a recorded branch commits through the installed commit-msg hook"
+    }
+  ],
+  "title": "fix(hooks): commit-msg honours the merge-commit exemption",
+  "type": "fix",
+  "version": 1
+}
+

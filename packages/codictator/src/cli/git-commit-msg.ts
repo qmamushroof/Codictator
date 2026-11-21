@@ -44,13 +44,20 @@ export async function runCommitMsg(
 	) {
 		return ok(0);
 	}
-	const names = await runGitText(ports, [
+	// SPEC §4.9.3 Exempt: a merge commit adds no entry of its own, and the
+	// staged diff against its first parent carries the merged branch's entry,
+	// so an empty staged set skips the history judgement while a merge is in
+	// progress.
+	const merging = await runGitText(ports, [
 		"git",
-		"diff",
-		"--cached",
-		"--name-only",
-		"--",
+		"rev-parse",
+		"-q",
+		"--verify",
+		"MERGE_HEAD",
 	]);
+	const names = merging.ok
+		? ok("")
+		: await runGitText(ports, ["git", "diff", "--cached", "--name-only", "--"]);
 	if (names.ok) {
 		const stagedFiles = names.value
 			.split("\n")
