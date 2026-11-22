@@ -26,6 +26,7 @@ import { handleSetup } from "./setup.ts";
 import type { CommandRequest } from "./shared.ts";
 import { handleTask } from "./task-advance.ts";
 import { handleExplain, handleReplay } from "./transparency.ts";
+import { handleUpgrade } from "./upgrade.ts";
 import { handleWaive } from "./waivers.ts";
 
 export type Handler = (req: CommandRequest) => Promise<Result<number>>;
@@ -34,6 +35,7 @@ export const COMMANDS: Readonly<Record<string, Handler>> = {
 	init: handleInit,
 	setup: handleSetup,
 	"install-hooks": handleInstallHooks,
+	upgrade: handleUpgrade,
 	regen: handleRegen,
 	uninstall: handleUninstall,
 	verify: handleVerify,
@@ -57,4 +59,4 @@ export const COMMANDS: Readonly<Record<string, Handler>> = {
 };
 
 export const USAGE =
-	"usage: codictator <init|setup|install-hooks|regen|uninstall|verify|status|explain|replay|report|context|hook|task|test|review|waive|baseline|deps|remediate|ci|generate|pack|adapter|serve> [--json] [--cwd <path>] [--quiet]";
+	"usage: codictator <init|setup|install-hooks|upgrade|regen|uninstall|verify|status|explain|replay|report|context|hook|task|test|review|waive|baseline|deps|remediate|ci|generate|pack|adapter|serve> [--json] [--cwd <path>] [--quiet]";

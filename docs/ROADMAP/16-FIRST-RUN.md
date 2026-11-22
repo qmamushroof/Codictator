@@ -31,7 +31,7 @@
   - **Task:** `docs`, branch `feat/upgrade-command`.
   - **Do:** record PRD §12 #41; add the SPEC §4.19.2 row, §4.19.7 EC-16..21 and §4.19.8; add `CDX-E012` to SPEC §8.1; note the config exception in SPEC §4.2 and the bot rule in SPEC §4.8.6.
   - **Verify:** fresh-session docs review; no doc calls `config.codictator` human-edit-only without the `upgrade` exception.
-- [ ] **16.0f** Build `upgrade`.
+- [x] **16.0f** Build `upgrade`.
   - **Task:** `feature`, branch `feat/upgrade-command`.
   - **Do:** tests for SPEC §4.19.7 EC-16..21 entered red, then the command inside `cli` reusing the setup install helpers; the install must not match the uninstall shapes of SPEC §4.14.3.
   - **Verify:** `npm run ledger -- --covers "§4.19 EC-16..21"` exits 0; the always-set is green.

@@ -14,7 +14,7 @@
   },
   "historyStaged": true,
   "id": "T-0108",
-  "phase": "record",
+  "phase": "integrate",
   "phases": [
     {
       "enteredAt": "2026-11-22T14:50:23.732Z",
@@ -40,6 +40,11 @@
       "enteredAt": "2026-11-22T14:55:49.879Z",
       "evidence": "codictator task phase next",
       "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T14:56:16.217Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
     }
   ],
   "reviews": [

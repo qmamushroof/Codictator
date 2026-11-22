@@ -1,0 +1,198 @@
+{
+  "acceptanceCriteria": [
+    "upgrade bumps pin, config.codictator and lockfile then regen and verify; refuses downgrades; no-op at same version; agents allowed; E012 and E401 mapped; restore on install failure"
+  ],
+  "branch": "feat/upgrade-command",
+  "files": {
+    "allow": [
+      "packages/codictator/src/cli/upgrade.ts",
+      "packages/codictator/src/cli/commands.ts",
+      "packages/codictator/src/features/audit/explain-table.ts",
+      "packages/codictator/src/features/audit/explain-table-tail.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-22.md",
+      "docs/ROADMAP/16-FIRST-RUN.md",
+      ".codictator/tasks/T-0109.json",
+      ".codictator/reviews/T-0109-r1.json",
+      ".codictator/manifest.json",
+      "packages/codictator/src/cli/setup-install.ts",
+      "packages/codictator/src/cli/upgrade-pin.ts",
+      ".codictator/tasks/T-0108.json",
+      "packages/codictator/src/cli/upgrade-registry.ts",
+      "packages/codictator/src/cli/upgrade.ts",
+      ".codictator/reviews/T-0109-r2.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T15:55:45.048Z",
+    "tree": "e2d6b5c07a7acb2139025a90ba43b318be27ed92"
+  },
+  "historyStaged": true,
+  "id": "T-0109",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T14:58:29.768Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T14:58:56.325Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T15:19:39.752Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T15:30:52.970Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T15:42:24.477Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T15:57:18.808Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T14:58:52.909Z",
+    "commit": "553cf6b64fb98175602fe57fa6812af181c2beae",
+    "failing": [
+      "[§4.19.8] upgrade bumps the root pin, config.codictator and the lockfile, then regen and verify run under the new engine",
+      "[§4.19.8] upgrade edits the tool manifest and runs npm in the tool dir when the root has no pin",
+      "[§4.19 EC-17] upgrade to the pinned version is a no-op with nothing written",
+      "[§4.19 EC-19] upgrade --to a version the registry does not publish is CDX-E012 and writes nothing",
+      "[§4.19 EC-20] an unreachable registry at the lookup is CDX-E401 and writes nothing",
+      "[§4.19 EC-20] a registry outage during the install restores the manifest, config and lockfile bytes",
+      "[§4.19 EC-21] upgrade without a config is CDX-E108 and without an engine pin is CDX-E003",
+      "[§4.19 EC-1] upgrade refuses an unknown flag or a positional with its usage line",
+      "[§4.19 EC-16] upgrade --to an older version exits 2 with CDX-E012 and leaves every file as it was",
+      "[§4.19 EC-17] upgrade --to the pinned version says already at it and exits 0",
+      "[§4.19 EC-18] an agent session runs upgrade and is not refused as a human-only command",
+      "[§4.19 EC-19] upgrade --to a non-exact or prerelease version exits 2 with CDX-E012",
+      "[§4.19 EC-21] upgrade in a repo with no config exits 3 with CDX-E108"
+    ],
+    "tree": "e2d6b5c07a7acb2139025a90ba43b318be27ed92"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T15:31:43.751Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "reviewer-T-0109-r1-k7q2x",
+      "round": 1,
+      "tree": "be4b2e027d0acdc5c5dd7d308aab60a2018f5638"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T15:57:06.622Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "reviewer-T-0109-r2",
+      "round": 2,
+      "tree": "2be95e13414b7c80a533220dd67c2b22fd83649e"
+    }
+  ],
+  "spec": [
+    "SPEC §4.19.8",
+    "SPEC §4.19.7",
+    "SPEC §8.1"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade.test.ts",
+      "title": "[§4.19.8] upgrade bumps the root pin, config.codictator and the lockfile, then regen and verify run under the new engine"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade.test.ts",
+      "title": "[§4.19.8] upgrade edits the tool manifest and runs npm in the tool dir when the root has no pin"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade.test.ts",
+      "title": "[§4.19 EC-17] upgrade to the pinned version is a no-op with nothing written"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade.test.ts",
+      "title": "[§4.19 EC-19] upgrade --to a version the registry does not publish is CDX-E012 and writes nothing"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade.test.ts",
+      "title": "[§4.19 EC-20] an unreachable registry at the lookup is CDX-E401 and writes nothing"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade.test.ts",
+      "title": "[§4.19 EC-20] a registry outage during the install restores the manifest, config and lockfile bytes"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade.test.ts",
+      "title": "[§4.19 EC-21] upgrade without a config is CDX-E108 and without an engine pin is CDX-E003"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade.test.ts",
+      "title": "[§4.19 EC-1] upgrade refuses an unknown flag or a positional with its usage line"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/upgrade-command.test.ts",
+      "title": "[§4.19 EC-16] upgrade --to an older version exits 2 with CDX-E012 and leaves every file as it was"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/upgrade-command.test.ts",
+      "title": "[§4.19 EC-17] upgrade --to the pinned version says already at it and exits 0"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/upgrade-command.test.ts",
+      "title": "[§4.19 EC-18] an agent session runs upgrade and is not refused as a human-only command"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/upgrade-command.test.ts",
+      "title": "[§4.19 EC-19] upgrade --to a non-exact or prerelease version exits 2 with CDX-E012"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/upgrade-command.test.ts",
+      "title": "[§4.19 EC-21] upgrade in a repo with no config exits 3 with CDX-E108"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade-failures.test.ts",
+      "title": "[§4.19.8] a registry host off the allowlist is CDX-E702 and writes nothing"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade-failures.test.ts",
+      "title": "[§4.19.8] an npm failure that is not an outage is CDX-E003 and restores every file"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-upgrade-failures.test.ts",
+      "title": "[§4.19.8] the new engine's regen and verify exit codes become the upgrade's exit code"
+    }
+  ],
+  "title": "feat(cli): add the upgrade command",
+  "type": "feature",
+  "version": 1
+}
+

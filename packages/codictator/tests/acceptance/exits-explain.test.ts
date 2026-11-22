@@ -210,8 +210,8 @@ test("[§8.2] exit 7 on an internal error", async () => {
 	}
 });
 
-// SPEC §8.1: 58 explain targets: 53 explicit rows plus the E211-E216
-// self-test-failure range (§4.4.4), i.e. E001, E002, E003, E010, E011,
+// SPEC §8.1: 59 explain targets: 54 explicit rows plus the E211-E216
+// self-test-failure range (§4.4.4), i.e. E001, E002, E003, E010, E011, E012,
 // E101-E110, E201-E210, E211-E216, E301, E302, E303, E305, E306, E401,
 // E501, E503, E601, E602, E604-E609, E701, E702, E703, E801, E851-E854,
 // E901, E902, E903. Gaps (E304, E502, E603) are unassigned, never skipped.
@@ -221,6 +221,7 @@ const explainCodes: ReadonlyArray<string> = [
 	"CDX-E003",
 	"CDX-E010",
 	"CDX-E011",
+	"CDX-E012",
 	"CDX-E101",
 	"CDX-E102",
 	"CDX-E103",

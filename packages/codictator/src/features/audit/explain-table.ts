@@ -54,6 +54,12 @@ export const ERROR_ROWS_HEAD: ReadonlyArray<ErrorRow> = [
 		"Install the pack version the event records, then rerun codictator replay <eventId>.",
 	),
 	row(
+		"CDX-E012",
+		2,
+		"Upgrade target refused: older than the pinned engine, or not an exact published stable version",
+		"Pass an exact stable version at or above the pinned one, or omit --to for the npm latest.",
+	),
+	row(
 		"CDX-E101",
 		3,
 		"Config missing, unparseable or schema-invalid",
