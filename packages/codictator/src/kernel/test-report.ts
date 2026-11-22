@@ -55,30 +55,28 @@ function junitOutcome(inner: string): "passed" | "failed" | "skipped" {
 	return "passed";
 }
 
+export function junitCase(
+	tag: string,
+	outcome: "passed" | "failed" | "skipped",
+): TestCaseResult {
+	const attrs = attributes(tag);
+	const name = attrs.get("name") ?? "";
+	const classname = attrs.get("classname") ?? "";
+	return {
+		id: classname === "" ? name : `${classname}#${name}`,
+		title: name,
+		outcome,
+	};
+}
+
 function readJUnit(xml: string): Array<TestCaseResult> {
-	const cases: Array<TestCaseResult> = [];
 	const selfClosed = /<testcase\b([^>]*?)\/>/g;
-	for (const match of xml.matchAll(selfClosed)) {
-		const attrs = attributes(match[1] ?? "");
-		const name = attrs.get("name") ?? "";
-		const classname = attrs.get("classname") ?? "";
-		cases.push({
-			id: classname === "" ? name : `${classname}#${name}`,
-			title: name,
-			outcome: "passed",
-		});
-	}
-	const stripped = xml.replace(selfClosed, "");
 	const paired = /<testcase\b([^>]*)>([\s\S]*?)<\/testcase>/g;
-	for (const match of stripped.matchAll(paired)) {
-		const attrs = attributes(match[1] ?? "");
-		const name = attrs.get("name") ?? "";
-		const classname = attrs.get("classname") ?? "";
-		cases.push({
-			id: classname === "" ? name : `${classname}#${name}`,
-			title: name,
-			outcome: junitOutcome(match[2] ?? ""),
-		});
+	const cases = [...xml.matchAll(selfClosed)].map((match) =>
+		junitCase(match[1] ?? "", "passed"),
+	);
+	for (const match of xml.replace(selfClosed, "").matchAll(paired)) {
+		cases.push(junitCase(match[1] ?? "", junitOutcome(match[2] ?? "")));
 	}
 	return cases;
 }
