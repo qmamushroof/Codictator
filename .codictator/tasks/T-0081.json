@@ -1,0 +1,67 @@
+{
+  "acceptanceCriteria": [
+    "SPEC §4.9.2 excludes manifest-listed files from core/doc-single-owner, citing §4.14.1"
+  ],
+  "branch": "fix/doc-single-owner-generated",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-09-RECORDS.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0081",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T01:13:23.348Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T01:13:26.366Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:13:26.742Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:13:32.967Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T01:13:40.356Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T01:13:41.150Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T01:13:39.978Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0081-r1",
+      "round": 1,
+      "tree": "dad739e149bb477ecaed3eb14eb87b5f757423d7"
+    }
+  ],
+  "spec": [
+    "SPEC §4.9.2",
+    "SPEC §4.14.1"
+  ],
+  "title": "exempt manifest-listed files from doc-single-owner",
+  "type": "docs",
+  "version": 1
+}
+
