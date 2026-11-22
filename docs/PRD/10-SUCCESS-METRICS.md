@@ -14,7 +14,7 @@ Every metric names its measurement source. All sources are local or in the targe
 | Dependencies | Known-vulnerable dependencies; share at latest stable; median lag | Zero; up; down | Measures F3 | Dependency check report (L4, L5) |
 | Health | **Ratchet totals** per metric | Monotonic down | Measures continuous improvement (§6 P9) | Committed baseline and its history |
 | Integrity | Tamper and drift events; time from event to restored guardrail | Zero after adoption; down | Measures resistance to disabling | Integrity check results (L3, L4) |
-| Meta-first | Muse Code and OpenCode adapter layer coverage — layers enforced natively over layers the harness exposes | 100% | Muse Code is the primary target and OpenCode the dogfooding harness (§12 #21, #30) | Adapter capability declarations checked by adapter fixtures in CI |
+| Adapter coverage | Per supported harness, adapter layer coverage — layers enforced natively over layers the harness exposes | 100% | Every harness is supported equally (§12 #30) | Adapter capability declarations checked by adapter fixtures in CI |
 | Rule quality | Rules with an enforcer and a violating fixture that is caught | 100% | §6 P3 | Pack self-test in CI |
 | Overhead | p95 latency of L1 and L3 checks | Within budget | Slow guards get bypassed | Local event log timings |
 | Adoption | Time from install to first green verify on a fresh repo | Down | Friction decides whether anyone keeps it | Install command timing in the event log |
