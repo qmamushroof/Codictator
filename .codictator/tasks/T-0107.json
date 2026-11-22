@@ -1,0 +1,64 @@
+{
+  "acceptanceCriteria": [
+    "three open bug rows BUG-0119..0121 in docs/BUGS/2026-7.md"
+  ],
+  "branch": "feat/upgrade-command",
+  "files": {
+    "allow": [
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-22.md",
+      ".codictator/**",
+      ".codictator/reviews/T-0107-r1.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0107",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T14:46:17.513Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T14:46:26.191Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T14:46:29.308Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T14:47:38.437Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T14:48:56.160Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T14:48:52.241Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0107-r1",
+      "round": 1,
+      "tree": "6313737262768aed073e9eb21bbff4c36f0fcd91"
+    }
+  ],
+  "spec": [
+    "SPEC §4.9.4",
+    "SPEC §7.7"
+  ],
+  "title": "file bug rows for regen files, prompt hook, guard-removal",
+  "type": "docs",
+  "version": 1
+}
+
