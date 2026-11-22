@@ -22,22 +22,22 @@ Each adapter ships `capabilities` (schema §7.9): per layer `native | partial | 
 
 ## 4.5.3 Event mapping
 
-| Normalised (§7.8) | Muse Code | OpenCode | Claude Code | Codex CLI | Copilot | Cursor (P1) | Gemini CLI (P1) |
+| Normalised (§7.8) | Claude Code | Codex CLI | Copilot | Muse Code | OpenCode | Cursor (P1) | Gemini CLI (P1) |
 |---|---|---|---|---|---|---|---|
-| `session.start` | `SessionStart` (`source` values unverified) | `session.created` event (observe only) | `SessionStart` | `SessionStart` | `sessionStart` | `sessionStart` | `SessionStart` |
-| `prompt.submit` | `UserPromptSubmit` | `chat.message`; context delivered by `experimental.chat.system.transform` | `UserPromptSubmit` | `UserPromptSubmit` | `userPromptSubmitted` | `beforeSubmitPrompt` | `BeforeAgent` |
-| `tool.pre.*` | `PreToolUse` | `tool.execute.before` | `PreToolUse` | `PreToolUse` | `preToolUse` | `preToolUse`, `beforeShellExecution`, `beforeReadFile`, `beforeMCPExecution` | `BeforeTool` |
-| `tool.post.write` | `PostToolUse` (feedback only) | `tool.execute.after` | `PostToolUse` | `PostToolUse` | `postToolUse` | `afterFileEdit` | `AfterTool` |
-| `compact.post` | `PostCompact` | `experimental.session.compacting` (adds to the compaction prompt) | `SessionStart` source `compact` | unverified | — | — | unverified |
-| `subagent.start` | `SubagentStart` | — | `SubagentStart` | — | — | unverified | — |
-| `stop` | `Stop` | `session.idle` event (observe only) | `Stop` | `Stop` | — | `stop` | `AfterAgent` |
-| usage for budgets | `PostLLMCall` payload (unverified) | `message.updated` token fields (unverified) | transcript usage lines | unverified | — | — | unverified |
+| `session.start` | `SessionStart` | `SessionStart` | `sessionStart` | `SessionStart` (`source` values unverified) | `session.created` event (observe only) | `sessionStart` | `SessionStart` |
+| `prompt.submit` | `UserPromptSubmit` | `UserPromptSubmit` | `userPromptSubmitted` | `UserPromptSubmit` | `chat.message`; context delivered by `experimental.chat.system.transform` | `beforeSubmitPrompt` | `BeforeAgent` |
+| `tool.pre.*` | `PreToolUse` | `PreToolUse` | `preToolUse` | `PreToolUse` | `tool.execute.before` | `preToolUse`, `beforeShellExecution`, `beforeReadFile`, `beforeMCPExecution` | `BeforeTool` |
+| `tool.post.write` | `PostToolUse` | `PostToolUse` | `postToolUse` | `PostToolUse` (feedback only) | `tool.execute.after` | `afterFileEdit` | `AfterTool` |
+| `compact.post` | `SessionStart` source `compact` | unverified | — | `PostCompact` | `experimental.session.compacting` (adds to the compaction prompt) | — | unverified |
+| `subagent.start` | `SubagentStart` | — | — | `SubagentStart` | — | unverified | — |
+| `stop` | `Stop` | `Stop` | — | `Stop` | `session.idle` event (observe only) | `stop` | `AfterAgent` |
+| usage for budgets | transcript usage lines | unverified | — | `PostLLMCall` payload (unverified) | `message.updated` token fields (unverified) | — | unverified |
 
 The normaliser maps tool names to `kind` (`write`, `shell`, `read`, `search`, `web`, `mcp`, `task`, `other`) through a per-adapter table; an unknown tool name maps to `other` and is evaluated by `tool.pre.other` rules, so a new harness tool is still seen.
 
 ## 4.5.4 Harness adapters
 
-### Muse Code — P0, first, best-supported (PRD §12 #30)
+### Muse Code — P0
 
 | Aspect | Specification |
 |---|---|
@@ -53,7 +53,7 @@ The normaliser maps tool names to `kind` (`write`, `shell`, `read`, `search`, `w
 | Fail modes | `timeoutFailMode`, `launcherMissingFailMode`: unknown (no hook timeout field documented); with Node missing the hook cannot start, so L3/L4 block |
 | Gaps declared | `hookIoVerified: false` until a first-party capture passes (§4.5.7); subagent definition files (managed via `/subagents`, no documented file); project-level permissions (settings are user-level); hook timeout field; post-tool feedback |
 
-### OpenCode — P0 (PRD §12 #21; Codictator's own dogfooding harness with Meta models)
+### OpenCode — P0 (PRD §12 #21; Codictator's own dogfooding harness)
 
 | Aspect | Specification |
 |---|---|

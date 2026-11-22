@@ -48,6 +48,6 @@ SPEC items mapped onto PRD §9.1 priorities; P0 is never cut, P1 is cut first, *
 
 | Tier | SPEC items |
 |---|---|
-| P0 | §4.1–§4.15, §4.18–§4.19; adapters Muse Code, OpenCode, Universal, Claude Code, Copilot, Codex CLI; `core` and `typescript` packs; npm driver and bot config; extension views Active rules, Violations, Timeline |
+| P0 | §4.1–§4.15, §4.18–§4.19; adapters Claude Code, Codex CLI, Copilot, Muse Code, OpenCode, Universal; `core` and `typescript` packs; npm driver and bot config; extension views Active rules, Violations, Timeline |
 | P1 | Adapters Cursor, Gemini CLI; custom adapters (§4.5.6); `dotnet` and `python` packs with their drivers; §4.16 generator and §4.17 llm; extension views Steering, Budget, Health; `core/duplication` and `core/no-speculative-abstraction` (heuristic measures, highest false-positive risk) |
 | Later | CI generation for GitLab and other hosts (§4.15.6 covers them meanwhile); pack-listed codemods in dependency-major chains (§4.13.5 step 3 runs as an agent task until then) |

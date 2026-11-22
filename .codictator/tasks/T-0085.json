@@ -1,0 +1,69 @@
+{
+  "acceptanceCriteria": [
+    "SPEC carries no harness or model priority, Meta-first wording or default LLM preset; PRD §12 #30 cited, not restated"
+  ],
+  "branch": "docs/harness-neutrality",
+  "files": {
+    "allow": [
+      "docs/SPEC.md",
+      "docs/SPEC/*.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0085",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T01:41:10.596Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T01:41:13.320Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:43:49.035Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:50:14.976Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T01:50:30.918Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T01:50:38.459Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T01:50:22.078Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0085-r1",
+      "round": 1,
+      "tree": "6e0b4dcbd021b322c9551428f625cd41dd9a2d80"
+    }
+  ],
+  "spec": [
+    "SPEC §4.9.2",
+    "SPEC §5.10",
+    "SPEC §7.7"
+  ],
+  "title": "docs(spec): drop harness and model priority",
+  "type": "docs",
+  "version": 1
+}
+
