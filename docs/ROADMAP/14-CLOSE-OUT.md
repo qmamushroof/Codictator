@@ -25,16 +25,16 @@ Run the steps in number order. Each one is its own task and branch.
   - **Task:** `fix`, branch `fix/14-history-per-commit`.
   - **Do:** regression test first, on a three-commit range where one commit has no entry of its own. Expect one finding naming that commit.
   - **Verify:** the regression test is green and `npx codictator ci verify` stays green on `main`.
-- [ ] **14.4** Turn green `[consumer] every L1-mapped floor rule fires on its hook probe`.
+- [x] **14.4** Turn green `[consumer] every L1-mapped floor rule fires on its hook probe`.
   - **Task:** `feature`, branch `feature/14-consumer-firing-l1`.
   - **Do:** run `node --test packages/codictator/tests/acceptance/consumer-enforcement-firing-l1.test.ts` and list each rule it reports as silent. For each, repair the enforcer, its layer mapping or its probe payload. Never drop a rule from the probe list. Delist the title in the change that makes it pass.
   - **Verify:** `npm test` is green and the title is absent from `packages/codictator/tests/red-ledger.json`.
   - **Stop:** more silent rules than one session can fix. Split by rule family, one task each, and keep this step unticked until the last lands.
-- [ ] **14.5** Turn green `[consumer] every L3/L4-mapped floor rule fires on its gate probe`.
+- [x] **14.5** Turn green `[consumer] every L3/L4-mapped floor rule fires on its gate probe`.
   - **Task:** `feature`, branch `feature/14-consumer-firing-l34`.
   - **Do:** as step 14.4, with `consumer-enforcement-firing-l34.test.ts` and the git-hook and `ci verify` probes.
   - **Verify:** as step 14.4, for this title.
-- [ ] **14.6** Turn green the five `[§10.2] fixture repo <name> builds into temp git repo` titles.
+- [x] **14.6** Turn green the five `[§10.2] fixture repo <name> builds into temp git repo` titles.
   - **Task:** `feature`, branch `feature/14-fixture-goldens`.
   - **Do:** run `node --test packages/codictator/tests/acceptance/repos-goldens.test.ts`. The names are `ts-clean`, `ts-brownfield`, `python`, `dotnet` and `mixed`. A missing fixture is built per SPEC §10.2. A product defect gets a `docs/BUGS/` row and its own `fix` task before this step continues.
   - **Verify:** `npm run ledger -- --covers "§10.2"` exits 0.

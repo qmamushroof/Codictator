@@ -1,0 +1,67 @@
+{
+  "acceptanceCriteria": [
+    "steps 14.4, 14.5, 14.6 ticked only after their Verify lines hold"
+  ],
+  "branch": "docs/14-close-out",
+  "files": {
+    "allow": [
+      "docs/ROADMAP/14-CLOSE-OUT.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0098",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T04:22:49.373Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T04:22:51.727Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T04:22:56.760Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T04:30:10.937Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T04:30:14.976Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T04:30:24.726Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T04:30:14.538Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0098-r1",
+      "round": 1,
+      "tree": "86e4adf7171ac119bffec3aa6adbca90bffcaf31"
+    }
+  ],
+  "spec": [
+    "SPEC §10.2",
+    "SPEC §10.7"
+  ],
+  "title": "docs(roadmap): tick close-out steps 14.4 14.5 14.6",
+  "type": "docs",
+  "version": 1
+}
+
