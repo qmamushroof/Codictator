@@ -2,20 +2,18 @@
 // approximation: annotated literals of the wrong primitive type and
 // never-read imports. The repo mypy/pyright and ruff runs stay bound
 // through config.tools and the external contract in a later phase.
-import type { Ports } from "../../../kernel/index.ts";
-import { ok, type Result } from "../../../kernel/index.ts";
-import type { Enforcer, Finding } from "../../engine/index.ts";
+import type { Ports, Result } from "../../../kernel/index.ts";
+import type { CheckContext, Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
 import {
-	bindRule,
 	findingFor,
 	type RuleBinding,
 	readErrorFinding,
 	readLossyText,
 	selectFiles,
 } from "./binding.ts";
-import { baseEnforcer } from "./health-measures.ts";
+import { scanEnforcer } from "./marker-scan.ts";
 import { blankPythonCode, isPythonFile } from "./py-lex.ts";
 
 const TYPE_MISMATCH =
@@ -84,6 +82,29 @@ function typecheckTextFindings(
 	return findings;
 }
 
+// The scope walk both Python resolvers share: each Python file in scope is
+// read lossy and its text goes to the judge; an unreadable file becomes a
+// read-error finding instead.
+export async function judgePythonFiles(
+	ports: Ports,
+	binding: RuleBinding,
+	ctx: CheckContext,
+	findings: Array<Finding>,
+	judge: (file: string, text: string) => void,
+): Promise<void> {
+	for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
+		if (!isPythonFile(file)) {
+			continue;
+		}
+		const loaded = await readLossyText(ports.fs, file);
+		if (loaded.ok) {
+			judge(file, loaded.value.text);
+		} else {
+			findings.push(readErrorFinding(binding, file, loaded.error, "read"));
+		}
+	}
+}
+
 // SPEC §6.3 python/typecheck as the L1 static approximation: an annotated
 // literal of the wrong primitive type is a type error the checker would
 // also reject. An `int` annotation holding a `float` literal stays clean
@@ -95,24 +116,9 @@ export function resolvePythonTypecheck(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (!isPythonFile(file)) {
-					continue;
-				}
-				const loaded = await readLossyText(ports.fs, file);
-				if (!loaded.ok) {
-					findings.push(readErrorFinding(binding, file, loaded.error, "read"));
-					continue;
-				}
-				findings.push(
-					...typecheckTextFindings(binding, file, loaded.value.text),
-				);
-			}
-			return findings;
+	return scanEnforcer(decl, rule, (ctx, binding, findings) =>
+		judgePythonFiles(ports, binding, ctx, findings, (file, text) => {
+			findings.push(...typecheckTextFindings(binding, file, text));
 		}),
 	);
 }
@@ -178,6 +184,30 @@ function boundImportNames(text: string): Map<string, number> {
 	return bound;
 }
 
+function unusedImportFindings(
+	binding: RuleBinding,
+	file: string,
+	text: string,
+): Array<Finding> {
+	const findings: Array<Finding> = [];
+	const blanked = blankPythonCode(text);
+	for (const [name, atLine] of boundImportNames(text)) {
+		const word = new RegExp(`\\b${name}\\b`, "g");
+		const uses = blanked.match(word) ?? [];
+		if (uses.length <= 1) {
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					line: atLine,
+					message: `unused import ${name} in ${file}:${String(atLine)}`,
+					vars: { path: file, line: String(atLine), value: name },
+				}),
+			);
+		}
+	}
+	return findings;
+}
+
 // SPEC §6.3 python/lint as the L1 static approximation: never-read imports
 // (ruff F401). The repo ruff check and format --check runs stay on the
 // external contract. Quoted forward references do not count as uses.
@@ -186,36 +216,9 @@ export function resolvePythonLint(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-				if (!isPythonFile(file)) {
-					continue;
-				}
-				const loaded = await readLossyText(ports.fs, file);
-				if (!loaded.ok) {
-					findings.push(readErrorFinding(binding, file, loaded.error, "read"));
-					continue;
-				}
-				const blanked = blankPythonCode(loaded.value.text);
-				for (const [name, atLine] of boundImportNames(loaded.value.text)) {
-					const word = new RegExp(`\\b${name}\\b`, "g");
-					const uses = blanked.match(word) ?? [];
-					if (uses.length <= 1) {
-						findings.push(
-							findingFor(binding, {
-								path: file,
-								line: atLine,
-								message: `unused import ${name} in ${file}:${String(atLine)}`,
-								vars: { path: file, line: String(atLine), value: name },
-							}),
-						);
-					}
-				}
-			}
-			return findings;
+	return scanEnforcer(decl, rule, (ctx, binding, findings) =>
+		judgePythonFiles(ports, binding, ctx, findings, (file, text) => {
+			findings.push(...unusedImportFindings(binding, file, text));
 		}),
 	);
 }

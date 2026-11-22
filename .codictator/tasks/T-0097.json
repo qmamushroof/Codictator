@@ -1,0 +1,95 @@
+{
+  "acceptanceCriteria": [
+    "py-checks and ci-guards share no 50 token run, with identical findings"
+  ],
+  "branch": "refactor/size-debt",
+  "diagnosis": "ci verify judges only the PR range files; py-checks.ts and ci-guards.ts share a 50+ token resolver preamble run",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/py-checks.ts",
+      "packages/codictator/src/features/packs/enforcers/ci-guards.ts",
+      "packages/codictator/tests/unit/packs/enforcer-scope-walks.test.ts",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T04:02:29.380Z",
+    "tree": "ed2df6c6c3862d920dcae27804595ec7ae695834"
+  },
+  "historyStaged": true,
+  "id": "T-0097",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T04:00:29.213Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T04:00:48.724Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T04:02:51.038Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T04:09:08.101Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T04:09:12.109Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T04:09:24.711Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T04:00:45.249Z",
+    "commit": "e52bef8fbe31a401bb5e4cde1733f01555846ef4",
+    "failing": [
+      "[§6.3] python scope walk hands python files to the judge and reports unreadable ones",
+      "[§4.15.2] direct push judge flags only a direct marker"
+    ],
+    "tree": "ed2df6c6c3862d920dcae27804595ec7ae695834"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T04:09:11.667Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0097-r1",
+      "round": 1,
+      "tree": "5dd057e677e287c569410d337e5adeb589d9dbbc"
+    }
+  ],
+  "spec": [
+    "SPEC §6.3",
+    "SPEC §4.15.2"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/enforcer-scope-walks.test.ts",
+      "title": "[§6.3] python scope walk hands python files to the judge and reports unreadable ones"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/enforcer-scope-walks.test.ts",
+      "title": "[§4.15.2] direct push judge flags only a direct marker"
+    }
+  ],
+  "title": "share the enforcer scope walks to clear cross-file duplication",
+  "type": "refactor",
+  "version": 1
+}
+

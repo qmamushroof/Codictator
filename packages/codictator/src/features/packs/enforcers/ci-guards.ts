@@ -8,19 +8,13 @@
 // set per SPEC §4.15.2; an unreadable report has no marker shape, so a
 // missing list blocks (verify not reported required) while EC-1/EC-6 advise
 // stays with the live ci read.
-import type { Ports } from "../../../kernel/index.ts";
-import { ok, type Result } from "../../../kernel/index.ts";
+import type { Ports, Result } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
 import { SUBJECT_PATTERN } from "../../records/commit-subject.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
-import { bindRule, findingFor } from "./binding.ts";
-import {
-	baseEnforcer,
-	isMarkerFile,
-	parseMarkers,
-	scopeMarkerTexts,
-} from "./health-measures.ts";
+import { findingFor, type RuleBinding } from "./binding.ts";
+import { isMarkerFile, parseMarkers } from "./health-measures.ts";
 import { effectiveTextRule } from "./marker-scan.ts";
 import { scopeMarkerRule, scopeTextRule } from "./scope-text-rule.ts";
 
@@ -118,29 +112,25 @@ export function resolveBranchProtection(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				if ((markers.get("direct") ?? "") === "true") {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: "direct push to the default branch bypasses review",
-							vars: { path: file, detail: markers.get("push") ?? "main" },
-						}),
-					);
-				}
-			}
-			return findings;
-		}),
-	);
+	return scopeMarkerRule(decl, rule, ports, judgeDirectPush);
+}
+
+// One case report's verdict: a `direct: true` marker flags the push it names.
+export function judgeDirectPush(
+	binding: RuleBinding,
+	file: string,
+	markers: Map<string, string>,
+	findings: Array<Finding>,
+): void {
+	if ((markers.get("direct") ?? "") === "true") {
+		findings.push(
+			findingFor(binding, {
+				path: file,
+				message: "direct push to the default branch bypasses review",
+				vars: { path: file, detail: markers.get("push") ?? "main" },
+			}),
+		);
+	}
 }
 
 // SPEC §4.15.2 + EC-7 core/ci-required-check: the default branch must
@@ -152,32 +142,25 @@ export function resolveCiRequiredCheck(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	const binding = bindRule(rule);
-	return ok(
-		baseEnforcer(rule, binding, decl, async (ctx) => {
-			const findings: Array<Finding> = [];
-			for (const { file, markers } of await scopeMarkerTexts(
-				ports,
-				binding,
-				ctx,
-				findings,
-			)) {
-				const required = (markers.get("required") ?? "")
-					.split(",")
-					.map((entry) => entry.trim().toLowerCase())
-					.filter((entry) => entry !== "");
-				if (!required.includes("verify")) {
-					findings.push(
-						findingFor(binding, {
-							path: file,
-							message: "the verify check is not a required check",
-							vars: { path: file, detail: "verify" },
-						}),
-					);
-				}
+	return scopeMarkerRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, markers, findings) => {
+			const required = (markers.get("required") ?? "")
+				.split(",")
+				.map((entry) => entry.trim().toLowerCase())
+				.filter((entry) => entry !== "");
+			if (!required.includes("verify")) {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: "the verify check is not a required check",
+						vars: { path: file, detail: "verify" },
+					}),
+				);
 			}
-			return findings;
-		}),
+		},
 	);
 }
 
