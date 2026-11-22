@@ -131,6 +131,54 @@ export function isExactPythonPin(spec: string): boolean {
 	return /^==\d+\.\d+\.\d+(?:[-+_.][0-9A-Za-z.+-]+)?$/.test(spec.trim());
 }
 
+const QUOTED_LITERAL = /"([^"]*)"|'([^']*)'/g;
+const PYPROJECT_HEADER = /^[ \t]*\[([^\][\s]+)\][ \t]*(?:#.*)?$/;
+const PROJECT_DEPENDENCIES_OPEN = /^[ \t]*dependencies[ \t]*=[ \t]*\[/;
+const NAMED_ARRAY_OPEN = /^[ \t]*[A-Za-z0-9_.-]+[ \t]*=[ \t]*\[/;
+
+// The package names of the quoted literals in one line of a dependency
+// array; `{include-group}` rows and non-name literals yield nothing.
+export function readQuotedNames(chunk: string): Array<string> {
+	const names: Array<string> = [];
+	for (const match of chunk.matchAll(QUOTED_LITERAL)) {
+		const literal = (match[1] ?? match[2] ?? "").trim();
+		if (literal.startsWith("{") || literal.includes("include-group")) {
+			continue;
+		}
+		const name = REQUIREMENT_NAME.exec(literal)?.[0];
+		if (name !== undefined) {
+			names.push(name);
+		}
+	}
+	return names;
+}
+
+// Does this line open a dependency array inside the current section?
+function opensDependencyArray(section: string, line: string): boolean {
+	if (section === "project") {
+		return PROJECT_DEPENDENCIES_OPEN.test(line);
+	}
+	if (section === "dependency-groups") {
+		return NAMED_ARRAY_OPEN.test(line);
+	}
+	return section === "project.optional-dependencies"
+		? NAMED_ARRAY_OPEN.test(line)
+		: false;
+}
+
+// Net `[` minus `]` count of one line.
+function bracketDelta(line: string): number {
+	let delta = 0;
+	for (const char of line) {
+		if (char === "[") {
+			delta += 1;
+		} else if (char === "]") {
+			delta -= 1;
+		}
+	}
+	return delta;
+}
+
 // SPEC §6.3 driver `pypi`: the `[project] dependencies` names plus the
 // `[dependency-groups]` (and `[project.optional-dependencies]`) members,
 // read as a static approximation over the manifest text: quoted literals
@@ -138,30 +186,11 @@ export function isExactPythonPin(spec: string): boolean {
 // a group rather than a package.
 export function collectPyprojectNames(text: string): Set<string> {
 	const names = new Set<string>();
-	const lines = text.split("\n");
 	let section = "";
 	let collecting = false;
 	let depth = 0;
-	const flushChunk = (chunk: string): void => {
-		for (const match of chunk.matchAll(/"([^"]*)"|'([^']*)'/g)) {
-			const literal = (match[1] ?? match[2] ?? "").trim();
-			if (
-				literal === "" ||
-				literal.startsWith("{") ||
-				literal.includes("include-group")
-			) {
-				continue;
-			}
-			const name = /^[A-Za-z0-9](?:[A-Za-z0-9._-]*[A-Za-z0-9])?/.exec(
-				literal,
-			)?.[0];
-			if (name !== undefined) {
-				names.add(name);
-			}
-		}
-	};
-	for (const line of lines) {
-		const header = /^[ \t]*\[([^\][\s]+)\][ \t]*(?:#.*)?$/.exec(line);
+	for (const line of text.split("\n")) {
+		const header = PYPROJECT_HEADER.exec(line);
 		if (header !== null) {
 			collecting = false;
 			section = (header[1] ?? "").toLowerCase();
@@ -170,27 +199,17 @@ export function collectPyprojectNames(text: string): Set<string> {
 		if (line.includes("include-group")) {
 			continue;
 		}
-		const opensArray =
-			(section === "project" &&
-				/^[ \t]*dependencies[ \t]*=[ \t]*\[/.test(line)) ||
-			((section === "dependency-groups" ||
-				section === "project.optional-dependencies") &&
-				/^[ \t]*[A-Za-z0-9_.-]+[ \t]*=[ \t]*\[/.test(line));
-		if (!collecting && opensArray) {
+		if (!collecting && opensDependencyArray(section, line)) {
 			collecting = true;
 			depth = 0;
 		}
 		if (!collecting) {
 			continue;
 		}
-		for (const char of line) {
-			if (char === "[") {
-				depth += 1;
-			} else if (char === "]") {
-				depth -= 1;
-			}
+		depth += bracketDelta(line);
+		for (const name of readQuotedNames(line)) {
+			names.add(name);
 		}
-		flushChunk(line);
 		if (depth <= 0) {
 			collecting = false;
 		}
