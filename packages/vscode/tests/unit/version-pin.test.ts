@@ -71,11 +71,14 @@ test("[§4.20.1] extension version falls back to the 0.0.0 pin without a surface
 	assert.equal(extensionVersionOf(createHost(new Error("gone"))), "0.0.0");
 });
 
-test("[§4.20.1] fake defaults to the real package.json version", () => {
+test("[§4.20.1] the fake defaults to the real package.json version", () => {
 	const expected = realPackageVersion();
 	assert.ok(expected !== "" && expected !== "0.0.0");
 	assert.equal(createFakeVscode().extensionVersion(), expected);
-	assert.equal(expected, "0.2.10");
+});
+
+test("[§4.20.1] the 0.2.11 release pins the package version", () => {
+	assert.equal(realPackageVersion(), "0.2.11");
 });
 
 test("[§4.20.2] rule groups fall back to a plain name without a version", async () => {
