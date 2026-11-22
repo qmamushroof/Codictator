@@ -104,6 +104,74 @@ function isAllowedSecret(candidate: string): boolean {
 	return PLACEHOLDER_PATTERN.test(candidate);
 }
 
+function nameRunEnd(text: string, from: number): number {
+	let end = from;
+	while (end < text.length && isNameChar(text.charCodeAt(end))) {
+		end += 1;
+	}
+	return end;
+}
+
+// Start of the assignment name that holds the keyword: back over the name
+// run, then over one opening quote.
+export function assignmentNameStart(
+	text: string,
+	keywordStart: number,
+): number {
+	let start = keywordStart;
+	while (start > 0 && isNameChar(text.charCodeAt(start - 1))) {
+		start -= 1;
+	}
+	if (start > 0 && isQuote(text[start - 1])) {
+		start -= 1;
+	}
+	return start;
+}
+
+function isRedactableValue(candidate: string): boolean {
+	return (
+		candidate.length >= 20 &&
+		shannonPerChar(candidate) >= 4 &&
+		!isAllowedSecret(candidate)
+	);
+}
+
+interface AssignmentScan {
+	readonly span: Span | undefined;
+	readonly floor: number;
+}
+
+// One keyword hit: the separator check runs at the end of the name run, and
+// the returned floor is how far the scan has examined.
+function assignmentAt(
+	text: string,
+	keywordStart: number,
+	keywordEnd: number,
+): AssignmentScan {
+	const nameEnd = nameRunEnd(text, keywordEnd);
+	ASSIGNMENT_MID.lastIndex = nameEnd;
+	if (ASSIGNMENT_MID.exec(text) === null) {
+		return { span: undefined, floor: nameEnd };
+	}
+	ASSIGNMENT_VALUE.lastIndex = ASSIGNMENT_MID.lastIndex;
+	const value = ASSIGNMENT_VALUE.exec(text);
+	if (value === null) {
+		return { span: undefined, floor: nameEnd };
+	}
+	let end = ASSIGNMENT_VALUE.lastIndex;
+	if (isQuote(text[end])) {
+		end += 1;
+	}
+	if (!isRedactableValue(value[0])) {
+		return { span: undefined, floor: end };
+	}
+	const start = assignmentNameStart(text, keywordStart);
+	return {
+		span: { start, end, replacement: redact(text.slice(start, end)) },
+		floor: end,
+	};
+}
+
 function assignmentSpans(text: string): Array<Span> {
 	const spans: Array<Span> = [];
 	// Keyword-first scan: the original leading `[A-Za-z0-9_.$-]*` made the
@@ -117,46 +185,15 @@ function assignmentSpans(text: string): Array<Span> {
 	let keyword = KEYWORD_PATTERN.exec(text);
 	let floor = 0;
 	while (keyword !== null) {
-		const keywordStart = keyword.index;
-		const keywordEnd = keywordStart + keyword[0].length;
-		if (keywordStart >= floor) {
-			let nameEnd = keywordEnd;
-			while (nameEnd < text.length && isNameChar(text.charCodeAt(nameEnd))) {
-				nameEnd += 1;
-			}
-			floor = nameEnd;
-			ASSIGNMENT_MID.lastIndex = nameEnd;
-			const mid = ASSIGNMENT_MID.exec(text);
-			if (mid !== null) {
-				ASSIGNMENT_VALUE.lastIndex = ASSIGNMENT_MID.lastIndex;
-				const value = ASSIGNMENT_VALUE.exec(text);
-				if (value !== null) {
-					let end = ASSIGNMENT_VALUE.lastIndex;
-					if (isQuote(text[end])) {
-						end += 1;
-					}
-					let start = keywordStart;
-					while (start > 0 && isNameChar(text.charCodeAt(start - 1))) {
-						start -= 1;
-					}
-					if (start > 0 && isQuote(text[start - 1])) {
-						start -= 1;
-					}
-					const candidate = value[0];
-					const full = text.slice(start, end);
-					if (
-						candidate.length >= 20 &&
-						shannonPerChar(candidate) >= 4 &&
-						!isAllowedSecret(candidate)
-					) {
-						spans.push({
-							start,
-							end,
-							replacement: redact(full),
-						});
-					}
-					floor = end;
-				}
+		if (keyword.index >= floor) {
+			const found = assignmentAt(
+				text,
+				keyword.index,
+				keyword.index + keyword[0].length,
+			);
+			floor = found.floor;
+			if (found.span !== undefined) {
+				spans.push(found.span);
 			}
 		}
 		keyword = KEYWORD_PATTERN.exec(text);

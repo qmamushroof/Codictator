@@ -1,0 +1,86 @@
+{
+  "acceptanceCriteria": [
+    "assignmentSpans is below complexity 10 and under 40 lines with identical output"
+  ],
+  "branch": "refactor/size-debt",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/redact.ts",
+      "packages/codictator/tests/unit/kernel/redact-split.test.ts",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T03:15:46.096Z",
+    "tree": "ac06b50a01438ea75019c3abf56cb61677512ca3"
+  },
+  "historyStaged": true,
+  "id": "T-0093",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T03:15:20.271Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T03:15:23.625Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:15:42.525Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:23:28.771Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T03:23:35.399Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T03:23:36.232Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T03:15:23.273Z",
+    "commit": "2cd74c4b0352b77a1edca61dd9863b176c8887c9",
+    "failing": [
+      "[§4.7.1] assignment name start walks back over the name run and one quote"
+    ],
+    "tree": "ac06b50a01438ea75019c3abf56cb61677512ca3"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T03:23:32.504Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0093-r1",
+      "round": 1,
+      "tree": "01684f48346e506424a545e5ab79c76d9d3a7440"
+    }
+  ],
+  "spec": [
+    "SPEC §4.7.1"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/redact-split.test.ts",
+      "title": "[§4.7.1] assignment name start walks back over the name run and one quote"
+    }
+  ],
+  "title": "split redact assignmentSpans below the size limits",
+  "type": "refactor",
+  "version": 1
+}
+
