@@ -156,7 +156,7 @@ test("[§4.19.6] the npm spawn target resolves without a shell on win32", () => 
 	assert.deepEqual(setupNpmArgv("darwin"), ["npm", "ci"]);
 });
 
-test("[§4.19.6] setup handoff prints exact runnable commands only when packs are empty", () => {
+test("[§4.19.6] setup handoff prints a hint line per built-in pack only when packs are empty", () => {
 	// SPEC §4.19.6 step 8: pack-less setup prints the exact one-line
 	// commands; a setup with packs keeps the generic views handoff.
 	const empty = setupHandoffLines(true);
