@@ -10,7 +10,7 @@
 // HEAD so a tampered worktree file still blocks).
 import type { Ports } from "../../../kernel/index.ts";
 import type { CheckContext, Finding } from "../../engine/index.ts";
-import { type RuleBinding, selectFiles } from "./binding.ts";
+import { prefetchTexts, type RuleBinding, selectFiles } from "./binding.ts";
 import { loadScopeText } from "./health-measures.ts";
 
 export interface EffectiveFile {
@@ -100,7 +100,12 @@ export async function forEachEffectiveText(
 	need: TextNeed,
 	visit: (file: EffectiveFile, text: string) => void | Promise<void>,
 ): Promise<void> {
-	for (const entry of effectiveFiles(ctx, binding.scopeGlobs)) {
+	const entries = effectiveFiles(ctx, binding.scopeGlobs);
+	await prefetchTexts(
+		ports.fs,
+		entries.filter((entry) => !entry.proposed).map((entry) => entry.path),
+	);
+	for (const entry of entries) {
 		const text = await loadEffectiveText(ports, binding, entry, findings, need);
 		if (text !== undefined) {
 			await visit(entry, text);

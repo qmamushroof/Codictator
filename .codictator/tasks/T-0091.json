@@ -1,0 +1,86 @@
+{
+  "acceptanceCriteria": [
+    "collectPyprojectNames is below complexity 10 and 40 lines with identical output"
+  ],
+  "branch": "refactor/size-debt",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/py-pins.ts",
+      "packages/codictator/tests/unit/packs/py-pins-split.test.ts",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T02:54:36.338Z",
+    "tree": "97f63d0afab1c071ed523c8b4133ae53d141cad5"
+  },
+  "historyStaged": true,
+  "id": "T-0091",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T02:53:29.334Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T02:53:46.556Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:54:00.548Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:01:17.732Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T03:01:26.344Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T03:01:34.535Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T02:53:46.179Z",
+    "commit": "93d512236663acb0a9cc8c4b1a389f635d446692",
+    "failing": [
+      "[§6.3] pyproject array reader collects quoted names and skips include-group rows"
+    ],
+    "tree": "97f63d0afab1c071ed523c8b4133ae53d141cad5"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T03:01:22.100Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0091-r1",
+      "round": 1,
+      "tree": "8660e981e880d9c7030135e8812cbbbb56e610e3"
+    }
+  ],
+  "spec": [
+    "SPEC §6.3"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/py-pins-split.test.ts",
+      "title": "[§6.3] pyproject array reader collects quoted names and skips include-group rows"
+    }
+  ],
+  "title": "split collectPyprojectNames below the size limits",
+  "type": "refactor",
+  "version": 1
+}
+

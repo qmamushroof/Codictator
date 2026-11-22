@@ -98,19 +98,25 @@ export function resolveDepLicense(
 	const allow = tunableStringList(bindRule(rule), "allow") ?? [
 		...LICENSE_ALLOW,
 	];
-	return scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
-		if (!isMarkerFile(file)) {
-			return;
-		}
-		const license = parseMarkers(text).get("license") ?? "";
-		if (license !== "" && !allow.includes(license)) {
-			findings.push(
-				findingFor(binding, {
-					path: file,
-					message: `${file} has license ${license} outside the allow policy`,
-					vars: { path: file, value: license },
-				}),
-			);
-		}
-	});
+	return scopeTextRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, text, findings) => {
+			if (!isMarkerFile(file)) {
+				return;
+			}
+			const license = parseMarkers(text).get("license") ?? "";
+			if (license !== "" && !allow.includes(license)) {
+				findings.push(
+					findingFor(binding, {
+						path: file,
+						message: `${file} has license ${license} outside the allow policy`,
+						vars: { path: file, value: license },
+					}),
+				);
+			}
+		},
+		isMarkerFile,
+	);
 }

@@ -8,6 +8,7 @@ import type { Enforcer } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import { type EnforcerDecl, isRecord } from "../manifest.ts";
 import { findingFor } from "./binding.ts";
+import { isMarkerFile } from "./health-markers.ts";
 import { limitOf, parseMarkerInt, parseMarkers } from "./health-measures.ts";
 import { scopeTextRule } from "./scope-text-rule.ts";
 
@@ -18,28 +19,34 @@ export function resolveArchModuleSize(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	return scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
-		const maxFiles = limitOf(binding, "maxFiles", 80);
-		const maxLines = limitOf(binding, "maxLines", 8000);
-		const markers = parseMarkers(text);
-		const files = parseMarkerInt(markers, "files");
-		const lines = parseMarkerInt(markers, "lines");
-		if (
-			(files !== undefined && files > maxFiles) ||
-			(lines !== undefined && lines > maxLines)
-		) {
-			findings.push(
-				findingFor(binding, {
-					path: file,
-					message: `module over its size limit in ${file}`,
-					vars: {
+	return scopeTextRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, text, findings) => {
+			const maxFiles = limitOf(binding, "maxFiles", 80);
+			const maxLines = limitOf(binding, "maxLines", 8000);
+			const markers = parseMarkers(text);
+			const files = parseMarkerInt(markers, "files");
+			const lines = parseMarkerInt(markers, "lines");
+			if (
+				(files !== undefined && files > maxFiles) ||
+				(lines !== undefined && lines > maxLines)
+			) {
+				findings.push(
+					findingFor(binding, {
 						path: file,
-						limit: `${String(maxFiles)}/${String(maxLines)}`,
-					},
-				}),
-			);
-		}
-	});
+						message: `module over its size limit in ${file}`,
+						vars: {
+							path: file,
+							limit: `${String(maxFiles)}/${String(maxLines)}`,
+						},
+					}),
+				);
+			}
+		},
+		isMarkerFile,
+	);
 }
 
 // SPEC §5.7 core/compiler-strict: a tsconfig without strict mode flags.

@@ -1,0 +1,84 @@
+{
+  "acceptanceCriteria": [
+    "readJUnit is below complexity 10 with identical output"
+  ],
+  "branch": "refactor/size-debt",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/test-report.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T03:25:20.801Z",
+    "tree": "dbfe2703cc964654384f8a2d28189e037d1493f8"
+  },
+  "historyStaged": true,
+  "id": "T-0094",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T03:24:48.114Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T03:24:56.708Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:25:21.153Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:32:57.353Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T03:33:01.677Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T03:33:05.165Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T03:24:56.291Z",
+    "commit": "a25d4ce3b1a8ca9d7b9a3eb58baaa827188fe9fb",
+    "failing": [
+      "[§4.1.2] junit case builds the id from classname and name"
+    ],
+    "tree": "dbfe2703cc964654384f8a2d28189e037d1493f8"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T03:33:01.251Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0094-r1",
+      "round": 1,
+      "tree": "fcbc912cce03000f79fb38704ec5ae6e74c99d34"
+    }
+  ],
+  "spec": [
+    "SPEC §4.1.2"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/test-report-split.test.ts",
+      "title": "[§4.1.2] junit case builds the id from classname and name"
+    }
+  ],
+  "title": "split test-report readJUnit below the complexity limit",
+  "type": "refactor",
+  "version": 1
+}
+

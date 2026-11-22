@@ -7,7 +7,7 @@ import type { Ports, Result } from "../../../kernel/index.ts";
 import type { CheckContext, Enforcer, Finding } from "../../engine/index.ts";
 import type { PackRule } from "../index.ts";
 import type { EnforcerDecl } from "../manifest.ts";
-import { type RuleBinding, selectFiles } from "./binding.ts";
+import { prefetchTexts, type RuleBinding, selectFiles } from "./binding.ts";
 import { loadScopeText, scopeMarkerTexts } from "./health-measures.ts";
 import { scanEnforcer } from "./marker-scan.ts";
 
@@ -24,10 +24,11 @@ export function scopeTextRule(
 	accept: (file: string) => boolean = () => true,
 ): Result<Enforcer> {
 	return scanEnforcer(decl, rule, async (ctx, binding, findings) => {
-		for (const file of selectFiles(ctx.scope.files, binding.scopeGlobs)) {
-			if (!accept(file)) {
-				continue;
-			}
+		const files = selectFiles(ctx.scope.files, binding.scopeGlobs).filter(
+			accept,
+		);
+		await prefetchTexts(ports.fs, files);
+		for (const file of files) {
 			const text = await loadScopeText(ports, binding, file, findings);
 			if (text !== undefined) {
 				judge(binding, file, text, findings);
