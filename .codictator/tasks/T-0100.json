@@ -1,0 +1,92 @@
+{
+  "acceptanceCriteria": [
+    "both manifests, lockfile, version pins and README status read 0.2.10"
+  ],
+  "branch": "release/0.2.10",
+  "files": {
+    "allow": [
+      "packages/codictator/package.json",
+      "packages/vscode/package.json",
+      "package-lock.json",
+      "packages/vscode/tests/support/fake-vscode.ts",
+      "packages/vscode/tests/unit/version-pin.test.ts",
+      "README.md",
+      "docs/HISTORY/2026-11-22.md",
+      ".codictator/config.json",
+      ".codictator/manifest.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T04:47:30.714Z",
+    "tree": "58c19eb191069d60076dda20122d60608ed60bda"
+  },
+  "historyStaged": true,
+  "id": "T-0100",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T04:42:28.124Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T04:43:18.690Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T04:47:27.631Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T04:58:45.140Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T04:58:48.277Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T04:58:53.269Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T04:43:15.074Z",
+    "commit": "a66b077f46e4b726f152662050a3a734db258cbf",
+    "failing": [
+      "[§4.20.1] fake defaults to the real package.json version"
+    ],
+    "tree": "58c19eb191069d60076dda20122d60608ed60bda"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T04:58:41.691Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0100-r1",
+      "round": 1,
+      "tree": "fa5e00e003a09da2dc39987dced2f4100891d7ed"
+    }
+  ],
+  "spec": [
+    "SPEC §4.15.5"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/vscode/tests/unit/version-pin.test.ts",
+      "title": "[§4.20.1] fake defaults to the real package.json version"
+    }
+  ],
+  "title": "chore(release): 0.2.10",
+  "type": "deps",
+  "version": 1
+}
+

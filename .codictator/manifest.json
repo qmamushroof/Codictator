@@ -169,7 +169,7 @@
       "path": ".codictator/bin/run.mjs"
     },
     {
-      "hash": "c365c3efee3671b49329b4df63d1f782c31732d66f6d2c090612885c7996d304",
+      "hash": "69f04e786ce3b9d317f1b8a777341eab76da85e7ec9979599b6c85d6cd375133",
       "mode": "file",
       "owner": "codictator",
       "path": ".codictator/config.json"
@@ -235,8 +235,8 @@
       "path": "opencode.json"
     }
   ],
-  "codictator": "0.2.9",
-  "hash": "430935a31af2cf065d360fc6578acff632a923ef1699801dc4516843d12f42ea",
+  "codictator": "0.2.10",
+  "hash": "1bd556d29db41878e2e7440dd8f85ff8ea2d84b32c7ab60d7716e2e7f32b49bb",
   "version": 1
 }
 
