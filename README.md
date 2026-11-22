@@ -8,7 +8,7 @@ Rules files only ask — Codictator turns each rule into something that runs: co
 
 Asked for a bad outcome, the agent is steered to the compliant one and told which rule applied. Nothing is hidden.
 
-> **Status: 0.2.11 published on npm, the VS Code Marketplace, and Open VSX.** Packages `codictator` and `codictator-vscode` are at 0.2.11 ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md) green).
+> **Status: 0.2.12 published on npm, the VS Code Marketplace, and Open VSX.** Packages `codictator` and `codictator-vscode` are at 0.2.12 ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md) green).
 >
 > Install from the registries below; source builds remain an alternative. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
 

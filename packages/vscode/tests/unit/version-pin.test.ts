@@ -77,8 +77,8 @@ test("[§4.20.1] the fake defaults to the real package.json version", () => {
 	assert.equal(createFakeVscode().extensionVersion(), expected);
 });
 
-test("[§4.20.1] the 0.2.11 release pins the package version", () => {
-	assert.equal(realPackageVersion(), "0.2.11");
+test("[§4.20.1] the 0.2.12 release pins the package version", () => {
+	assert.equal(realPackageVersion(), "0.2.12");
 });
 
 test("[§4.20.2] rule groups fall back to a plain name without a version", async () => {
