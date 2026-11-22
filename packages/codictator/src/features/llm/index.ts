@@ -18,8 +18,8 @@ export {
 export type { LlmFormat, LlmPresetId } from "./presets.ts";
 export {
 	DEFAULT_MAX_OUTPUT_TOKENS,
-	DEFAULT_PRESET_ID,
 	DEFAULT_TIMEOUT_MS,
+	LLM_PRESET_IDS,
 	LLM_PRESETS,
 	narrowLlmConfig,
 } from "./presets.ts";
@@ -39,6 +39,7 @@ export interface LlmClient {
 	readonly complete: (
 		req: CompletionRequest,
 	) => Promise<Result<CompletionResponse>>;
+	readonly model?: string;
 }
 
 // Ports the client needs. Net and Env carry the request and the key; Clock
@@ -103,5 +104,5 @@ export function createClient(config: unknown, ports: LlmPorts): LlmClient {
 	): Promise<Result<CompletionResponse>> {
 		return runComplete(narrowed, ports, req);
 	}
-	return { complete };
+	return narrowed.ok ? { complete, model: narrowed.value.model } : { complete };
 }

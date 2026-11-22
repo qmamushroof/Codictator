@@ -109,18 +109,19 @@ export async function ensureBaseline(
 	}
 	return ok(true);
 }
-// SPEC §4.19.2: init harnesses default to every known adapter id when no
+// SPEC §4.19.2: init harnesses default to every known adapter id, in
+// alphabetical order with none preferred (PRD §12 #30), when no
 // --harness flag is given; unknown ids fail as CDX-E301 via config
 // validation, never silently.
 const DEFAULT_HARNESSES: ReadonlyArray<string> = [
-	"muse-code",
-	"universal",
 	"claude-code",
-	"copilot",
 	"codex-cli",
+	"copilot",
 	"cursor",
 	"gemini-cli",
+	"muse-code",
 	"opencode",
+	"universal",
 ];
 export function defaultHarnesses(flags: InitFlags): Array<string> {
 	return flags.harnesses.length > 0 ? flags.harnesses : [...DEFAULT_HARNESSES];

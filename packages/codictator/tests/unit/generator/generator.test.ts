@@ -32,6 +32,7 @@ function inputFor(overrides: Partial<GeneratorInput> = {}): GeneratorInput {
 function fakeLlm(texts: ReadonlyArray<string>): LlmClient {
 	let calls = 0;
 	return {
+		model: "chosen-model",
 		complete: () => {
 			const text = texts[calls] ?? texts[texts.length - 1] ?? "";
 			calls += 1;
@@ -150,4 +151,32 @@ test("[§4.16] LLM draft validates after one repair round", async () => {
 		llm: fakeLlm(["prose, not JSON", draftFor("forbid-pattern", "\\+ name")]),
 	});
 	assert.equal(drafted.ok, true);
+});
+
+test("[§4.17.1] the draft request carries the client's configured model", async () => {
+	const seen: Array<string> = [];
+	const llm: LlmClient = {
+		model: "chosen-model",
+		complete: (req) => {
+			seen.push(req.model);
+			return Promise.resolve(ok({ text: "prose", stopReason: "stop" }));
+		},
+	};
+	await draftPack(inputFor(), { useLlm: true, llm });
+	assert.equal(seen[0], "chosen-model");
+});
+
+test("[§4.17.1] a client with no model fails CDX-E851 without a request", async () => {
+	let calls = 0;
+	const llm: LlmClient = {
+		complete: () => {
+			calls += 1;
+			return Promise.resolve(ok({ text: "", stopReason: "stop" }));
+		},
+	};
+	const drafted = await draftPack(inputFor(), { useLlm: true, llm });
+	assert.ok(!drafted.ok);
+	assert.equal(drafted.error.code, "CDX-E851");
+	assert.match(drafted.error.remediation, /config\.llm\.model/);
+	assert.equal(calls, 0);
 });
