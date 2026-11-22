@@ -1,0 +1,86 @@
+{
+  "acceptanceCriteria": [
+    "findExportedNames is below complexity 10 and 40 lines with identical output"
+  ],
+  "branch": "refactor/size-debt",
+  "files": {
+    "allow": [
+      "packages/codictator/src/builtin-packs/typescript/measures-exports.ts",
+      "packages/codictator/tests/unit/typescript/ts-measures-exports.test.ts",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T02:38:12.660Z",
+    "tree": "4309adbb3c035f93aa79aa4f0fdea170359d4a19"
+  },
+  "historyStaged": true,
+  "id": "T-0089",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T02:27:36.451Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T02:28:44.986Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:29:19.443Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:38:14.010Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T02:38:26.159Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T02:38:37.938Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T02:28:41.914Z",
+    "commit": "f2653774aac6133a122e1587343145deec53d786",
+    "failing": [
+      "[§6.1] ts export list reader returns names and the resume index"
+    ],
+    "tree": "4309adbb3c035f93aa79aa4f0fdea170359d4a19"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T02:38:22.781Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0089-r1",
+      "round": 1,
+      "tree": "e1d58b7f093aa85a58c161a052b8c3b7a4681dca"
+    }
+  ],
+  "spec": [
+    "§6.1"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/typescript/ts-measures-exports.test.ts",
+      "title": "[§6.1] ts export list reader returns names and the resume index"
+    }
+  ],
+  "title": "split findExportedNames below complexity and size limits",
+  "type": "refactor",
+  "version": 1
+}
+

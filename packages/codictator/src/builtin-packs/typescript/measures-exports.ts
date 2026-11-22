@@ -34,70 +34,89 @@ function namesFromList(fragment: string): Array<string> {
 	return names;
 }
 
+const DECLARATION =
+	/^(?:declare\s+)?(?:async\s+)?(?:abstract\s+)?(?:function\s*\*?\s*|class\s+|interface\s+|type\s+|enum\s+|const\s+|let\s+|var\s+)([A-Za-z_$][\w$]*)/;
+const BINDING = /^(?:declare\s+)?(?:const|let|var)\s*([{[].*?)[;=]/;
+
+// Reads `{ … }` after an export; returns the index to resume at, or -1 when
+// the list never closes. `export { … } from` names nothing here.
+export function readExportList(
+	code: string,
+	open: number,
+	names: Array<string>,
+): number {
+	const close = code.indexOf("}", open);
+	if (close < 0) {
+		return -1;
+	}
+	const fromWord = code.slice(close, close + 8);
+	if (matchWordAt(code, close + 1, "from") || fromWord.includes("from")) {
+		return close + 1;
+	}
+	for (const name of namesFromList(code.slice(open + 1, close))) {
+		names.push(name);
+	}
+	return close + 1;
+}
+
+function readDeclaration(
+	code: string,
+	next: number,
+	names: Array<string>,
+): number {
+	const rest = code.slice(next, next + 40);
+	const declared = DECLARATION.exec(rest);
+	if (declared !== null) {
+		const name = declared[1] ?? "";
+		if (name !== "") {
+			names.push(name);
+		}
+		return next + declared[0].length;
+	}
+	const binding = BINDING.exec(rest);
+	if (binding === null) {
+		return next + 1;
+	}
+	for (const name of namesFromBinding(binding[1] ?? "")) {
+		names.push(name);
+	}
+	return next + binding[0].length;
+}
+
+// Reads one `export` at `index`; returns the index to resume at, or -1 to stop.
+function readExport(code: string, index: number, names: Array<string>): number {
+	let next = skipTrivia(code, index + 6);
+	if (matchWordAt(code, next, "type")) {
+		next = skipTrivia(code, next + 4);
+	}
+	if (matchWordAt(code, next, "default")) {
+		names.push("default");
+		return next + 7;
+	}
+	if (code.charAt(next) === "{") {
+		return readExportList(code, next, names);
+	}
+	if (code.charAt(next) === "*") {
+		return next + 1;
+	}
+	return readDeclaration(code, next, names);
+}
+
 // Locally defined names only; `export … from` re-exports belong to their
 // origin file, and `export *` names nothing here.
 export function findExportedNames(text: string): Array<string> {
 	const code = blankCode(text);
 	const names: Array<string> = [];
-	const cursor = { index: 0 };
-	while (cursor.index < code.length) {
-		if (!matchWordAt(code, cursor.index, "export")) {
-			cursor.index += 1;
+	let index = 0;
+	while (index < code.length) {
+		if (!matchWordAt(code, index, "export")) {
+			index += 1;
 			continue;
 		}
-		let next = skipTrivia(code, cursor.index + 6);
-		if (matchWordAt(code, next, "type")) {
-			next = skipTrivia(code, next + 4);
+		index = readExport(code, index, names);
+		if (index < 0) {
+			break;
 		}
-		if (matchWordAt(code, next, "default")) {
-			names.push("default");
-			cursor.index = next + 7;
-			continue;
-		}
-		if (code.charAt(next) === "{") {
-			const close = code.indexOf("}", next);
-			if (close < 0) {
-				break;
-			}
-			const fromWord = code.slice(close, close + 8);
-			if (matchWordAt(code, close + 1, "from") || fromWord.includes("from")) {
-				cursor.index = close + 1;
-				continue;
-			}
-			for (const name of namesFromList(code.slice(next + 1, close))) {
-				names.push(name);
-			}
-			cursor.index = close + 1;
-			continue;
-		}
-		if (code.charAt(next) === "*") {
-			cursor.index = next + 1;
-			continue;
-		}
-		const rest = code.slice(next, next + 40);
-		const declared =
-			/^(?:declare\s+)?(?:async\s+)?(?:abstract\s+)?(?:function\s*\*?\s*|class\s+|interface\s+|type\s+|enum\s+|const\s+|let\s+|var\s+)([A-Za-z_$][\w$]*)/.exec(
-				rest,
-			);
-		if (declared !== null) {
-			const name = declared[1] ?? "";
-			if (name !== "") {
-				names.push(name);
-			}
-			cursor.index = next + declared[0].length;
-			continue;
-		}
-		const binding = /^(?:declare\s+)?(?:const|let|var)\s*([{[].*?)[;=]/.exec(
-			rest,
-		);
-		if (binding !== null) {
-			for (const name of namesFromBinding(binding[1] ?? "")) {
-				names.push(name);
-			}
-			cursor.index = next + binding[0].length;
-			continue;
-		}
-		cursor.index = next + 1;
 	}
 	return [...new Set(names)].sort();
 }
