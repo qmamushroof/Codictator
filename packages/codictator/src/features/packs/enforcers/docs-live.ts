@@ -11,6 +11,7 @@ import {
 	type Result,
 } from "../../../kernel/index.ts";
 import type { Enforcer, Finding } from "../../engine/index.ts";
+import { readManifestPaths } from "../../integrity/index.ts";
 import {
 	checkDocNoInlineChangelog,
 	checkDocSingleOwner,
@@ -195,14 +196,19 @@ const MANAGED_DOCS: ReadonlySet<string> = new Set(["AGENTS.md", "CLAUDE.md"]);
 
 // SPEC §4.9.2 core/doc-single-owner: a staged doc is compared with every
 // other non-record doc on disk, and only a repeat that involves a staged doc
-// is reported (the check names its pair as `repeats <owner> in <path>`).
+// is reported (the check names its pair as `repeats <owner> in <path>`). A
+// manifest-listed file is generated and owned by its template (§4.14.1), so
+// it is neither judged nor counted; no readable manifest exempts nothing.
 export const liveSingleOwner: LiveDocJudge = async (args, docs) => {
-	const judged = docs.filter((doc) => !MANAGED_DOCS.has(doc.path));
+	const generated = new Set(await readManifestPaths(args.ports));
+	const judged = docs.filter(
+		(doc) => !MANAGED_DOCS.has(doc.path) && !generated.has(doc.path),
+	);
 	const staged = new Set(judged.map((doc) => doc.path));
 	const all = [...judged];
 	const listed = await args.ports.fs.glob("**/*.md", "docs");
 	for (const path of listed.ok ? listed.value : []) {
-		if (staged.has(path) || !isRealDoc(path)) {
+		if (staged.has(path) || generated.has(path) || !isRealDoc(path)) {
 			continue;
 		}
 		const read = await readIfPresent(args.ports, path);
