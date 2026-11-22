@@ -17,7 +17,7 @@ Read only the row you need. A `NAME.md` beside a `NAME/` folder is a router: rea
 | Code rules: placement, naming, errors, determinism, tests, comments, anti-patterns | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) |
 | Exact commands for the validation phase and each exit gate | [docs/VALIDATION.md](docs/VALIDATION.md) |
 | A bug: diagnosis, the registry row, the regression test | [docs/DEBUGGING.md](docs/DEBUGGING.md) |
-| Toolchain, OpenCode with the Meta Model API, VS Code | [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md) |
+| Toolchain, dogfooding harness setup, VS Code | [docs/LOCAL_SETUP.md](docs/LOCAL_SETUP.md) |
 | Exact dependency and toolchain versions | SPEC §2 — never a version from memory |
 | Why the code or a doc is the way it is | `docs/HISTORY/` (one entry per commit, grammar SPEC §7.7) |
 | Known defects | `docs/BUGS/` |
