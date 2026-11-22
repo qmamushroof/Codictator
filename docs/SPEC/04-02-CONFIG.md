@@ -32,7 +32,7 @@ There is no environment-variable or CLI-flag override of any rule parameter, so 
 
 ## 4.2.3 The human-only change path
 
-`config.json`, `waivers.json`, custom pack acceptance and baseline raises change only through human-only commands (§4.19.2); the first config is the one exception, which `setup` may create for an agent on a fresh repo (§4.19.6). A human-only command requires an interactive TTY on stdin and stdout and refuses to run when any agent marker is present (`CODICTATOR_HOOK=1`, set by the launcher, plus every configured adapter's `agentEnvMarkers`, §7.9), returning `CDX-E107`. Agents are additionally blocked from running these commands by the shell guard (§4.14.3). A hand edit of `config.json` is allowed for humans; it is validated identically and its change appears in the CI summary (§4.18.4).
+`config.json`, `waivers.json`, custom pack acceptance and baseline raises change only through human-only commands (§4.19.2); the first config is the one exception, which `setup` may create for an agent on a fresh repo (§4.19.6). A human-only command requires an interactive TTY on stdin and stdout and refuses to run when any agent marker is present (`CODICTATOR_HOOK=1`, set by the launcher, plus every configured adapter's `agentEnvMarkers`, §7.9), returning `CDX-E107`. Agents are additionally blocked from running these commands by the shell guard (§4.14.3), except `setup`, which the shell guard does not match: the CLI refuses `setup --repair` over an existing config itself (§4.19.6). A hand edit of `config.json` is allowed for humans; it is validated identically and its change appears in the CI summary (§4.18.4).
 
 ## 4.2.4 Edge cases
 
