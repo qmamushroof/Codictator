@@ -31,7 +31,7 @@ Record folders have no router: their file names (`YYYY-MM-DD`, `YYYY`) order the
 | `core/doc-links-valid` | Every relative link resolves to a file; every `#anchor` matches a GitHub-style heading slug in the target |
 | `core/doc-no-inline-changelog` | In non-record docs: no heading matching `(?i)^(change ?log\|history\|revisions?\|what'?s new\|updates?)$`; no line matching `(?i)^[-*]?\s*(updated\|changed\|added\|revised\|amended)( on)?\s+\d{4}-\d{2}-\d{2}` |
 | `core/doc-no-corpus-counts` | No sentence matching `(?i)\b(this\|the)\s+(corpus\|repo(sitory)?\|docs?\|spec\|prd\|folder)\s+(has\|contains\|holds\|consists of)\s+\d+` |
-| `core/doc-single-owner` | No sentence of ≥ 12 words appears, after whitespace and case normalisation, in two non-record docs |
+| `core/doc-single-owner` | No sentence of ≥ 12 words appears, after whitespace and case normalisation, in two non-record docs; a file listed in the manifest (§4.14.1) is generated, owned by its template, and neither judged nor counted |
 
 Runs at L1 on `tool.post.write` of a `.md` file (that file plus link targets), L3 on staged docs, L4 on all docs.
 

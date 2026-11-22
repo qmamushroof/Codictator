@@ -1,0 +1,118 @@
+{
+  "acceptanceCriteria": [
+    "core/doc-single-owner neither judges nor counts a manifest-listed file; hand-written docs are still judged; a missing or tampered manifest exempts nothing"
+  ],
+  "branch": "fix/doc-single-owner-generated",
+  "bugRowUpdated": true,
+  "diagnosis": "liveSingleOwner (features/packs/enforcers/docs-live.ts) judges every staged non-record md file and never consults the manifest, so manifest-listed generated files are judged and counted as duplicate sources",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/docs-live.ts",
+      "packages/codictator/tests/unit/packs/doc-single-owner-manifest-s49.test.ts",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-22.md",
+      "packages/codictator/tests/acceptance/consumer-doc-single-owner-manifest.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T01:29:02.948Z",
+    "tree": "a564b9411b69cc32b9781cd47567928f64ddb52c"
+  },
+  "historyStaged": true,
+  "id": "T-0083",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T01:16:04.929Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T01:16:24.521Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:16:49.450Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:24:33.271Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T01:24:34.098Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T01:24:34.839Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T01:28:44.882Z",
+    "commit": "a2e7feb480278fb1141d39efcb28b6aa4c7b1fd5",
+    "failing": [
+      "[consumer] [§4.9.2] staged manifest-listed regen output raises no doc-single-owner finding (BUG-0117)",
+      "[§4.9.2] doc-single-owner ignores two manifest-listed files sharing a sentence (BUG-0117)",
+      "[§4.9.2] doc-single-owner ignores a manifest-listed file repeating a hand-written doc (BUG-0117)"
+    ],
+    "tree": "a564b9411b69cc32b9781cd47567928f64ddb52c"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T01:24:33.735Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0083-r1",
+      "round": 1,
+      "tree": "da4b02921c2e36ced159ce00e2fa8e1d0ddf5916"
+    }
+  ],
+  "spec": [
+    "SPEC §4.9.2",
+    "SPEC §4.14.1"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/doc-single-owner-manifest-s49.test.ts",
+      "title": "[§4.9.2] doc-single-owner ignores two manifest-listed files sharing a sentence (BUG-0117)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/doc-single-owner-manifest-s49.test.ts",
+      "title": "[§4.9.2] doc-single-owner ignores a manifest-listed file repeating a hand-written doc (BUG-0117)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/doc-single-owner-manifest-s49.test.ts",
+      "title": "[§4.9.2] doc-single-owner still flags two hand-written docs beside a manifest (BUG-0117)"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/doc-single-owner-manifest-s49.test.ts",
+      "title": "[§4.9.2] doc-single-owner exempts nothing when the manifest is missing or tampered (BUG-0117)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-doc-single-owner-manifest.test.ts",
+      "title": "[consumer] [§4.9.2] staged manifest-listed regen output raises no doc-single-owner finding (BUG-0117)"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-doc-single-owner-manifest.test.ts",
+      "title": "[consumer] [§4.9.2] two staged hand-written docs sharing a sentence still raise doc-single-owner (BUG-0117)"
+    }
+  ],
+  "title": "doc-single-owner skips manifest-listed generated files",
+  "type": "fix",
+  "version": 1
+}
+
