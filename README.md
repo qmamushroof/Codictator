@@ -8,7 +8,7 @@ Rules files only ask — Codictator turns each rule into something that runs: co
 
 Asked for a bad outcome, the agent is steered to the compliant one and told which rule applied. Nothing is hidden.
 
-> **Status: 0.2.6 published on npm, the VS Code Marketplace, and Open VSX.** Packages `codictator` and `codictator-vscode` are at 0.2.6 ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md) green).
+> **Status: 0.2.9 published on npm, the VS Code Marketplace, and Open VSX.** Packages `codictator` and `codictator-vscode` are at 0.2.9 ([ROADMAP phase 13](docs/ROADMAP/13-RELEASE.md) green).
 >
 > Install from the registries below; source builds remain an alternative. Scope: [PRD §9](docs/PRD/09-RELEASE-SCOPE.md).
 
@@ -24,8 +24,8 @@ Asked for a bad outcome, the agent is steered to the compliant one and told whic
 
 ## Harnesses and languages
 
-- Harnesses: Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, Muse Code, OpenCode, plus Universal via `AGENTS.md`, git hooks and CI. All are supported equally.
-- Languages: TypeScript/JavaScript with full npm enforcement, and Python with pack rules, extractor and PyPI enforcement. Language-agnostic rules apply to any repo. Planned next: .NET.
+- Harnesses: Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, Muse Code, OpenCode, plus Universal via `AGENTS.md`, git hooks and CI.
+- Languages: TypeScript/JavaScript with full npm enforcement, .NET ([SPEC §6.2](docs/SPEC/06-LANGUAGE-PACKS.md)), and Python with pack rules, extractor and PyPI enforcement. Language-agnostic rules apply to any repo.
 - Models: any OpenAI- or Anthropic-compatible provider (including Meta's), or a local model. What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5](docs/SPEC/04-05-ADAPTERS.md).
 
 ## Install
