@@ -160,13 +160,13 @@ test("[§4.19.6] setup handoff prints exact runnable commands only when packs ar
 	// SPEC §4.19.6 step 8: pack-less setup prints the exact one-line
 	// commands; a setup with packs keeps the generic views handoff.
 	const empty = setupHandoffLines(true);
-	assert.ok(
-		empty.includes("  npx codictator setup --repair --pack typescript"),
+	assert.equal(
+		empty.find((line) => line.includes("--repair --pack typescript")),
+		"  npx codictator setup --repair --pack typescript",
 	);
-	assert.ok(
-		empty.includes(
-			"Fresh adoption omits --repair: npx codictator setup --pack <typescript|dotnet|python>",
-		),
+	assert.equal(
+		empty.find((line) => line.startsWith("Fresh adoption")),
+		"Fresh adoption omits --repair: npx codictator setup --pack <typescript|dotnet|python>",
 	);
 	assert.ok(
 		empty.includes(
