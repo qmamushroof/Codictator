@@ -1,0 +1,67 @@
+{
+  "acceptanceCriteria": [
+    "BUG-0117 is filed open at the top of docs/BUGS/2026-7.md with empty Fix and Regression cells"
+  ],
+  "branch": "fix/doc-single-owner-generated",
+  "files": {
+    "allow": [
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0082",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T01:15:01.587Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T01:15:02.046Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:15:02.495Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:15:02.998Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T01:15:09.173Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T01:15:10.114Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T01:15:08.675Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "orchestrator-review-T-0082-r1",
+      "round": 1,
+      "tree": "2d82e314b322b852c91719e51248db280b4fb970"
+    }
+  ],
+  "spec": [
+    "SPEC §4.9.2",
+    "SPEC §4.14.1"
+  ],
+  "title": "file doc-single-owner generated-file defect",
+  "type": "docs",
+  "version": 1
+}
+
