@@ -191,23 +191,29 @@ export function resolveConventionalCommit(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	return scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
-		// Commit subjects arrive as marker reports (SPEC §4.4.1
-		// sample.txt fixtures); source files carry `subject:` lines
-		// of their own (parameters, YAML keys), which are not commits.
-		if (!isMarkerFile(file)) {
-			return;
-		}
-		const subject = parseMarkers(text).get("subject") ?? "";
-		if (subject === "" || SUBJECT_PATTERN.test(subject)) {
-			return;
-		}
-		findings.push(
-			findingFor(binding, {
-				path: file,
-				message: "commit subject does not match the conventional form",
-				vars: { path: file, detail: subject },
-			}),
-		);
-	});
+	return scopeTextRule(
+		decl,
+		rule,
+		ports,
+		(binding, file, text, findings) => {
+			// Commit subjects arrive as marker reports (SPEC §4.4.1
+			// sample.txt fixtures); source files carry `subject:` lines
+			// of their own (parameters, YAML keys), which are not commits.
+			if (!isMarkerFile(file)) {
+				return;
+			}
+			const subject = parseMarkers(text).get("subject") ?? "";
+			if (subject === "" || SUBJECT_PATTERN.test(subject)) {
+				return;
+			}
+			findings.push(
+				findingFor(binding, {
+					path: file,
+					message: "commit subject does not match the conventional form",
+					vars: { path: file, detail: subject },
+				}),
+			);
+		},
+		isMarkerFile,
+	);
 }

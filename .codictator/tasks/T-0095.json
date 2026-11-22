@@ -1,0 +1,119 @@
+{
+  "acceptanceCriteria": [
+    "core/arch-boundaries and the four sibling arch scope guards read only marker report files (sample.txt) from the scope, never every scope file; findings unchanged",
+    "scope-reading guards prefetch wide scopes through a bounded shared read cache and skip files they never judge, so verify --all finishes every guard within its budget"
+  ],
+  "branch": "refactor/size-debt",
+  "bugRowUpdated": true,
+  "diagnosis": "scopeTextRule (features/packs/enforcers/scope-text-rule.ts) loads every file of an empty-glob scope (~1350 files under verify --all) although the arch resolvers judge only the self-test markers parseMarkers reads from sample.txt reports; the first arch guard to run pays all the cold reads and exceeds its 1000 ms budget (CDX-E902)",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/arch-guards.ts",
+      "packages/codictator/tests/unit/packs/arch-scope-marker-reads-s54.test.ts",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-22.md",
+      "packages/codictator/src/features/packs/enforcers/arch-fitness-guards.ts",
+      "packages/codictator/src/features/packs/enforcers/ci-guards.ts",
+      "packages/codictator/src/features/packs/enforcers/deps-policy-guards.ts",
+      "packages/codictator/src/features/packs/enforcers/binding.ts",
+      "packages/codictator/src/features/packs/enforcers/scope-text-rule.ts",
+      "packages/codictator/src/features/packs/enforcers/pre-tool-files.ts",
+      "packages/codictator/tests/acceptance/consumer-verify-all-arch-budget.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T03:38:22.676Z",
+    "tree": "815a5c03f91f36a889507aee24f8544444a316ac"
+  },
+  "historyStaged": true,
+  "id": "T-0095",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T03:35:26.596Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T03:35:39.063Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:38:27.854Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:45:30.361Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T03:45:31.393Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T03:45:44.763Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T03:35:38.688Z",
+    "commit": "575d6ec8f8237abcc96a00c484052fa6eaaf1c74",
+    "failing": [
+      "[§5.7] arch scope guards read only marker reports"
+    ],
+    "tree": "815a5c03f91f36a889507aee24f8544444a316ac"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T03:45:30.942Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0095-r1",
+      "round": 1,
+      "tree": "3d6e94ad00d7de02242f14377f59beb55bbf420d"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T03:48:48.434Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0095-r2",
+      "round": 2,
+      "tree": "942a3dda96de5858d3a373d16a274cfd8108f469"
+    }
+  ],
+  "spec": [
+    "SPEC §5.7",
+    "SPEC §4.11.4",
+    "SPEC §4.4.4"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/arch-scope-marker-reads-s54.test.ts",
+      "title": "[§5.7] arch scope guards read only marker reports"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/consumer-verify-all-arch-budget.test.ts",
+      "title": "[consumer] [§5.7] verify --all judges core/arch-boundaries within its budget (BUG-0118)"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/packs/arch-scope-marker-reads-s54.test.ts",
+      "title": "[§5.7] arch scope guards read only marker reports"
+    }
+  ],
+  "title": "judge only marker reports in the arch scope guards",
+  "type": "fix",
+  "version": 1
+}
+

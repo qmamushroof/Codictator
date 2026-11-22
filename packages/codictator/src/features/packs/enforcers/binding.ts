@@ -188,6 +188,31 @@ export async function readLossyText(
 	return cachedLossyText(fs, path);
 }
 
+// Cold reads of a wide scope run a bounded number at a time into the shared
+// read cache, so the in-order judge loops that follow hit the cache instead
+// of paying one confine-and-read round trip per file in sequence (a whole
+// repo read in sequence exceeded the 1000 ms guard budget, CDX-E902).
+const PREFETCH_WIDTH = 32;
+
+export async function prefetchTexts(
+	fs: Fs,
+	files: ReadonlyArray<string>,
+): Promise<void> {
+	let next = 0;
+	const worker = async (): Promise<void> => {
+		while (next < files.length) {
+			const file = files[next];
+			next += 1;
+			if (file !== undefined) {
+				await cachedLossyText(fs, file);
+			}
+		}
+	};
+	await Promise.all(
+		Array.from({ length: Math.min(PREFETCH_WIDTH, files.length) }, worker),
+	);
+}
+
 // Shared pack-author arg narrowing: every kind takes an args object, and
 // malformed args fail the load (CDX-E203) before any check runs. An absent
 // or empty args object means the pack declares no binding: the resolver

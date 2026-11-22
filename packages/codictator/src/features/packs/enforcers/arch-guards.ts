@@ -17,8 +17,22 @@ export {
 
 import { archLiveFindings } from "./arch-live.ts";
 import { bindRule, findingFor } from "./binding.ts";
+import { isMarkerFile } from "./health-markers.ts";
 import { parseMarkers } from "./health-measures.ts";
 import { scopeTextRule } from "./scope-text-rule.ts";
+
+// These rules read marker reports only, the same isMarkerFile filter that
+// code-health, ci-guards and deps-guards already apply, so no other scope
+// file is loaded; under verify --all that read of every tracked file
+// exceeded the guard budget (BUG-0118).
+function markerTextRule(
+	decl: EnforcerDecl,
+	rule: PackRule,
+	ports: Ports,
+	judge: Parameters<typeof scopeTextRule>[3],
+): Result<Enforcer> {
+	return scopeTextRule(decl, rule, ports, judge, isMarkerFile);
+}
 
 // SPEC §4.11.4: the four L1 rules judge a live write against the configured
 // module map beside their fixture marker reports.
@@ -59,7 +73,7 @@ export function resolveArchProfileDeclared(
 	rule: PackRule,
 	ports: Ports,
 ): Result<Enforcer> {
-	return scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
+	return markerTextRule(decl, rule, ports, (binding, file, text, findings) => {
 		if ((parseMarkers(text).get("profile") ?? "") === "none") {
 			flag(findings, binding, file, `architecture profile missing for ${file}`);
 		}
@@ -75,7 +89,7 @@ export function resolveArchModuleMapped(
 	return withArchLive(
 		ports,
 		rule,
-		scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
+		markerTextRule(decl, rule, ports, (binding, file, text, findings) => {
 			if ((parseMarkers(text).get("module") ?? "") === "unmapped") {
 				flag(findings, binding, file, `file outside every module: ${file}`);
 			}
@@ -92,7 +106,7 @@ export function resolveArchBoundaries(
 	return withArchLive(
 		ports,
 		rule,
-		scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
+		markerTextRule(decl, rule, ports, (binding, file, text, findings) => {
 			if ((parseMarkers(text).get("allowed") ?? "") === "false") {
 				flag(findings, binding, file, `import along a denied edge in ${file}`);
 			}
@@ -113,7 +127,7 @@ export function resolveArchPublicEntry(
 	return withArchLive(
 		ports,
 		rule,
-		scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
+		markerTextRule(decl, rule, ports, (binding, file, text, findings) => {
 			const deep = [...text.matchAll(/^[ \t]*import:[ \t]*(\S+)/gm)].some(
 				(match) =>
 					(match[1] ?? "")
@@ -144,7 +158,7 @@ export function resolveArchNoCycles(
 	return withArchLive(
 		ports,
 		rule,
-		scopeTextRule(decl, rule, ports, (binding, file, text, findings) => {
+		markerTextRule(decl, rule, ports, (binding, file, text, findings) => {
 			const edges = parseMarkers(text).get("edges") ?? "";
 			const nodes = edges
 				.split("->")
