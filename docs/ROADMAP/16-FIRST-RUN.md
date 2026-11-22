@@ -35,6 +35,26 @@
   - **Task:** `feature`, branch `feat/upgrade-command`.
   - **Do:** tests for SPEC §4.19.7 EC-16..21 entered red, then the command inside `cli` reusing the setup install helpers; the install must not match the uninstall shapes of SPEC §4.14.3.
   - **Verify:** `npm run ledger -- --covers "§4.19 EC-16..21"` exits 0; the always-set is green.
+- [ ] **16.0g** Fix BUG-0119: regen leaves untracked harness files.
+  - **Task:** `fix`, branch `fix/regen-untracked-files`.
+  - **Do:** a test traced to SPEC §4.14.1 entered red, then `regen` leaves no untracked, ungitignored harness file in this repo.
+  - **Verify:** the test is green; BUG-0119 is fixed with its regression test.
+- [ ] **16.0h** Fix BUG-0120: the prompt hook fails closed with CDX-E904.
+  - **Task:** `fix`, branch `fix/prompt-hook-e904`.
+  - **Do:** a test traced to SPEC §4.5 entered red, then the `prompt` trigger has an effective enforcer or no installed hook; confirm the scope for consumer repos first.
+  - **Verify:** the test is green; BUG-0120 is fixed with its regression test.
+- [ ] **16.0i** Fix BUG-0121: the no-guard-removal false positive.
+  - **Task:** `fix`, branch `fix/guard-removal-false-positive`.
+  - **Do:** a test traced to SPEC §4.7.1 entered red, then `removedGuards` tells a changed assert from a weakened one.
+  - **Verify:** the test is green; BUG-0121 is fixed with its regression test.
+- [ ] **16.0j** SPEC first: a light workflow path for docs-only and bug-row changes.
+  - **Task:** `docs`, branch `docs/light-workflow-path`.
+  - **Do:** state in SPEC §4.12.2 that a docs-only or bug-row-only change skips the test phases and the separate review round; add the edge cases.
+  - **Verify:** fresh-session docs review; no sentence of SPEC §4.12 and docs/AGENTIC_WORKFLOW.md disagrees.
+- [ ] **16.0k** Fix BUG-0122 and BUG-0123.
+  - **Task:** `fix`, branch `fix/task-close-and-explain-e401`.
+  - **Do:** tests traced to SPEC §4.12.1 and §8.1 entered red, then `task close` keeps the committed task record, and the CDX-E401 explain text is widened to match SPEC §8.1 without tripping core/duplication.
+  - **Verify:** the tests are green; BUG-0122 and BUG-0123 are fixed with regression tests.
 - [ ] **16.1** SPEC first: give `setup` a time budget.
   - **Task:** `docs`, branch `docs/16-setup-budget`.
   - **Do:** time `npx codictator setup` on each fixture repo of SPEC §10.2, on all three OSes, with a warm npm cache. Add a SPEC §9.3 row for time from command start to first green verify, set from those timings.

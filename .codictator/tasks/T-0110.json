@@ -1,0 +1,68 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.19.8 states the shipped upgrade behaviours; bug rows and roadmap steps queued"
+  ],
+  "branch": "feat/upgrade-command",
+  "bugRowUpdated": true,
+  "files": {
+    "allow": [
+      "docs/SPEC/04-19-CLI.md",
+      "docs/BUGS/2026-7.md",
+      "docs/ROADMAP/16-FIRST-RUN.md",
+      "docs/HISTORY/2026-11-22.md",
+      ".codictator/tasks/T-0110.json",
+      ".codictator/reviews/T-0110-r1.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0110",
+  "phase": "record",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T15:58:36.610Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T15:59:07.987Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T15:59:08.596Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T15:59:09.206Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T16:00:27.386Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T16:00:19.872Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "reviewer-T-0110-r1",
+      "round": 1,
+      "tree": "49b9e2ac43a59fb04477b08c44e330fd14206f18"
+    }
+  ],
+  "spec": [
+    "§4.19.8",
+    "§4.9.2",
+    "§7.7"
+  ],
+  "title": "docs: record upgrade deviations and queue overhead fixes",
+  "type": "docs",
+  "version": 1
+}
+
