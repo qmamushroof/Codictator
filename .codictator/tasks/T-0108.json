@@ -1,0 +1,71 @@
+{
+  "acceptanceCriteria": [
+    "PRD §12 #41, SPEC §4.19 upgrade rows, EC-16..21, CDX-E012 and README section exist and agree"
+  ],
+  "branch": "feat/upgrade-command",
+  "files": {
+    "allow": [
+      "docs/PRD/12-DECISIONS-LOG.md",
+      ".codictator/tasks/T-0108.json",
+      ".codictator/reviews/T-0108-r1.json",
+      "docs/**",
+      "README.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0108",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T14:50:23.732Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T14:50:24.455Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T14:50:53.176Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T14:51:22.177Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T14:55:49.879Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T14:56:16.217Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T14:55:36.576Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "c7c4481b-6602-4b18-adc4-a59a1b44ab27",
+      "round": 1,
+      "tree": "6416f13d3e38802aa60222f286a85f7b6a742004"
+    }
+  ],
+  "spec": [
+    "SPEC §4.19.2",
+    "SPEC §4.19.7",
+    "SPEC §8.1"
+  ],
+  "title": "docs: codictator upgrade command",
+  "type": "docs",
+  "version": 1
+}
+

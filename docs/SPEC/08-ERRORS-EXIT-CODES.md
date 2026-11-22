@@ -14,6 +14,7 @@ Every error is a `CdxError { code, message, detail?, remediation }` (§4.1.2). C
 | `CDX-E003` | Engine not installed at the root or tool dir, or setup install consent declined or unavailable | 6 |
 | `CDX-E010` | Unknown rule, event or error id for `explain` | 2 |
 | `CDX-E011` | Replay needs a pack version not installed | 6 |
+| `CDX-E012` | `upgrade` target refused: older than the pinned engine, or not an exact published stable version | 2 |
 | **E1xx** | **Configuration and the human path** | |
 | `CDX-E101` | Config missing, unparseable or schema-invalid | 3 |
 | `CDX-E102` | `config.codictator` ≠ installed engine | 3 |
@@ -44,7 +45,7 @@ Every error is a `CdxError { code, message, detail?, remediation }` (§4.1.2). C
 | `CDX-E305` | Hook payload over 8 MiB | 1 (blocks) |
 | `CDX-E306` | Shell command unparseable | 1 (blocks) |
 | **E4xx** | **Dependencies** | |
-| `CDX-E401` | Registry or advisory data unavailable and no usable snapshot, or a setup install hit a registry outage | 5 |
+| `CDX-E401` | Registry or advisory data unavailable and no usable snapshot, a setup install hit a registry outage, or an `upgrade` lookup or install did | 5 |
 | **E5xx** | **Integrity and CI** | |
 | `CDX-E501` | Managed block markers malformed or duplicated | 1 (blocks) |
 | `CDX-E503` | CI base commit unreachable (shallow clone) | 5 |

@@ -1,0 +1,3 @@
+{"version":1,"tree":"2be95e13414b7c80a533220dd67c2b22fd83649e","reviewerSession":"reviewer-T-0109-r2","findings":[
+{"id":"F1","severity":"minor","path":"packages/codictator/src/features/audit/explain-table-tail.ts","line":11,"message":"CDX-E401 explain text lacks the SPEC 8.1 wording (setup install outage, upgrade lookup or install); widen it once the core/duplication token-run block is solved. Non-blocking: code and exit 5 match."}
+]}

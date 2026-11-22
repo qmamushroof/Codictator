@@ -149,7 +149,7 @@ export async function setupInstallLayout(
 	});
 }
 
-function looksLikeRegistryOutage(output: string): boolean {
+export function looksLikeRegistryOutage(output: string): boolean {
 	return /ENOTFOUND|EAI_AGAIN|ETIMEDOUT|ECONNRESET|ECONNREFUSED|registry/i.test(
 		output,
 	);
