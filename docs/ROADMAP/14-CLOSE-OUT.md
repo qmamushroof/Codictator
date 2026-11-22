@@ -46,7 +46,7 @@ Run the steps in number order. Each one is its own task and branch.
   - **Task:** `docs`, branch `docs/14-readme-truth`.
   - **Do:** set the status version to the `version` field of `packages/codictator/package.json`. Run `npx codictator pack list` and make the Languages line agree with it. Check each harness line against the adapter capabilities of SPEC §4.5.
   - **Verify:** fresh-session docs review with zero open findings.
-- [ ] **14.9** Ship the fixes as a patch release.
+- [x] **14.9** Ship the fixes as a patch release.
   - **Task:** the tagging path of step 13.8 and SPEC §4.15.5.
   - **Do:** tag only after steps 14.1–14.8 are merged. Human: publish a GitHub Release for the tag, with notes drawn from `docs/HISTORY/`.
   - **Verify:** `gh release view <tag>` shows the notes, and `npm view codictator version` prints the tagged version.

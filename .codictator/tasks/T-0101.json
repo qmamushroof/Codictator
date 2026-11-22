@@ -1,0 +1,67 @@
+{
+  "acceptanceCriteria": [
+    "step 14.9 ticked only after v0.2.10 is tagged, released and published"
+  ],
+  "branch": "docs/14-ship-release",
+  "files": {
+    "allow": [
+      "docs/ROADMAP/14-CLOSE-OUT.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0101",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T05:31:41.103Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T05:31:41.505Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T05:31:41.942Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T05:32:28.193Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T05:32:28.707Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T05:32:29.751Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T05:32:24.731Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0101-r1",
+      "round": 1,
+      "tree": "96c3ff3e3d60695c2405d0e1eee08b218720a2a6"
+    }
+  ],
+  "spec": [
+    "SPEC §10.2",
+    "SPEC §10.7"
+  ],
+  "title": "docs(roadmap): tick close-out step 14.9",
+  "type": "docs",
+  "version": 1
+}
+
