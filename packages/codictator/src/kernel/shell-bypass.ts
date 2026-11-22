@@ -124,13 +124,21 @@ function matchHost(cmd: SimpleCommand): string | undefined {
 	return undefined;
 }
 
-function matchNpm(cmd: SimpleCommand): string | undefined {
+// SPEC §4.14.3: package-manager verbs that remove a dependency.
+const REMOVE_VERBS: ReadonlyMap<string, ReadonlySet<string>> = new Map([
+	["npm", new Set(["uninstall", "remove", "un", "rm", "r", "unlink"])],
+	["pnpm", new Set(["remove", "rm", "uninstall", "un"])],
+	["yarn", new Set(["remove"])],
+	["bun", new Set(["remove", "rm"])],
+]);
+
+function matchPackageRemove(cmd: SimpleCommand): string | undefined {
+	const verb = cmd.argv[0] ?? "";
 	if (
-		cmd.name === "npm" &&
-		["uninstall", "remove", "un", "rm"].includes(cmd.argv[0] ?? "") &&
-		cmd.argv.some((a) => a === "codictator")
+		REMOVE_VERBS.get(cmd.name)?.has(verb) === true &&
+		cmd.argv.some((a) => a === "codictator" || a.startsWith("codictator@"))
 	) {
-		return "npm uninstall codictator removes the engine the gates run on";
+		return `${cmd.name} ${verb} codictator removes the engine the gates run on`;
 	}
 	return undefined;
 }
@@ -163,7 +171,7 @@ export function matchBypassCommand(cmd: SimpleCommand): string | undefined {
 		matchGit(cmd) ??
 		matchDestructive(cmd) ??
 		matchHost(cmd) ??
-		matchNpm(cmd) ??
+		matchPackageRemove(cmd) ??
 		matchHumanOnly(cmd)
 	);
 }

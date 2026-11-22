@@ -12,11 +12,7 @@ import { handleSetup, SETUP_USAGE } from "../../../src/cli/setup.ts";
 
 import { ensureGitignoreEntries } from "../../../src/cli/setup-gitignore.ts";
 
-import {
-	SETUP_PACK_FRESH,
-	SETUP_PACK_REPAIR,
-	setupHandoffLines,
-} from "../../../src/cli/setup-handoff.ts";
+import { setupHandoffLines } from "../../../src/cli/setup-handoff.ts";
 
 import { setupNpmArgv } from "../../../src/cli/setup-install.ts";
 
@@ -73,14 +69,15 @@ test("[§4.19.6] setup with an unknown flag is a usage error", async () => {
 	}
 });
 
-test("[§4.19.6] setup without a TTY fails CDX-E107", async () => {
-	// SPEC §4.2.3: setup is human-only like init.
+test("[§4.19.6] setup without a TTY on a fresh repo is not refused as human-only", async () => {
+	// SPEC §4.19.6 (PRD §12 #40): only --repair over an existing config is
+	// human-only; a fresh repo proceeds and stops at the install consent.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		const ran = await handleSetup(req([], repo.dir));
 		assert.equal(ran.ok, false);
 		if (!ran.ok) {
-			assert.equal(ran.error.code, "CDX-E107");
+			assert.equal(ran.error.code, "CDX-E003");
 		}
 	} finally {
 		repo.cleanup();
@@ -159,26 +156,29 @@ test("[§4.19.6] the npm spawn target resolves without a shell on win32", () => 
 	assert.deepEqual(setupNpmArgv("darwin"), ["npm", "ci"]);
 });
 
-test("[§4.19.6] setup handoff prints exact runnable commands only when packs are empty", () => {
+test("[§4.19.6] setup handoff prints a hint line per built-in pack only when packs are empty", () => {
 	// SPEC §4.19.6 step 8: pack-less setup prints the exact one-line
 	// commands; a setup with packs keeps the generic views handoff.
-	assert.equal(
-		SETUP_PACK_REPAIR,
-		"npx codictator setup --repair --pack typescript",
-	);
-	assert.equal(SETUP_PACK_FRESH, "npx codictator setup --pack typescript");
 	const empty = setupHandoffLines(true);
+	assert.equal(
+		empty.find((line) => line.includes("--repair --pack typescript")),
+		"  npx codictator setup --repair --pack typescript",
+	);
+	assert.equal(
+		empty.find((line) => line.startsWith("Fresh adoption")),
+		"Fresh adoption omits --repair: npx codictator setup --pack <typescript|dotnet|python>",
+	);
 	assert.ok(
 		empty.includes(
 			"Setup complete — core rules only. No language packs installed.",
 		),
 	);
 	assert.ok(
-		empty.includes(
-			"To add a language pack, run exactly one line and press Enter:",
-		),
+		empty.includes("To add a language pack, run the line for your language:"),
 	);
-	assert.ok(empty.includes(`  ${SETUP_PACK_REPAIR}`));
+	assert.ok(
+		empty.includes("  npx codictator setup --repair --pack typescript"),
+	);
 	assert.ok(empty.includes("To install the VS Code extension, run:"));
 	assert.ok(
 		empty.includes("  code --install-extension codictator.codictator-vscode"),

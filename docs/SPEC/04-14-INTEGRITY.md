@@ -38,7 +38,7 @@ Each latch creation and removal is an `integrity` event (§7.10).
 |---|---|
 | Paths | Writes, moves or deletes of `.codictator/**` (all state changes go through `codictator` commands), every manifest artifact, `.githooks/**`, Codictator's block in `.husky/*`, `.github/workflows/codictator*.yml`, and edits to harness config files that change owned entries |
 | Manifests | A `package.json` (or tool manifest, §4.19.4) write that removes or changes the `codictator` dev dependency |
-| Commands | `git commit --no-verify`/`-n`, `git push --no-verify`, `HUSKY=0`, `SKIP=…`, `git -c core.hooksPath=…`, `git config core.hooksPath`, `chmod -x` on hooks, `rm`/`mv`/`git rm` on protected paths, `gh workflow disable`, `gh api` writes to branch protection or rulesets, `npm uninstall codictator`, and human-only `codictator` commands (§4.19.2) |
+| Commands | `git commit --no-verify`/`-n`, `git push --no-verify`, `HUSKY=0`, `SKIP=…`, `git -c core.hooksPath=…`, `git config core.hooksPath`, `chmod -x` on hooks, `rm`/`mv`/`git rm` on protected paths, `gh workflow disable`, `gh api` writes to branch protection or rulesets, `codictator` or `codictator@<version>` removed by `npm` (`uninstall`, `remove`, `un`, `rm`, `r`, `unlink`), `pnpm` (`remove`, `rm`, `uninstall`, `un`), `yarn` (`remove`) or `bun` (`remove`, `rm`), and human-only `codictator` commands (§4.19.2; `setup` is not matched, because the shell cannot see whether a config exists: the CLI refuses `--repair` over an existing config, §4.19.6) |
 
 Commands are matched by the shell analyser (§4.7.2), so wrappers (`bash -c`, `$(…)`, `env X=…`) do not hide them. There is no environment variable, flag or file that turns Codictator off.
 
@@ -66,3 +66,5 @@ Guardrails change only by changing config (human, §4.2.3) followed by `codictat
 | EC-10 | Manifest lists a file the user legitimately deleted with its harness | Drift until config drops the harness and `regen` runs |
 | EC-11 | Two `regen` runs on different OSes | Identical bytes |
 | EC-12 | Hook file not executable on Linux after a Windows commit | `core/hooks-active` reports; `.gitattributes`/`git update-index --chmod=+x` remediation |
+| EC-13 | Agent runs `pnpm remove codictator`, `yarn remove codictator@1.0.0`, `bun rm codictator` or `npm rm codictator` | Block (§4.14.3 Commands) |
+| EC-14 | Agent runs `npm uninstall left-pad` | Not blocked; only `codictator` or `codictator@<version>` is protected |

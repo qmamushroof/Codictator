@@ -11,6 +11,22 @@
 
 ## Steps
 
+- [x] **16.0a** SPEC and PRD first: agents may run `setup`.
+  - **Task:** `docs`, branch `docs/setup-agent-allowed`.
+  - **Do:** record PRD §12 #40; narrow the human-only rule of SPEC §4.19.2 and §4.19.6 to `setup --repair` over an existing config; add `--yes` and SPEC §4.19.7 EC-11..15; widen the uninstall shapes of SPEC §4.14.3.
+  - **Verify:** fresh-session docs review; no doc still calls `setup` human-only.
+- [x] **16.0b** Build the setup-agent-allowed change.
+  - **Task:** `feature`, branch `fix/setup-agent-allowed`.
+  - **Do:** tests for SPEC §4.19.7 EC-11..15 and the widened SPEC §4.14.3 uninstall shapes, entered red, then the gate, the `--yes` flag and the shell-guard change inside `cli` and `integrity` only.
+  - **Verify:** `npm run ledger -- --covers "§4.19 EC-11..15" "§4.14 EC-13..14"` exits 0; the always-set is green.
+- [x] **16.0c** SPEC first: the empty-packs message lists every built-in pack, and the shell-guard wording for `setup` is exact.
+  - **Task:** `docs`, branch `fix/setup-agent-allowed`.
+  - **Do:** rewrite the empty-packs paragraph of SPEC §4.19.6 so the message is generated from the built-in pack ids of SPEC §4.4.2 except `core`; reword SPEC §4.19.6, §4.14.3 and §4.2.3 to say the shell guard does not match `setup` and the CLI gate refuses `--repair` over an existing config.
+  - **Verify:** fresh-session docs review; no doc hardcodes `--pack typescript` as the only language pack.
+- [x] **16.0d** Build the setup empty-packs message from the built-in pack ids.
+  - **Task:** `feature`, branch `fix/setup-agent-allowed`.
+  - **Do:** a test traced to SPEC §4.19.6 entered red, then `setup` loops over the built-in pack ids for the repair lines and the fresh hint, inside `cli` only.
+  - **Verify:** the test is green; adding a built-in pack id changes the message with no text edit.
 - [ ] **16.1** SPEC first: give `setup` a time budget.
   - **Task:** `docs`, branch `docs/16-setup-budget`.
   - **Do:** time `npx codictator setup` on each fixture repo of SPEC §10.2, on all three OSes, with a warm npm cache. Add a SPEC §9.3 row for time from command start to first green verify, set from those timings.
@@ -38,7 +54,7 @@
   - **Verify:** the test is green on all three OSes.
 - [ ] **16.7** Test the README install section as written.
   - **Task:** `feature`, branch `feature/16-readme-quickstart-test`.
-  - **Do:** add an acceptance test that reads the fenced commands under the README "Install" heading and runs them, in order, on a fresh copy of the `ts-clean` fixture. The human-only `setup` runs through the test harness's human stand-in. Network access follows SPEC §10.2.
+  - **Do:** add an acceptance test that reads the fenced commands under the README "Install" heading and runs them, in order, on a fresh copy of the `ts-clean` fixture. `setup` runs with `--yes`. Network access follows SPEC §10.2.
   - **Verify:** the test is green; editing a README command to a wrong one turns it red.
 - [ ] **16.8** Human: first-run trial with three developers who have never seen Codictator.
   - **Do:** each gets only the README and a repo of their own. Note every question, hesitation and error. File each as an issue; a defect gets a `docs/BUGS/` row.

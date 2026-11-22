@@ -36,9 +36,9 @@ One command does everything ([SPEC §4.19.6](docs/SPEC/04-19-CLI.md)):
 npx codictator setup
 ```
 
-Run it yourself: `setup` is human-only and refuses under agent control (`CDX-E107`). Requires Node.js 24 LTS or newer and a git repo ([SPEC §4.19.4](docs/SPEC/04-19-CLI.md)).
+You or your agent can run it. In a terminal it asks before installing the tool lockfile; for non-interactive or agent runs add `--yes`, which consents to those installs. Only `setup --repair` over an existing config is human-only (`CDX-E107`). Requires Node.js 24 LTS or newer and a git repo ([SPEC §4.19.4](docs/SPEC/04-19-CLI.md)).
 
-`setup` runs adoption end to end — guardrails, engine install, git hooks, a first evaluation, then the extension handoff (`code --install-extension codictator.codictator-vscode`). Flags mirror `init` (`--harness`, `--profile`, `--pack`, `--tool`, `--repair`); without `--pack` you get core rules only, and `--repair --pack <name>` adds a language pack later.
+`setup` runs adoption end to end — guardrails, engine install, git hooks, a first evaluation, then the extension handoff (`code --install-extension codictator.codictator-vscode`). Flags mirror `init` (`--harness`, `--profile`, `--pack`, `--tool`, `--repair`) plus `--yes`; without `--pack` you get core rules only, and `--repair --pack <name>` adds a language pack later.
 
 Prefer the steps separately?
 

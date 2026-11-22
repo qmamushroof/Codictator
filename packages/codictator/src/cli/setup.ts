@@ -8,11 +8,12 @@ import type { Result } from "../kernel/index.ts";
 import { err, ok } from "../kernel/index.ts";
 import { configureHooksPath, handleRegen } from "./guardrail.ts";
 import { writeHookFiles } from "./hook-files.ts";
+import { refuseNonHuman } from "./human-gate.ts";
 import { parseInitFlags } from "./init.ts";
 import {
 	defaultHarnesses,
 	type InitFlags,
-	initPreamble,
+	resolveRootOrFail,
 	runInitSequence,
 } from "./init-plan.ts";
 import { handleVerify } from "./inspect.ts";
@@ -37,7 +38,7 @@ import {
 } from "./shared.ts";
 
 export const SETUP_USAGE =
-	"usage: codictator setup [--harness <id> ...] [--profile <app|library|cli|service>] [--pack <id> ...] [--tool <role>=<command>@<pin> ...] [--repair]";
+	"usage: codictator setup [--harness <id> ...] [--profile <app|library|cli|service>] [--pack <id> ...] [--tool <role>=<command>@<pin> ...] [--repair] [--yes]";
 
 export interface SetupStep {
 	readonly step: string;
@@ -45,9 +46,12 @@ export interface SetupStep {
 	readonly detail?: Record<string, unknown>;
 }
 
-// SPEC §4.19.6 step 1: the Node floor, the human gate and the repo root.
+// SPEC §4.19.6 step 1: the Node floor, the repo root and the human gate.
+// Only --repair over an existing config is human-only (PRD §12 #40); a
+// fresh repo and the regen path run for agents too.
 async function setupPreflight(
 	req: CommandRequest,
+	flags: InitFlags,
 ): Promise<string | Result<number>> {
 	const version = req.nodeVersion ?? process.version;
 	if (nodeMajor(version) < MIN_NODE_MAJOR) {
@@ -58,7 +62,12 @@ async function setupPreflight(
 			req.json,
 		);
 	}
-	return initPreamble(req);
+	const root = await resolveRootOrFail(req);
+	if (typeof root !== "string" || !flags.repair) {
+		return root;
+	}
+	const existing = await readStateText(root, ".codictator/config.json");
+	return (existing === undefined ? undefined : refuseNonHuman(req)) ?? root;
 }
 
 // SPEC §4.19.6 step 2: the adoption path. An existing config without
@@ -189,11 +198,13 @@ function setupHandoff(
 export async function handleSetup(
 	req: CommandRequest,
 ): Promise<Result<number>> {
-	const flags = parseInitFlags(req.args);
+	// --yes is setup-only: init's parser never sees it (SPEC §4.19.6).
+	const yes = req.args.includes("--yes");
+	const flags = parseInitFlags(req.args.filter((arg) => arg !== "--yes"));
 	if (flags === undefined) {
 		return usageError(SETUP_USAGE);
 	}
-	const preflight = await setupPreflight(req);
+	const preflight = await setupPreflight(req, flags);
 	if (typeof preflight !== "string") {
 		return preflight;
 	}
@@ -207,11 +218,13 @@ export async function handleSetup(
 	if (!ignored.ok) {
 		return ignored;
 	}
-	const layout = await setupInstallLayout(req, root, steps);
+	const layout = await setupInstallLayout(req, root, steps, { yes });
 	if (!layout.ok) {
 		return err(layout.error);
 	}
-	const installed = await setupInstallHere(req, root, layout.value, steps);
+	const installed = await setupInstallHere(req, root, layout.value, steps, {
+		yes,
+	});
 	if (!installed.ok) {
 		return installed;
 	}

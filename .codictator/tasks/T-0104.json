@@ -1,0 +1,73 @@
+{
+  "acceptanceCriteria": [
+    "empty-packs message lists every built-in language pack from the built-in id list",
+    "shell guard wording says setup is not matched and the CLI refuses repair over config"
+  ],
+  "branch": "fix/setup-agent-allowed",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-19-CLI.md",
+      "docs/SPEC/04-14-INTEGRITY.md",
+      "docs/SPEC/04-02-CONFIG.md",
+      "docs/ROADMAP/16-FIRST-RUN.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0104",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T10:37:47.696Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T10:37:48.140Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T10:38:09.168Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T10:38:25.397Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T10:39:24.095Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T10:39:29.434Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T10:39:17.036Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "ae6c3869caf504ab1",
+      "round": 1,
+      "tree": "fa46771653d2bacbc549695f61d41d956103554f"
+    }
+  ],
+  "spec": [
+    "SPEC §4.19.6",
+    "SPEC §4.14.3",
+    "SPEC §4.2.3",
+    "SPEC §4.4.2"
+  ],
+  "title": "docs(spec): list every built-in pack in the setup hint and fix the shell-guard wording",
+  "type": "docs",
+  "version": 1
+}
+
