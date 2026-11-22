@@ -100,7 +100,7 @@ A thin client over the same engine (§12 #2). It shows, live:
 | **Budget** | Context and token usage against bands, where the harness exposes it |
 | **Health** | Ratchet trends, dependency freshness, guardrail integrity |
 
-Installing the extension is enough to start: in a repo without Codictator it offers one-click setup, which hands `init` to the human in a terminal. The extension can run Codictator commands; it cannot do anything the CLI refuses.
+Installing the extension is enough to start: in a repo without Codictator it offers one-click setup, which opens a terminal pre-filled with the `setup` command. The extension can run Codictator commands; it cannot do anything the CLI refuses.
 
 ## 7.11 Transparency and records
 

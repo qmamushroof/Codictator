@@ -11,6 +11,14 @@
 
 ## Steps
 
+- [x] **16.0a** SPEC and PRD first: agents may run `setup`.
+  - **Task:** `docs`, branch `docs/setup-agent-allowed`.
+  - **Do:** record PRD §12 #40; narrow the human-only rule of SPEC §4.19.2 and §4.19.6 to `setup --repair` over an existing config; add `--yes` and SPEC §4.19.7 EC-11..15; widen the uninstall shapes of SPEC §4.14.3.
+  - **Verify:** fresh-session docs review; no doc still calls `setup` human-only.
+- [ ] **16.0b** Build the setup-agent-allowed change.
+  - **Task:** `feature`, branch `fix/setup-agent-allowed`.
+  - **Do:** tests for SPEC §4.19.7 EC-11..15 and the widened SPEC §4.14.3 uninstall shapes, entered red, then the gate, the `--yes` flag and the shell-guard change inside `cli` and `integrity` only.
+  - **Verify:** `npm run ledger -- --covers "§4.19 EC-11..15" "§4.14 EC-13..14"` exits 0; the always-set is green.
 - [ ] **16.1** SPEC first: give `setup` a time budget.
   - **Task:** `docs`, branch `docs/16-setup-budget`.
   - **Do:** time `npx codictator setup` on each fixture repo of SPEC §10.2, on all three OSes, with a warm npm cache. Add a SPEC §9.3 row for time from command start to first green verify, set from those timings.
@@ -38,7 +46,7 @@
   - **Verify:** the test is green on all three OSes.
 - [ ] **16.7** Test the README install section as written.
   - **Task:** `feature`, branch `feature/16-readme-quickstart-test`.
-  - **Do:** add an acceptance test that reads the fenced commands under the README "Install" heading and runs them, in order, on a fresh copy of the `ts-clean` fixture. The human-only `setup` runs through the test harness's human stand-in. Network access follows SPEC §10.2.
+  - **Do:** add an acceptance test that reads the fenced commands under the README "Install" heading and runs them, in order, on a fresh copy of the `ts-clean` fixture. `setup` runs with `--yes`. Network access follows SPEC §10.2.
   - **Verify:** the test is green; editing a README command to a wrong one turns it red.
 - [ ] **16.8** Human: first-run trial with three developers who have never seen Codictator.
   - **Do:** each gets only the README and a repo of their own. Note every question, hesitation and error. File each as an issue; a defect gets a `docs/BUGS/` row.

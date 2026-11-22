@@ -1,0 +1,68 @@
+{
+  "acceptanceCriteria": [
+    "setup allowed for agents except --repair over existing config; --yes consent; uninstall guard widened; docs agree"
+  ],
+  "branch": "docs/setup-agent-allowed",
+  "files": {
+    "allow": [
+      "docs/PRD/12-DECISIONS-LOG.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0102",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T10:08:23.641Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T10:08:23.994Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T10:09:46.924Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T10:11:14.135Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T10:11:29.367Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T10:11:44.905Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T10:11:29.007Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "aad7c6b53f36f7101",
+      "round": 1,
+      "tree": "78c00c00e4dfaa084e5d0ab2a1a7c4956010e3d3"
+    }
+  ],
+  "spec": [
+    "SPEC §4.19.2",
+    "SPEC §4.19.6",
+    "SPEC §4.14.3",
+    "SPEC §4.2.3"
+  ],
+  "title": "docs(setup): let agents run setup except repair over config",
+  "type": "docs",
+  "version": 1
+}
+
