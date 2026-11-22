@@ -52,7 +52,7 @@ export {
 	loadBuiltinPack,
 	loadPack,
 } from "./loader.ts";
-export { isBuiltinPackId } from "./manifest.ts";
+export { BUILTIN_PACK_IDS, isBuiltinPackId } from "./manifest.ts";
 export { resolveManifestEnforcers, resolvePackEnforcers } from "./registry.ts";
 export { loadedPackRoots } from "./roots.ts";
 // SPEC §4.4.4: self-test every rule against its fixtures before use.

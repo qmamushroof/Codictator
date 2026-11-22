@@ -23,8 +23,8 @@
   - **Task:** `docs`, branch `fix/setup-agent-allowed`.
   - **Do:** rewrite the empty-packs paragraph of SPEC §4.19.6 so the message is generated from the built-in pack ids of SPEC §4.4.2 except `core`; reword SPEC §4.19.6, §4.14.3 and §4.2.3 to say the shell guard does not match `setup` and the CLI gate refuses `--repair` over an existing config.
   - **Verify:** fresh-session docs review; no doc hardcodes `--pack typescript` as the only language pack.
-- [ ] **16.0d** Build the setup empty-packs message from the built-in pack ids.
-  - **Task:** `feature`, branch `feature/16-setup-pack-hint`.
+- [x] **16.0d** Build the setup empty-packs message from the built-in pack ids.
+  - **Task:** `feature`, branch `fix/setup-agent-allowed`.
   - **Do:** a test traced to SPEC §4.19.6 entered red, then `setup` loops over the built-in pack ids for the repair lines and the fresh hint, inside `cli` only.
   - **Verify:** the test is green; adding a built-in pack id changes the message with no text edit.
 - [ ] **16.1** SPEC first: give `setup` a time budget.

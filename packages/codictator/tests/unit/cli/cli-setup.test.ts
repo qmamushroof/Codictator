@@ -12,11 +12,7 @@ import { handleSetup, SETUP_USAGE } from "../../../src/cli/setup.ts";
 
 import { ensureGitignoreEntries } from "../../../src/cli/setup-gitignore.ts";
 
-import {
-	SETUP_PACK_FRESH,
-	SETUP_PACK_REPAIR,
-	setupHandoffLines,
-} from "../../../src/cli/setup-handoff.ts";
+import { setupHandoffLines } from "../../../src/cli/setup-handoff.ts";
 
 import { setupNpmArgv } from "../../../src/cli/setup-install.ts";
 
@@ -163,23 +159,26 @@ test("[§4.19.6] the npm spawn target resolves without a shell on win32", () => 
 test("[§4.19.6] setup handoff prints exact runnable commands only when packs are empty", () => {
 	// SPEC §4.19.6 step 8: pack-less setup prints the exact one-line
 	// commands; a setup with packs keeps the generic views handoff.
-	assert.equal(
-		SETUP_PACK_REPAIR,
-		"npx codictator setup --repair --pack typescript",
-	);
-	assert.equal(SETUP_PACK_FRESH, "npx codictator setup --pack typescript");
 	const empty = setupHandoffLines(true);
+	assert.ok(
+		empty.includes("  npx codictator setup --repair --pack typescript"),
+	);
+	assert.ok(
+		empty.includes(
+			"Fresh adoption omits --repair: npx codictator setup --pack <typescript|dotnet|python>",
+		),
+	);
 	assert.ok(
 		empty.includes(
 			"Setup complete — core rules only. No language packs installed.",
 		),
 	);
 	assert.ok(
-		empty.includes(
-			"To add a language pack, run exactly one line and press Enter:",
-		),
+		empty.includes("To add a language pack, run the line for your language:"),
 	);
-	assert.ok(empty.includes(`  ${SETUP_PACK_REPAIR}`));
+	assert.ok(
+		empty.includes("  npx codictator setup --repair --pack typescript"),
+	);
 	assert.ok(empty.includes("To install the VS Code extension, run:"));
 	assert.ok(
 		empty.includes("  code --install-extension codictator.codictator-vscode"),

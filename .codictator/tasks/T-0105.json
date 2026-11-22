@@ -1,0 +1,110 @@
+{
+  "acceptanceCriteria": [
+    "empty-packs lines are generated from BUILTIN_PACK_IDS minus core"
+  ],
+  "branch": "fix/setup-agent-allowed",
+  "files": {
+    "allow": [
+      "packages/codictator/src/cli/setup-handoff.ts",
+      "packages/codictator/src/features/packs/index.ts",
+      "packages/codictator/tests/unit/cli/cli-setup.test.ts",
+      "packages/codictator/tests/unit/cli/cli-setup-pack-hint.test.ts",
+      "docs/ROADMAP/16-FIRST-RUN.md",
+      "docs/HISTORY/2026-11-22.md",
+      "packages/codictator/tests/acceptance/setup-pack-hint.test.ts"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T10:52:17.704Z",
+    "tree": "8fa8b416b60136a088a401f6cdac486f07ab0b58"
+  },
+  "historyStaged": true,
+  "id": "T-0105",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T10:41:05.892Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T10:41:13.263Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T10:50:05.655Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T10:50:11.843Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T10:50:46.951Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T10:50:47.857Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T10:52:09.199Z",
+    "commit": "bebf88b589600c7007f746a03fffbae61768fbd0",
+    "failing": [
+      "[§4.19.6] setup with no --pack prints a repair line per built-in pack except core and the fresh hint"
+    ],
+    "tree": "8fa8b416b60136a088a401f6cdac486f07ab0b58"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T10:50:33.925Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0105-r1",
+      "round": 1,
+      "tree": "a19db3c5367a5be9ac420acaf989dc2a8af19b63"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T10:52:56.752Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0105-r2",
+      "round": 2,
+      "tree": "237837c98d77bc3da145e5cc9540e82eec9865da"
+    }
+  ],
+  "spec": [
+    "SPEC §4.19.6"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-setup-pack-hint.test.ts",
+      "title": "[§4.19.6] the empty-packs hint offers a repair line per built-in pack except core"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-setup-pack-hint.test.ts",
+      "title": "[§4.19.6] the fresh hint joins the built-in pack ids except core with a pipe"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/setup-pack-hint.test.ts",
+      "title": "[§4.19.6] setup with no --pack prints a repair line per built-in pack except core and the fresh hint"
+    }
+  ],
+  "title": "Build the setup empty-packs message from the built-in pack ids",
+  "type": "feature",
+  "version": 1
+}
+
