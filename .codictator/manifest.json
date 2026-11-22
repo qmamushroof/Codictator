@@ -121,7 +121,7 @@
       "path": ".claude/commands/codictator-review.md"
     },
     {
-      "hash": "d74da1ade73c8141ba24af69b7007e606504c4077c2a2348a2f7e96e617d967a",
+      "hash": "63fd6b27838e72a34ee10ed6d780db940191376f3f2bf02d7634cfda310b22cf",
       "mode": "file",
       "owner": "claude-code",
       "path": ".claude/settings.json"
@@ -169,7 +169,7 @@
       "path": ".codictator/bin/run.mjs"
     },
     {
-      "hash": "e94a3d38e94f7bd00c630066cf8dc1855ab38ff1ee6b256731d8d2f60aee7b12",
+      "hash": "c365c3efee3671b49329b4df63d1f782c31732d66f6d2c090612885c7996d304",
       "mode": "file",
       "owner": "codictator",
       "path": ".codictator/config.json"
@@ -205,7 +205,7 @@
       "path": ".github/workflows/codictator.yml"
     },
     {
-      "hash": "da4b390b2ecd2afc12df848a5b2205821b5d6973c8114725a87576b7b477b3eb",
+      "hash": "501638b44e5122f31f035c10a0272944d85915031dd1fb5c18d32a7ff55370d1",
       "mode": "file",
       "owner": "muse-code",
       "path": ".muse/hooks.json"
@@ -217,7 +217,7 @@
       "path": ".opencode/plugins/codictator.mjs"
     },
     {
-      "hash": "ec67ecc2529e1c17fbb56de84c29c0c56851f7c985d6e2f37b93daf7586595ea",
+      "hash": "6c0ecaa7459a295ee5331f51bc433ddec30ae47363faf36c238f834b1c0b579b",
       "mode": "file",
       "owner": "codictator",
       "path": "AGENTS.md"
@@ -229,14 +229,14 @@
       "path": "CLAUDE.md"
     },
     {
-      "hash": "9d17542e3caaeb9b15d1946da26a911651abf7707a6d80e4d3517601039f8f05",
+      "hash": "08e13519043b7e7c054944c9f6733e80c645ec6a348f3847e906367432fa6cb3",
       "mode": "file",
       "owner": "opencode",
       "path": "opencode.json"
     }
   ],
   "codictator": "0.2.9",
-  "hash": "c6e380438f4f66ef73b9a2e93864f4baac01fa7a15a0f774c6861fb46983ad9d",
+  "hash": "430935a31af2cf065d360fc6578acff632a923ef1699801dc4516843d12f42ea",
   "version": 1
 }
 

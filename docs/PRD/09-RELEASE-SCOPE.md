@@ -12,8 +12,7 @@ Everything below ships in the first release. The priority column is the build or
 | Core pack (§7.2) | Every family in §8 that needs no language knowledge | P0 |
 | Core pack (§7.2) | F6 duplication caps and no-invented-abstraction checks | P1 |
 | TypeScript / JavaScript pack | Full, including npm dependency enforcement | P0 |
-| Muse Code adapter (§7.3) | Every layer the harness exposes; built and tested first; primary demo target (§12 #30) | P0 |
-| Adapters (§7.3) | OpenCode (with Meta Model API provider setup), Universal, Claude Code, GitHub Copilot, Codex CLI | P0 |
+| Adapters (§7.3) | Muse Code, OpenCode, Universal, Claude Code, GitHub Copilot, Codex CLI; each exposes every layer its harness supports (§12 #30) | P0 |
 | Adapters (§7.3) | Cursor, Gemini CLI | P1 |
 | Integrity (§7.7) and CI generation (F13) | Full; GitHub Actions generated, other CI hosts run one documented command (§12 #36) | P0 |
 | Adoption (§7.8) | Install, brownfield baseline, ratchet | P0 |
@@ -21,7 +20,7 @@ Everything below ships in the first release. The priority column is the build or
 | Dependency enforcement (§7.5) | npm and Renovate/Dependabot config generation (P0); NuGet and PyPI with their packs (P1) | P0 / P1 |
 | .NET pack, Python pack | Full, in that order | P1 |
 | VS Code extension (§7.10) | Active rules, violations, timeline (P0); steering, budget, health (P1) | P0 / P1 |
-| Custom guardrail generator (§7.9) | Template and example path; LLM-assisted path with Muse as the default provider preset | P1 |
+| Custom guardrail generator (§7.9) | Template and example path; LLM-assisted path with provider presets the user selects, none default (§12 #30) | P1 |
 | Distribution | npm package `codictator`; extension under publisher `codictator` on the VS Code Marketplace and Open VSX (the registry Cursor and other forks use) | P0 |
 | Dogfooding (§6 P11) | Codictator's repo runs under Codictator | P0 |
 

@@ -12,7 +12,7 @@ import {
 import type { CompletionRequest, LlmClient } from "../llm/index.ts";
 import { materialiseManifest } from "./draft.ts";
 import type { DraftOptions, GeneratorInput } from "./index.ts";
-import { buildPrompt, DEFAULT_MODEL, selectPromptParts } from "./prompt.ts";
+import { buildPrompt, selectPromptParts } from "./prompt.ts";
 import { type RuleSpec, selfTestSpecs } from "./self-test.ts";
 import {
 	lookupTemplate,
@@ -114,14 +114,23 @@ export async function draftViaLlm(
 			makeError(
 				"CDX-E851",
 				"no LLM configured for --llm",
-				"Set config.llm (the meta preset suggests model muse-spark-1.3 with apiKeyEnv MODEL_API_KEY) or draft offline with --template.",
+				"Set config.llm.provider to a preset id (SPEC §4.17.1) and its model, or draft offline with --template.",
+			),
+		);
+	}
+	if (client.model === undefined) {
+		return err(
+			makeError(
+				"CDX-E851",
+				"no usable LLM preset or model configured for --llm",
+				"Set config.llm.provider to a preset id (SPEC §4.17.1) and config.llm.model when the preset carries none, or draft offline with --template.",
 			),
 		);
 	}
 	const selected = selectPromptParts(input, options);
 	const prompt = buildPrompt(input, selected);
 	const request: CompletionRequest = {
-		model: DEFAULT_MODEL,
+		model: client.model,
 		prompt,
 		maxOutputTokens: MAX_OUTPUT_TOKENS,
 	};

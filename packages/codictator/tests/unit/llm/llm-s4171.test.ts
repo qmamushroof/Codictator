@@ -75,9 +75,9 @@ function headerOf(sent: NetRequest, name: string): string | undefined {
 	return sent.headers[name];
 }
 
-test("[§4.17.1] presets default to the meta suggestion", async () => {
-	// SPEC §4.17.1 and S24: an empty block resolves to the meta preset with
-	// model muse-spark-1.3, and no preset selects a -contributor variant.
+test("[§4.17.1] the meta preset resolves to its documented endpoint", async () => {
+	// SPEC §4.17.1 and S24: the meta preset carries model muse-spark-1.3 and
+	// no preset selects a -contributor variant.
 	for (const preset of Object.values(LLM_PRESETS)) {
 		assert.ok(!preset.model.endsWith("-contributor"));
 	}
@@ -97,7 +97,10 @@ test("[§4.17.1] presets default to the meta suggestion", async () => {
 	});
 	const env = new FakeEnv({ MODEL_API_KEY: "secret-key-default" });
 	const delays: Array<number> = [];
-	const client = createClient({}, portsFor(net, env, new FakeClock(), delays));
+	const client = createClient(
+		{ provider: "meta" },
+		portsFor(net, env, new FakeClock(), delays),
+	);
 	const responded = await client.complete(requestFor());
 	assert.ok(responded.ok);
 	assert.equal(responded.value.stopReason, "stop");

@@ -1,6 +1,6 @@
 # Local Setup
 
-What a machine needs to build Codictator and to dogfood it in OpenCode with Meta models. Exact toolchain pins are SPEC §2; nothing here repeats them.
+What a machine needs to build Codictator and to dogfood it in OpenCode (the repo's own harness). Exact toolchain pins are SPEC §2; nothing here repeats them.
 
 ## Toolchain
 
@@ -23,14 +23,14 @@ npm test
 
 Then `npm run typecheck` and `npm run lint`. Every other command is in [VALIDATION.md](VALIDATION.md).
 
-## OpenCode with the Meta Model API
+## OpenCode (the repo's own harness)
 
-OpenCode is the harness this repo is built in (PRD §12 #21). Use a version inside the adapter's supported range (SPEC §4.5.4, §11 S32); 2.x is not supported yet.
+OpenCode is the harness this repo is built in (PRD §12 #21). Any provider works; the steps below use the Meta Model API as one example. Use a version inside the adapter's supported range (SPEC §4.5.4, §11 S32); 2.x is not supported yet.
 
 1. **Install** the newest 1.x release that has passed the 7-day minimum age. On 2026-10-26 that is `1.19.3` (`1.19.4` was published 2026-10-22): `npm install -g opencode-ai@1.19.3`. Re-check the registry before installing a later one.
 2. **Get a Meta Model API key** from Meta's developer platform. It lives only in your user environment or OpenCode's credential store, never in this repo (`core/no-secrets`).
 3. **Add the provider block** from SPEC §4.5.4 to your user config `~/.config/opencode/opencode.json`, not to the repo's `opencode.json`. The model choice is yours, and the repo file's keys become Codictator-owned at self-hosting. An `apiKey` option, if you set one, is `{env:MODEL_API_KEY}`, never a literal.
-4. **Connect:** run `opencode` at the repo root, then `/connect` → `meta`, and paste the key. Pick `muse-spark-1.3` with `/models`.
+4. **Connect:** run `opencode` at the repo root, then `/connect` → `meta`, and paste the key. Pick your model with `/models`.
 
 Before [phase 6](ROADMAP/06-HOOK-PATH.md) OpenCode runs with no Codictator hook, so the workflow rests on review and CI. From phase 6 the generated plugin bridge enforces L1 locally.
 

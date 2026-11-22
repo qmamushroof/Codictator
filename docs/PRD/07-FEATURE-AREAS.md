@@ -37,7 +37,7 @@ A pack is versioned, declares its rules with tier, bounds, enforcers and fixture
 
 Each adapter renders the active rule set into one harness's native form: context file, hooks, permissions, subagents, commands and skills.
 
-Targets, in priority order (release split in §9.1): **Muse Code** (best-supported, §12 #30), **OpenCode** (Codictator's own dogfooding harness with Meta models, §12 #21), Universal, Claude Code, GitHub Copilot (VS Code and CLI), Codex CLI, Cursor, Gemini CLI. Universal is `AGENTS.md` + git hooks + CI and covers any harness.
+Targets, all supported equally (§12 #30; release split in §9.1): Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot (VS Code and CLI), Muse Code, OpenCode, Universal. Universal is `AGENTS.md` + git hooks + CI and covers any harness.
 
 **Capability honesty.** Each adapter declares which layers and controls its harness supports. Where a harness lacks a control — e.g. no pre-tool hook, or no way to force a context clear — Codictator says so in the CLI and extension and relies on the next layer down, never claiming enforcement it cannot do. Harnesses that run project hooks only after the user trusts the folder (Muse Code, Codex CLI) show L1 as inactive until trusted.
 
@@ -85,7 +85,7 @@ Enforces an ordered set of phases with gates; the default is §8 F9. Supports **
 
 ## 7.9 Custom guardrail generator
 
-Turns a user's requirements, example code, existing tools and their configs, or templates into a custom pack. An optional LLM drafts the rules: bring-your-own key or local model, Meta Muse suggested by default, Llama and any other provider accepted (§12 #3, #19, #30). **The output is deterministic artifacts** — rule, enforcer, fixtures — that must pass the pack self-test and human acceptance before activation. The LLM never runs in any enforcement path (§6 P1). Without an LLM configured, the generator still works from templates and examples.
+Turns a user's requirements, example code, existing tools and their configs, or templates into a custom pack. An optional LLM drafts the rules: bring-your-own key or local model, any provider accepted and none preselected (§12 #3, #19, #30). **The output is deterministic artifacts** — rule, enforcer, fixtures — that must pass the pack self-test and human acceptance before activation. The LLM never runs in any enforcement path (§6 P1). Without an LLM configured, the generator still works from templates and examples.
 
 ## 7.10 VS Code extension
 

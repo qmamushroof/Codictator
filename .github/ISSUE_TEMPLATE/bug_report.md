@@ -9,7 +9,7 @@ labels: bug
 
 - Codictator version:
 - OS (Windows / macOS / Linux):
-- Harness (OpenCode / Muse Code / other):
+- Harness (Muse Code / OpenCode / other):
 
 ## Reproduction
 

@@ -33,7 +33,7 @@ The adoption path guarantees the manifest-owned `.gitignore` entries (`.codictat
 | `version` | `1` | |
 | `codictator` | exact version | Must equal the installed engine (§4.2.1) |
 | `packs` | `[{ id, version? , path? }]` | Built-ins take the engine version; custom packs give `path` |
-| `harnesses` | adapter ids | `muse-code`, `universal`, `claude-code`, `copilot`, `codex-cli`, `cursor`, `gemini-cli`, `opencode`, `custom:<id>` |
+| `harnesses` | adapter ids | `claude-code`, `codex-cli`, `copilot`, `cursor`, `gemini-cli`, `muse-code`, `opencode`, `universal`, `custom:<id>` |
 | `tunables` | `{ <ruleId>: { <param>: value } }` | Tightening only (§4.2.2) |
 | `architecture` | `{ profile, modules: [{ name, path, kind, entry, dependsOn }], layers: { enabled, names }, deny: [{ from, to }] }` | §4.11 |
 | `workflow` | `{ phases: [{ name, after, gate: { kind, args } }] }` | Custom phases only (§4.12.2) |

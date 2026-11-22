@@ -1,16 +1,16 @@
 // SPEC §4.17.1: the preset table and the §7.2 llm config block narrowing.
-// S24: the meta preset (model muse-spark-1.3) is the default suggestion and
+// S24 and PRD §12 #30: there is no default preset and no default model, and
 // no preset selects a -contributor variant.
 import { err, makeError, ok, type Result } from "../../kernel/index.ts";
 
 export type LlmFormat = "openai-chat" | "anthropic-messages";
 
 export type LlmPresetId =
+	| "anthropic"
 	| "meta"
 	| "meta-messages"
-	| "openai-compatible"
-	| "anthropic"
-	| "openai";
+	| "openai"
+	| "openai-compatible";
 
 export interface LlmPreset {
 	readonly baseUrl: string;
@@ -33,6 +33,12 @@ function preset(
 // SPEC §4.17.1: the preset table. openai-compatible targets a local runtime
 // (127.0.0.1 over http is allowed for it); every other preset needs https.
 export const LLM_PRESETS: Record<LlmPresetId, LlmPreset> = {
+	anthropic: preset(
+		"https://api.anthropic.com/v1",
+		"anthropic-messages",
+		"",
+		"ANTHROPIC_API_KEY",
+	),
 	meta: preset(
 		"https://api.meta.ai/v1",
 		"openai-chat",
@@ -45,33 +51,26 @@ export const LLM_PRESETS: Record<LlmPresetId, LlmPreset> = {
 		"muse-spark-1.3",
 		"MODEL_API_KEY",
 	),
-	"openai-compatible": preset("", "openai-chat", ""),
-	anthropic: preset(
-		"https://api.anthropic.com/v1",
-		"anthropic-messages",
-		"",
-		"ANTHROPIC_API_KEY",
-	),
 	openai: preset(
 		"https://api.openai.com/v1",
 		"openai-chat",
 		"",
 		"OPENAI_API_KEY",
 	),
+	"openai-compatible": preset("", "openai-chat", ""),
 };
-
-export const DEFAULT_PRESET_ID: LlmPresetId = "meta";
 
 export const DEFAULT_TIMEOUT_MS = 30_000;
 
 export const DEFAULT_MAX_OUTPUT_TOKENS = 1024;
 
-const PRESET_IDS: ReadonlyArray<string> = [
+// SPEC §4.17.1: init lists the presets alphabetically and preselects none.
+export const LLM_PRESET_IDS: ReadonlyArray<LlmPresetId> = [
+	"anthropic",
 	"meta",
 	"meta-messages",
-	"openai-compatible",
-	"anthropic",
 	"openai",
+	"openai-compatible",
 ];
 
 export interface LlmConfig {
@@ -118,7 +117,10 @@ function fieldOr(
 }
 
 function isPresetId(value: unknown): value is LlmPresetId {
-	return typeof value === "string" && PRESET_IDS.includes(value);
+	return (
+		typeof value === "string" &&
+		(LLM_PRESET_IDS as ReadonlyArray<string>).includes(value)
+	);
 }
 
 function isFormat(value: unknown): value is LlmFormat {
@@ -178,7 +180,16 @@ interface LlmEndpoint {
 }
 
 function narrowEndpoint(config: Record<string, unknown>): Result<LlmEndpoint> {
-	const providerRaw = fieldOr(config, "provider", DEFAULT_PRESET_ID);
+	const providerRaw = configField(config, "provider");
+	if (providerRaw === undefined) {
+		return err(
+			makeError(
+				"CDX-E851",
+				"no LLM preset configured",
+				`Set config.llm.provider to one of: ${LLM_PRESET_IDS.join(", ")} (SPEC §4.17.1).`,
+			),
+		);
+	}
 	if (!isPresetId(providerRaw)) {
 		return configError(
 			`unknown llm provider: ${String(fieldOr(config, "provider", ""))}`,

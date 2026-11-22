@@ -24,9 +24,9 @@
 
 ## 11.4 Harness API churn
 
-**Risk:** hook events, config paths and context-file conventions change often and differ per harness; Muse Code, the primary target, is a proprietary beta and likely to churn most.
+**Risk:** hook events, config paths and context-file conventions change often and differ per harness; Muse Code is a proprietary beta and likely to churn most.
 
-**Mitigation:** adapters are isolated modules behind one contract, each declaring the harness versions it was verified against. Capability honesty (§7.3) means a broken adapter degrades to Universal plus CI rather than to nothing. Adapter fixtures run in CI against the declared formats, and the Muse Code adapter is re-verified against each Muse Code release before the others.
+**Mitigation:** adapters are isolated modules behind one contract, each declaring the harness versions it was verified against. Capability honesty (§7.3) means a broken adapter degrades to Universal plus CI rather than to nothing. Adapter fixtures run in CI against the declared formats, and each adapter is re-verified against each release of its harness.
 
 ## 11.5 Overhead and latency
 

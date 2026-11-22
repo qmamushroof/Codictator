@@ -18,9 +18,6 @@ export interface GeneratorInputReport {
 	readonly redacted: boolean;
 }
 
-// SPEC §11 S24: the default suggestion is never a -contributor variant.
-export const DEFAULT_MODEL = "muse-spark-1.3";
-
 const MAX_PROMPT_BYTES = 65536;
 const TRUNCATION_MARKER = "…[truncated: input exceeded the §4.16.4 64 KB cap]";
 const GENERATOR_PROMPT_VERSION = "codictator-generator-prompt/1";
@@ -140,7 +137,7 @@ export function buildPrompt(
 	selected: SelectedParts,
 ): string {
 	const lines: Array<string> = [
-		`${GENERATOR_PROMPT_VERSION} (SPEC §4.16.3; default model ${DEFAULT_MODEL})`,
+		`${GENERATOR_PROMPT_VERSION} (SPEC §4.16.3)`,
 		"Return only a JSON draft matching schema/pack-draft.schema.json.",
 		`Templates (id -> enforcer kind): ${catalogueSummary()}.`,
 		"Rules must reference template ids and parameters only; no executable code (§11 S23).",

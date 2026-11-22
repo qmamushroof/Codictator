@@ -1,0 +1,75 @@
+{
+  "acceptanceCriteria": [
+    "README, LOCAL_SETUP, AGENTS.md map row, bug template, ROADMAP 6 and 15, SPEC 7 harness order carry no Meta or Muse priority wording",
+    "No checked roadmap item changes"
+  ],
+  "branch": "docs/harness-neutrality",
+  "files": {
+    "allow": [
+      "README.md",
+      "AGENTS.md",
+      "docs/LOCAL_SETUP.md",
+      ".github/ISSUE_TEMPLATE/bug_report.md",
+      "docs/ROADMAP/06-HOOK-PATH.md",
+      "docs/ROADMAP/15-CONSUMER-PROOF.md",
+      "docs/SPEC/07-FILES-AND-FORMATS.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0087",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T02:06:49.801Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T02:06:52.645Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:07:04.174Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:21:47.900Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T02:21:55.014Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T02:22:02.608Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T02:21:51.837Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0087-r1",
+      "round": 1,
+      "tree": "608daf65713c6e764fca1484f899c2f74476fb88"
+    }
+  ],
+  "spec": [
+    "PRD §12 #30",
+    "SPEC §4.5",
+    "SPEC §7.7"
+  ],
+  "title": "docs(harness): treat all harnesses and models equally",
+  "type": "docs",
+  "version": 1
+}
+

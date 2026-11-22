@@ -1,0 +1,68 @@
+{
+  "acceptanceCriteria": [
+    "PRD states equal support for all harnesses and models with no default preset; no remaining Meta-first, best-supported or primary-target wording in docs/PRD"
+  ],
+  "branch": "docs/harness-neutrality",
+  "files": {
+    "allow": [
+      "docs/PRD/*.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0084",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T01:38:57.366Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T01:39:00.676Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:39:01.035Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:39:52.779Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T01:39:55.449Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T01:40:00.137Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T01:39:30.054Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0084-r1",
+      "round": 1,
+      "tree": "a4227ee0e6c0bab6252639c4ee25ff8d3f69034a"
+    }
+  ],
+  "spec": [
+    "SPEC §4.9.2",
+    "SPEC §5.10",
+    "SPEC §7.7"
+  ],
+  "title": "docs(prd): support all harnesses and models equally",
+  "type": "docs",
+  "version": 1
+}
+

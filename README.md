@@ -24,9 +24,9 @@ Asked for a bad outcome, the agent is steered to the compliant one and told whic
 
 ## Harnesses and languages
 
-- Harnesses: Muse Code (best-supported), OpenCode, Claude Code, GitHub Copilot, Codex CLI, Cursor, Gemini CLI, plus Universal via `AGENTS.md`, git hooks and CI.
+- Harnesses: Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot, Muse Code, OpenCode, plus Universal via `AGENTS.md`, git hooks and CI. All are supported equally.
 - Languages: TypeScript/JavaScript with full npm enforcement, and Python with pack rules, extractor and PyPI enforcement. Language-agnostic rules apply to any repo. Planned next: .NET.
-- Models: Meta Muse models suggested by default, any OpenAI- or Anthropic-compatible provider, or a local model. What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5](docs/SPEC/04-05-ADAPTERS.md).
+- Models: any OpenAI- or Anthropic-compatible provider (including Meta's), or a local model. What each harness can and cannot enforce is declared, never claimed: [SPEC §4.5](docs/SPEC/04-05-ADAPTERS.md).
 
 ## Install
 

@@ -5,11 +5,11 @@
 | | |
 |---|---|
 | **Depends on** | Phase 5 |
-| **Delivers** | L1 end to end for the two top-priority harnesses: a Muse Code or OpenCode tool call reaches the engine through the launcher and is allowed or blocked in the harness's own reply form |
+| **Delivers** | L1 end to end for the Muse Code and OpenCode harnesses: a Muse Code or OpenCode tool call reaches the engine through the launcher and is allowed or blocked in the harness's own reply form |
 | **Read** | SPEC §4.5.1–§4.5.5, §4.5.7, §4.19.3, §4.19.4, §7.8, §7.9, §9.3, §11 S14, S15, S29, S30; PRD §12 #30 |
 | **Covers** | `§4.5 EC-1`, `§4.5 EC-2`, `§4.5 EC-9`, `§4.5 EC-11`, `§4.5 EC-13..19`, `§4.19 EC-3..6`, `§4.19 EC-8` |
 
-Muse Code is built first, then OpenCode (PRD §9.1). Neither waits for the other P0 adapters.
+Muse Code and OpenCode are built in this phase; neither waits for the other P0 adapters.
 
 ## Steps
 

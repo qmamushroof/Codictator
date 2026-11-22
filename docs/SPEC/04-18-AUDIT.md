@@ -55,7 +55,7 @@ Markdown written to `GITHUB_STEP_SUMMARY` (or stdout), at most 60 KB; overflow l
 | Tokens per task, band breaches | Only where `usageData` exists, else "unavailable" |
 | p95 L1 and L3 latency, install-to-green time | Event timings |
 | Ratchet totals | Baseline history (`git log` of `baseline.json`) |
-| Muse Code and OpenCode layer coverage | Their capability declarations |
+| Adapter layer coverage per supported harness | Their capability declarations |
 
 ## 4.18.6 Edge cases
 

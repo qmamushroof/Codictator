@@ -1,0 +1,141 @@
+{
+  "acceptanceCriteria": [
+    "No default LLM preset or model: config.llm with no provider fails CDX-E851 naming config.llm.provider and the preset ids",
+    "The generator request model comes from the client config; a client with no model fails CDX-E851",
+    "init harness list is alphabetical"
+  ],
+  "branch": "docs/harness-neutrality",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/llm/*.ts",
+      "packages/codictator/src/features/generator/*.ts",
+      "packages/codictator/src/cli/init-plan.ts",
+      "packages/codictator/tests/**",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T01:57:59.466Z",
+    "tree": "8c71e472ffd2a0fc17a67fd1c71dad521d1af7a1"
+  },
+  "historyStaged": true,
+  "id": "T-0086",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T01:52:54.798Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T01:53:15.672Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T01:57:58.945Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:04:48.125Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T02:04:54.917Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T02:05:11.013Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T01:53:12.785Z",
+    "commit": "fc03a1af8b72eaf4677686bfa724d4c190363d35",
+    "failing": [
+      "[§4.17.1] a config with no provider fails CDX-E851 naming the choices",
+      "[§4.17.1] a client built with no provider answers CDX-E851 and sends nothing",
+      "[§4.17.1] presets are listed alphabetically and none is a default",
+      "[§4.17.1] the client exposes the model from its config",
+      "[§4.17.1] the draft request carries the client's configured model",
+      "[§4.17.1] a client with no model fails CDX-E851 without a request",
+      "[§4.19.2] the default harness list is alphabetical",
+      "[§4.17.1] drafting with no preset configured fails CDX-E851",
+      "[§4.17.1] drafting sends the model chosen in config, not a default"
+    ],
+    "tree": "8c71e472ffd2a0fc17a67fd1c71dad521d1af7a1"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T02:04:52.054Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0086-r1",
+      "round": 1,
+      "tree": "bab3949891e1f76c5455913858f893cf7e748639"
+    }
+  ],
+  "spec": [
+    "SPEC §4.17.1",
+    "SPEC §4.16.5",
+    "SPEC §4.19.2",
+    "SPEC §11 S24"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/llm/llm-s4171-no-default.test.ts",
+      "title": "[§4.17.1] a config with no provider fails CDX-E851 naming the choices"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/llm/llm-s4171-no-default.test.ts",
+      "title": "[§4.17.1] a client built with no provider answers CDX-E851 and sends nothing"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/llm/llm-s4171-no-default.test.ts",
+      "title": "[§4.17.1] presets are listed alphabetically and none is a default"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/llm/llm-s4171-no-default.test.ts",
+      "title": "[§4.17.1] the client exposes the model from its config"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/generator/generator.test.ts",
+      "title": "[§4.17.1] the draft request carries the client's configured model"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/generator/generator.test.ts",
+      "title": "[§4.17.1] a client with no model fails CDX-E851 without a request"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-init-harness-order.test.ts",
+      "title": "[§4.19.2] the default harness list is alphabetical"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/llm-no-default-preset.test.ts",
+      "title": "[§4.17.1] drafting with no preset configured fails CDX-E851"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/llm-no-default-preset.test.ts",
+      "title": "[§4.17.1] drafting sends the model chosen in config, not a default"
+    }
+  ],
+  "title": "Select no default LLM preset or model",
+  "type": "feature",
+  "version": 1
+}
+

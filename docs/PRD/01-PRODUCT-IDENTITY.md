@@ -5,7 +5,7 @@
 - **Name:** Codictator — *Code* + *Dictator*. The name states the stance: the rules are not negotiable by prompt.
 - **One sentence:** Codictator installs a deterministic, cross-harness guardrail system into a repository so that AI coding agents — and the people prompting them — can only land minimal, secure, tested, documented, well-architected code with the fewest tokens spent.
 - **Form:** a TypeScript CLI/engine on npm, plus a VS Code extension that shows live what is being enforced and why (§12 #2). MIT-licensed, free and open source (§12 #27).
-- **Meta-first:** Meta's Muse Code is the best-supported harness, and Meta's Muse models are the default suggested provider for Codictator's optional LLM features; every other harness and model still works (§12 #30).
+- **Equal support:** every harness and every model is supported equally, and Codictator's optional LLM features have no default provider preset (§12 #30).
 
 ## 1.1 Pitch
 
