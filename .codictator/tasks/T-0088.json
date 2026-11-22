@@ -1,0 +1,67 @@
+{
+  "acceptanceCriteria": [
+    "regen refreshes the AGENTS.md manifest hash"
+  ],
+  "branch": "docs/harness-neutrality",
+  "files": {
+    "allow": [
+      ".codictator/manifest.json",
+      "AGENTS.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0088",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T02:23:09.944Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T02:23:27.666Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:25:17.867Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:25:20.493Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T02:25:26.930Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T02:25:37.780Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T02:25:24.190Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0088-r1",
+      "round": 1,
+      "tree": "c651f1069cf1b0bfe9156c64c3590847963cb8d1"
+    }
+  ],
+  "spec": [
+    "§4.14.1",
+    "§4.14.5"
+  ],
+  "title": "refresh AGENTS.md manifest hash after neutrality edit",
+  "type": "chore",
+  "version": 1
+}
+
