@@ -1,0 +1,69 @@
+{
+  "acceptanceCriteria": [
+    "BUG-0118 is filed open with its history entry"
+  ],
+  "branch": "refactor/size-debt",
+  "bugRowUpdated": true,
+  "diagnosis": "filing only; BUG-0118 diagnosis is on T-0095",
+  "files": {
+    "allow": [
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0096",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T03:47:51.770Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T03:47:59.109Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:47:59.462Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:47:59.860Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T03:48:06.121Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T03:48:06.881Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T03:48:05.753Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0096-r1",
+      "round": 1,
+      "tree": "64d2a2b4ab6477a667225dfb3147ed3813f0e01d"
+    }
+  ],
+  "spec": [
+    "SPEC §7.7",
+    "SPEC §4.9.4"
+  ],
+  "title": "file arch scope guard read defect",
+  "type": "docs",
+  "version": 1
+}
+
