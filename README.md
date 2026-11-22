@@ -51,6 +51,15 @@ npx codictator install-hooks
 
 With `.gitignore` per [SPEC §7.1](docs/SPEC/07-FILES-AND-FORMATS.md); contributors build from source per [LOCAL_SETUP](docs/LOCAL_SETUP.md).
 
+## Upgrade
+
+```sh
+npx codictator upgrade            # to the npm latest
+npx codictator upgrade --to 0.3.0 # to an exact version
+```
+
+One command bumps the engine pin (root `devDependency` or `.codictator/tool/package.json`), `config.codictator` and the lockfile, then runs `regen` and `verify` with the new engine. It refuses downgrades, does nothing when already at the target, and restores every file if the install fails. You or your agent can run it; it never commits ([SPEC §4.19.8](docs/SPEC/04-19-CLI.md)).
+
 ## Principles
 
 - Deterministic verdicts, no LLM in any gate.

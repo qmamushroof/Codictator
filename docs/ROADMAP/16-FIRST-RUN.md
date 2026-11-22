@@ -27,6 +27,14 @@
   - **Task:** `feature`, branch `fix/setup-agent-allowed`.
   - **Do:** a test traced to SPEC §4.19.6 entered red, then `setup` loops over the built-in pack ids for the repair lines and the fresh hint, inside `cli` only.
   - **Verify:** the test is green; adding a built-in pack id changes the message with no text edit.
+- [x] **16.0e** SPEC and PRD first: the `upgrade` command.
+  - **Task:** `docs`, branch `feat/upgrade-command`.
+  - **Do:** record PRD §12 #41; add the SPEC §4.19.2 row, §4.19.7 EC-16..21 and §4.19.8; add `CDX-E012` to SPEC §8.1; note the config exception in SPEC §4.2 and the bot rule in SPEC §4.8.6.
+  - **Verify:** fresh-session docs review; no doc calls `config.codictator` human-edit-only without the `upgrade` exception.
+- [ ] **16.0f** Build `upgrade`.
+  - **Task:** `feature`, branch `feat/upgrade-command`.
+  - **Do:** tests for SPEC §4.19.7 EC-16..21 entered red, then the command inside `cli` reusing the setup install helpers; the install must not match the uninstall shapes of SPEC §4.14.3.
+  - **Verify:** `npm run ledger -- --covers "§4.19 EC-16..21"` exits 0; the always-set is green.
 - [ ] **16.1** SPEC first: give `setup` a time budget.
   - **Task:** `docs`, branch `docs/16-setup-budget`.
   - **Do:** time `npx codictator setup` on each fixture repo of SPEC §10.2, on all three OSes, with a warm npm cache. Add a SPEC §9.3 row for time from command start to first green verify, set from those timings.

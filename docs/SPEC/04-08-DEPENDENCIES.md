@@ -68,7 +68,7 @@ Detection: `renovate.json`, `renovate.json5`, `.github/renovate.json(5)`, `.reno
 | Renovate | `rangeStrategy: "pin"`, `minimumReleaseAge: "<n> days"`, `vulnerabilityAlerts.minimumReleaseAge: null` (S9), `osvVulnerabilityAlerts: true`, `pinDigests: true`, `extends` includes `helpers:pinGitHubActionDigests`, `separateMajorMinor: true`, `lockFileMaintenance.enabled: true`, `dependencyDashboard: true` |
 | Dependabot | One `updates` entry per detected ecosystem plus `github-actions`, each with `schedule.interval: daily`, `cooldown.default-days: <n>`; npm entries `versioning-strategy: increase` |
 
-Bot PRs are dependency-only changes (§4.12.6): the CI job appends the history entry to same-repo bot branches (§4.15.3); Codictator's verdict decides the merge, never the bot.
+Bot PRs are dependency-only changes (§4.12.6): the CI job appends the history entry to same-repo bot branches (§4.15.3); Codictator's verdict decides the merge, never the bot. A PR that changes the pinned `codictator` version must change `config.codictator` to the same value, else CI blocks with `CDX-E102`; `codictator upgrade` (§4.19.8) is the local way to set both.
 
 ## 4.8.7 Codictator's own upgrade changes
 
