@@ -10,12 +10,79 @@ import type { EnforcerDecl } from "../manifest.ts";
 import {
 	bindRule,
 	findingFor,
+	type RuleBinding,
 	readErrorFinding,
 	readLossyText,
 	selectFiles,
 } from "./binding.ts";
 import { baseEnforcer } from "./health-measures.ts";
 import { blankPythonCode, isPythonFile } from "./py-lex.ts";
+
+const TYPE_MISMATCH =
+	/:\s*(int|float|str|bool)\s*=\s*("[^"\n]*"|'[^'\n]*'|-?\b\d+\.\d+\b|-?\b\d+\b|\bTrue\b|\bFalse\b|\bNone\b)/;
+
+// The primitive a Python literal denotes, as the L1 typecheck sees it.
+export function pythonLiteralKind(literal: string): string {
+	if (literal.startsWith('"') || literal.startsWith("'")) {
+		return "str";
+	}
+	if (literal === "True" || literal === "False") {
+		return "bool";
+	}
+	if (literal === "None") {
+		return "none";
+	}
+	return literal.includes(".") ? "float" : "int";
+}
+
+// A `float` annotation accepts an `int` literal (promotion); otherwise the
+// kinds must match exactly.
+function isCleanAssignment(annotated: string, literalKind: string): boolean {
+	return (
+		(annotated === "float" && literalKind === "int") ||
+		annotated === literalKind
+	);
+}
+
+function typecheckLineFinding(
+	binding: RuleBinding,
+	file: string,
+	line: number,
+	content: string,
+): Finding | null {
+	const hit = TYPE_MISMATCH.exec(content);
+	if (hit === null) {
+		return null;
+	}
+	const annotated = hit[1] ?? "";
+	const literal = hit[2] ?? "";
+	if (isCleanAssignment(annotated, pythonLiteralKind(literal))) {
+		return null;
+	}
+	return findingFor(binding, {
+		path: file,
+		line,
+		message: `type error in ${file}:${String(line)}: ${annotated} assigned ${literal}`,
+		vars: { path: file, line: String(line), value: literal },
+	});
+}
+
+function typecheckTextFindings(
+	binding: RuleBinding,
+	file: string,
+	text: string,
+): Array<Finding> {
+	const findings: Array<Finding> = [];
+	let line = 0;
+	for (const content of text.split("\n")) {
+		line += 1;
+		const finding = typecheckLineFinding(binding, file, line, content);
+		if (finding !== null) {
+			findings.push(finding);
+		}
+	}
+	return findings;
+}
 
 // SPEC §6.3 python/typecheck as the L1 static approximation: an annotated
 // literal of the wrong primitive type is a type error the checker would
@@ -29,8 +96,6 @@ export function resolvePythonTypecheck(
 	ports: Ports,
 ): Result<Enforcer> {
 	const binding = bindRule(rule);
-	const mismatch =
-		/:\s*(int|float|str|bool)\s*=\s*("[^"\n]*"|'[^'\n]*'|-?\b\d+\.\d+\b|-?\b\d+\b|\bTrue\b|\bFalse\b|\bNone\b)/;
 	return ok(
 		baseEnforcer(rule, binding, decl, async (ctx) => {
 			const findings: Array<Finding> = [];
@@ -43,84 +108,71 @@ export function resolvePythonTypecheck(
 					findings.push(readErrorFinding(binding, file, loaded.error, "read"));
 					continue;
 				}
-				let line = 0;
-				for (const content of loaded.value.text.split("\n")) {
-					line += 1;
-					const hit = mismatch.exec(content);
-					if (hit === null) {
-						continue;
-					}
-					const annotated = hit[1] ?? "";
-					const literal = hit[2] ?? "";
-					const literalKind =
-						literal.startsWith('"') || literal.startsWith("'")
-							? "str"
-							: literal === "True" || literal === "False"
-								? "bool"
-								: literal === "None"
-									? "none"
-									: literal.includes(".")
-										? "float"
-										: "int";
-					const clean =
-						(annotated === "float" && literalKind === "int") ||
-						annotated === literalKind;
-					if (!clean) {
-						findings.push(
-							findingFor(binding, {
-								path: file,
-								line,
-								message: `type error in ${file}:${String(line)}: ${annotated} assigned ${literal}`,
-								vars: { path: file, line: String(line), value: literal },
-							}),
-						);
-					}
-				}
+				findings.push(
+					...typecheckTextFindings(binding, file, loaded.value.text),
+				);
 			}
 			return findings;
 		}),
 	);
 }
 
+const PY_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const IMPORT_LINE = /^[ \t]*import[ \t]+(.+)$/;
+const FROM_IMPORT_LINE =
+	/^[ \t]*from[ \t]+(\.*)([A-Za-z_][A-Za-z0-9_.]*)?[ \t]+import[ \t]+(.+)$/;
+
+// The name one `a as b` import part binds: the alias when present.
+function importPartTarget(part: string): string {
+	const alias = part.split(/\s+as\s+/);
+	return (alias.length > 1 ? alias[1] : alias[0])?.trim() ?? "";
+}
+
+function bindName(bound: Map<string, number>, name: string, line: number) {
+	if (PY_IDENTIFIER.test(name) && !bound.has(name)) {
+		bound.set(name, line);
+	}
+}
+
+function bindPlainImport(
+	bound: Map<string, number>,
+	list: string,
+	line: number,
+): void {
+	for (const part of list.split(",")) {
+		bindName(bound, importPartTarget(part).split(".", 1)[0] ?? "", line);
+	}
+}
+
+function bindFromImport(
+	bound: Map<string, number>,
+	list: string,
+	line: number,
+): void {
+	if (list.trim().startsWith("*")) {
+		return;
+	}
+	for (const part of list.split(",")) {
+		bindName(bound, importPartTarget(part).replace(/[()]/g, ""), line);
+	}
+}
+
 // The names an import statement binds: `import a.b` binds `a`,
 // `import a as b` binds `b`, `from m import x, y` binds `x` and `y`.
 // A `from m import *` binds nothing observable, so it never flags.
 function boundImportNames(text: string): Map<string, number> {
-	const blanked = blankPythonCode(text);
 	const bound = new Map<string, number>();
-	const importLine = /^[ \t]*import[ \t]+(.+)$/;
-	const fromLine =
-		/^[ \t]*from[ \t]+(\.*)([A-Za-z_][A-Za-z0-9_.]*)?[ \t]+import[ \t]+(.+)$/;
 	let line = 0;
-	for (const content of blanked.split("\n")) {
+	for (const content of blankPythonCode(text).split("\n")) {
 		line += 1;
-		const plain = importLine.exec(content);
+		const plain = IMPORT_LINE.exec(content);
 		if (plain !== null) {
-			for (const part of (plain[1] ?? "").split(",")) {
-				const alias = part.split(/\s+as\s+/);
-				const dotted = (alias.length > 1 ? alias[1] : alias[0])?.trim() ?? "";
-				const top = dotted.split(".", 1)[0] ?? "";
-				if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(top) && !bound.has(top)) {
-					bound.set(top, line);
-				}
-			}
+			bindPlainImport(bound, plain[1] ?? "", line);
 			continue;
 		}
-		const from = fromLine.exec(content);
+		const from = FROM_IMPORT_LINE.exec(content);
 		if (from !== null) {
-			if ((from[3] ?? "").trim().startsWith("*")) {
-				continue;
-			}
-			for (const part of (from[3] ?? "").split(",")) {
-				const alias = part.split(/\s+as\s+/);
-				const name =
-					(alias.length > 1 ? alias[1] : alias[0])
-						?.trim()
-						.replace(/[()]/g, "") ?? "";
-				if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && !bound.has(name)) {
-					bound.set(name, line);
-				}
-			}
+			bindFromImport(bound, from[3] ?? "", line);
 		}
 	}
 	return bound;

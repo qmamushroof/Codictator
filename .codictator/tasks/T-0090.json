@@ -1,0 +1,97 @@
+{
+  "acceptanceCriteria": [
+    "resolvePythonTypecheck is below complexity 10 and 40 lines with identical output",
+    "boundImportNames is below complexity 10 with identical output"
+  ],
+  "branch": "refactor/size-debt",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/packs/enforcers/py-checks.ts",
+      "packages/codictator/tests/unit/packs/py-typecheck-split.test.ts",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T02:40:50.692Z",
+    "tree": "fcdbd6782cbdc0e39a8c7da968135ad91563cfc3"
+  },
+  "historyStaged": true,
+  "id": "T-0090",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T02:39:57.123Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T02:40:12.324Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:40:51.097Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T02:50:27.249Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T02:50:37.866Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T02:50:47.454Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T02:40:11.900Z",
+    "commit": "8054df670727c8efe918882defbf47953350963f",
+    "failing": [
+      "[§6.3] python literal kind names the primitive a literal denotes"
+    ],
+    "tree": "fcdbd6782cbdc0e39a8c7da968135ad91563cfc3"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T02:50:34.697Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0090-r1",
+      "round": 1,
+      "tree": "6d9ef26c4e288cc7e458da9e9ea793bc4bba8358"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T02:52:12.978Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0090-r2",
+      "round": 2,
+      "tree": "f3c95157fec2ddb28c703673b1baaf8c52eaae83"
+    }
+  ],
+  "spec": [
+    "§6.3"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/packs/py-typecheck-split.test.ts",
+      "title": "[§6.3] python literal kind names the primitive a literal denotes"
+    }
+  ],
+  "title": "split py-checks functions below complexity and size limits",
+  "type": "refactor",
+  "version": 1
+}
+
