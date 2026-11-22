@@ -7,24 +7,35 @@ import { err, ok, type Result } from "./result.ts";
 
 type YamlNode = string | Array<YamlNode> | { readonly [key: string]: YamlNode };
 
+const NULL_SCALARS: ReadonlySet<string> = new Set(["", "~", "null"]);
+const INDICATOR_START = /[:#[\]{}|>&*!%@`,]/;
+
+function isQuoted(trimmed: string): boolean {
+	const first = trimmed.charAt(0);
+	return (
+		trimmed.length >= 2 &&
+		(first === '"' || first === "'") &&
+		trimmed.endsWith(first)
+	);
+}
+
+function stripComment(trimmed: string): string {
+	const hash = trimmed.indexOf(" #");
+	return hash < 0 ? trimmed : trimmed.slice(0, hash).trimEnd();
+}
+
 function yamlScalar(raw: string): string | undefined {
 	const trimmed = raw.trim();
-	if (trimmed === "" || trimmed === "~" || trimmed === "null") {
+	if (NULL_SCALARS.has(trimmed)) {
 		return "";
 	}
-	if (
-		(trimmed.startsWith('"') && trimmed.endsWith('"') && trimmed.length >= 2) ||
-		(trimmed.startsWith("'") && trimmed.endsWith("'") && trimmed.length >= 2)
-	) {
+	if (isQuoted(trimmed)) {
 		return trimmed.slice(1, -1);
 	}
-	if (/[:#[\]{}|>&*!%@`,]/.test(trimmed.charAt(0))) {
+	if (INDICATOR_START.test(trimmed.charAt(0))) {
 		return undefined;
 	}
-	if (trimmed.includes(" #")) {
-		return trimmed.slice(0, trimmed.indexOf(" #")).trimEnd();
-	}
-	return trimmed;
+	return stripComment(trimmed);
 }
 
 function yamlIndent(line: string): number {
@@ -143,40 +154,44 @@ function parseYaml(text: string): YamlNode | undefined {
 	return parsed.node;
 }
 
+function isMapping(
+	node: YamlNode,
+): node is { readonly [key: string]: YamlNode } {
+	return typeof node === "object" && node !== null && !Array.isArray(node);
+}
+
+export function flattenSequence(
+	items: ReadonlyArray<YamlNode>,
+): string | undefined {
+	const flat: Array<string> = [];
+	for (const item of items) {
+		if (typeof item !== "string") {
+			return undefined;
+		}
+		flat.push(item);
+	}
+	return flat.join("\n");
+}
+
+function renderLeaf(node: YamlNode): string | undefined {
+	if (typeof node === "string") {
+		return node;
+	}
+	return Array.isArray(node) ? flattenSequence(node) : stableStringify(node);
+}
+
 function lookupYaml(node: YamlNode, key: string): string | undefined {
 	const dot = key.indexOf(".");
 	const head = dot < 0 ? key : key.slice(0, dot);
 	const tail = dot < 0 ? undefined : key.slice(dot + 1);
-	let current: YamlNode = node;
-	if (
-		typeof current !== "object" ||
-		current === null ||
-		Array.isArray(current)
-	) {
+	if (!isMapping(node)) {
 		return undefined;
 	}
-	const child: YamlNode | undefined = current[head];
+	const child: YamlNode | undefined = node[head];
 	if (child === undefined) {
 		return undefined;
 	}
-	current = child;
-	if (tail !== undefined) {
-		return lookupYaml(current, tail);
-	}
-	if (typeof current === "string") {
-		return current;
-	}
-	if (Array.isArray(current)) {
-		const flat: Array<string> = [];
-		for (const item of current) {
-			if (typeof item !== "string") {
-				return undefined;
-			}
-			flat.push(item);
-		}
-		return flat.join("\n");
-	}
-	return stableStringify(current);
+	return tail === undefined ? renderLeaf(child) : lookupYaml(child, tail);
 }
 
 export function readYamlKeys(

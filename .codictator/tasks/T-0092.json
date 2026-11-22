@@ -1,0 +1,86 @@
+{
+  "acceptanceCriteria": [
+    "yamlScalar and lookupYaml are below complexity 10 with identical output"
+  ],
+  "branch": "refactor/size-debt",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/config-yaml-keys.ts",
+      "packages/codictator/tests/unit/kernel/config-yaml-keys-split.test.ts",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T03:04:01.428Z",
+    "tree": "50a3d3aba324949e1adafbf485f5e21bab5fe126"
+  },
+  "historyStaged": true,
+  "id": "T-0092",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T03:03:00.684Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T03:03:40.360Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:04:00.572Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T03:13:11.408Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T03:13:22.634Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T03:13:32.823Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T03:03:37.010Z",
+    "commit": "2dd46a5602dc7ef2d4d251c673ad00185a0d25e2",
+    "failing": [
+      "[§4.1.2] yaml sequence flattener joins scalar items and rejects nested ones"
+    ],
+    "tree": "50a3d3aba324949e1adafbf485f5e21bab5fe126"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T03:13:22.198Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0092-r1",
+      "round": 1,
+      "tree": "85a66c1a0d56834fd034f4b1cb88588ac55866e3"
+    }
+  ],
+  "spec": [
+    "SPEC §4.1.2"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/kernel/config-yaml-keys-split.test.ts",
+      "title": "[§4.1.2] yaml sequence flattener joins scalar items and rejects nested ones"
+    }
+  ],
+  "title": "split config-yaml-keys functions below the size limits",
+  "type": "refactor",
+  "version": 1
+}
+
