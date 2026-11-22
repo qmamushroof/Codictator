@@ -42,7 +42,7 @@ Run the steps in number order. Each one is its own task and branch.
   - **Task:** `fix`, branch `fix/14-docs-reclassify`.
   - **Do:** follow DEBUGGING.md. Write the regression test red: a `docs` task that writes a code file still owes the red and green proofs (SPEC §4.12.2). Then make the phase gate judge the touched files, not only the declared type.
   - **Verify:** the regression test is green and a `docs` task that writes only docs still advances without proofs.
-- [ ] **14.8** Make `README.md` state what ships.
+- [x] **14.8** Make `README.md` state what ships.
   - **Task:** `docs`, branch `docs/14-readme-truth`.
   - **Do:** set the status version to the `version` field of `packages/codictator/package.json`. Run `npx codictator pack list` and make the Languages line agree with it. Check each harness line against the adapter capabilities of SPEC §4.5.
   - **Verify:** fresh-session docs review with zero open findings.

@@ -1,0 +1,68 @@
+{
+  "acceptanceCriteria": [
+    "README status version equals packages/codictator/package.json; Languages line equals pack list; harness lines match SPEC 4.5"
+  ],
+  "branch": "docs/14-close-out",
+  "files": {
+    "allow": [
+      "README.md",
+      "docs/ROADMAP/14-CLOSE-OUT.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0099",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T04:31:14.644Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T04:31:15.072Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T04:31:15.509Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T04:31:33.877Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T04:31:34.812Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T04:31:40.672Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T04:31:34.359Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "human-review-T-0099-r1",
+      "round": 1,
+      "tree": "f2e894305d49106be470169f6b9cdadcb2423b4e"
+    }
+  ],
+  "spec": [
+    "SPEC §4.5",
+    "SPEC §6.2"
+  ],
+  "title": "docs(readme): state what ships at 0.2.9",
+  "type": "docs",
+  "version": 1
+}
+
