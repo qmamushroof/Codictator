@@ -183,13 +183,11 @@ export function emitInitResult(
 	}
 	return ok(0);
 }
-export async function initPreamble(
+// SPEC §4.19.2: the repo root, or the CDX-E703 failure. Shared by the init
+// preamble and setup, which gates on the human only after the root is known.
+export async function resolveRootOrFail(
 	req: CommandRequest,
 ): Promise<string | Result<number>> {
-	const gated = refuseNonHuman(req);
-	if (gated !== undefined) {
-		return gated;
-	}
 	const root = await resolveRepoRoot(req.cwd);
 	if (!root.ok) {
 		return fail(
@@ -200,6 +198,12 @@ export async function initPreamble(
 		);
 	}
 	return root.value;
+}
+
+export async function initPreamble(
+	req: CommandRequest,
+): Promise<string | Result<number>> {
+	return refuseNonHuman(req) ?? resolveRootOrFail(req);
 }
 
 export interface InitSequence {

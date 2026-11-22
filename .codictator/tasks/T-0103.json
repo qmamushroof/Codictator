@@ -1,0 +1,151 @@
+{
+  "acceptanceCriteria": [
+    "setup allowed for agents except --repair over an existing config (CDX-E107)",
+    "setup --yes consents to the tool installs without a TTY or prompt",
+    "npm/pnpm/yarn/bun removal of codictator or codictator@version blocks; other packages do not"
+  ],
+  "branch": "fix/setup-agent-allowed",
+  "files": {
+    "allow": [
+      "packages/codictator/src/cli/init-plan.ts",
+      "packages/codictator/src/cli/setup.ts",
+      "packages/codictator/src/cli/setup-install.ts",
+      "packages/codictator/src/kernel/shell-bypass.ts",
+      "packages/codictator/tests/**",
+      "docs/SPEC/10-TESTING-STRATEGY.md",
+      "docs/ROADMAP/16-FIRST-RUN.md",
+      "docs/HISTORY/2026-11-22.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-22T10:24:37.219Z",
+    "tree": "994ff391958f05e26c548ff4a7a496064a061975"
+  },
+  "historyStaged": true,
+  "id": "T-0103",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-22T10:15:54.006Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-22T10:16:32.704Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-22T10:18:03.755Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-22T10:35:49.566Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-22T10:35:50.054Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-22T10:36:13.147Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-22T10:16:07.939Z",
+    "commit": "a8ce1928e688c749f4154c930d40421aec5e6d5f",
+    "failing": [
+      "[§4.19.6] setup without a TTY on a fresh repo is not refused as human-only",
+      "[§4.19 EC-11] an agent runs setup on a repo with no config and adoption proceeds",
+      "[§4.19 EC-13] an agent runs setup over an existing config without --repair and the regen path proceeds",
+      "[§4.19 EC-14] setup without --yes and without a TTY fails CDX-E003 and the tool manifest is not written",
+      "[§4.19 EC-15] setup --yes without a TTY writes the tool manifest and runs install then ci with no prompt",
+      "[§4.19.6] setup usage ends with [--repair] [--yes] and init refuses --yes",
+      "[§4.14 EC-13] every package-manager removal shape of codictator blocks",
+      "[§4.14 EC-13] a wrapped package-manager removal blocks and names the engine",
+      "[§4.19 EC-11] an agent adopts a bare repo through the setup command"
+    ],
+    "tree": "994ff391958f05e26c548ff4a7a496064a061975"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T10:30:01.194Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "a83528de7a512c7b2",
+      "round": 1,
+      "tree": "unknown"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-22T10:33:26.290Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "a83528de7a512c7b2",
+      "round": 2,
+      "tree": "8f9c1f11f86256be438fc676b24310181a49e502"
+    }
+  ],
+  "spec": [
+    "SPEC §4.19.2"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-setup.test.ts",
+      "title": "[§4.19.6] setup without a TTY on a fresh repo is not refused as human-only"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-setup-agent-allowed.test.ts",
+      "title": "[§4.19 EC-11] an agent runs setup on a repo with no config and adoption proceeds"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-setup-agent-allowed.test.ts",
+      "title": "[§4.19 EC-13] an agent runs setup over an existing config without --repair and the regen path proceeds"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-setup-agent-allowed.test.ts",
+      "title": "[§4.19 EC-14] setup without --yes and without a TTY fails CDX-E003 and the tool manifest is not written"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-setup-agent-allowed.test.ts",
+      "title": "[§4.19 EC-15] setup --yes without a TTY writes the tool manifest and runs install then ci with no prompt"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-setup-agent-allowed.test.ts",
+      "title": "[§4.19.6] setup usage ends with [--repair] [--yes] and init refuses --yes"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/integrity/self-protection-pm-remove.test.ts",
+      "title": "[§4.14 EC-13] every package-manager removal shape of codictator blocks"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/integrity/self-protection-pm-remove.test.ts",
+      "title": "[§4.14 EC-13] a wrapped package-manager removal blocks and names the engine"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/acceptance/setup-agent-allowed.test.ts",
+      "title": "[§4.19 EC-11] an agent adopts a bare repo through the setup command"
+    }
+  ],
+  "title": "Let agents run setup; --yes consent; widened uninstall guard",
+  "type": "feature",
+  "version": 1
+}
+

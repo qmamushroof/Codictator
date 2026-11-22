@@ -73,14 +73,15 @@ test("[§4.19.6] setup with an unknown flag is a usage error", async () => {
 	}
 });
 
-test("[§4.19.6] setup without a TTY fails CDX-E107", async () => {
-	// SPEC §4.2.3: setup is human-only like init.
+test("[§4.19.6] setup without a TTY on a fresh repo is not refused as human-only", async () => {
+	// SPEC §4.19.6 (PRD §12 #40): only --repair over an existing config is
+	// human-only; a fresh repo proceeds and stops at the install consent.
 	const repo = createTempRepo({ "README.md": "hi" });
 	try {
 		const ran = await handleSetup(req([], repo.dir));
 		assert.equal(ran.ok, false);
 		if (!ran.ok) {
-			assert.equal(ran.error.code, "CDX-E107");
+			assert.equal(ran.error.code, "CDX-E003");
 		}
 	} finally {
 		repo.cleanup();

@@ -15,7 +15,7 @@
   - **Task:** `docs`, branch `docs/setup-agent-allowed`.
   - **Do:** record PRD §12 #40; narrow the human-only rule of SPEC §4.19.2 and §4.19.6 to `setup --repair` over an existing config; add `--yes` and SPEC §4.19.7 EC-11..15; widen the uninstall shapes of SPEC §4.14.3.
   - **Verify:** fresh-session docs review; no doc still calls `setup` human-only.
-- [ ] **16.0b** Build the setup-agent-allowed change.
+- [x] **16.0b** Build the setup-agent-allowed change.
   - **Task:** `feature`, branch `fix/setup-agent-allowed`.
   - **Do:** tests for SPEC §4.19.7 EC-11..15 and the widened SPEC §4.14.3 uninstall shapes, entered red, then the gate, the `--yes` flag and the shell-guard change inside `cli` and `integrity` only.
   - **Verify:** `npm run ledger -- --covers "§4.19 EC-11..15" "§4.14 EC-13..14"` exits 0; the always-set is green.

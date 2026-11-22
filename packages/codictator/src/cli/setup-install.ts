@@ -3,8 +3,8 @@
 // .codictator/tool/package.json pinning the engine exactly, then npm ci
 // runs in the directory owning the lockfile. Placing the tool manifest
 // and generating its lockfile mutate the repo and need the network, so
-// both wait for an explicit TTY yes; anything else fails closed with
-// CDX-E003. A registry or network outage maps to CDX-E401 (exit 5); any
+// both wait for consent: --yes, or an explicit TTY yes; anything else
+// fails closed with CDX-E003. A registry or network outage maps to CDX-E401 (exit 5); any
 // other install failure is a missing engine, CDX-E003 (exit 6).
 import path from "node:path";
 import { createInterface } from "node:readline/promises";
@@ -39,6 +39,8 @@ export interface SetupInstallDeps {
 		argv: ReadonlyArray<string>,
 		options: ProcOptions,
 	) => Promise<ProcResult>;
+	// SPEC §4.19.6: --yes is consent to both tool installs; no prompt, no TTY.
+	readonly yes?: boolean;
 }
 
 // SPEC §4.19.6: the production prompt. The message rides as the
@@ -106,12 +108,13 @@ export async function setupInstallLayout(
 		// for the same consent as the install it enables.
 		const tty = deps.isTty ?? isTty;
 		const agreed =
-			tty() &&
-			(await askInstallConsent(
-				req,
-				`setup: missing .codictator/tool/package.json - write it in .codictator/tool? [y/n]`,
-				deps.prompt ?? defaultPrompt,
-			));
+			deps.yes === true ||
+			(tty() &&
+				(await askInstallConsent(
+					req,
+					`setup: missing .codictator/tool/package.json - write it in .codictator/tool? [y/n]`,
+					deps.prompt ?? defaultPrompt,
+				)));
 		if (!agreed) {
 			return fail(
 				"CDX-E003",
@@ -260,12 +263,13 @@ export async function setupInstallHere(
 		// unmutated and unprompted.
 		const tty = deps.isTty ?? isTty;
 		const agreed =
-			tty() &&
-			(await askInstallConsent(
-				req,
-				`setup: missing ${target.lockRel} - run "npm install" then "npm ci" in ${target.dirRel}? [y/n]`,
-				deps.prompt ?? defaultPrompt,
-			));
+			deps.yes === true ||
+			(tty() &&
+				(await askInstallConsent(
+					req,
+					`setup: missing ${target.lockRel} - run "npm install" then "npm ci" in ${target.dirRel}? [y/n]`,
+					deps.prompt ?? defaultPrompt,
+				)));
 		if (!agreed) {
 			return missingLockfile(req, target);
 		}
