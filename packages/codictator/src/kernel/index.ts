@@ -74,8 +74,9 @@ export {
 } from "./secret-paths.ts";
 export type { ShellAnalysis, ShellPipeline, SimpleCommand } from "./shell.ts";
 export {
+	firstBypassHit,
 	isProtectedPath,
-	matchBypassCommand,
+	isReviewFindingsPath,
 	scanBypassRawText,
 } from "./shell-bypass.ts";
 export type { ShellViolation, ShellViolationClass } from "./shell-deny.ts";

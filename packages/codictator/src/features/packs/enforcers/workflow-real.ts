@@ -1,13 +1,15 @@
 // SPEC §5.9 real-scope judging for workflow/review: gate, plan, and round
 // caps over the claiming task records. Guards in workflow-guards.ts handle
 // marker fixtures; this module never touches them.
-import type { Ports } from "../../../kernel/index.ts";
+import { isReviewFindingsPath, type Ports } from "../../../kernel/index.ts";
 import type { Finding } from "../../engine/index.ts";
 import { readManifestPaths } from "../../integrity/index.ts";
 import { checkPhaseGate, MANDATORY_PHASES } from "../../workflow/phases.ts";
+import type { TaskRecord } from "../../workflow/tasks.ts";
 import {
 	checkWriteWithinPlan,
 	classifyChange,
+	isHistoryPath,
 	isTestPath,
 } from "../../workflow/writes.ts";
 import type { RuleBinding } from "./binding.ts";
@@ -22,6 +24,32 @@ export function nextPhaseOf(phase: string): string | undefined {
 	return MANDATORY_PHASES[at + 1];
 }
 
+// Writes that produce the evidence their own phase exits on owe no phase-gate
+// evidence first. SPEC §4.12.2: planning allows test writes, and the red proof
+// is the exit gate, not a precondition for writing the failing test (§4.12.7
+// EC-2). SPEC §4.12.4: the fresh reviewer writes the round's findings file
+// before the round completes. SPEC §4.12.2 row 6: the record phase's own
+// writes (history entry, bug row) supply its exit evidence. Src writes stay
+// judged and every other phase is untouched.
+function writesProduceExitEvidence(
+	task: TaskRecord,
+	files: ReadonlyArray<string>,
+): boolean {
+	if (files.length === 0) {
+		return false;
+	}
+	switch (task.phase) {
+		case "planning":
+			return files.every(isTestPath);
+		case "review":
+			return files.every((file) => isReviewFindingsPath(file, task.id));
+		case "record":
+			return files.every(isHistoryPath);
+		default:
+			return false;
+	}
+}
+
 export async function workflowGatesReal(
 	ports: Ports,
 	files: ReadonlyArray<string>,
@@ -32,16 +60,7 @@ export async function workflowGatesReal(
 		if (next === undefined) {
 			return;
 		}
-		// SPEC §4.12.2: planning allows test writes, and the red proof is
-		// the exit gate for advancing — not a precondition for writing the
-		// failing test that produces it (§4.12.7 EC-2). A test-only write in
-		// planning therefore owes no phase-gate evidence; src writes stay
-		// judged below, and every other phase is untouched.
-		if (
-			task.phase === "planning" &&
-			files.length > 0 &&
-			files.every(isTestPath)
-		) {
+		if (writesProduceExitEvidence(task, files)) {
 			return;
 		}
 		for (const finding of await checkPhaseGate(task, next, { manifestPaths })) {

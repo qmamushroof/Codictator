@@ -4,8 +4,9 @@
 // input fail-closed. There is no flag or file that turns Codictator off.
 import {
 	analyseShell,
+	firstBypassHit,
 	isProtectedPath,
-	matchBypassCommand,
+	isReviewFindingsPath,
 	parseJson,
 	scanBypassRawText,
 } from "../../kernel/index.ts";
@@ -133,7 +134,9 @@ function toolFormHit(command: ReadonlyArray<string>): Finding | undefined {
 	if (!TOOL_WRITE_VERBS.has(verb)) {
 		return undefined;
 	}
-	const target = command.find((part) => isProtectedPath(part));
+	const target = command.find(
+		(part) => isProtectedPath(part) && !isReviewFindingsPath(part),
+	);
 	if (target === undefined) {
 		return undefined;
 	}
@@ -163,26 +166,14 @@ export function checkSelfProtection(
 		return [toolHit];
 	}
 	const candidates = candidatesFor(command);
-	const seen = new Set<string>();
-	for (const candidate of candidates) {
-		const parsed = analyseShell(candidate);
-		if (!parsed.ok) {
-			continue;
-		}
-		for (const pipeline of parsed.value.pipelines) {
-			for (const cmd of pipeline.commands) {
-				const hit = matchBypassCommand(cmd);
-				if (hit !== undefined && !seen.has(hit)) {
-					seen.add(hit);
-					return [
-						noBypass(
-							hit,
-							"Run the command without the bypass; hooks and required checks cannot be skipped (§4.14.3).",
-						),
-					];
-				}
-			}
-		}
+	const hit = firstBypassHit(candidates);
+	if (hit !== undefined) {
+		return [
+			noBypass(
+				hit,
+				"Run the command without the bypass; hooks and required checks cannot be skipped (§4.14.3).",
+			),
+		];
 	}
 	const raw = scanBypassRawText(candidates[0] ?? "");
 	if (raw !== undefined) {

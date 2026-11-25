@@ -11,6 +11,7 @@ import type { Result } from "../kernel/index.ts";
 import { ok } from "../kernel/index.ts";
 import type { CommandRequest } from "./shared.ts";
 import { fail, portsFor, printHuman, printJson, usageError } from "./shared.ts";
+import { observeRecordEvidence } from "./task-record-evidence.ts";
 import { readTask, writeTask } from "./tasks.ts";
 
 async function gateForNextPhase(
@@ -29,6 +30,35 @@ async function gateForNextPhase(
 		message: finding.message,
 		remediation: finding.remediation,
 	}));
+}
+
+// SPEC §4.12.2 row 6: leaving record observes the evidence itself and
+// records it on the task; the self-declared amend flags still count.
+async function observeRecord(
+	root: string,
+	task: TaskRecord,
+): Promise<TaskRecord> {
+	if (task.phase !== "record") {
+		return task;
+	}
+	const ports = await portsFor(root);
+	if (!ports.ok) {
+		return task;
+	}
+	const seen = await observeRecordEvidence(ports.value, task);
+	const historyStaged = task.historyStaged === true || seen.historyStaged;
+	const bugRowUpdated = task.bugRowUpdated === true || seen.bugRowUpdated;
+	if (
+		historyStaged === (task.historyStaged === true) &&
+		bugRowUpdated === (task.bugRowUpdated === true)
+	) {
+		return task;
+	}
+	return {
+		...task,
+		...(historyStaged ? { historyStaged: true } : {}),
+		...(bugRowUpdated ? { bugRowUpdated: true } : {}),
+	};
 }
 
 async function applyPhaseEntry(
@@ -85,7 +115,14 @@ export async function taskPhaseNext(
 			req.json,
 		);
 	}
-	const blocked = await gateForNextPhase(root, task, next);
+	const observed = await observeRecord(root, task);
+	if (observed !== task) {
+		const kept = await writeTask(root, observed);
+		if (!kept.ok) {
+			return kept;
+		}
+	}
+	const blocked = await gateForNextPhase(root, observed, next);
 	if (blocked.length > 0) {
 		if (req.json) {
 			printJson({ id, phase: task.phase, blocked });
@@ -100,7 +137,7 @@ export async function taskPhaseNext(
 	const ports = await portsFor(root);
 	const saved = await applyPhaseEntry(
 		root,
-		task,
+		observed,
 		next,
 		ports.ok ? ports.value.clock.now() : "",
 	);

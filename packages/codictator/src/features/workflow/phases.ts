@@ -211,6 +211,24 @@ function missingReviewEvidence(task: TaskRecord): Array<string> {
 	return missing;
 }
 
+// SPEC §4.12.2: record owes evidence the command observes itself, so the
+// remediation says how to supply each missing item.
+const RECORD_REMEDIATION: Readonly<Record<string, string>> = {
+	"staged history entry": "stage a history entry under docs/HISTORY",
+	"bug row update":
+		"update the Bug: row in docs/BUGS from open to fixed and stage it",
+};
+
+function e604Remediation(
+	task: TaskRecord,
+	missing: ReadonlyArray<string>,
+): string {
+	if (task.phase !== "record") {
+		return `Run codictator task phase next to list the missing evidence for ${task.phase}.`;
+	}
+	return `${missing.map((item) => `${item}: ${RECORD_REMEDIATION[item]}`).join("; ")}; then re-run codictator task phase next.`;
+}
+
 function e604MissingGate(
 	task: TaskRecord,
 	missing: ReadonlyArray<string>,
@@ -219,7 +237,7 @@ function e604MissingGate(
 		ruleId: "core/workflow-gates",
 		code: "CDX-E604",
 		message: `phase gate evidence missing for ${task.phase}: ${missing.join(", ")}`,
-		remediation: `Run codictator task phase next to list the missing evidence for ${task.phase}.`,
+		remediation: e604Remediation(task, missing),
 	};
 }
 

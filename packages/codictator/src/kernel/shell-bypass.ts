@@ -4,6 +4,7 @@
 // module (§3.3; the security/index.ts pattern). Shaping findings stays with
 // the callers: integrity for direct checks, packs for the live enforcer.
 import type { SimpleCommand } from "./shell.ts";
+import { analyseShell } from "./shell-scan.ts";
 
 // SPEC §4.19.2 human-only commands: blocked for agents by the shell guard.
 const HUMAN_ONLY = new Set([
@@ -38,6 +39,17 @@ export function isProtectedPath(path: string): boolean {
 		target.startsWith(".github/workflows/codictator") &&
 		(target.endsWith(".yml") || target.endsWith(".yaml"))
 	);
+}
+
+// SPEC §4.12.4 + §4.14.3 Paths row: the round's findings file
+// `.codictator/reviews/<task-id>-r<round>.json`, written by the fresh
+// reviewer, with `round` a positive integer. With a task id the file must
+// be that task's; without one any well-formed task id matches.
+const FINDINGS_FILE = /^\.codictator\/reviews\/(T-\d+)-r([1-9]\d*)\.json$/;
+
+export function isReviewFindingsPath(path: string, taskId?: string): boolean {
+	const match = FINDINGS_FILE.exec(normalizePath(path));
+	return match !== null && (taskId === undefined || match[1] === taskId);
 }
 
 function matchGitHooksPath(args: ReadonlyArray<string>): string | undefined {
@@ -166,7 +178,7 @@ function matchHumanOnly(cmd: SimpleCommand): string | undefined {
 // SPEC §4.14.3 command table: the bypass shapes matched against each
 // parsed command. The caller collects the commands so wrappers (bash -c,
 // env, $(…)) are analysed, not trusted.
-export function matchBypassCommand(cmd: SimpleCommand): string | undefined {
+function matchBypassCommand(cmd: SimpleCommand): string | undefined {
 	return (
 		matchGit(cmd) ??
 		matchDestructive(cmd) ??
@@ -174,6 +186,29 @@ export function matchBypassCommand(cmd: SimpleCommand): string | undefined {
 		matchPackageRemove(cmd) ??
 		matchHumanOnly(cmd)
 	);
+}
+
+// The first bypass hit across the candidate shell texts, parsed in order;
+// unparseable candidates are skipped here and the caller blocks them
+// fail-closed instead of allowing.
+export function firstBypassHit(
+	candidates: ReadonlyArray<string>,
+): string | undefined {
+	for (const candidate of candidates) {
+		const parsed = analyseShell(candidate);
+		if (!parsed.ok) {
+			continue;
+		}
+		for (const pipeline of parsed.value.pipelines) {
+			for (const cmd of pipeline.commands) {
+				const hit = matchBypassCommand(cmd);
+				if (hit !== undefined) {
+					return hit;
+				}
+			}
+		}
+	}
+	return undefined;
 }
 
 // SPEC §4.7.2 backstop: raw tokens catch bypass shapes the structured parse
