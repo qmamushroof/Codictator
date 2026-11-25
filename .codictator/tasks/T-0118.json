@@ -1,0 +1,98 @@
+{
+  "acceptanceCriteria": [
+    "docs/BUGS/2026-7.md gains five open rows in the §7.7 grammar, ids BUG-0135 to BUG-0139, with no code change"
+  ],
+  "branch": "docs/bugs-file-four",
+  "files": {
+    "allow": [
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-25.md",
+      ".codictator/reviews/T-0118-r*.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0118",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-25T09:21:41.639Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-25T09:21:45.263Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-25T09:22:00.117Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-25T09:39:00.820Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-25T09:52:50.029Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-25T09:52:59.809Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T09:39:40.161Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0118-r1",
+      "round": 1,
+      "tree": "3cba382e124311566afe45a2feb570bc8b090a01"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T09:52:22.768Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0118-r1",
+      "round": 2,
+      "tree": "3cba382e124311566afe45a2feb570bc8b090a01"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T09:52:49.827Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0118-r3",
+      "round": 3,
+      "tree": "fa2f0718af5201297e1b8992d34ed5b87d863405"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T09:52:56.987Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0118-r3",
+      "round": 4,
+      "tree": "fa2f0718af5201297e1b8992d34ed5b87d863405"
+    }
+  ],
+  "spec": [
+    "§7.7",
+    "§4.9.4"
+  ],
+  "title": "File four defects found during 16.0g",
+  "type": "docs",
+  "version": 1
+}
+
