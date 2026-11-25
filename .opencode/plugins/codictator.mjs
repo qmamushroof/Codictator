@@ -240,7 +240,6 @@ function markAgentShell(output) {
 	output.env = env;
 }
 
-// biome-ignore lint/style/noDefaultExport: OpenCode loads the bridge through its default export.
 export default function codictator() {
 	return {
 		"tool.execute.before": async (input, output) => {

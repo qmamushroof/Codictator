@@ -19,6 +19,7 @@
 			"includes": [
 				".claude/settings.json",
 				".muse/hooks.json",
+				".opencode/plugins/codictator.mjs",
 				"opencode.json"
 			],
 			"formatter": { "enabled": false },
