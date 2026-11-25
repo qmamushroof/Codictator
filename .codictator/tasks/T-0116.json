@@ -1,0 +1,139 @@
+{
+  "acceptanceCriteria": [
+    "In review the round's findings file for this task is the only allowed write",
+    "Any other review write and any wrong-task or malformed findings path stays blocked",
+    "task phase next from record observes the staged history entry and the fixed bug row, and its CDX-E604 remediation names each missing item"
+  ],
+  "branch": "fix/review-record-self-serve",
+  "bugRowUpdated": true,
+  "diagnosis": "BUG-0124 reproduce: in phase review a tool write of .codictator/reviews/T-0116-r1.json is blocked. Root cause: checkWriteWithinPlan (features/workflow/writes.ts) allowedKind returns false for every non-doc path in review, the findings path is tamper under isProtectedPath (kernel/shell-bypass.ts, used by core/no-bypass in integrity-guards-repo.ts checkProposedWrites and integrity/self-protection.ts toolFormHit), and workflowGatesReal (packs/enforcers/workflow-real.ts) blocks any write in review while the completed review round is missing. BUG-0128 reproduce: task phase next from record reports CDX-E604 for staged history entry and bug row update with remediation that only says run task phase next. Root cause: missingRecordEvidence (features/workflow/phases.ts) reads self-declared flags historyStaged and bugRowUpdated that only task amend sets, e604MissingGate remediation loops to the same command, and workflowGatesReal blocks the record-phase history write until the flag is set.",
+  "files": {
+    "allow": [
+      "packages/codictator/src/kernel/shell-bypass.ts",
+      "packages/codictator/src/kernel/index.ts",
+      "packages/codictator/src/features/integrity/self-protection.ts",
+      "packages/codictator/src/features/packs/enforcers/integrity-guards-repo.ts",
+      "packages/codictator/src/features/packs/enforcers/workflow-real.ts",
+      "packages/codictator/src/features/workflow/writes.ts",
+      "packages/codictator/src/features/workflow/phases.ts",
+      "packages/codictator/src/cli/task-phases.ts",
+      "packages/codictator/src/cli/task-record-evidence.ts",
+      "packages/codictator/tests/unit/workflow/review-findings-write.test.ts",
+      "packages/codictator/tests/unit/integrity/self-protection-findings.test.ts",
+      "packages/codictator/tests/unit/cli/cli-record-evidence.test.ts",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-25.md",
+      ".codictator/tasks/T-0116.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-25T03:36:39.628Z",
+    "tree": "3fd9d6ebfefe89d6086a74abc0e0a5daaa634e9a"
+  },
+  "historyStaged": true,
+  "id": "T-0116",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-25T03:18:57.568Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-25T03:19:09.945Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-25T03:36:44.316Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-25T03:36:49.448Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-25T03:38:13.108Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-25T04:10:26.304Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-25T03:19:03.880Z",
+    "commit": "93d6d1b8d4c02b1ee5cc6db74c5fd3783636c756",
+    "failing": [
+      "[§4.12.2] record reports missing evidence with remediation naming each item"
+    ],
+    "tree": "3fd9d6ebfefe89d6086a74abc0e0a5daaa634e9a"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T03:38:01.007Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "sonnet-fresh-T-0116-r1",
+      "round": 1,
+      "tree": "1c4cfae793207f52303a3befea9d52e1c3955937"
+    }
+  ],
+  "spec": [
+    "SPEC §4.12.2",
+    "SPEC §4.12.4",
+    "SPEC §4.14.3"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/workflow/review-findings-write.test.ts",
+      "title": "[§4.12.4] review phase allows only this task's findings file write"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/workflow/review-findings-write.test.ts",
+      "title": "[§4.12.4] review phase still blocks other paths and wrong-task or malformed findings paths"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/integrity/self-protection-findings.test.ts",
+      "title": "[§4.14.3] agent tool write of the round findings file is not tamper but other guardrail paths are"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-record-evidence.test.ts",
+      "title": "[§4.12.2] record observes the staged history entry"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-record-evidence.test.ts",
+      "title": "[§4.12.2] record observes the bug row open at the base and fixed in the index"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/cli/cli-record-evidence.test.ts",
+      "title": "[§4.12.2] record reports missing evidence with remediation naming each item"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/unit/workflow/review-findings-write.test.ts",
+      "title": "[§4.12.4] review phase allows only this task's findings file write"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/workflow/review-findings-write.test.ts",
+      "title": "[§4.12.4] review phase still blocks other paths and wrong-task or malformed findings paths"
+    }
+  ],
+  "title": "fix(workflow): let the reviewer write findings and observe record evidence",
+  "type": "fix",
+  "version": 1
+}
+

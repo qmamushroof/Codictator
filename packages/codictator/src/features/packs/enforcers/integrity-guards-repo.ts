@@ -3,8 +3,9 @@
 // and committed hygiene here, test vectors there.
 import {
 	analyseShell,
+	firstBypassHit,
 	isProtectedPath,
-	matchBypassCommand,
+	isReviewFindingsPath,
 	type Ports,
 	type Result,
 	type SimpleCommand,
@@ -98,25 +99,15 @@ function checkShellCommand(
 	command: string,
 ): Array<Finding> {
 	const findings: Array<Finding> = [];
-	for (const candidate of shellCandidates(command)) {
-		const parsed = analyseShell(candidate);
-		if (!parsed.ok) {
-			continue;
-		}
-		for (const pipeline of parsed.value.pipelines) {
-			for (const cmd of pipeline.commands) {
-				const hit = matchBypassCommand(cmd);
-				if (hit !== undefined) {
-					findings.push(
-						findingFor(binding, {
-							message: `${hit} in tool input`,
-							vars: { path: "tool input" },
-						}),
-					);
-					return findings;
-				}
-			}
-		}
+	const hit = firstBypassHit(shellCandidates(command));
+	if (hit !== undefined) {
+		findings.push(
+			findingFor(binding, {
+				message: `${hit} in tool input`,
+				vars: { path: "tool input" },
+			}),
+		);
+		return findings;
 	}
 	const raw = scanBypassRawText(command);
 	if (raw !== undefined) {
@@ -142,7 +133,8 @@ function checkProposedWrites(
 		return findings;
 	}
 	for (const target of [...(scope.proposedPaths ?? [])].sort()) {
-		if (isProtectedPath(target)) {
+		// SPEC §4.14.3 Paths row: the round's findings file is the one exception.
+		if (isProtectedPath(target) && !isReviewFindingsPath(target)) {
 			findings.push(
 				findingFor(binding, {
 					path: target,

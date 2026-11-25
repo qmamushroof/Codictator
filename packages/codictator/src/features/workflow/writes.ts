@@ -1,7 +1,7 @@
 // SPEC §4.12.3 L1: a write is blocked with no active task, when the
 // phase does not allow that file class, or outside files.allow. The message
 // names the phase and the command to move on or amend the plan.
-import { globMatch } from "../../kernel/index.ts";
+import { globMatch, isReviewFindingsPath } from "../../kernel/index.ts";
 import type { Finding } from "../engine/index.ts";
 import type { ChangeClass, TaskRecord } from "./tasks.ts";
 
@@ -25,7 +25,7 @@ export function isTestPath(path: string): boolean {
 	);
 }
 
-function isHistoryPath(path: string): boolean {
+export function isHistoryPath(path: string): boolean {
 	return path.startsWith("docs/HISTORY/") || path.startsWith("docs/BUGS/");
 }
 
@@ -101,11 +101,36 @@ export async function checkWriteWithinPlan(
 			},
 		];
 	}
+	// SPEC §4.12.4: a findings file of another task is never this task's
+	// write, whatever class the path carries.
+	const foreign =
+		phase === "review"
+			? [...files]
+					.filter(
+						(path) =>
+							isReviewFindingsPath(path) &&
+							!isReviewFindingsPath(path, task.id),
+					)
+					.sort()
+			: [];
+	if (foreign.length > 0) {
+		return foreign.map((path) => ({
+			ruleId: "core/writes-within-plan",
+			path,
+			message: `write to ${path} is another task's review findings file`,
+			remediation: `Write only .codictator/reviews/${task.id}-r<round>.json in review.`,
+		}));
+	}
 	if (changeClass === "chore" || changeClass === "guardrail") {
 		return [];
 	}
 	const findings: Array<Finding> = [];
 	const allowedKind = (path: string): boolean => {
+		// SPEC §4.12.4: the one write review allows is this task's round
+		// findings file, `.codictator/reviews/<task-id>-r<round>.json`.
+		if (phase === "review" && isReviewFindingsPath(path, task.id)) {
+			return true;
+		}
 		// SPEC §4.12.7 EC-11: docs-only changes stay allowed in a code task.
 		if (isDocPath(path)) {
 			return true;
