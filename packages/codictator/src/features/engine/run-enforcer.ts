@@ -6,10 +6,12 @@
 import type { CheckContext, Enforcer, Finding, Trigger } from "./index.ts";
 import { applyWaivers, type WaiverStore } from "./waivers.ts";
 
-// SPEC §4.3.9 EC-1: the feedback-only triggers (tool.post.write and stop
-// both arrive here as post-tool) allow with the event recorded when no
-// enforcer runs; every other trigger with zero enforcers fails closed.
-const FEEDBACK_ONLY_TRIGGERS: ReadonlyArray<Trigger> = ["post-tool"];
+// SPEC §4.3.8 and §4.3.9 EC-1/EC-19: the triggers that never gate allow with
+// the event recorded when no enforcer runs: the feedback-only post-tool
+// (tool.post.write and stop both arrive here as post-tool) and the advisory
+// prompt (prompt.submit). Every other trigger, startup and compact included,
+// fails closed with zero enforcers.
+const NEVER_GATING_TRIGGERS: ReadonlyArray<Trigger> = ["post-tool", "prompt"];
 
 function failFinding(
 	enforcerId: string,
@@ -148,8 +150,9 @@ export function zeroEnforcerFinding(): Finding {
 
 // SPEC §4.3.3 steps 1-3: run the trigger's enforcers, then apply waivers to
 // the findings. Zero effective enforcers fail closed with the synthetic
-// CDX-E904 finding, except the feedback-only triggers, which allow with the
-// event recorded (§4.3.9 EC-1/EC-19).
+// CDX-E904 finding, except the never-gating triggers (feedback-only
+// post-tool, advisory prompt), which allow with the event recorded (§4.3.8,
+// §4.3.9 EC-1/EC-19).
 export async function collectFindings(
 	ordered: ReadonlyArray<Enforcer>,
 	ctx: CheckContext,
@@ -163,7 +166,7 @@ export async function collectFindings(
 		enforcer.kinds.includes(ctx.trigger),
 	);
 	if (runnable.length === 0) {
-		if (FEEDBACK_ONLY_TRIGGERS.includes(ctx.trigger)) {
+		if (NEVER_GATING_TRIGGERS.includes(ctx.trigger)) {
 			return { kept: [], waiversApplied: [], zeroEnforcers: false };
 		}
 		return {

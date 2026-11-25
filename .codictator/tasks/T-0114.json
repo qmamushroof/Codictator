@@ -1,0 +1,99 @@
+{
+  "acceptanceCriteria": [
+    "prompt with zero enforcers allows with no CDX-E904 finding"
+  ],
+  "branch": "fix/prompt-hook-e904",
+  "bugRowUpdated": true,
+  "diagnosis": "collectFindings in run-enforcer.ts returns the CDX-E904 zeroEnforcerFinding for any trigger outside FEEDBACK_ONLY_TRIGGERS (post-tool), so the advisory prompt trigger blocks when no pack rule selects it; SPEC §4.3.8 and EC-19 say prompt allows with zero enforcers",
+  "files": {
+    "allow": [
+      "packages/codictator/src/features/engine/run-enforcer.ts",
+      "packages/codictator/src/features/engine/evaluate.ts",
+      "packages/codictator/tests/unit/engine/engine-s43-ec11-19.test.ts",
+      "docs/HISTORY/2026-11-23.md"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-23T09:35:12.625Z",
+    "tree": "89222888ee415a35e22d6953eb26f638ba4264ec"
+  },
+  "historyStaged": true,
+  "id": "T-0114",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-23T09:31:33.538Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-23T09:32:04.681Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-23T09:35:56.394Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-23T09:43:51.281Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-25T02:25:23.134Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-25T02:44:20.998Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-23T09:32:00.190Z",
+    "commit": "9334aec44cb0b256a0dba12f84b4a306a2b7ba8a",
+    "failing": [
+      "[§4.3 EC-19] prompt allows with zero enforcers while startup and compact still block"
+    ],
+    "tree": "89222888ee415a35e22d6953eb26f638ba4264ec"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T02:25:22.778Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "sonnet-review-T-0114-r1",
+      "round": 1,
+      "tree": "90aef999e93fe6f95d610e17cf29483d036625ec"
+    }
+  ],
+  "spec": [
+    "SPEC §4.3.8"
+  ],
+  "tests": [
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/engine/engine-s43-ec11-19.test.ts",
+      "title": "[§4.3 EC-19] prompt allows with zero enforcers while startup and compact still block"
+    },
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/engine/engine-s43-ec11-19.test.ts",
+      "title": "[§4.3 EC-19] prompt allows with zero enforcers while startup and compact still block"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/unit/engine/engine-s43-ec11-19.test.ts",
+      "title": "[§4.3 EC-19] prompt allows with zero enforcers while startup and compact still block"
+    }
+  ],
+  "title": "fix(engine): let the prompt trigger allow with zero enforcers (BUG-0120)",
+  "type": "fix",
+  "version": 1
+}
+

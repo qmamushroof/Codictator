@@ -39,7 +39,7 @@
   - **Task:** `fix`, branch `fix/regen-untracked-files`.
   - **Do:** a test traced to SPEC §4.14.1 entered red, then `regen` leaves no untracked, ungitignored harness file in this repo.
   - **Verify:** the test is green; BUG-0119 is fixed with its regression test.
-- [ ] **16.0h** Fix BUG-0120: the prompt hook fails closed with CDX-E904.
+- [x] **16.0h** Fix BUG-0120: the prompt hook fails closed with CDX-E904.
   - **Task:** `fix`, branch `fix/prompt-hook-e904`.
   - **Do:** a test traced to SPEC §4.5 entered red, then the `prompt` trigger has an effective enforcer or no installed hook; confirm the scope for consumer repos first.
   - **Verify:** the test is green; BUG-0120 is fixed with its regression test.

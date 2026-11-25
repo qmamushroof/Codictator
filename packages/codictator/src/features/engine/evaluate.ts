@@ -122,8 +122,9 @@ function failsClosed(finding: Finding): boolean {
 }
 
 // SPEC §4.3.8 + §4.3.9 EC-19: zero effective enforcers block, except the
-// never-gating L2 layer, which advises. No engine trigger maps to L2 yet
-// (see TRIGGER_LAYERS), so every trigger blocks until that phase lands.
+// never-gating L2 layer, which advises. The never-gating prompt and
+// post-tool triggers never reach here: collectFindings allows them with no
+// synthetic finding. startup and compact still block.
 function decideZeroEnforcer(trigger: Trigger): Decision {
 	return TRIGGER_LAYERS[trigger] === "L2" ? "advise" : "block";
 }
