@@ -63,9 +63,34 @@ test("[§4.3 EC-19] filtered-out rules still fail closed with CDX-E904", async (
 		},
 	]);
 	// SPEC §4.3.9 EC-19: every selected rule filtered out for this trigger
-	// (the guard only runs at startup). The block holds even on the
-	// advisory prompt trigger; only L2 advises.
-	for (const trigger of ["pre-tool", "prompt", "review"] as const) {
+	// (the guard only runs at startup). The block holds on every gating
+	// trigger; the prompt trigger allows instead (§4.3.8).
+	for (const trigger of ["pre-tool", "review"] as const) {
+		const verdict = await engine.evaluate(
+			trigger,
+			{ files: [] },
+			FIXED_INSTANT,
+		);
+		assert.equal(verdict.decision, "block");
+		assert.ok(
+			verdict.findings.some((finding) => finding.code === "CDX-E904"),
+			`expected a synthetic CDX-E904 finding at ${trigger}`,
+		);
+	}
+});
+
+test("[§4.3 EC-19] prompt allows with zero enforcers while startup and compact still block", async () => {
+	const engine = createEngine([]);
+	// SPEC §4.3.8 and EC-19: the advisory prompt trigger (prompt.submit)
+	// produces no synthetic CDX-E904 finding and allows.
+	const prompt = await engine.evaluate("prompt", { files: [] }, FIXED_INSTANT);
+	assert.equal(prompt.decision, "allow");
+	assert.ok(
+		!prompt.findings.some((finding) => finding.code === "CDX-E904"),
+		"prompt must not carry a CDX-E904 finding",
+	);
+	// SPEC §4.3.8: startup and compact still fail closed.
+	for (const trigger of ["startup", "compact"] as const) {
 		const verdict = await engine.evaluate(
 			trigger,
 			{ files: [] },

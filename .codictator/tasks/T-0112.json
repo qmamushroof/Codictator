@@ -1,0 +1,91 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.3.3 step 4, 4.3.8, EC-19 and 8.1 CDX-E904 agree that the advisory prompt trigger allows with zero enforcers"
+  ],
+  "branch": "fix/prompt-hook-e904",
+  "diagnosis": "prompt (prompt.submit) is advisory per SPEC 4.3.3 step 4 and ADVISORY_TRIGGERS in engine/evaluate.ts, but 4.3.8 and EC-19 block zero effective enforcers at every trigger except L2, so a repo whose packs give no rule the prompt trigger blocks every prompt with CDX-E904; no builtin pack rule lists prompt",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-03-ENGINE.md",
+      "docs/SPEC/08-ERRORS-EXIT-CODES.md",
+      "docs/HISTORY/2026-11-23.md"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0112",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-23T08:28:01.923Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-23T08:28:04.617Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-23T08:28:14.773Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-23T08:38:19.703Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-23T09:09:10.119Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-23T09:19:03.691Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-23T08:56:59.021Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "reviewer-T-0112-r1",
+      "round": 1,
+      "tree": "98851ae90a4f51d4fe5158c61f615d7efdf621ca"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-23T09:03:19.341Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "reviewer-T-0112-r2",
+      "round": 2,
+      "tree": "20b400864ce906bbb6fa6b04c33f74e62a0f152e"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-23T09:08:22.998Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "reviewer-T-0112-r3",
+      "round": 3,
+      "tree": "18736e55dc7d49012502477805c439a32390c0b8"
+    }
+  ],
+  "spec": [
+    "§4.3.3",
+    "§4.3.8",
+    "§4.3.9 EC-19",
+    "§8.1"
+  ],
+  "title": "let the advisory prompt trigger allow with zero enforcers",
+  "type": "docs",
+  "version": 1
+}
+

@@ -1,0 +1,78 @@
+{
+  "acceptanceCriteria": [
+    "Eight open bug rows BUG-0124 to BUG-0131 are filed in docs/BUGS/2026-7.md in the SPEC §7.7 grammar"
+  ],
+  "branch": "fix/prompt-hook-e904",
+  "files": {
+    "allow": [
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-23.md",
+      ".codictator/tasks/T-0113.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0113",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-23T09:21:29.380Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-23T09:21:33.157Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-23T09:22:00.687Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-23T09:22:16.171Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-23T09:28:56.275Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-23T09:30:23.228Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-23T09:25:09.161Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "reviewer-T-0113-r1",
+      "round": 1,
+      "tree": "4906ef5d453c1a4252270f446e2b2689e150e584"
+    },
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-23T09:28:56.081Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "reviewer-T-0113-r2",
+      "round": 2,
+      "tree": "bc1fa9e2d54f342359c2e130ac5820cf17077e3e"
+    }
+  ],
+  "spec": [
+    "SPEC §4.9.4",
+    "SPEC §7.7"
+  ],
+  "title": "docs(bugs): file bug rows for review, hook and lint defects",
+  "type": "docs",
+  "version": 1
+}
+
