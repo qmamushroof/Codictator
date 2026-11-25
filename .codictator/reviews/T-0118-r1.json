@@ -1,0 +1,14 @@
+{
+	"version": 1,
+	"findings": [
+		{
+			"id": "F-1",
+			"severity": "nit",
+			"path": "docs/BUGS/2026-7.md",
+			"message": "BUG-0137 title writes the path as AppData\\\\Local\\\\Temp (doubled backslashes); SPEC 7.7 only escapes pipes, so a single backslash reads more accurately. Cosmetic, no grammar impact.",
+			"status": "open"
+		}
+	],
+	"tree": "3cba382e124311566afe45a2feb570bc8b090a01",
+	"reviewerSession": "fresh-subagent-review-T-0118-r1"
+}
