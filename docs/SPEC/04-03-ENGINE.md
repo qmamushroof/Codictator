@@ -41,7 +41,7 @@ A rule runs on a trigger only if the trigger is in its `triggers`; L4 runs every
 1. Select rules for `trigger` whose `scope` globs match at least one path in scope (path-free rules always match).
 2. Run their enforcers concurrently (at most `os.availableParallelism()`), each under its `budgetMs` and the trigger time limit (§9.3).
 3. Apply waivers (§4.3.4), then the ratchet (§4.3.5), to the findings.
-4. Decide: zero effective enforcers for the trigger fails closed (§4.3.8). Otherwise any remaining finding from a rule configured to block at this trigger → `block`; findings only from advisory triggers (`session.*`, `prompt.submit` injections, L2) → `advise`; none → `allow`.
+4. Decide: zero effective enforcers fail closed except where nothing gates (§4.3.8). Otherwise any remaining finding from a rule configured to block at this trigger → `block`; findings only from advisory triggers (`session.*`, `prompt.submit` injections, L2) → `advise`; none → `allow`.
 5. Build the agent message (§4.3.7).
 6. Append the `verdict` event (§7.10) **before** returning; if the append fails, return `block` with `CDX-E801` (PRD §6 P5).
 
@@ -95,7 +95,7 @@ Every block carries `Do instead:` text from the rule's `remediation`, rendered w
 
 An enforcer that throws, exceeds its budget, or lacks required data yields a synthetic finding for its rule with `CDX-E901` (error), `CDX-E902` (timeout) or `CDX-E903` (data unavailable) and the verdict blocks (PRD §12 #12). L2 is the only exception: it advises, because it never gates.
 
-Zero effective enforcers for a trigger — no rule selected, or every selected rule filtered out — yields a synthetic finding with `CDX-E904`. The verdict blocks at every trigger except L2, which advises because it never gates (PRD §12 #12).
+Zero effective enforcers for a trigger — no rule selected, or every selected rule filtered out — yields a synthetic finding with `CDX-E904`. The verdict blocks except where nothing gates. L2 keeps the finding and advises. The feedback-only triggers (EC-1) and the advisory `prompt` trigger (`prompt.submit`) produce no synthetic finding and allow; `startup` and `compact` still fail closed. The `allow` verdict event is still recorded (PRD §12 #12).
 
 ## 4.3.9 Edge cases
 
@@ -119,4 +119,4 @@ Zero effective enforcers for a trigger — no rule selected, or every selected r
 | EC-16 | Touched file with `core/file-size` 1 → 1 and `core/complexity` 3 → 2 | Pass: one metric fell, none rose |
 | EC-17 | Touched file with `core/complexity` 3 → 1 and `core/function-size` 2 → 3 | Block "worse than recorded" for `core/function-size`; the drop elsewhere does not offset it |
 | EC-18 | Metric key that is not a path (`ecosystem:name`) | Never "touched"; only the count rules apply |
-| EC-19 | Zero effective enforcers for the trigger, outside the EC-1 case | `block` with `CDX-E904`; L2 `advise`s instead |
+| EC-19 | Zero effective enforcers for the trigger, outside the EC-1 case | `block` with `CDX-E904`; L2 `advise`s; the `prompt` trigger (`prompt.submit`) allows instead |
