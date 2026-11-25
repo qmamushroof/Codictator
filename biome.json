@@ -16,6 +16,15 @@
 			"linter": { "enabled": false }
 		},
 		{
+			"includes": [
+				".claude/settings.json",
+				".muse/hooks.json",
+				"opencode.json"
+			],
+			"formatter": { "enabled": false },
+			"linter": { "enabled": false }
+		},
+		{
 			"includes": ["packages/vscode/resources/**"],
 			"formatter": { "enabled": false },
 			"linter": { "enabled": false }

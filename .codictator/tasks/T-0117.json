@@ -1,0 +1,110 @@
+{
+  "acceptanceCriteria": [
+    "Every artifact path in .codictator/manifest.json is tracked by git",
+    "codictator regen leaves no untracked harness file in this repo"
+  ],
+  "branch": "fix/regen-untracked-files",
+  "bugRowUpdated": true,
+  "diagnosis": "BUG-0119 reproduce: codictator regen writes the harness files listed in .codictator/manifest.json and git status shows them untracked. Root cause: no code defect in handleRegen (cli/guardrail.ts); the repo never committed the byte-stable output its manifest lists (31 artifacts untracked per git ls-files), so the output sits as untracked noise. Fix: track the regen output.",
+  "files": {
+    "allow": [
+      "packages/codictator/tests/architecture/manifest-artifacts-tracked.test.ts",
+      ".agents/**",
+      ".claude/**",
+      ".muse/**",
+      ".opencode/**",
+      "CLAUDE.md",
+      "opencode.json",
+      ".codictator/manifest.json",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-25.md",
+      "docs/ROADMAP/16-FIRST-RUN.md",
+      ".codictator/tasks/T-0117.json",
+      ".codictator/reviews/T-0117-r1.json",
+      "biome.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-25T08:56:04.334Z",
+    "tree": "ecb24d79b70740e4e13bff7008a9f61a3e665d84"
+  },
+  "historyStaged": true,
+  "id": "T-0117",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-25T08:48:10.513Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-25T08:48:29.440Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-25T08:48:40.090Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-25T08:56:07.874Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-25T08:56:40.943Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-25T08:57:00.771Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-25T08:48:23.760Z",
+    "commit": "af759c1e67a963655a3613168c6769c8e3808a93",
+    "failing": [
+      "[§4.14.1] every manifest artifact in this repo is tracked by git"
+    ],
+    "tree": "ecb24d79b70740e4e13bff7008a9f61a3e665d84"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T08:56:32.188Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0117-r1",
+      "round": 1,
+      "tree": "ea738063b240aa6201f6c4e9b6ef0af431280f55"
+    }
+  ],
+  "spec": [
+    "§4.14.1"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/architecture/manifest-artifacts-tracked.test.ts",
+      "title": "[§4.14.1] every manifest artifact in this repo is tracked by git"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/architecture/manifest-artifacts-tracked.test.ts",
+      "title": "[§4.14.1] every manifest artifact in this repo is tracked by git"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/architecture/manifest-artifacts-tracked.test.ts",
+      "title": "[§4.14.1] every manifest artifact in this repo is tracked by git"
+    }
+  ],
+  "title": "Track regen harness output",
+  "type": "fix",
+  "version": 1
+}
+
