@@ -1,0 +1,70 @@
+{
+  "acceptanceCriteria": [
+    "SPEC 4.12.2, 4.12.4 and 4.14.3 let the reviewer write its findings file and state observed record evidence"
+  ],
+  "branch": "docs/review-record-evidence",
+  "files": {
+    "allow": [
+      "docs/SPEC/04-12-WORKFLOW.md",
+      "docs/SPEC/04-14-INTEGRITY.md",
+      "docs/HISTORY/2026-11-25.md",
+      ".codictator/tasks/T-0115.json"
+    ]
+  },
+  "historyStaged": true,
+  "id": "T-0115",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-25T03:09:36.438Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-25T03:09:36.649Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-25T03:09:36.860Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-25T03:09:41.294Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-25T03:12:20.351Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-25T03:12:40.745Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T03:12:19.981Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "sonnet-review-T-0115-redo-r1",
+      "round": 1,
+      "tree": "f8b3d4f237a6106ef01c74cd65593bcbb78b93cd"
+    }
+  ],
+  "spec": [
+    "§4.12.2",
+    "§4.12.4",
+    "§4.14.3"
+  ],
+  "title": "docs(spec): let the reviewer write its findings and observe record evidence",
+  "type": "docs",
+  "version": 1
+}
+

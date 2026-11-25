@@ -16,11 +16,11 @@ A task is `.codictator/tasks/<id>.json` (schema §7.11), committed, created by `
 | 2 | planning | Tests, spec docs | `files.allow` globs; acceptance criteria; declared tests exist; required kinds covered (§4.10.3); red proof (§4.10.2) | yes |
 | 3 | implementation | `files.allow` | — | yes |
 | 4 | validation | `files.allow` | Green proof of declared tests; `codictator verify --staged` passes; any later write voids the proof | yes |
-| 5 | review | none | Review gate (§4.12.4) | yes |
-| 6 | record | `docs/HISTORY/*`, `docs/BUGS/*` | History entry staged (§4.9.3); for `fix`, the bug row updated (§4.9.4) | yes |
+| 5 | review | The round's findings file only (§4.12.4) | Review gate (§4.12.4) | yes |
+| 6 | record | `docs/HISTORY/*`, `docs/BUGS/*` | History entry staged (§4.9.3); for `fix`, the entry's `Bug:` row moved from `open` to `fixed` or `wontfix` since the merge base (§4.9.4) | yes |
 | 7 | integrate | none | Commit, push and PR via git hooks and CI; merge only on green required check | yes |
 
-`codictator task phase next` advances only when the exit gate holds, else `CDX-E604` lists the missing evidence.
+`codictator task phase next` advances only when the exit gate holds, else `CDX-E604` names each missing item. It observes the evidence itself, with no self-declared flag. The bug row moved when, in the staged index, it reads `fixed` or `wontfix` and read `open` at the merge base of the task branch with its base branch; the change may be committed on the branch or only staged.
 
 **Change classes** shorten the path by type; a change that touches code files is reclassified as code and owes every gate.
 
@@ -38,7 +38,7 @@ A task is `.codictator/tasks/<id>.json` (schema §7.11), committed, created by `
 | Layer | Check (rule `core/workflow-gates`, `core/writes-within-plan`) |
 |---|---|
 | L0 | Injection shows phase, next gate and the command (§4.6.3) |
-| L1 | A write is blocked when there is no active task, when the phase does not allow that file class, or when the path is outside `files.allow` (PRD §8.3); the message names the phase and the command to move on or amend the plan |
+| L1 | A write is blocked when there is no active task, when the phase does not allow that file class, or when the path is outside `files.allow` (PRD §8.3), except the round's findings file in review (§4.12.4); the message names the phase and the command to move on or amend the plan |
 | L3 | `pre-commit`: active task in phase ≥ record; `commit-msg`: history entry (§4.9) |
 | L4 | Every task touched in the PR has evidence for every gate of its class; red proofs re-run (§4.10.2) |
 
@@ -60,7 +60,7 @@ Editing a record's proofs is tamper under `core/no-bypass` (§4.14.3), not under
 |---|---|
 | Bind | The reviewed object is the staged index tree id (`git write-tree`); any change to the index makes the review stale |
 | Reviewer | Runs as a fresh session (the `codictator-review` asset). Its session id must not appear in the task's `authorSessions` (sessions that wrote any task file) nor in any earlier round. Identity comes from the `tool.pre.shell` event the hook recorded for the `review submit` command (matched by argv hash within 10 s); with no L1 adapter, `--session` is required and the round is marked `identity: declared`, shown in the CI summary |
-| Submit | `codictator review submit --task <id> --findings <file>`: findings `{ id, severity: blocker \| major \| minor \| nit, path, line, message }`; an empty list is a pass |
+| Submit | `codictator review submit --task <id> --findings <file>`: findings `{ id, severity: blocker \| major \| minor \| nit, path, line, message }`; an empty list is a pass. The fresh reviewer writes the round's findings to `.codictator/reviews/<task-id>-r<round>.json`; that file is not part of the bound tree and stays unstaged until the round is submitted, since staging it changes the tree (EC-6) |
 | Resolve | Blocker and major findings resolve only by a change (which forces a new round); minor and nit may be `wontfix` with a reason |
 | Gate | Last round's tree id equals the staged tree, zero open blocker/major findings, all `integrityExceptions` acknowledged (§4.10.4) |
 | Cap | `core/review-round-cap` rounds; reaching it escalates (§4.12.5) |
@@ -83,7 +83,7 @@ Roles (`planner`, `implementer`, `reviewer`, `qa`) are recorded per session on `
 | EC-1 | Write with no active task | Block with `codictator task new` instructions |
 | EC-2 | Implementation write before red proof | Block |
 | EC-3 | Write outside `files.allow` | Block; remediation: `codictator task amend --allow <glob>`, which returns the task to planning if new tests are needed |
-| EC-4 | Write during review phase | Block; to change code, return to implementation (voids proofs and review) |
+| EC-4 | Write during review phase | Block every write except the round's findings file (§4.12.4); to change code, return to implementation (voids proofs and review) |
 | EC-5 | Reviewer session is the author session | `review submit` refuses `CDX-E605` |
 | EC-6 | Review submitted, then a file restaged | Gate fails: stale tree |
 | EC-7 | Fourth consecutive block of `core/arch-boundaries` | Escalation; all task tool calls blocked until `task ack` |

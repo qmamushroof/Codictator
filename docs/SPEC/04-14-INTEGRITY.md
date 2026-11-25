@@ -36,7 +36,7 @@ Each latch creation and removal is an `integrity` event (§7.10).
 
 | Target | Blocked for agents |
 |---|---|
-| Paths | Writes, moves or deletes of `.codictator/**` (all state changes go through `codictator` commands), every manifest artifact, `.githooks/**`, Codictator's block in `.husky/*`, `.github/workflows/codictator*.yml`, and edits to harness config files that change owned entries |
+| Paths | Writes, moves or deletes of `.codictator/**` (all state changes go through `codictator` commands; the exception is the round's findings file `.codictator/reviews/<task-id>-r<round>.json`, written by the fresh reviewer during review, §4.12.4), every manifest artifact, `.githooks/**`, Codictator's block in `.husky/*`, `.github/workflows/codictator*.yml`, and edits to harness config files that change owned entries |
 | Manifests | A `package.json` (or tool manifest, §4.19.4) write that removes or changes the `codictator` dev dependency |
 | Commands | `git commit --no-verify`/`-n`, `git push --no-verify`, `HUSKY=0`, `SKIP=…`, `git -c core.hooksPath=…`, `git config core.hooksPath`, `chmod -x` on hooks, `rm`/`mv`/`git rm` on protected paths, `gh workflow disable`, `gh api` writes to branch protection or rulesets, `codictator` or `codictator@<version>` removed by `npm` (`uninstall`, `remove`, `un`, `rm`, `r`, `unlink`), `pnpm` (`remove`, `rm`, `uninstall`, `un`), `yarn` (`remove`) or `bun` (`remove`, `rm`), and human-only `codictator` commands (§4.19.2; `setup` is not matched, because the shell cannot see whether a config exists: the CLI refuses `--repair` over an existing config, §4.19.6) |
 
