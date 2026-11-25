@@ -1,0 +1,107 @@
+{
+  "acceptanceCriteria": [
+    "Every artifact path in .codictator/manifest.json is tracked by git",
+    "The generated OpenCode bridge carries no lint suppression"
+  ],
+  "branch": "fix/regen-untracked-files",
+  "bugRowUpdated": true,
+  "diagnosis": "BUG-0119 reproduce: codictator regen leaves the manifest-listed harness files untracked. Root cause: no defect in handleRegen (cli/guardrail.ts); the byte-stable output was never committed. The first fix attempt (PR 260) tracked it and CI core/no-new-suppressions then flagged the biome-ignore comment that OPENCODE_BRIDGE_SOURCE (features/adapters/opencode-bridge.ts) emits into .opencode/plugins/codictator.mjs. Fix: track the output, drop the emitted suppression, exempt the generated plugin and three generated JSON files in biome.json.",
+  "files": {
+    "allow": [
+      "packages/codictator/tests/unit/adapters/opencode-bridge-no-suppression.test.ts",
+      "packages/codictator/src/features/adapters/opencode-bridge.ts",
+      "biome.json",
+      ".opencode/**",
+      ".codictator/manifest.json",
+      "docs/BUGS/2026-7.md",
+      "docs/HISTORY/2026-11-25.md",
+      "docs/ROADMAP/16-FIRST-RUN.md",
+      ".codictator/tasks/T-0117.json",
+      ".codictator/reviews/T-0117-r1.json"
+    ]
+  },
+  "greenProof": {
+    "at": "2026-11-25T09:02:09.493Z",
+    "tree": "b06198536bce4fe44e67534e401074739593224d"
+  },
+  "historyStaged": true,
+  "id": "T-0117",
+  "phase": "integrate",
+  "phases": [
+    {
+      "enteredAt": "2026-11-25T09:01:43.087Z",
+      "evidence": "codictator task phase next",
+      "name": "planning"
+    },
+    {
+      "enteredAt": "2026-11-25T09:01:55.193Z",
+      "evidence": "codictator task phase next",
+      "name": "implementation"
+    },
+    {
+      "enteredAt": "2026-11-25T09:02:09.696Z",
+      "evidence": "codictator task phase next",
+      "name": "validation"
+    },
+    {
+      "enteredAt": "2026-11-25T09:08:11.501Z",
+      "evidence": "codictator task phase next",
+      "name": "review"
+    },
+    {
+      "enteredAt": "2026-11-25T09:08:48.560Z",
+      "evidence": "codictator task phase next",
+      "name": "record"
+    },
+    {
+      "enteredAt": "2026-11-25T09:08:58.380Z",
+      "evidence": "codictator task phase next",
+      "name": "integrate"
+    }
+  ],
+  "redProof": {
+    "at": "2026-11-25T09:01:54.944Z",
+    "commit": "dcbd45c844a2a8a934a54467ea3d92bbae65ec1b",
+    "failing": [
+      "[§4.5.4] the generated OpenCode bridge carries no lint suppression"
+    ],
+    "tree": "b06198536bce4fe44e67534e401074739593224d"
+  },
+  "reviews": [
+    {
+      "acknowledgedExceptions": [],
+      "at": "2026-11-25T09:08:37.720Z",
+      "identity": "observed",
+      "openBlockers": 0,
+      "openMajors": 0,
+      "reviewerSession": "fresh-subagent-review-T-0117-r1-redo",
+      "round": 1,
+      "tree": "b5d40a564f2625c64fe2516077d7f17e69879b03"
+    }
+  ],
+  "spec": [
+    "§4.14.1",
+    "§4.5.4"
+  ],
+  "tests": [
+    {
+      "kind": "regression",
+      "path": "packages/codictator/tests/unit/adapters/opencode-bridge-no-suppression.test.ts",
+      "title": "[§4.5.4] the generated OpenCode bridge carries no lint suppression"
+    },
+    {
+      "kind": "acceptance",
+      "path": "packages/codictator/tests/unit/adapters/opencode-bridge-no-suppression.test.ts",
+      "title": "[§4.5.4] the generated OpenCode bridge carries no lint suppression"
+    },
+    {
+      "kind": "unit",
+      "path": "packages/codictator/tests/unit/adapters/opencode-bridge-no-suppression.test.ts",
+      "title": "[§4.5.4] the generated OpenCode bridge carries no lint suppression"
+    }
+  ],
+  "title": "Track regen harness output",
+  "type": "fix",
+  "version": 1
+}
+

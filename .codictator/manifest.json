@@ -211,7 +211,7 @@
       "path": ".muse/hooks.json"
     },
     {
-      "hash": "ab127413b81f0de626b7ef4b71620350d04a1fdcf13791a1fdaae38bb153a692",
+      "hash": "93d61b3860a0f433b3d22adeb415185dd948a5ecb1ca5d9bd300de662f7efc9c",
       "mode": "file",
       "owner": "opencode",
       "path": ".opencode/plugins/codictator.mjs"
@@ -236,7 +236,7 @@
     }
   ],
   "codictator": "0.2.12",
-  "hash": "37419fae2dd737b49a21b81f7600e46bd84af7703c2581f67ee8a2670510a0a3",
+  "hash": "62c05d9fe8cc11f5436e6e11116bf936e11d716977ca812e22263e2f9c9b0d6e",
   "version": 1
 }
 

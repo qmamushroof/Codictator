@@ -35,7 +35,7 @@
   - **Task:** `feature`, branch `feat/upgrade-command`.
   - **Do:** tests for SPEC §4.19.7 EC-16..21 entered red, then the command inside `cli` reusing the setup install helpers; the install must not match the uninstall shapes of SPEC §4.14.3.
   - **Verify:** `npm run ledger -- --covers "§4.19 EC-16..21"` exits 0; the always-set is green.
-- [ ] **16.0g** Fix BUG-0119: regen leaves untracked harness files.
+- [x] **16.0g** Fix BUG-0119: regen leaves untracked harness files.
   - **Task:** `fix`, branch `fix/regen-untracked-files`.
   - **Do:** a test traced to SPEC §4.14.1 entered red, then `regen` leaves no untracked, ungitignored harness file in this repo.
   - **Verify:** the test is green; BUG-0119 is fixed with its regression test.

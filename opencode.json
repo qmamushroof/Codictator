@@ -1,0 +1,8 @@
+{
+  "compaction": {
+    "auto": true
+  },
+  "permission": {
+    "bash": []
+  }
+}
